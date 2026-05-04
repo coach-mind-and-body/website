@@ -21,6 +21,7 @@ import Disclaimer from "./pages/Disclaimer";
 import JoinLanding from "./pages/JoinLanding";
 import JoinThankYou from "./pages/JoinThankYou";
 import FinancialPeace from "./pages/FinancialPeace";
+import FPULandingPage from "./pages/FPULandingPage";
 
 // Enrollment & client portal
 import Enroll from "./pages/Enroll";
@@ -52,6 +53,7 @@ function Router() {
       <Route path="/financial-peace-university" component={FinancialPeace} />
       <Route path="/financial-peace" component={FinancialPeace} />
       <Route path="/fpu" component={FinancialPeace} />
+      <Route path="/fpu-may-12" component={FPULandingPage} />
 
       {/* Enrollment & client portal */}
       <Route path="/enroll" component={Enroll} />
