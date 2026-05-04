@@ -62,12 +62,6 @@ export function registerOAuthRoutes(app: Express) {
         return res.status(400).send("Google account has no email");
       }
 
-      // Check role
-      let role: "admin" | "user" = "user";
-      if (userInfo.email.toLowerCase() === "coach@mindandbodyresetcoach.com") {
-        role = "admin";
-      }
-
       const openId = `google_${userInfo.id}`;
       
       await db.upsertUser({
@@ -75,9 +69,11 @@ export function registerOAuthRoutes(app: Express) {
         name: userInfo.name || null,
         email: userInfo.email,
         loginMethod: "google",
-        role,
         lastSignedIn: new Date(),
       });
+
+      const userRecord = await db.getUserByOpenId(openId);
+      const finalRole = userRecord?.role || "user";
 
       const sessionToken = await sdk.createSessionToken(openId, {
         name: userInfo.name || "",
@@ -87,7 +83,7 @@ export function registerOAuthRoutes(app: Express) {
       const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
-      res.redirect(302, role === "admin" ? "/admin" : "/portal");
+      res.redirect(302, finalRole === "admin" ? "/admin" : "/portal");
     } catch (error: any) {
       console.error("[Google OAuth Error]", error);
       res.status(500).send(`Login failed. If you are the admin, please check the server logs. Error details: ${error?.message || error}`);
@@ -133,11 +129,6 @@ export function registerOAuthRoutes(app: Express) {
       const { payload } = await jwtVerify(token, getMagicLinkSecret());
       const email = payload.email as string;
 
-      let role: "admin" | "user" = "user";
-      if (email.toLowerCase() === "coach@mindandbodyresetcoach.com") {
-        role = "admin";
-      }
-
       const openId = `email_${email}`;
       
       await db.upsertUser({
@@ -145,9 +136,11 @@ export function registerOAuthRoutes(app: Express) {
         name: email.split("@")[0],
         email,
         loginMethod: "email",
-        role,
         lastSignedIn: new Date(),
       });
+
+      const userRecord = await db.getUserByOpenId(openId);
+      const finalRole = userRecord?.role || "user";
 
       const sessionToken = await sdk.createSessionToken(openId, {
         name: email.split("@")[0],
@@ -157,7 +150,7 @@ export function registerOAuthRoutes(app: Express) {
       const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
-      res.redirect(302, role === "admin" ? "/admin" : "/portal");
+      res.redirect(302, finalRole === "admin" ? "/admin" : "/portal");
     } catch (error) {
       console.error("[Magic Link Verify Error]", error);
       res.status(400).send("Invalid or expired magic link. Please request a new one.");
