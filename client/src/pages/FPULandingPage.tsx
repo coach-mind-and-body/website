@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Link } from "wouter";
+import { BRAND } from "../../../shared/brand";
 
 const PHOTO_LEEANNE_CHAIR =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/4Z7A6694_5487dc73.jpg";
@@ -14,8 +15,9 @@ export default function FPULandingPage() {
   return (
     <div className="min-h-screen bg-[#fffef9] text-[#2c3e28] font-sans">
       {/* SIMPLE LOGO HEADER - NO NAVIGATION */}
-      <header className="py-6 px-6 text-center border-b border-gray-100">
-        <Link href="/">
+      <header className="py-6 px-6 border-b border-gray-100 flex justify-center">
+        <Link href="/" className="flex items-center gap-3">
+          <img src={BRAND.logoUrl} alt="Mind & Body Reset" className="w-10 h-10 rounded-full object-cover" />
           <span className="font-serif text-2xl text-[#1a2e1e] font-bold cursor-pointer">
             Mind & Body Reset
           </span>
@@ -37,9 +39,9 @@ export default function FPULandingPage() {
           </p>
           
           <a href="#pricing" className="inline-block bg-[#d4a017] text-[#1a2e1e] font-bold text-xl px-12 py-5 rounded-full shadow-[0_4px_20px_rgba(212,160,23,0.35)] hover:-translate-y-1 hover:shadow-[0_8px_28px_rgba(212,160,23,0.45)] transition-all">
-            Join the May 12 Class For Free
+            Join the May 12 Class
           </a>
-          <p className="text-sm opacity-60 mt-4">Normally $79.99 • Cost covered by Lee Anne</p>
+          <p className="text-sm opacity-60 mt-4">Spots are limited</p>
         </div>
       </section>
 
@@ -91,8 +93,8 @@ export default function FPULandingPage() {
           
           <div className="bg-white/5 border-2 border-[#d4a017] rounded-3xl p-8 max-w-md mx-auto backdrop-blur-sm">
             <div className="text-sm tracking-widest uppercase opacity-80 mb-4">9-Week Program</div>
-            <div className="font-serif text-5xl text-[#d4a017] mb-2">Free</div>
-            <div className="italic opacity-70 mb-8 text-sm">Normally $79.99 (Covered by Lee Anne)</div>
+            <div className="font-serif text-5xl text-[#d4a017] mb-2">~$130</div>
+            <div className="italic opacity-70 mb-8 text-sm">Approximate cost for your FPU materials.</div>
             
             <div className="text-left mb-8 space-y-3">
               {[
@@ -118,7 +120,7 @@ export default function FPULandingPage() {
               rel="noopener noreferrer"
               className="inline-block w-full bg-[#d4a017] text-[#1a2e1e] font-bold py-4 rounded-full shadow-[0_4px_20px_rgba(212,160,23,0.35)] hover:-translate-y-1 hover:shadow-[0_8px_28px_rgba(212,160,23,0.45)] transition-all text-center text-lg"
             >
-              Sign Up For Free →
+              Sign Up For the May 12 Class →
             </a>
             <p className="text-xs opacity-50 mt-4 text-center">You will be redirected to Dave Ramsey's official secure registration portal.</p>
           </div>

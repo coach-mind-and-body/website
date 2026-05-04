@@ -169,8 +169,8 @@ export default function FinancialPeace() {
           
           <div className="bg-white/5 border-2 border-[#d4a017] rounded-3xl p-8 md:p-12 max-w-md mx-auto relative backdrop-blur-sm">
             <div className="text-sm tracking-widest uppercase opacity-80 mb-4">Financial Peace University — 9 Weeks</div>
-            <div className="font-serif text-5xl text-[#d4a017] mb-2">Free</div>
-            <div className="italic opacity-70 mb-8 text-sm">Join our upcoming group absolutely free!</div>
+            <div className="font-serif text-5xl text-[#d4a017] mb-2">~$130</div>
+            <div className="italic opacity-70 mb-8 text-sm">Approximate cost for your FPU materials.</div>
             
             <div className="text-left mb-8 space-y-3">
               {[
