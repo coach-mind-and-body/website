@@ -57,6 +57,12 @@ async function startServer() {
   );
   // SEO routes (sitemap.xml, robots.txt)
   registerSEORoutes(app);
+
+  // Dedicated health check endpoint for Railway
+  app.get("/health", (req, res) => {
+    res.status(200).send("OK");
+  });
+
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
