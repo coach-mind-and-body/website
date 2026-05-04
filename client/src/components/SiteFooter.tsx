@@ -80,6 +80,7 @@ export default function SiteFooter() {
                 { href: "/about", label: "About Lee Anne" },
                 { href: "/reclaim", label: "R.E.C.L.A.I.M. Program" },
                 { href: "/health-wellness-blog", label: "Blog" },
+                { href: "/financial-peace-university", label: "Financial Peace University" },
                 { href: "/book", label: "Book a Free Call" },
               ].map((link) => (
                 <Link

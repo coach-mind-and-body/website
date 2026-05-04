@@ -20,6 +20,7 @@ import Privacy from "./pages/Privacy";
 import Disclaimer from "./pages/Disclaimer";
 import JoinLanding from "./pages/JoinLanding";
 import JoinThankYou from "./pages/JoinThankYou";
+import FinancialPeace from "./pages/FinancialPeace";
 
 // Enrollment & client portal
 import Enroll from "./pages/Enroll";
@@ -48,6 +49,9 @@ function Router() {
       <Route path="/disclaimer" component={Disclaimer} />
       <Route path="/join" component={JoinLanding} />
       <Route path="/join-thank-you" component={JoinThankYou} />
+      <Route path="/financial-peace-university" component={FinancialPeace} />
+      <Route path="/financial-peace" component={FinancialPeace} />
+      <Route path="/fpu" component={FinancialPeace} />
 
       {/* Enrollment & client portal */}
       <Route path="/enroll" component={Enroll} />
