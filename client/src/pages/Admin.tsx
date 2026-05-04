@@ -48,7 +48,15 @@ export default function Admin() {
     const gcal = params.get("gcal");
     if (gcal === "connected") { toast.success("Google Calendar connected!"); refetchGcal(); }
     if (gcal === "error") toast.error("Google Calendar connection failed. Please try again.");
-    if (gcal) { const url = new URL(window.location.href); url.searchParams.delete("gcal"); window.history.replaceState({}, "", url.toString()); }
+    if (gcal) { 
+      try {
+        const url = new URL(window.location.href, window.location.origin || "https://example.com"); 
+        url.searchParams.delete("gcal"); 
+        window.history.replaceState({}, "", url.pathname + url.search); 
+      } catch (e) {
+        window.history.replaceState({}, "", window.location.pathname);
+      }
+    }
   }, []);
 
   const TABS: { id: AdminTab; label: string; icon: React.ReactNode }[] = [
