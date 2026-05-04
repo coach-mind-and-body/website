@@ -1,0 +1,16 @@
+{
+  "query": "SELECT id, email, name, role FROM users WHERE email IN ('carter@inseitzmarketing.com', 'coach@mindandbodyresetcoach.com');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2cLB7BUzam65uPV.root --database AofowMqj2LY3ZXRJFmskfG --execute SELECT id, email, name, role FROM users WHERE email IN ('carter@inseitzmarketing.com', 'coach@mindandbodyresetcoach.com');",
+  "rows": [
+    {
+      "id": "1",
+      "email": "carter@inseitzmarketing.com",
+      "name": "Carter Seitz",
+      "role": "admin"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\temail\tname\trole\n1\tcarter@inseitzmarketing.com\tCarter Seitz\tadmin\n",
+  "stderr": "",
+  "execution_time_ms": 65
+}

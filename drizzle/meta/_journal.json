@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1772505815797,
+      "tag": "0000_whole_trauma",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1772509729805,
+      "tag": "0001_heavy_tenebrous",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1772516018768,
+      "tag": "0002_flawless_lorna_dane",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1772517409382,
+      "tag": "0003_black_inhumans",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1772518781382,
+      "tag": "0004_broken_stingray",
+      "breakpoints": true
+    }
+  ]
+}

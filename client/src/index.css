@@ -1,0 +1,275 @@
+/* =============================================================
+   DESIGN: Mind & Body Reset
+   Brand Colors:
+   - Blush Pink:   oklch(0.97 0.008 10)  — page background
+   - Gold:         oklch(0.72 0.12 75)   — primary accent, headings
+   - Forest Green: oklch(0.38 0.10 148)  — CTA buttons, secondary accent
+   - Cream:        oklch(1 0 0)          — card backgrounds
+   - Espresso:     oklch(0.22 0.02 160)   — body text, dark headings
+   - Muted:        oklch(0.55 0.02 160)   — secondary text, labels
+   Fonts: Cormorant Garamond (display) + Nunito Sans (body)
+   ============================================================= */
+
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+:root {
+  --radius: 0.75rem;
+
+  /* Semantic tokens */
+  --background: oklch(0.97 0.008 10);
+  --foreground: oklch(0.22 0.02 160);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.22 0.02 160);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.22 0.02 160);
+
+  /* Primary = Forest Green (CTAs, buttons) */
+  --primary: oklch(0.38 0.10 148);
+  --primary-foreground: oklch(1 0 0);
+
+  /* Secondary = Blush Pink (soft backgrounds) */
+  --secondary: oklch(0.93 0.03 10);
+  --secondary-foreground: oklch(0.22 0.02 160);
+
+  --muted: oklch(0.94 0.01 160);
+  --muted-foreground: oklch(0.55 0.02 160);
+
+  /* Accent = Gold */
+  --accent: oklch(0.72 0.12 75);
+  --accent-foreground: oklch(0.22 0.02 160);
+
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.90 0.01 160);
+  --input: oklch(0.90 0.01 160);
+  --ring: oklch(0.38 0.10 148);
+
+  /* Brand-specific tokens */
+  --gold: oklch(0.72 0.12 75);
+  --gold-light: oklch(0.93 0.06 75);
+  --gold-dark: oklch(0.52 0.12 65);
+  --forest: oklch(0.38 0.10 148);
+  --forest-light: oklch(0.92 0.04 148);
+  --forest-dark: oklch(0.28 0.10 148);
+  --blush: oklch(0.97 0.008 10);
+  --blush-deep: oklch(0.93 0.03 10);
+  --espresso: oklch(0.22 0.02 160);
+  --muted-brand: oklch(0.55 0.02 160);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Nunito Sans', sans-serif;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Cormorant Garamond', serif;
+  }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  a[href] {
+    @apply cursor-pointer;
+  }
+}
+
+@layer components {
+  .container {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+  @media (min-width: 640px) {
+    .container { padding-left: 2rem; padding-right: 2rem; }
+  }
+  @media (min-width: 1024px) {
+    .container { padding-left: 3rem; padding-right: 3rem; max-width: 1200px; }
+  }
+
+  .flex { min-height: 0; min-width: 0; }
+
+  /* ── Section watermark ── */
+  .section-watermark {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(5rem, 12vw, 9rem);
+    font-weight: 700;
+    line-height: 1;
+    color: oklch(0.72 0.12 75 / 0.08);
+    user-select: none;
+    pointer-events: none;
+  }
+
+  /* ── Scroll progress bar ── */
+  .scroll-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, oklch(0.72 0.12 75), oklch(0.38 0.10 148));
+    z-index: 9999;
+    transition: width 0.1s linear;
+  }
+
+  /* ── Fade-up animation ── */
+  .fade-up {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .fade-up.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ── Nav link ── */
+  .nav-link {
+    position: relative;
+    font-family: 'Nunito Sans', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: oklch(0.55 0.02 160);
+    transition: color 0.2s ease;
+  }
+  .nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: oklch(0.72 0.12 75);
+    transition: width 0.25s ease;
+  }
+  .nav-link:hover, .nav-link.active { color: oklch(0.22 0.02 160); }
+  .nav-link:hover::after, .nav-link.active::after { width: 100%; }
+
+  /* ── Pull quote ── */
+  .pull-quote {
+    border-left: 3px solid oklch(0.72 0.12 75);
+    padding-left: 1.5rem;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 1.2rem;
+    line-height: 1.7;
+    color: oklch(0.42 0.02 160);
+  }
+
+  /* ── Badge pills ── */
+  .badge-gold {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.75rem;
+    border-radius: 999px;
+    background: oklch(0.93 0.06 75);
+    color: oklch(0.45 0.12 65);
+    border: 1px solid oklch(0.82 0.10 75);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .badge-forest {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.75rem;
+    border-radius: 999px;
+    background: oklch(0.92 0.04 148);
+    color: oklch(0.32 0.10 148);
+    border: 1px solid oklch(0.78 0.07 148);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .badge-blush {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.75rem;
+    border-radius: 999px;
+    background: oklch(0.93 0.03 10);
+    color: oklch(0.45 0.09 10);
+    border: 1px solid oklch(0.82 0.05 10);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* ── Card variants ── */
+  .card-brand {
+    background: oklch(1 0 0);
+    border: 1px solid oklch(0.90 0.01 160);
+    box-shadow: 0 2px 16px oklch(0.22 0.02 160 / 0.06);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .card-brand:hover {
+    box-shadow: 0 6px 28px oklch(0.22 0.02 160 / 0.12);
+    transform: translateY(-2px);
+  }
+
+  /* ── Prose (blog content) ── */
+  .prose-brand {
+    color: oklch(0.42 0.02 160);
+    line-height: 1.8;
+    font-size: 1.05rem;
+  }
+  .prose-brand h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: oklch(0.22 0.02 160);
+    margin-top: 2.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .prose-brand h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: oklch(0.22 0.02 160);
+    margin-top: 2rem;
+    margin-bottom: 0.5rem;
+  }
+  .prose-brand p { margin-bottom: 1.25rem; }
+  .prose-brand strong { color: oklch(0.22 0.02 160); font-weight: 700; }
+  .prose-brand blockquote {
+    border-left: 3px solid oklch(0.72 0.12 75);
+    padding: 0.75rem 1.25rem;
+    background: oklch(0.97 0.015 75);
+    border-radius: 0 0.5rem 0.5rem 0;
+    font-style: italic;
+    margin: 1.5rem 0;
+  }
+}

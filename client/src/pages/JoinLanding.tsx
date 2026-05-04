@@ -1,0 +1,165 @@
+import { useState } from "react";
+import { useLocation } from "wouter";
+
+const ZAPIER_WEBHOOK = "https://hooks.zapier.com/hooks/catch/22551341/uw0om13/";
+const WELLNESS_IMG =
+  "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=1000&auto=format&fit=crop";
+
+export default function JoinLanding() {
+  const [, navigate] = useLocation();
+  const [firstName, setFirstName] = useState("");
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async () => {
+    if (!firstName.trim()) {
+      setError("Please enter your first name.");
+      return;
+    }
+    if (!email.includes("@")) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    setError("");
+    setLoading(true);
+
+    try {
+      await fetch(ZAPIER_WEBHOOK, {
+        method: "POST",
+        mode: "no-cors",
+        body: JSON.stringify({
+          first_name: firstName,
+          email,
+          source_tag: "landing-page-sign-up",
+        }),
+      });
+    } catch {
+      // no-cors mode — errors are expected, proceed regardless
+    }
+
+    navigate("/join-thank-you");
+  };
+
+  return (
+    <div
+      className="min-h-screen flex items-center justify-center px-4 py-16"
+      style={{ background: "#fcfaf9", fontFamily: "'Montserrat', sans-serif" }}
+    >
+      {/* Card */}
+      <div
+        className="w-full flex flex-wrap overflow-hidden rounded-3xl"
+        style={{
+          maxWidth: "1100px",
+          background: "#ffffff",
+          boxShadow: "0 20px 50px rgba(0,0,0,0.06)",
+          border: "1px solid #eee",
+        }}
+      >
+        {/* Left — Peach opt-in */}
+        <div
+          className="flex flex-col justify-center items-center text-center px-10 py-16"
+          style={{ flex: "0.8", minWidth: "320px", background: "#fbeee9" }}
+        >
+          <h2
+            className="font-bold mb-8"
+            style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: "clamp(1.6rem, 3vw, 2.2rem)",
+              color: "oklch(0.22 0.02 160)",
+            }}
+          >
+            Join the Reset
+          </h2>
+
+          <div className="flex flex-col gap-4 w-full" style={{ maxWidth: "340px" }}>
+            <input
+              type="text"
+              placeholder="First Name"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              className="w-full text-center text-base rounded-xl px-5 py-5 outline-none"
+              style={{
+                border: "1px solid #ddd",
+                fontFamily: "'Montserrat', sans-serif",
+                background: "#fff",
+                color: "oklch(0.22 0.02 160)",
+              }}
+            />
+            <input
+              type="email"
+              placeholder="Email Address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+              className="w-full text-center text-base rounded-xl px-5 py-5 outline-none"
+              style={{
+                border: "1px solid #ddd",
+                fontFamily: "'Montserrat', sans-serif",
+                background: "#fff",
+                color: "oklch(0.22 0.02 160)",
+              }}
+            />
+
+            {error && (
+              <p className="text-sm font-semibold" style={{ color: "oklch(0.45 0.15 25)" }}>
+                {error}
+              </p>
+            )}
+
+            <button
+              onClick={handleSubmit}
+              disabled={loading}
+              className="w-full font-bold text-lg rounded-xl py-5 transition-all hover:-translate-y-0.5 disabled:opacity-60"
+              style={{
+                background: "oklch(0.38 0.10 148)",
+                color: "#fff",
+                fontFamily: "'Montserrat', sans-serif",
+                boxShadow: "0 10px 20px rgba(62,84,70,0.2)",
+                cursor: loading ? "not-allowed" : "pointer",
+              }}
+            >
+              {loading ? "Sending…" : "Count Me In →"}
+            </button>
+          </div>
+
+          <p className="mt-8 text-xs leading-relaxed" style={{ color: "#999", maxWidth: "280px" }}>
+            No extreme plans. No spam.
+            <br />
+            Just steady support for your mind and body.
+          </p>
+        </div>
+
+        {/* Right — Copy + image */}
+        <div
+          className="flex flex-col justify-center px-14 py-16"
+          style={{ flex: "1", minWidth: "320px", background: "#ffffff" }}
+        >
+          <h1
+            className="font-bold leading-tight mb-6"
+            style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: "clamp(2rem, 4vw, 3rem)",
+              color: "oklch(0.22 0.02 160)",
+            }}
+          >
+            Reclaim Your Body.
+            <br />
+            Rewire Your Mind.
+            <br />
+            Reset Your Life.
+          </h1>
+          <p className="text-lg leading-relaxed mb-8" style={{ color: "#555" }}>
+            Join our community for honest conversations, mentorship, and the steady support you need to finally feel like yourself again.
+          </p>
+          <img
+            src={WELLNESS_IMG}
+            alt="Mind and Body Wellness"
+            className="w-full rounded-xl"
+            style={{ maxWidth: "400px", objectFit: "cover" }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}

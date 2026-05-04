@@ -1,0 +1,48 @@
+// Mind & Body Reset — Brand Constants
+// Single source of truth for all brand config, URLs, and copy
+
+export const BRAND = {
+  name: "Mind & Body Reset",
+  tagline: "Reclaim Your Body. Rewire Your Mind. Reset Your Life.",
+  coachName: "Lee Anne",
+  coachFullName: "Lee Anne",
+  website: "https://mindandbodyresetcoach.com",
+  logoUrl:
+    "https://private-us-east-1.manuscdn.com/user_upload_by_module/session_file/310519663371864914/eCTnvmnMgtoPSEVJ.png?Expires=1804045266&Signature=oGKs8o9KfO0~k2qX3u2CKMepWZZW5o3EcRXjopM2siYxvI3DzRbe3dcUbowLpIu2H2S~WROdd5qnqPu1oywo6EINglVG~bq-4VUunML82Pu-wL2PFdMzfzUxBXxCOi4MKkh37bMY94XSxCBDUVWV9oc-XM4kRXIy6-fnMHAl2ML~zYqJ5LVzLrvh1zv5m1PPoqCz-03Zaph6z9JoW5zFOLZTmpjEQ5xPPUA1Hp3aHLWwwxoWMjYB87sQ2S6STFeNPDq2-84uk1-2Le84If1Zz8yL7DMdBrCP6Z1kUBb30jbaoLRtqUmypXBAhUdDGyNNbe9bjQ2SyG-zdIHX7u0W8g__&Key-Pair-Id=K2HSFNDJXOU9YS",
+} as const;
+
+export const GOOGLE_CALENDAR = {
+  // Free 30-min discovery call (1st appointment only)
+  discoveryCall:
+    "https://calendar.google.com/calendar/appointments/schedules/AcZssZ1hsIet71zyFRyzpnpjs1wUWx7ibZhsDTVpOWUR3BE1lQNLirGK6tyRywHa7-xgQz1MaK4zDTHt?gv=true",
+  // R.E.C.L.A.I.M. 6-Week Program sessions (50 min, paid clients only)
+  reclaimSession:
+    "https://calendar.google.com/calendar/appointments/schedules/AcZssZ3tlzR8FWHdYzdtXqI43ULRAnOYehFPjpe7uLgjQn9fJ3udHMCJLlIQhahbQ9-_R-GjtY8r6O5k",
+} as const;
+
+export const PROGRAM = {
+  name: "R.E.C.L.A.I.M.",
+  fullName: "R.E.C.L.A.I.M. 6-Week Mind & Body Reset",
+  tagline: "Experience transformation and empowerment",
+  sessionCount: 6,
+  sessionDurationMins: 50,
+  fullPrice: 597,
+  depositPrice: 200,
+  balancePrice: 397,
+  originalPrice: 1294,
+  savingsPercent: 54,
+  currency: "USD",
+} as const;
+
+export const BLOG_CATEGORIES = [
+  "Body Image",
+  "Hormonal Health",
+  "Menopause & Hormonal Health",
+  "Mind and Body Reset",
+  "Mindful Eating & Nutrition",
+  "Mindset & Self-Compassion",
+  "Thought Work",
+  "Weight Loss Mindset",
+] as const;
+
+export type BlogCategory = (typeof BLOG_CATEGORIES)[number];
