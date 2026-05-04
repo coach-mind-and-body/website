@@ -16,8 +16,16 @@ function getMagicLinkSecret() {
 }
 
 function getBaseUrl(req: Request) {
-  const protocol = req.headers["x-forwarded-proto"] || req.protocol;
-  return process.env.APP_PUBLIC_URL || `${protocol}://${req.get("host")}`;
+  if (process.env.APP_PUBLIC_URL) {
+    return process.env.APP_PUBLIC_URL.replace(/\/$/, "");
+  }
+  let protocol = req.headers["x-forwarded-proto"] || req.protocol;
+  if (Array.isArray(protocol)) {
+    protocol = protocol[0];
+  } else if (typeof protocol === 'string' && protocol.includes(',')) {
+    protocol = protocol.split(',')[0].trim();
+  }
+  return `${protocol}://${req.get("host")}`;
 }
 
 export function registerOAuthRoutes(app: Express) {
@@ -80,9 +88,9 @@ export function registerOAuthRoutes(app: Express) {
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
       res.redirect(302, role === "admin" ? "/admin" : "/portal");
-    } catch (error) {
+    } catch (error: any) {
       console.error("[Google OAuth Error]", error);
-      res.status(500).send("Login failed");
+      res.status(500).send(`Login failed. If you are the admin, please check the server logs. Error details: ${error?.message || error}`);
     }
   });
 
