@@ -6,7 +6,6 @@ import { BRAND, GOOGLE_CALENDAR } from "../../../shared/brand";
 const LOGO = BRAND.logoUrl;
 
 const NAV_LINKS = [
-  { href: "/", label: "Home" },
   { href: "/reclaim", label: "R.E.C.L.A.I.M." },
   { href: "/health-wellness-blog", label: "Blog" },
   { href: "/food-quiz", label: "Free Quiz" },
