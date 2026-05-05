@@ -24,6 +24,8 @@ import JoinThankYou from "./pages/JoinThankYou";
 import FinancialPeace from "./pages/FinancialPeace";
 import FPULandingPage from "./pages/FPULandingPage";
 import Login from "./pages/Login";
+import Glp1Recovery from "./pages/Glp1Recovery";
+import HolisticHealth from "./pages/HolisticHealth";
 
 // Enrollment & client portal
 import Enroll from "./pages/Enroll";
@@ -57,6 +59,10 @@ function Router() {
       <Route path="/fpu" component={FinancialPeace} />
       <Route path="/fpu-may-12" component={FPULandingPage} />
       <Route path="/login" component={Login} />
+      
+      {/* SEO Pillar Pages */}
+      <Route path="/life-after-glp-1" component={Glp1Recovery} />
+      <Route path="/holistic-health-and-wellness" component={HolisticHealth} />
 
       {/* Enrollment & client portal */}
       <Route path="/enroll" component={Enroll} />

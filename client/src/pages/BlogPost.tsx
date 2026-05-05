@@ -118,28 +118,7 @@ export default function BlogPost() {
     );
   }
 
-  // Render markdown-like content (simple paragraph/heading split)
-  const renderContent = (content: string) => {
-    return content.split("\n\n").map((block, i) => {
-      if (block.startsWith("## ")) {
-        return <h2 key={i} className="font-bold mt-8 mb-3" style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.6rem", color: "oklch(0.22 0.02 160)" }}>{block.replace("## ", "")}</h2>;
-      }
-      if (block.startsWith("**") && block.endsWith("**")) {
-        return <p key={i} className="font-bold text-base mb-4" style={{ color: "oklch(0.22 0.02 160)" }}>{block.replace(/\*\*/g, "")}</p>;
-      }
-      // Handle inline bold
-      const parts = block.split(/(\*\*[^*]+\*\*)/g);
-      return (
-        <p key={i} className="text-base leading-relaxed mb-4" style={{ color: "oklch(0.45 0.02 160)" }}>
-          {parts.map((part, j) =>
-            part.startsWith("**") && part.endsWith("**")
-              ? <strong key={j} style={{ color: "oklch(0.22 0.02 160)" }}>{part.replace(/\*\*/g, "")}</strong>
-              : part
-          )}
-        </p>
-      );
-    });
-  };
+  // Content is now rendered directly via dangerouslySetInnerHTML below
 
   const articleSchema = {
     "@context": "https://schema.org",
@@ -188,8 +167,8 @@ export default function BlogPost() {
 
       {/* Content */}
       <article className="py-16">
-        <div className="container max-w-3xl mx-auto">
-          {renderContent(post.content)}
+        <div className="container max-w-3xl mx-auto prose prose-lg prose-headings:font-serif prose-headings:text-[oklch(0.22_0.02_160)] prose-p:text-[oklch(0.45_0.02_160)] prose-a:text-[oklch(0.38_0.10_148)] prose-a:font-bold prose-img:rounded-xl">
+          <div dangerouslySetInnerHTML={{ __html: post.content }} />
         </div>
       </article>
 
