@@ -301,7 +301,7 @@ export const enrollmentRouter = router({
           if (!enrollmentRows[0]) return;
 
           const clientRows = await db
-            .select({ name: users.name, email: users.email })
+            .select({ id: users.id, name: users.name, email: users.email })
             .from(users)
             .where(eq(users.id, enrollmentRows[0].userId))
             .limit(1);
