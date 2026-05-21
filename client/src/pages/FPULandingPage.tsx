@@ -133,7 +133,7 @@ function FPULandingPageContent() {
                 </a>
               </div>
               <p className="text-sm mt-4 text-white/60">
-                FPU kits start at <strong className="text-[#52b788] font-bold">~$99</strong> · Optional 1:1 coaching add-on available
+                FPU kits start at <strong className="text-[#52b788] font-bold">~$99</strong> · <a href="#fpu-coaching" className="underline hover:text-[#d4a017] transition-colors">Optional 1:1 coaching add-on available</a>
               </p>
             </div>
 

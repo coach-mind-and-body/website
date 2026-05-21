@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { CheckCircle2, ShieldCheck, Calendar, Users, Clock, Loader2, Quote } from "lucide-react";
 import { toast } from "sonner";
 import SiteNav from "../components/SiteNav";
@@ -26,122 +26,6 @@ const LEEANNE_PHOTO =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/3542web-rigeljackson(2)_83b0d4af.webp";
 
 // ── FPU Group Sign-Up Form ───────────────────────────────────────────────────
-function FpuSignUpForm({
-  buttonLabel = "Sign Up for Free FPU →",
-  dark = false,
-}: {
-  buttonLabel?: string;
-  dark?: boolean;
-}) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-
-  useEffect(() => {
-    if (!dark) return;
-    const styleId = "fpu-dark-placeholder-style";
-    if (!document.getElementById(styleId)) {
-      const style = document.createElement("style");
-      style.id = styleId;
-      style.textContent = `.fpu-input-dark::placeholder { color: oklch(0.82 0.02 148) !important; opacity: 1 !important; }`;
-      document.head.appendChild(style);
-    }
-  }, [dark]);
-
-  const { trackLead } = useMetaPixel();
-  const signUpMutation = trpc.fpu.groupSignUp.useMutation({
-    onSuccess: () => {
-      // Fire Meta Pixel Lead event when FPU group sign-up is completed
-      trackLead({ content_name: "FPU Group Sign-Up", content_category: "Financial Peace University" });
-      setSubmitted(true);
-    },
-    onError: (err) => {
-      toast.error("Something went wrong. Please try again.");
-      console.error("[FPU Sign-Up]", err);
-    },
-  });
-
-  if (submitted) {
-    return (
-      <div
-        className="rounded-2xl p-6 text-center"
-        style={{
-          background: dark ? "oklch(1 0 0 / 0.12)" : "oklch(0.95 0.03 148 / 0.5)",
-          border: dark
-            ? "1px solid oklch(1 0 0 / 0.2)"
-            : "1px solid oklch(0.72 0.09 145 / 0.4)",
-        }}
-      >
-        <CheckCircle2
-          size={32}
-          className="mx-auto mb-3"
-          style={{ color: dark ? "oklch(0.72 0.11 78)" : "oklch(0.38 0.09 148)" }}
-        />
-        <p
-          className="font-bold text-base mb-1"
-          style={{ color: dark ? "oklch(1 0 0)" : "oklch(0.20 0.015 50)" }}
-        >
-          You're in! 🎉
-        </p>
-        <p
-          className="text-sm"
-          style={{ color: dark ? "oklch(0.85 0.015 148)" : "oklch(0.52 0.015 50)" }}
-        >
-          Lee Anne will be in touch soon with your calendar invite.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (!name.trim() || !email.trim()) return;
-        signUpMutation.mutate({ name: name.trim(), email: email.trim() });
-      }}
-      className="flex flex-col gap-3 w-full max-w-sm mx-auto"
-    >
-      <input
-        type="text"
-        placeholder="Your name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        required
-        className={`w-full px-4 py-3 rounded-xl text-sm border outline-none focus:ring-2 ${dark ? "fpu-input-dark" : ""}`}
-        style={{
-          background: dark ? "oklch(1 0 0 / 0.1)" : "oklch(1 0 0)",
-          borderColor: dark ? "oklch(1 0 0 / 0.25)" : "oklch(0.85 0.015 50)",
-          color: dark ? "oklch(1 0 0)" : "oklch(0.20 0.015 50)",
-        }}
-      />
-      <input
-        type="email"
-        placeholder="Your email address"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        required
-        className={`w-full px-4 py-3 rounded-xl text-sm border outline-none focus:ring-2 ${dark ? "fpu-input-dark" : ""}`}
-        style={{
-          background: dark ? "oklch(1 0 0 / 0.1)" : "oklch(1 0 0)",
-          borderColor: dark ? "oklch(1 0 0 / 0.25)" : "oklch(0.85 0.015 50)",
-          color: dark ? "oklch(1 0 0)" : "oklch(0.20 0.015 50)",
-        }}
-      />
-      <button
-        type="submit"
-        disabled={signUpMutation.isPending}
-        className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-full font-bold text-base transition-all hover:shadow-xl hover:-translate-y-1 disabled:opacity-70 disabled:cursor-not-allowed"
-        style={{ background: "oklch(0.72 0.11 78)", color: "oklch(0.20 0.015 50)" }}
-      >
-        {signUpMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : null}
-        {signUpMutation.isPending ? "Signing you up…" : buttonLabel}
-      </button>
-    </form>
-  );
-}
-
-// ── Coaching checkout button ──────────────────────────────────────────────────
 function CoachingCheckoutButton({
   label = "Add 1:1 Coaching — $249 →",
   className = "",
@@ -535,7 +419,14 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
               <span className="badge-olive mb-3 inline-block">Is This For You?</span>
               <E k="for-you-heading" />
               <E k="for-you-list" />
-              <FpuSignUpForm buttonLabel="I'm In — Sign Up Free →" />
+              <a
+                href="https://www.financialpeace.com/app/classes/299D07"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full font-bold text-lg transition-all bg-[#d4a017] text-[#1a2e1e] shadow-[0_4px_20px_rgba(212,160,23,0.35)] hover:-translate-y-1 hover:shadow-[0_8px_28px_rgba(212,160,23,0.45)]"
+              >
+                Sign Up for Class →
+              </a>
             </div>
           </div>
         </div>
@@ -781,7 +672,7 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
               Step 2: Sign Up for My Class
             </h3>
             <p className="text-sm mb-6" style={{ color: "oklch(0.85 0.015 148)", maxWidth: "480px", margin: "0 auto 24px" }}>
-              Once you have your kit, sign up for my class using the link below. It's free to join!
+              Once you have your kit, sign up for my class using the link below.
             </p>
             <a
               href="https://www.financialpeace.com/app/classes/299D07"
