@@ -1,16 +1,34 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+import { useMetaPixel } from "@/hooks/useMetaPixel";
+import { BRAND } from "../../../shared/brand";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 const ZAPIER_WEBHOOK = "https://hooks.zapier.com/hooks/catch/22551341/uw0om13/";
 const WELLNESS_IMG =
   "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=1000&auto=format&fit=crop";
 
 export default function JoinLanding() {
+  usePageTitle({
+    title: "Join the Community | Mind and Body Reset",
+    description: "Join the Mind & Body Reset community for free wellness tips, recipes, and support for women 40+ navigating midlife health and food freedom.",
+    keywords: "wellness community, women over 40 community, health tips, food freedom support, midlife wellness group"
+  });
   const [, navigate] = useLocation();
   const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const { trackViewContent, trackLead } = useMetaPixel();
+
+  // Fire ViewContent when the page loads — tells Meta someone saw the lead magnet offer
+  useEffect(() => {
+    trackViewContent({
+      content_name: "Join the Community — Email Sign-Up",
+      content_category: "Lead Magnet",
+      content_type: "product",
+    });
+  }, []);
 
   const handleSubmit = async () => {
     if (!firstName.trim()) {
@@ -38,6 +56,12 @@ export default function JoinLanding() {
       // no-cors mode — errors are expected, proceed regardless
     }
 
+    // Fire Lead event — tells Meta this person became a lead (email captured)
+    trackLead({
+      content_name: "Join the Community — Email Sign-Up",
+      content_category: "Lead Magnet",
+    });
+
     navigate("/join-thank-you");
   };
 
@@ -61,6 +85,12 @@ export default function JoinLanding() {
           className="flex flex-col justify-center items-center text-center px-10 py-16"
           style={{ flex: "0.8", minWidth: "320px", background: "#fbeee9" }}
         >
+          <img
+            src={BRAND.logoUrl}
+            alt="Mind & Body Reset"
+            className="mb-6"
+            style={{ width: "90px", height: "90px", objectFit: "contain" }}
+          />
           <h2
             className="font-bold mb-8"
             style={{

@@ -1,5 +1,6 @@
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 const sections = [
   {
@@ -25,6 +26,11 @@ const sections = [
 ];
 
 export default function Terms() {
+  usePageTitle({
+    title: "Terms of Service | Mind and Body Reset",
+    description: "Review the Mind & Body Reset terms of service governing use of our website, coaching programs, and digital resources.",
+    keywords: "terms of service, terms and conditions, website terms, mind body reset terms"
+  });
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "#ffffff" }}>
       <SiteNav />

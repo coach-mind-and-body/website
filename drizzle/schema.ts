@@ -16,6 +16,16 @@ export const users = mysqlTable("users", {
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
+  // email/password auth
+  passwordHash: varchar("passwordHash", { length: 255 }),
+  // google oauth (separate from Manus OAuth)
+  googleId: varchar("googleId", { length: 128 }),
+  // email verification for email/password accounts
+  emailVerified: boolean("emailVerified").default(false).notNull(),
+  emailVerifyToken: varchar("emailVerifyToken", { length: 128 }),
+  // password reset
+  passwordResetToken: varchar("passwordResetToken", { length: 128 }),
+  passwordResetExpiry: timestamp("passwordResetExpiry"),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -72,6 +82,7 @@ export const coachingSessions = mysqlTable("coaching_sessions", {
   adminNotes: text("adminNotes"),
   privateNotes: text("privateNotes"),
   googleEventId: varchar("googleEventId", { length: 255 }),
+  followUpEmailSentAt: timestamp("followUpEmailSentAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -88,12 +99,19 @@ export const blogPosts = mysqlTable("blog_posts", {
   content: text("content").notNull(),
   category: varchar("category", { length: 100 }),
   coverImage: varchar("coverImage", { length: 1000 }),
+  coverImageAlt: varchar("coverImageAlt", { length: 500 }),
   published: boolean("published").default(false).notNull(),
   publishedAt: timestamp("publishedAt"),
   scheduledAt: timestamp("scheduledAt"),
   seoTitle: varchar("seoTitle", { length: 500 }),
   seoDescription: text("seoDescription"),
   authorId: int("authorId"),
+  // JSON-LD Schema markup
+  schemaTypes: varchar("schemaTypes", { length: 500 }), // comma-separated: "Article,FAQ,VideoObject"
+  schemaFaqJson: text("schemaFaqJson"),                 // JSON array of {question, answer}
+  schemaVideoUrl: varchar("schemaVideoUrl", { length: 1000 }), // YouTube URL for VideoObject
+  schemaVideoDescription: text("schemaVideoDescription"),
+  schemaHowToStepsJson: text("schemaHowToStepsJson"),   // JSON array of {name, text} steps
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -161,6 +179,39 @@ export const clientFiles = mysqlTable("client_files", {
 export type ClientFile = typeof clientFiles.$inferSelect;
 export type InsertClientFile = typeof clientFiles.$inferInsert;
 
+// ── FPU Orders (Financial Peace University Stripe purchases) ────────────────
+export const fpuOrders = mysqlTable("fpu_orders", {
+  id: int("id").autoincrement().primaryKey(),
+  stripeSessionId: varchar("stripeSessionId", { length: 255 }).notNull().unique(),
+  stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 255 }),
+  userId: int("userId"),
+  clientName: varchar("clientName", { length: 255 }),
+  clientEmail: varchar("clientEmail", { length: 320 }),
+  productType: mysqlEnum("productType", ["fpu_class", "fpu_coaching"]).default("fpu_class").notNull(),
+  status: mysqlEnum("status", ["pending", "paid", "failed"]).default("pending").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type FpuOrder = typeof fpuOrders.$inferSelect;
+export type InsertFpuOrder = typeof fpuOrders.$inferInsert;
+
+// ── FPU Coaching Sessions (1:1 sessions for paid FPU coaching clients) ────────
+export const fpuCoachingSessions = mysqlTable("fpu_coaching_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  fpuOrderId: int("fpuOrderId").notNull(),
+  clientEmail: varchar("clientEmail", { length: 320 }).notNull(),
+  clientName: varchar("clientName", { length: 255 }),
+  sessionNumber: int("sessionNumber").notNull(), // 1, 2, or 3
+  googleEventId: varchar("googleEventId", { length: 255 }),
+  completedAt: timestamp("completedAt"),
+  followUpEmailSentAt: timestamp("followUpEmailSentAt"),
+  adminNotes: text("adminNotes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type FpuCoachingSession = typeof fpuCoachingSessions.$inferSelect;
+export type InsertFpuCoachingSession = typeof fpuCoachingSessions.$inferInsert;
+
 // ── Site Settings ─────────────────────────────────────────────────────────────
 export const siteSettings = mysqlTable("site_settings", {
   id: int("id").autoincrement().primaryKey(),
@@ -171,3 +222,82 @@ export const siteSettings = mysqlTable("site_settings", {
 
 export type SiteSetting = typeof siteSettings.$inferSelect;
 export type InsertSiteSetting = typeof siteSettings.$inferInsert;
+
+// ── FPU Group Sign-Ups (name+email collected on /financial-peace) ───────────────────────
+export const fpuLeads = mysqlTable("fpu_leads", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type FpuLead = typeof fpuLeads.$inferSelect;
+export type InsertFpuLead = typeof fpuLeads.$inferInsert;
+
+// ── Page Content (editable page sections, draft/publish workflow) ─────────────
+export const pageContent = mysqlTable("page_content", {
+  id: int("id").autoincrement().primaryKey(),
+  page: varchar("page", { length: 100 }).notNull(),       // e.g. "financial-peace"
+  key: varchar("key", { length: 100 }).notNull(),          // e.g. "hero-heading"
+  publishedContent: text("publishedContent"),              // live content visitors see
+  draftContent: text("draftContent"),                      // unpublished edits
+  hasDraft: boolean("hasDraft").default(false).notNull(),  // true when draft differs from published
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PageContent = typeof pageContent.$inferSelect;
+export type InsertPageContent = typeof pageContent.$inferInsert;
+
+// ── Reclaim Program (LMS) ─────────────────────────────────────────────────────
+export const programModules = mysqlTable("program_modules", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  videoUrl: varchar("videoUrl", { length: 1000 }),
+  content: text("content"), // Rich text
+  pdfUrl: varchar("pdfUrl", { length: 1000 }), // Optional PDF download
+  order: int("order").notNull(), // 1 through 6
+  isPublished: boolean("isPublished").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ProgramModule = typeof programModules.$inferSelect;
+export type InsertProgramModule = typeof programModules.$inferInsert;
+
+export const assignments = mysqlTable("assignments", {
+  id: int("id").autoincrement().primaryKey(),
+  moduleId: int("moduleId").notNull(),
+  question: text("question").notNull(),
+  order: int("order").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Assignment = typeof assignments.$inferSelect;
+export type InsertAssignment = typeof assignments.$inferInsert;
+
+export const assignmentSubmissions = mysqlTable("assignment_submissions", {
+  id: int("id").autoincrement().primaryKey(),
+  assignmentId: int("assignmentId").notNull(),
+  userId: int("userId").notNull(),
+  answer: text("answer").notNull(),
+  feedback: text("feedback"),
+  submittedAt: timestamp("submittedAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AssignmentSubmission = typeof assignmentSubmissions.$inferSelect;
+export type InsertAssignmentSubmission = typeof assignmentSubmissions.$inferInsert;
+
+export const moduleProgress = mysqlTable("module_progress", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  moduleId: int("moduleId").notNull(),
+  unlockedAt: timestamp("unlockedAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+  lastReminderSentAt: timestamp("lastReminderSentAt"),
+});
+
+export type ModuleProgress = typeof moduleProgress.$inferSelect;
+export type InsertModuleProgress = typeof moduleProgress.$inferInsert;

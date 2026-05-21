@@ -6,6 +6,7 @@ import { getDb } from "../db";
 import { blogPosts } from "../../drizzle/schema";
 import { storagePut } from "../storage";
 import { TRPCError } from "@trpc/server";
+import { mailchimpSubscribe } from "../mailchimp";
 
 function adminOnly(role: string | undefined) {
   if (role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Admins only" });
@@ -84,10 +85,17 @@ export const blogRouter = router({
       content: z.string().min(1),
       category: z.string().optional(),
       coverImage: z.string().optional(),
+      coverImageAlt: z.string().optional(),
       published: z.boolean().default(false),
+      publishedAt: z.string().optional(), // ISO string in UTC — allows setting custom publish date
       scheduledAt: z.string().optional(), // ISO string in UTC
       seoTitle: z.string().optional(),
       seoDescription: z.string().optional(),
+      schemaTypes: z.string().optional(),
+      schemaFaqJson: z.string().optional(),
+      schemaVideoUrl: z.string().optional(),
+      schemaVideoDescription: z.string().optional(),
+      schemaHowToStepsJson: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       adminOnly(ctx.user?.role);
@@ -100,11 +108,14 @@ export const blogRouter = router({
       // If scheduling, don't publish immediately
       const isScheduled = !!scheduledAt && !rest.published;
 
+      const { publishedAt: publishedAtStr, ...insertRest } = rest;
+      const customPublishedAt = publishedAtStr ? new Date(publishedAtStr) : undefined;
+
       await db.insert(blogPosts).values({
-        ...rest,
-        published: isScheduled ? false : rest.published,
+        ...insertRest,
+        published: isScheduled ? false : insertRest.published,
         authorId: ctx.user!.id,
-        publishedAt: rest.published && !isScheduled ? new Date() : undefined,
+        publishedAt: insertRest.published && !isScheduled ? (customPublishedAt || new Date()) : undefined,
         scheduledAt: isScheduled ? scheduledAt : undefined,
       });
       return { success: true, scheduled: isScheduled };
@@ -120,16 +131,23 @@ export const blogRouter = router({
       content: z.string().optional(),
       category: z.string().optional(),
       coverImage: z.string().optional(),
+      coverImageAlt: z.string().optional(),
       published: z.boolean().optional(),
+      publishedAt: z.string().nullable().optional(), // ISO string or null — allows changing publish date
       scheduledAt: z.string().nullable().optional(), // ISO string or null to clear
       seoTitle: z.string().optional(),
       seoDescription: z.string().optional(),
+      schemaTypes: z.string().optional(),
+      schemaFaqJson: z.string().optional(),
+      schemaVideoUrl: z.string().optional(),
+      schemaVideoDescription: z.string().optional(),
+      schemaHowToStepsJson: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       adminOnly(ctx.user?.role);
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-      const { id, scheduledAt: scheduledAtStr, ...rest } = input;
+      const { id, scheduledAt: scheduledAtStr, publishedAt: publishedAtStr, ...rest } = input;
       const updateData: Record<string, unknown> = { ...rest };
 
       // Handle scheduling
@@ -146,8 +164,16 @@ export const blogRouter = router({
       }
 
       if (rest.published) {
-        updateData.publishedAt = new Date();
+        // Use custom publishedAt if provided, otherwise default to now
+        if (publishedAtStr) {
+          updateData.publishedAt = new Date(publishedAtStr);
+        } else if (!updateData.publishedAt) {
+          updateData.publishedAt = new Date();
+        }
         updateData.scheduledAt = null; // Clear schedule when publishing immediately
+      } else if (publishedAtStr !== undefined) {
+        // Allow updating publishedAt even on already-published posts
+        updateData.publishedAt = publishedAtStr ? new Date(publishedAtStr) : null;
       }
 
       await db.update(blogPosts).set(updateData).where(eq(blogPosts.id, id));
@@ -180,6 +206,72 @@ export const blogRouter = router({
       const fileKey = `blog-images/${suffix}.${ext}`;
       const { url } = await storagePut(fileKey, buffer, input.mimeType);
       return { url };
+    }),
+
+  // Public: get related posts (same category, excluding current post)
+  related: publicProcedure
+    .input(z.object({ slug: z.string(), category: z.string().optional(), limit: z.number().min(1).max(6).default(3) }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      // Try same category first
+      if (input.category) {
+        const byCat = await db
+          .select()
+          .from(blogPosts)
+          .where(
+            and(
+              eq(blogPosts.published, true),
+              eq(blogPosts.category, input.category),
+              sql`${blogPosts.slug} != ${input.slug}`
+            )
+          )
+          .orderBy(desc(blogPosts.publishedAt))
+          .limit(input.limit);
+        if (byCat.length >= input.limit) return byCat;
+        // Pad with recent posts if not enough in same category
+        const slugsToExclude = [input.slug, ...byCat.map(p => p.slug)];
+        const recent = await db
+          .select()
+          .from(blogPosts)
+          .where(
+            and(
+              eq(blogPosts.published, true),
+              sql`${blogPosts.slug} NOT IN (${sql.join(slugsToExclude.map(s => sql`${s}`), sql`, `)})`
+            )
+          )
+          .orderBy(desc(blogPosts.publishedAt))
+          .limit(input.limit - byCat.length);
+        return [...byCat, ...recent];
+      }
+      // No category — just return recent posts excluding current
+      return db
+        .select()
+        .from(blogPosts)
+        .where(and(eq(blogPosts.published, true), sql`${blogPosts.slug} != ${input.slug}`))
+        .orderBy(desc(blogPosts.publishedAt))
+        .limit(input.limit);
+    }),
+
+  // Public: subscribe to blog newsletter
+  subscribe: publicProcedure
+    .input(z.object({
+      email: z.string().email("Please enter a valid email address"),
+      firstName: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const result = await mailchimpSubscribe({
+        email: input.email,
+        firstName: input.firstName,
+        tags: ["blog_sub"],
+      });
+      if (!result.success) {
+        // Don't expose internal errors — just return success to avoid leaking info
+        // but log for debugging
+        console.error("[Blog Subscribe] Mailchimp error:", result.error);
+      }
+      // Always return success to the user (avoids email enumeration)
+      return { success: true };
     }),
 
   // Public: list distinct categories from published posts

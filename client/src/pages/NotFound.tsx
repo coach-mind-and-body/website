@@ -2,8 +2,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertCircle, Home } from "lucide-react";
 import { useLocation } from "wouter";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 export default function NotFound() {
+  usePageTitle({
+    title: "Page Not Found | Mind and Body Reset",
+    description: "The page you\'re looking for doesn\'t exist. Return to the Mind & Body Reset homepage.",
+    keywords: "page not found, 404, mind body reset"
+  });
   const [, setLocation] = useLocation();
 
   const handleGoHome = () => {

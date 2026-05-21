@@ -4,13 +4,17 @@ import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
+import { registerAuthRoutes } from "../authRoutes";
 import { registerChatRoutes } from "./chat";
 import { registerStripeWebhook } from "../stripe";
 import { registerGoogleCalendarRoutes, registerGoogleCalendarWebhook } from "../googleCalendar";
+import { startCallFollowUpPoller } from "../callFollowUpPoller";
+import { startLmsPoller } from "../lmsPoller";
+import { registerRssRoute } from "../rss";
+import { registerSitemapRoute } from "../sitemap";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
-import { registerSEORoutes } from "../seo";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -39,14 +43,20 @@ async function startServer() {
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
-  // OAuth callback under /api/oauth/callback
+  // OAuth callback under /api/oauth/callback (Manus OAuth — existing admin flow)
   registerOAuthRoutes(app);
+  // Email/password and Google OAuth routes
+  registerAuthRoutes(app);
   // Chat API with streaming and tool calling
   registerChatRoutes(app);
   // Google Calendar OAuth routes
   registerGoogleCalendarRoutes(app);
   // Google Calendar push notification webhook
   registerGoogleCalendarWebhook(app);
+  // RSS feed for Mailchimp and feed readers
+  registerRssRoute(app);
+  // Dynamic sitemap with blog posts
+  registerSitemapRoute(app);
   // tRPC API
   app.use(
     "/api/trpc",
@@ -55,14 +65,6 @@ async function startServer() {
       createContext,
     })
   );
-  // SEO routes (sitemap.xml, robots.txt)
-  registerSEORoutes(app);
-
-  // Dedicated health check endpoint for Railway
-  app.get("/health", (req, res) => {
-    res.status(200).send("OK");
-  });
-
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
@@ -78,7 +80,11 @@ async function startServer() {
   }
 
   server.listen(port, () => {
-    console.log(`Server running on http://0.0.0.0:${port}/`);
+    console.log(`Server running on http://localhost:${port}/`);
+    // Start the Google Calendar polling service for automated follow-up emails
+    startCallFollowUpPoller();
+    // Start the LMS reminder polling service
+    startLmsPoller();
   });
 }
 

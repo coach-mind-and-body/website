@@ -1,26 +1,70 @@
-import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+// Preconfigured storage helpers for Manus WebDev templates
+// Uses the Biz-provided storage proxy (Authorization: Bearer <token>)
+
 import { ENV } from './_core/env';
 
-function getS3Client() {
-  if (!ENV.r2AccessKeyId || !ENV.r2SecretAccessKey || !ENV.r2Endpoint) {
+type StorageConfig = { baseUrl: string; apiKey: string };
+
+function getStorageConfig(): StorageConfig {
+  const baseUrl = ENV.forgeApiUrl;
+  const apiKey = ENV.forgeApiKey;
+
+  if (!baseUrl || !apiKey) {
     throw new Error(
-      "R2 credentials missing: set R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, and R2_ENDPOINT"
+      "Storage proxy credentials missing: set BUILT_IN_FORGE_API_URL and BUILT_IN_FORGE_API_KEY"
     );
   }
 
-  return new S3Client({
-    region: "auto",
-    endpoint: ENV.r2Endpoint,
-    credentials: {
-      accessKeyId: ENV.r2AccessKeyId,
-      secretAccessKey: ENV.r2SecretAccessKey,
-    },
+  return { baseUrl: baseUrl.replace(/\/+$/, ""), apiKey };
+}
+
+function buildUploadUrl(baseUrl: string, relKey: string): URL {
+  const url = new URL("v1/storage/upload", ensureTrailingSlash(baseUrl));
+  url.searchParams.set("path", normalizeKey(relKey));
+  return url;
+}
+
+async function buildDownloadUrl(
+  baseUrl: string,
+  relKey: string,
+  apiKey: string
+): Promise<string> {
+  const downloadApiUrl = new URL(
+    "v1/storage/downloadUrl",
+    ensureTrailingSlash(baseUrl)
+  );
+  downloadApiUrl.searchParams.set("path", normalizeKey(relKey));
+  const response = await fetch(downloadApiUrl, {
+    method: "GET",
+    headers: buildAuthHeaders(apiKey),
   });
+  return (await response.json()).url;
+}
+
+function ensureTrailingSlash(value: string): string {
+  return value.endsWith("/") ? value : `${value}/`;
 }
 
 function normalizeKey(relKey: string): string {
   return relKey.replace(/^\/+/, "");
+}
+
+function toFormData(
+  data: Buffer | Uint8Array | string,
+  contentType: string,
+  fileName: string
+): FormData {
+  const blob =
+    typeof data === "string"
+      ? new Blob([data], { type: contentType })
+      : new Blob([data as any], { type: contentType });
+  const form = new FormData();
+  form.append("file", blob, fileName || "file");
+  return form;
+}
+
+function buildAuthHeaders(apiKey: string): HeadersInit {
+  return { Authorization: `Bearer ${apiKey}` };
 }
 
 export async function storagePut(
@@ -28,65 +72,31 @@ export async function storagePut(
   data: Buffer | Uint8Array | string,
   contentType = "application/octet-stream"
 ): Promise<{ key: string; url: string }> {
+  const { baseUrl, apiKey } = getStorageConfig();
   const key = normalizeKey(relKey);
-  const bucket = ENV.r2BucketName;
-  
-  if (!bucket) {
-    throw new Error("R2_BUCKET_NAME is not configured");
-  }
-
-  const client = getS3Client();
-
-  const buffer = typeof data === "string" ? Buffer.from(data) : Buffer.from(data as any);
-
-  const command = new PutObjectCommand({
-    Bucket: bucket,
-    Key: key,
-    Body: buffer,
-    ContentType: contentType,
+  const uploadUrl = buildUploadUrl(baseUrl, key);
+  const formData = toFormData(data, contentType, key.split("/").pop() ?? key);
+  const response = await fetch(uploadUrl, {
+    method: "POST",
+    headers: buildAuthHeaders(apiKey),
+    body: formData,
   });
 
-  await client.send(command);
-
-  // If a public URL is configured, use it. Otherwise, generate a presigned URL.
-  let url = "";
-  if (ENV.r2PublicUrl) {
-    const baseUrl = ENV.r2PublicUrl.endsWith('/') ? ENV.r2PublicUrl : `${ENV.r2PublicUrl}/`;
-    url = `${baseUrl}${key}`;
-  } else {
-    const getCommand = new GetObjectCommand({
-      Bucket: bucket,
-      Key: key,
-    });
-    url = await getSignedUrl(client, getCommand, { expiresIn: 3600 * 24 * 7 }); // 7 days
+  if (!response.ok) {
+    const message = await response.text().catch(() => response.statusText);
+    throw new Error(
+      `Storage upload failed (${response.status} ${response.statusText}): ${message}`
+    );
   }
-
+  const url = (await response.json()).url;
   return { key, url };
 }
 
 export async function storageGet(relKey: string): Promise<{ key: string; url: string; }> {
+  const { baseUrl, apiKey } = getStorageConfig();
   const key = normalizeKey(relKey);
-  const bucket = ENV.r2BucketName;
-
-  if (!bucket) {
-    throw new Error("R2_BUCKET_NAME is not configured");
-  }
-  
-  let url = "";
-  if (ENV.r2PublicUrl) {
-    const baseUrl = ENV.r2PublicUrl.endsWith('/') ? ENV.r2PublicUrl : `${ENV.r2PublicUrl}/`;
-    url = `${baseUrl}${key}`;
-  } else {
-    const client = getS3Client();
-    const command = new GetObjectCommand({
-      Bucket: bucket,
-      Key: key,
-    });
-    url = await getSignedUrl(client, command, { expiresIn: 3600 * 24 * 7 }); // 7 days
-  }
-
   return {
     key,
-    url,
+    url: await buildDownloadUrl(baseUrl, key, apiKey),
   };
 }

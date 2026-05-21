@@ -6,10 +6,17 @@ import SiteFooter from "@/components/SiteFooter";
 import { PROGRAM, GOOGLE_CALENDAR } from "../../../shared/brand";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { useMetaPixel } from "@/hooks/useMetaPixel";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 type Step = "choose" | "pay" | "schedule";
 
 export default function Enroll() {
+  usePageTitle({
+    title: "Enroll in R.E.C.L.A.I.M. | Mind and Body Reset",
+    description: "Enroll in the R.E.C.L.A.I.M. coaching program — 6 private sessions with Lee Anne to reset your health, mindset, and relationship with food.",
+    keywords: "enroll coaching, RECLAIM program signup, health coaching enrollment, women wellness program, 1 on 1 coaching"
+  });
   const search = useSearch();
   const params = new URLSearchParams(search);
   const planParam = params.get("plan");
@@ -36,7 +43,16 @@ export default function Enroll() {
     onError: (err) => toast.error(err.message || "Could not start checkout. Please try again."),
   });
 
+  const { trackInitiateCheckout } = useMetaPixel();
+
   const handlePay = () => {
+    trackInitiateCheckout({
+      content_name: plan === "full" ? "R.E.C.L.A.I.M. Program - Full Payment" : "R.E.C.L.A.I.M. Program - Deposit",
+      content_category: "Coaching Program",
+      value: plan === "full" ? 597 : 200,
+      currency: "USD",
+      num_items: 1,
+    });
     createCheckout.mutate({ plan });
   };
 

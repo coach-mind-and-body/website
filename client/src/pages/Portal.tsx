@@ -2,10 +2,11 @@ import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/const";
-import { CheckCircle2, Clock, Lock, Video, Upload, FileText, Calendar, ChevronDown, ChevronUp, X, CreditCard, DollarSign, AlertCircle } from "lucide-react";
+import { CheckCircle2, Clock, Lock, Video, Upload, FileText, Calendar, ChevronDown, ChevronUp, X, CreditCard, DollarSign, AlertCircle, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { BRAND } from "../../../shared/brand";
 import { Link } from "wouter";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 const SESSION_LABELS = [
   "Discovery & Reset Foundation",
@@ -26,6 +27,11 @@ function fileToBase64(file: File): Promise<string> {
 }
 
 export default function Portal() {
+  usePageTitle({
+    title: "Client Portal | Mind and Body Reset",
+    description: "Your personal coaching portal — access program materials, schedule sessions, and track your wellness journey with Mind & Body Reset.",
+    keywords: "client portal, coaching portal, program access, wellness dashboard"
+  });
   const { user, loading, isAuthenticated } = useAuth();
   const [expandedSession, setExpandedSession] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -37,6 +43,10 @@ export default function Portal() {
   });
 
   const { data: paymentData, isLoading: loadingPayments } = trpc.payment.myPayments.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
+
+  const { data: fpuData, isLoading: fpuLoading } = trpc.fpu.myCoaching.useQuery(undefined, {
     enabled: isAuthenticated,
   });
 
@@ -57,12 +67,39 @@ export default function Portal() {
     },
   });
 
+  // Auto-link deposit to account when user has no enrollment
+  // This handles the case where a client paid before creating their account
+  const utils = trpc.useUtils();
+  const linkDeposit = trpc.payment.linkDepositToAccount.useMutation({
+    onSuccess: (result) => {
+      if (result.linked) {
+        toast.success("Your enrollment has been linked to your account!");
+        utils.enrollment.myEnrollment.invalidate();
+        refetch();
+      }
+    },
+  });
+  const hasAttemptedLink = useRef(false);
+  useEffect(() => {
+    if (
+      isAuthenticated &&
+      !isLoading &&
+      !fpuLoading &&
+      !data?.enrollment &&
+      !fpuData &&
+      !hasAttemptedLink.current
+    ) {
+      hasAttemptedLink.current = true;
+      linkDeposit.mutate();
+    }
+  }, [isAuthenticated, isLoading, fpuLoading, data, fpuData]);
+
   if (!loading && !isAuthenticated) {
     window.location.href = getLoginUrl();
     return null;
   }
 
-  if (loading || isLoading) {
+  if (loading || isLoading || fpuLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: "#faf5f5" }}>
         <div className="w-10 h-10 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "#c9a96e" }} />
@@ -70,7 +107,7 @@ export default function Portal() {
     );
   }
 
-  if (!data?.enrollment) {
+  if (!data?.enrollment && !fpuData) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: "#faf5f5" }}>
         <div className="text-center max-w-md px-6">
@@ -81,20 +118,24 @@ export default function Portal() {
             No Active Program
           </h1>
           <p className="text-base mb-6" style={{ color: "#5a6b5a" }}>
-            You don't have an active enrollment yet. Enroll in the R.E.C.L.A.I.M. program to access your client portal.
+            You don't have an active program yet. Enroll in R.E.C.L.A.I.M. or add FPU coaching to access your client portal.
           </p>
-          <Link href="/enroll">
-            <a className="inline-block px-6 py-3 rounded-full font-bold text-white" style={{ background: "#c9a96e" }}>
-              Enroll Now
-            </a>
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link href="/enroll" className="inline-block px-6 py-3 rounded-full font-bold text-white" style={{ background: "#c9a96e" }}>
+                Enroll in R.E.C.L.A.I.M.
+            </Link>
+            <Link href="/financial-peace" className="inline-block px-6 py-3 rounded-full font-bold border" style={{ borderColor: "#c9a96e", color: "#c9a96e" }}>
+                Add FPU Coaching
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
-  const { enrollment, sessions } = data;
-  const completedCount = sessions.filter(s => s.status === "completed").length;
+  const enrollment = data?.enrollment ?? null;
+  const sessions = data?.sessions ?? [];
+  const completedCount = sessions.filter((s: { status: string }) => s.status === "completed").length;
   const totalSessions = 6;
   const progressPct = Math.round((completedCount / totalSessions) * 100);
 
@@ -125,13 +166,11 @@ export default function Portal() {
       {/* Header */}
       <header className="border-b" style={{ background: "white", borderColor: "#f0e8e4" }}>
         <div className="max-w-4xl mx-auto px-6 flex items-center justify-between h-16">
-          <Link href="/">
-            <a className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-3">
               <img src={BRAND.logoUrl} alt={BRAND.name} className="w-8 h-8 rounded-full object-cover" />
               <span className="font-bold hidden sm:block" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d", fontSize: "1.1rem" }}>
                 Mind & Body Reset
               </span>
-            </a>
           </Link>
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm" style={{ background: "#fbeee9", color: "#c9a96e" }}>
@@ -148,29 +187,43 @@ export default function Portal() {
           <h1 className="text-3xl font-bold mb-2" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
             Welcome back, {user?.name?.split(" ")[0] ?? "there"} 👋
           </h1>
-          <p className="text-base mb-6" style={{ color: "#5a6b5a" }}>
-            Your R.E.C.L.A.I.M. journey is underway. Here's where you stand.
-          </p>
-          {/* Progress bar */}
-          <div className="flex items-center gap-4">
-            <div className="flex-1 h-3 rounded-full overflow-hidden" style={{ background: "#f0e8e4" }}>
-              <div
-                className="h-full rounded-full transition-all duration-700"
-                style={{ width: `${progressPct}%`, background: "linear-gradient(90deg, #c9a96e, #e8c99a)" }}
-              />
-            </div>
-            <span className="text-sm font-bold whitespace-nowrap" style={{ color: "#c9a96e" }}>
-              {completedCount} / {totalSessions} sessions
-            </span>
-          </div>
-          <p className="text-xs mt-2" style={{ color: "#8a9a8a" }}>
-            {enrollment.paymentType === "full" ? "Paid in Full ✓" : "Deposit Paid — Balance Due Before Session 3"}
-          </p>
+          {enrollment ? (
+            <>
+              <p className="text-base mb-6" style={{ color: "#5a6b5a" }}>
+                Your R.E.C.L.A.I.M. journey is underway. Here's where you stand.
+              </p>
+              {/* Progress bar */}
+              <div className="flex items-center gap-4">
+                <div className="flex-1 h-3 rounded-full overflow-hidden" style={{ background: "#f0e8e4" }}>
+                  <div
+                    className="h-full rounded-full transition-all duration-700"
+                    style={{ width: `${progressPct}%`, background: "linear-gradient(90deg, #c9a96e, #e8c99a)" }}
+                  />
+                </div>
+                <span className="text-sm font-bold whitespace-nowrap" style={{ color: "#c9a96e" }}>
+                  {completedCount} / {totalSessions} sessions
+                </span>
+              </div>
+              <p className="text-xs mt-2" style={{ color: "#8a9a8a" }}>
+                {enrollment.paymentType === "full" ? "Paid in Full ✓" : "Deposit Paid — Balance Due Before Session 3"}
+              </p>
+              <div className="mt-6">
+                <Link href="/portal/hub" className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm transition-transform hover:scale-105 shadow-sm" style={{ background: "#c9a96e", color: "white" }}>
+                  <BookOpen size={16} /> Enter Reclaim Hub
+                </Link>
+              </div>
+            </>
+          ) : (
+            <p className="text-base" style={{ color: "#5a6b5a" }}>
+              Your coaching portal — manage sessions, files, and more.
+            </p>
+          )}
         </div>
 
-        {/* Sessions */}
+        {/* RECLAIM Sessions — only shown for enrolled clients */}
+        {enrollment && <>
         <h2 className="text-xl font-bold mb-4" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
-          Your Sessions
+          Your R.E.C.L.A.I.M. Sessions
         </h2>
         <div className="space-y-3 mb-10">
           {Array.from({ length: totalSessions }, (_, i) => {
@@ -270,7 +323,7 @@ export default function Portal() {
             </h2>
             <button
               onClick={() => {
-                setActiveUploadEnrollmentId(enrollment.id);
+                setActiveUploadEnrollmentId(enrollment?.id ?? 0);
                 fileInputRef.current?.click();
               }}
               disabled={uploading}
@@ -326,6 +379,12 @@ export default function Portal() {
           )}
         </div>
 
+        {/* End RECLAIM section */}
+        </>}
+
+        {/* FPU Coaching Section */}
+        {fpuData && <FpuCoachingSection order={fpuData.order} sessions={fpuData.sessions} />}
+
         {/* Payment History */}
         <PaymentHistorySection data={paymentData} isLoading={loadingPayments} />
 
@@ -337,12 +396,93 @@ export default function Portal() {
           <p className="text-sm mb-4" style={{ color: "#a0b8a0" }}>
             Reach out anytime — we're here to support your reset journey.
           </p>
-          <Link href="/book">
-            <a className="inline-block px-6 py-3 rounded-full font-bold text-sm" style={{ background: "#c9a96e", color: "white" }}>
+          <Link href="/book" className="inline-block px-6 py-3 rounded-full font-bold text-sm" style={{ background: "#c9a96e", color: "white" }}>
               Book a Support Call
-            </a>
           </Link>
         </div>
+      </div>
+    </div>
+  );
+}
+
+const FPU_SESSION_LABELS = [
+  "Foundation & Financial Clarity",
+  "Accountability & Action Plan",
+  "Integration & Your Path Forward",
+];
+
+function FpuCoachingSection({ order, sessions }: { order: any; sessions: any[] }) {
+  return (
+    <div className="mt-8 rounded-2xl p-6" style={{ background: "white", border: "1px solid #f0e8e4" }}>
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "#e8f0e8", color: "#2d3b2d" }}>
+          <Calendar size={18} />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
+            FPU 1:1 Accountability Coaching
+          </h2>
+          <p className="text-xs" style={{ color: "#8a9a8a" }}>
+            3 private 50-minute sessions · {order.status === "paid" ? "Paid ✓" : "Pending payment"}
+          </p>
+        </div>
+      </div>
+      <div className="space-y-3">
+        {Array.from({ length: 3 }, (_, i) => {
+          const sessionNum = i + 1;
+          const session = sessions.find((s: any) => s.sessionNumber === sessionNum);
+          const status = session?.status ?? "not_scheduled";
+          const isCompleted = status === "completed";
+          const isScheduled = status === "scheduled";
+          const isLocked = !isCompleted && !isScheduled && sessionNum > (sessions.filter((s: any) => s.status === "completed").length + 1);
+          return (
+            <div
+              key={sessionNum}
+              className="rounded-xl p-4 flex items-center justify-between gap-4"
+              style={{ background: "#faf5f5", border: "1px solid #f0e8e4", opacity: isLocked ? 0.6 : 1 }}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{
+                    background: isCompleted ? "#e8f5e9" : isScheduled ? "#fbeee9" : "#f5f5f5",
+                    color: isCompleted ? "#4caf50" : isScheduled ? "#c9a96e" : "#aaa",
+                  }}
+                >
+                  {isCompleted ? <CheckCircle2 size={16} /> : isScheduled ? <Clock size={16} /> : isLocked ? <Lock size={14} /> : <Calendar size={14} />}
+                </div>
+                <div>
+                  <p className="font-bold text-sm" style={{ color: "#2d3b2d" }}>
+                    Session {sessionNum}: {FPU_SESSION_LABELS[i]}
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: "#8a9a8a" }}>
+                    {isCompleted
+                      ? `Completed ${session?.completedAt ? new Date(session.completedAt).toLocaleDateString() : ""}`
+                      : isScheduled && session?.scheduledAt
+                      ? `Scheduled: ${new Date(session.scheduledAt).toLocaleString()}`
+                      : isLocked
+                      ? "Complete previous sessions to unlock"
+                      : "Not yet scheduled"}
+                  </p>
+                </div>
+              </div>
+              {!isLocked && !isCompleted && (
+                <GoogleCalendarBookingButton sessionNumber={sessionNum} />
+              )}
+              {isScheduled && session?.googleMeetLink && (
+                <a
+                  href={session.googleMeetLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold flex-shrink-0"
+                  style={{ background: "#1a73e8", color: "white" }}
+                >
+                  <Video size={12} /> Join Meet
+                </a>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

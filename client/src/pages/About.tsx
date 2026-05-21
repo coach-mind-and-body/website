@@ -3,7 +3,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import { Link } from "wouter";
-import { SEO } from "@/components/SEO";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 // Sara = yellow top (Lee Anne's old image), Lee Anne = with son (Brittany's old image), Brittany = field photo (Sara's old image)
 const SARA_IMG = "https://private-us-east-1.manuscdn.com/user_upload_by_module/session_file/310519663371864914/mIoumKvefBkVDOeo.webp?Expires=1804048976&Signature=Ur7EyRiDwiebQKUVgB~rgLVIrYU-G69vczvupZijRb3H2H6x~CAqXhLL6QEAWgVjz0N4-AsqZhFQ~s~PbzULeTEa0hZoM0a~umunwMpTdD661yZdKEGcP2tGlRm50zyG3VwhINk111678g6zG3ItAQRvZL1GYtAW5P1suCn4ZZvoHua9XfF2vAnV1DH-aE-DgxOV3NUz5fsmkVsMWH7KRSxLAZUQcJwbWon8dgu--0XHLves2NwPiuz7CyAyahKFgfDSk68vlzNEJsgEYluTF5mwik-kYRf6~PABGTTGdUX9zFn6IjjP4ghXalq3BqoDlIlXQjB~rkQL5mCHkrxD8w__&Key-Pair-Id=K2HSFNDJXOU9YS";
@@ -63,12 +63,13 @@ function CoachCard({ name, title, shortBio, fullBio, img }: CoachCardProps) {
 }
 
 export default function About() {
+  usePageTitle({
+    title: "About Lee Anne Chapman | Mind and Body Reset",
+    description: "Meet Lee Anne Chapman — certified life and health coach helping women 40+ navigate midlife health, hormonal changes, and food freedom from the Wasatch Front, Utah.",
+    keywords: "Lee Anne Chapman, certified health coach, certified life coach, women over 40, midlife wellness, Wasatch Front Utah, about mind body reset"
+  });
   return (
     <div className="min-h-screen" style={{ background: "oklch(0.97 0.008 10)" }}>
-      <SEO 
-        title="About Us | Mind and Body Reset"
-        description="Meet Lee Anne, Sara, and Brittany: Certified Mind & Body Coaches helping women navigate menopause, hormone health, and build sustainable wellness habits."
-      />
       <SiteNav />
 
       {/* Hero */}

@@ -1,6 +1,26 @@
 import { Link } from "wouter";
+import { useEffect } from "react";
+import { useMetaPixel } from "@/hooks/useMetaPixel";
+import { BRAND } from "../../../shared/brand";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 export default function JoinThankYou() {
+  usePageTitle({
+    title: "Welcome to the Community | Mind and Body Reset",
+    description: "Welcome! You\'ve joined the Mind & Body Reset community. Check your inbox for your first wellness resources.",
+    keywords: "welcome, community joined, wellness resources, mind body reset"
+  });
+  const { trackLead } = useMetaPixel();
+
+  // Fire Lead on the thank-you page as a confirmation signal —
+  // this is the most reliable place to fire since the form submit may race with navigation
+  useEffect(() => {
+    trackLead({
+      content_name: "Join the Community — Email Sign-Up",
+      content_category: "Lead Magnet",
+    });
+  }, []);
+
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4 py-8"
@@ -21,6 +41,12 @@ export default function JoinThankYou() {
           className="flex flex-col justify-center items-center text-center px-12 py-14"
           style={{ flex: "1", minWidth: "320px", background: "#fbeee9" }}
         >
+          <img
+            src={BRAND.logoUrl}
+            alt="Mind & Body Reset"
+            className="mb-5"
+            style={{ width: "90px", height: "90px", objectFit: "contain" }}
+          />
           <p
             className="font-semibold uppercase tracking-widest mb-4 text-sm"
             style={{ color: "#999" }}

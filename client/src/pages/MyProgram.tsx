@@ -7,6 +7,7 @@ import { PROGRAM, GOOGLE_CALENDAR, BRAND } from "../../../shared/brand";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 const SESSION_LABELS = [
   "Session 1 — Foundation & Discovery",
@@ -26,6 +27,11 @@ const STATUS_CONFIG = {
 };
 
 export default function MyProgram() {
+  usePageTitle({
+    title: "My Program | Mind and Body Reset",
+    description: "Access your R.E.C.L.A.I.M. coaching program materials, session recordings, and progress tracking in your personal dashboard.",
+    keywords: "my program, coaching dashboard, RECLAIM materials, session recordings, client portal"
+  });
   const { user, loading, isAuthenticated } = useAuth();
   const { data, isLoading } = trpc.enrollment.myEnrollment.useQuery(undefined, { enabled: isAuthenticated });
 
@@ -199,7 +205,7 @@ export default function MyProgram() {
                   <CheckCircle2 size={24} className="mb-3" style={{ color: "oklch(0.38 0.10 148)" }} />
                   <h3 className="font-bold text-base mb-2" style={{ color: "oklch(0.22 0.02 160)" }}>You Did It!</h3>
                   <p className="text-xs mb-4" style={{ color: "oklch(0.42 0.02 160)" }}>Congratulations on completing the R.E.C.L.A.I.M. program. Lee Anne will be in touch with your follow-up resources.</p>
-                  <a href="mailto:leeanne@mindandbodyresetcoach.com" className="inline-flex items-center gap-1 text-xs font-bold" style={{ color: "oklch(0.38 0.10 148)" }}>
+                  <a href="mailto:coach@mindandbodyresetcoach.com" className="inline-flex items-center gap-1 text-xs font-bold" style={{ color: "oklch(0.38 0.10 148)" }}>
                     Contact Lee Anne <ArrowRight size={12} />
                   </a>
                 </div>

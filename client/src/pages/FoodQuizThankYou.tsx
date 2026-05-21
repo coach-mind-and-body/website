@@ -1,8 +1,24 @@
+import { useEffect } from "react";
 import { CheckCircle2, ArrowRight } from "lucide-react";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
+import { useMetaPixel } from "@/hooks/useMetaPixel";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 export default function FoodQuizThankYou() {
+  usePageTitle({
+    title: "Your Quiz Results | Mind and Body Reset",
+    description: "Your personalized food and mindset quiz results are here. Discover your type and get actionable next steps for your wellness journey.",
+    keywords: "quiz results, food mindset type, wellness quiz results, personalized health tips"
+  });
+  const { trackLead } = useMetaPixel();
+
+  // Fire Lead event when thank-you page loads (catches direct navigations and refreshes)
+  useEffect(() => {
+    trackLead({ content_name: "Food Quiz Thank You", content_category: "Quiz" });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "oklch(0.97 0.008 10)" }}>
       <SiteNav />

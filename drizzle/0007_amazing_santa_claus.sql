@@ -1,0 +1,1 @@
+ALTER TABLE `fpu_orders` ADD `productType` enum('fpu_class','fpu_coaching') DEFAULT 'fpu_class' NOT NULL;

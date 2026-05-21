@@ -1,7 +1,13 @@
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 export default function Privacy() {
+  usePageTitle({
+    title: "Privacy Policy | Mind and Body Reset",
+    description: "Read the Mind & Body Reset privacy policy — how we collect, use, and protect your personal information.",
+    keywords: "privacy policy, data protection, personal information, mind body reset privacy"
+  });
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "#fbeee9" }}>
       <SiteNav />

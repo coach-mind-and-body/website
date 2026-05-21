@@ -5,16 +5,27 @@ import SiteFooter from "@/components/SiteFooter";
 import { GOOGLE_CALENDAR } from "../../../shared/brand";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { SEO } from "@/components/SEO";
+import { useMetaPixel } from "@/hooks/useMetaPixel";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 export default function Book() {
+  usePageTitle({
+    title: "Book a Free Discovery Call | Mind and Body Reset",
+    description: "Schedule a free 30-minute discovery call with Lee Anne to explore personalized coaching for midlife health, food freedom, and hormonal wellness.",
+    keywords: "free discovery call, health coaching consultation, book appointment, wellness coach, women over 40, midlife health support"
+  });
+  const { trackLead } = useMetaPixel();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
   const submitLead = trpc.leads.submit.useMutation({
-    onSuccess: () => setSubmitted(true),
+    onSuccess: () => {
+      // Fire Meta Pixel Lead event when discovery call is booked
+      trackLead({ content_name: "Discovery Call Booking", content_category: "Book a Call" });
+      setSubmitted(true);
+    },
     onError: (err) => toast.error(err.message || "Something went wrong. Please try again."),
   });
 
@@ -29,10 +40,6 @@ export default function Book() {
 
   return (
     <div className="min-h-screen" style={{ background: "oklch(0.97 0.008 10)" }}>
-      <SEO 
-        title="Book a Free Call | Mind and Body Reset"
-        description="Schedule a free 30-minute discovery call to learn how holistic coaching can help you navigate perimenopause, weight loss, and mindset shifts."
-      />
       <SiteNav />
 
       {/* Hero */}

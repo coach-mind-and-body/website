@@ -36,6 +36,90 @@
       "when": 1772518781382,
       "tag": "0004_broken_stingray",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1773097016881,
+      "tag": "0005_flawless_ravenous",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1773098047162,
+      "tag": "0006_plain_joshua_kane",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1773098616082,
+      "tag": "0007_amazing_santa_claus",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1773115980685,
+      "tag": "0008_tearful_mantis",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1773121362018,
+      "tag": "0009_complete_hedge_knight",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1773358326951,
+      "tag": "0010_tidy_juggernaut",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1773782277163,
+      "tag": "0011_amused_jetstream",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1773786599545,
+      "tag": "0012_slow_johnny_blaze",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "5",
+      "when": 1773803793292,
+      "tag": "0013_rapid_squadron_supreme",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "5",
+      "when": 1774718192541,
+      "tag": "0014_lean_cyclops",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "5",
+      "when": 1779404766459,
+      "tag": "0015_eager_true_believers",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "5",
+      "when": 1779405278168,
+      "tag": "0016_small_wonder_man",
+      "breakpoints": true
     }
   ]
 }

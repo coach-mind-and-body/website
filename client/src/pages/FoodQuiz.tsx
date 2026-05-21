@@ -3,7 +3,8 @@ import { CheckCircle2, ArrowRight, Sparkles } from "lucide-react";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import { useLocation } from "wouter";
-import { SEO } from "@/components/SEO";
+import { useMetaPixel } from "@/hooks/useMetaPixel";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 const ZAPIER_URL = "https://hooks.zapier.com/hooks/catch/22551341/uw0om13/";
 
@@ -58,6 +59,12 @@ const questions = [
 type Screen = "start" | "quiz" | "email" | "submitting";
 
 export default function FoodQuiz() {
+  usePageTitle({
+    title: "Free Food & Mindset Quiz | Mind and Body Reset",
+    description: "Take this free 60-second quiz to discover what\'s really keeping you stuck with food and what to do about it. Find your food and mindset type.",
+    keywords: "food quiz, mindset quiz, food freedom quiz, women over 40 quiz, diet culture quiz, free wellness quiz, food noise"
+  });
+  const { trackLead } = useMetaPixel();
   const [screen, setScreen] = useState<Screen>("start");
   const [currentIdx, setCurrentIdx] = useState(0);
   const [userAnswers, setUserAnswers] = useState<string[]>([]);
@@ -124,6 +131,8 @@ export default function FoodQuiz() {
       // no-cors fetch always "fails" silently — that's expected
     }
 
+    // Fire Meta Pixel Lead event when quiz is submitted
+    trackLead({ content_name: "Food Quiz", content_category: "Quiz" });
     setTimeout(() => {
       navigate("/food-quiz-thank-you");
     }, 1500);
@@ -133,10 +142,6 @@ export default function FoodQuiz() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "oklch(0.97 0.008 10)" }}>
-      <SEO 
-        title="Food & Mindset Quiz | Mind and Body Reset"
-        description="Take this 60-second quiz to discover your Food + Mindset Type and get your personalized mini reset plan."
-      />
       <SiteNav />
 
       <main className="flex-1 flex flex-col items-center justify-center py-16 px-4">

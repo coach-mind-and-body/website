@@ -2,7 +2,7 @@ import { ArrowRight, Check } from "lucide-react";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import { Link } from "wouter";
-import { SEO } from "@/components/SEO";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 const UNIMATE_IMG =
   "https://cosmic-assets.unicity.com/shop2/USA/configurable_product_images/61c339582f1941e08b1da35af1372998/Unimate_benefits__Lemon_Ginger_.webp";
@@ -10,12 +10,13 @@ const UNIMATE_IMG =
 const SHOP_URL = "https://ufeelgreat.com/c/mindbodyresetgals";
 
 export default function FeelGreat() {
+  usePageTitle({
+    title: "Unicity Feel Great System | Mind and Body Reset",
+    description: "Discover the Unicity Feel Great System — a simple, science-backed approach to intermittent fasting and metabolic health. Shop Unimate and Balance through Mind and Body Reset.",
+    keywords: "Unicity, Feel Great System, Unimate, Balance, intermittent fasting, metabolic health, blood sugar support, midlife nutrition, Mind and Body Reset"
+  });
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "oklch(0.985 0.005 75)" }}>
-      <SEO 
-        title="Unicity Feel Great System | Mind and Body Reset"
-        description="Bridge the gap between where you are and where you want to be with the Unicity Feel Great System. Achieve the results of time-based eating without the struggle."
-      />
       <SiteNav />
 
       {/* ── Hero ── */}

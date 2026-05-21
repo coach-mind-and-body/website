@@ -8,7 +8,7 @@ export default function SiteFooter() {
   return (
     <footer style={{ background: "#faf5f5", color: "#3e3e3e", borderTop: "1px solid #e8ddd8" }}>
       <div className="container py-12">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-8 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
           {/* Brand */}
           <div className="md:col-span-2">
             <div className="flex items-center gap-3 mb-4">
@@ -77,38 +77,12 @@ export default function SiteFooter() {
             <div className="flex flex-col gap-2">
               {[
                 { href: "/", label: "Home" },
-                { href: "/about", label: "About Lee Anne" },
+                { href: "/about", label: "About Mind & Body" },
                 { href: "/reclaim", label: "R.E.C.L.A.I.M. Program" },
-                { href: "/feel-great-system", label: "Feel Great System" },
-                { href: "/food-quiz", label: "Free Quiz" },
                 { href: "/health-wellness-blog", label: "Blog" },
-                { href: "/financial-peace-university", label: "Financial Peace" },
                 { href: "/book", label: "Book a Free Call" },
-              ].map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="text-sm transition-colors hover:opacity-60"
-                  style={{ color: "#5a5050" }}
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          {/* Wellness Guides */}
-          <div>
-            <p
-              className="text-xs font-bold uppercase tracking-widest mb-4"
-              style={{ color: "oklch(0.38 0.10 148)" }}
-            >
-              Wellness Guides
-            </p>
-            <div className="flex flex-col gap-2">
-              {[
-                { href: "/life-after-glp-1", label: "Life After GLP-1 Shots" },
-                { href: "/holistic-health-and-wellness", label: "What is Holistic Health?" },
+                { href: "/financial-peace", label: "Financial Peace University" },
+                { href: "/midlife-health-podcast", label: "Podcast" },
               ].map((link) => (
                 <Link
                   key={link.href}

@@ -1,205 +1,841 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
+import { CheckCircle2, ShieldCheck, Calendar, Users, Clock, Loader2, Quote } from "lucide-react";
+import { toast } from "sonner";
 import SiteNav from "../components/SiteNav";
 import SiteFooter from "../components/SiteFooter";
+import { GOOGLE_CALENDAR } from "../../../shared/brand";
+import { trpc } from "@/lib/trpc";
+import { EditModeProvider } from "@/contexts/EditModeContext";
+import { EditableBlock } from "@/components/EditableBlock";
+import { FPU_CONTENT } from "./FinancialPeaceContent";
+import { useMetaPixel } from "@/hooks/useMetaPixel";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
+// CDN photos
 const PHOTO_LEEANNE_CHAIR =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/4Z7A6694_5487dc73.jpg";
+const PHOTO_LEEANNE_TABLE =
+  "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/4Z7A6598_af959cd9.webp";
+const PHOTO_CONSULT_FORM =
+  "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/4Z7A6579_90834f37.jpg";
+const PHOTO_COUCH =
+  "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/4Z7A6652_f211af63.webp";
 const PHOTO_LEEANNE_VEGGIES =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/fpu-can-you-relate-LRquhXRPb6JDxJMEKYRtRh.webp";
 const LEEANNE_PHOTO =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/3542web-rigeljackson(2)_83b0d4af.webp";
 
-export default function FinancialPeace() {
+// ── FPU Group Sign-Up Form ───────────────────────────────────────────────────
+function FpuSignUpForm({
+  buttonLabel = "Sign Up for Free FPU →",
+  dark = false,
+}: {
+  buttonLabel?: string;
+  dark?: boolean;
+}) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
   useEffect(() => {
-    document.title = "Financial Peace University | Mind and Body Reset";
-    
-    // Intersection Observer for fade-up animations
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-        }
-      });
-    }, { threshold: 0.1 });
-    
-    document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
-    
-    return () => observer.disconnect();
+    if (!dark) return;
+    const styleId = "fpu-dark-placeholder-style";
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement("style");
+      style.id = styleId;
+      style.textContent = `.fpu-input-dark::placeholder { color: oklch(0.82 0.02 148) !important; opacity: 1 !important; }`;
+      document.head.appendChild(style);
+    }
+  }, [dark]);
+
+  const { trackLead } = useMetaPixel();
+  const signUpMutation = trpc.fpu.groupSignUp.useMutation({
+    onSuccess: () => {
+      // Fire Meta Pixel Lead event when FPU group sign-up is completed
+      trackLead({ content_name: "FPU Group Sign-Up", content_category: "Financial Peace University" });
+      setSubmitted(true);
+    },
+    onError: (err) => {
+      toast.error("Something went wrong. Please try again.");
+      console.error("[FPU Sign-Up]", err);
+    },
+  });
+
+  if (submitted) {
+    return (
+      <div
+        className="rounded-2xl p-6 text-center"
+        style={{
+          background: dark ? "oklch(1 0 0 / 0.12)" : "oklch(0.95 0.03 148 / 0.5)",
+          border: dark
+            ? "1px solid oklch(1 0 0 / 0.2)"
+            : "1px solid oklch(0.72 0.09 145 / 0.4)",
+        }}
+      >
+        <CheckCircle2
+          size={32}
+          className="mx-auto mb-3"
+          style={{ color: dark ? "oklch(0.72 0.11 78)" : "oklch(0.38 0.09 148)" }}
+        />
+        <p
+          className="font-bold text-base mb-1"
+          style={{ color: dark ? "oklch(1 0 0)" : "oklch(0.20 0.015 50)" }}
+        >
+          You're in! 🎉
+        </p>
+        <p
+          className="text-sm"
+          style={{ color: dark ? "oklch(0.85 0.015 148)" : "oklch(0.52 0.015 50)" }}
+        >
+          Lee Anne will be in touch soon with your calendar invite.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!name.trim() || !email.trim()) return;
+        signUpMutation.mutate({ name: name.trim(), email: email.trim() });
+      }}
+      className="flex flex-col gap-3 w-full max-w-sm mx-auto"
+    >
+      <input
+        type="text"
+        placeholder="Your name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        required
+        className={`w-full px-4 py-3 rounded-xl text-sm border outline-none focus:ring-2 ${dark ? "fpu-input-dark" : ""}`}
+        style={{
+          background: dark ? "oklch(1 0 0 / 0.1)" : "oklch(1 0 0)",
+          borderColor: dark ? "oklch(1 0 0 / 0.25)" : "oklch(0.85 0.015 50)",
+          color: dark ? "oklch(1 0 0)" : "oklch(0.20 0.015 50)",
+        }}
+      />
+      <input
+        type="email"
+        placeholder="Your email address"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        required
+        className={`w-full px-4 py-3 rounded-xl text-sm border outline-none focus:ring-2 ${dark ? "fpu-input-dark" : ""}`}
+        style={{
+          background: dark ? "oklch(1 0 0 / 0.1)" : "oklch(1 0 0)",
+          borderColor: dark ? "oklch(1 0 0 / 0.25)" : "oklch(0.85 0.015 50)",
+          color: dark ? "oklch(1 0 0)" : "oklch(0.20 0.015 50)",
+        }}
+      />
+      <button
+        type="submit"
+        disabled={signUpMutation.isPending}
+        className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-full font-bold text-base transition-all hover:shadow-xl hover:-translate-y-1 disabled:opacity-70 disabled:cursor-not-allowed"
+        style={{ background: "oklch(0.72 0.11 78)", color: "oklch(0.20 0.015 50)" }}
+      >
+        {signUpMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : null}
+        {signUpMutation.isPending ? "Signing you up…" : buttonLabel}
+      </button>
+    </form>
+  );
+}
+
+// ── Coaching checkout button ──────────────────────────────────────────────────
+function CoachingCheckoutButton({
+  label = "Add 1:1 Coaching — $249 →",
+  className = "",
+}: {
+  label?: string;
+  className?: string;
+}) {
+  const { trackInitiateCheckout } = useMetaPixel();
+  const checkoutMutation = trpc.fpu.createCoachingCheckout.useMutation({
+    onSuccess: (data) => {
+      if (data.url) {
+        toast.info("Redirecting to secure checkout…");
+        window.location.href = data.url;
+      }
+    },
+    onError: (err) => {
+      toast.error("Something went wrong. Please try again.");
+      console.error("[FPU Coaching Checkout]", err);
+    },
+  });
+
+  const handleCheckout = () => {
+    trackInitiateCheckout({
+      content_name: "FPU 1:1 Coaching Sessions",
+      content_category: "Coaching Program",
+      value: 249,
+      currency: "USD",
+      num_items: 1,
+    });
+    checkoutMutation.mutate();
+  };
+
+  return (
+    <button
+      onClick={handleCheckout}
+      disabled={checkoutMutation.isPending}
+      className={`inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full font-bold text-base transition-all hover:shadow-xl hover:-translate-y-1 disabled:opacity-70 disabled:cursor-not-allowed ${className}`}
+      style={{ background: "oklch(0.72 0.11 78)", color: "oklch(0.20 0.015 50)" }}
+    >
+      {checkoutMutation.isPending ? "Loading…" : label}
+    </button>
+  );
+}
+
+// ── Shorthand helper ──────────────────────────────────────────────────────────
+function E({ k, style }: { k: string; style?: React.CSSProperties }) {
+  return (
+    <EditableBlock
+      contentKey={k}
+      defaultContent={FPU_CONTENT[k] ?? ""}
+      as="div"
+      style={style}
+    />
+  );
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
+export default function FinancialPeace() {
+  usePageTitle({
+    title: "Financial Peace University | Mind and Body Reset",
+    description: "Join Lee Anne\'s Financial Peace University group — Dave Ramsey\'s proven plan for budgeting, eliminating debt, and building wealth. Next cohort starts soon.",
+    keywords: "Financial Peace University, FPU, Dave Ramsey, budgeting class, debt elimination, financial wellness, money management, Utah FPU"
+  });
+  const isAdminEdit = new URLSearchParams(window.location.search).get("admin_edit") === "1";
+  return (
+    <EditModeProvider page="financial-peace">
+      <FinancialPeaceContent hideNav={isAdminEdit} />
+    </EditModeProvider>
+  );
+}
+
+function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
+  const { trackViewContent } = useMetaPixel();
+
+  useEffect(() => {
+    // Fire ViewContent when visitor views the Financial Peace University page
+    trackViewContent({ content_name: "Financial Peace University", content_category: "Financial Coaching", content_type: "product" });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#fffef9] text-[#2c3e28] font-sans">
-      <SiteNav />
+    <div className="min-h-screen" style={{ background: "oklch(0.985 0.008 80)" }}>
+      {!hideNav && <SiteNav />}
 
-      {/* HERO */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#1a2e1e] to-[#2d6a4f] text-white pt-32 pb-24 text-center px-6">
-        <div className="absolute -top-16 -right-16 w-72 h-72 rounded-full bg-[#d4a017]/10" />
-        <div className="absolute -bottom-20 -left-10 w-64 h-64 rounded-full bg-[#52b788]/10" />
-        
-        <div className="container relative z-10 max-w-4xl mx-auto">
-          <div className="inline-block bg-[#d4a017] text-[#1a2e1e] text-sm font-bold uppercase tracking-widest px-5 py-1.5 rounded-full mb-6">
-            Dave Ramsey's Financial Peace University
-          </div>
-          <h1 className="font-serif text-4xl md:text-6xl leading-tight mb-6 max-w-3xl mx-auto">
-            What If You Could Stop Dreading Your Bank Account and <em className="text-[#52b788] not-italic italic">Actually Look Forward</em> to Your Future?
-          </h1>
-          <p className="text-lg md:text-xl opacity-90 max-w-2xl mx-auto mb-10">
-            A 9-week program that takes you from financial overwhelm to financial peace — with real talk, real strategies, and zero shame.
-          </p>
-          
-          <a href="https://www.financialpeace.com/app/classes/299D07" target="_blank" rel="noopener noreferrer" className="inline-block bg-[#d4a017] text-[#1a2e1e] font-bold text-lg px-10 py-4 rounded-full shadow-[0_4px_20px_rgba(212,160,23,0.35)] hover:-translate-y-1 hover:shadow-[0_8px_28px_rgba(212,160,23,0.45)] transition-all">
-            Yes, I'm Ready — Show Me How
-          </a>
-          <p className="text-sm opacity-60 mt-4">Next class begins May 12 · Limited spots available</p>
-        </div>
-      </section>
+      {/* ── HERO ── */}
+      <section
+        className="relative overflow-hidden"
+        style={{
+          background: "linear-gradient(160deg, oklch(0.22 0.05 148) 0%, oklch(0.38 0.09 148) 100%)",
+          minHeight: "560px",
+        }}
+      >
+        {/* Decorative blobs */}
+        <div
+          className="absolute -top-16 -right-16 w-72 h-72 rounded-full pointer-events-none"
+          style={{ background: "oklch(0.72 0.11 78 / 0.12)" }}
+        />
+        <div
+          className="absolute -bottom-20 -left-10 w-60 h-60 rounded-full pointer-events-none"
+          style={{ background: "oklch(0.72 0.09 145 / 0.10)" }}
+        />
 
-      {/* CAN YOU RELATE */}
-      <section className="bg-[#fdf8f0] py-20 px-6">
-        <div className="container max-w-5xl mx-auto flex flex-col md:flex-row gap-12 items-center fade-up">
-          <div className="flex-1">
-            <h2 className="font-serif text-3xl md:text-4xl text-[#1a2e1e] mb-3">Can You Relate?</h2>
-            <p className="text-[#5a7a5e] mb-8">Be honest. Nobody's watching. 👀</p>
-            
-            <ul className="flex flex-col gap-4">
-              {[
-                { emoji: "😔", text: "You feel like you'll never get out of debt in this lifetime" },
-                { emoji: "🤫", text: "You're secretly googling food banks near you and hoping your kids won't see your search history" },
-                { emoji: "👟", text: "You're tired of telling your kids no when they ask for new shoes or a new toy" },
-                { emoji: "🍽️", text: "You dread it when a friend asks you to dinner because you can't afford it — so you make up excuses" },
-                { emoji: "⛺", text: "You're embarrassed when people ask where you're vacationing, because you're camping in the Walmart parking lot and hoping the kids think it's fun." }
-              ].map((item, idx) => (
-                <li key={idx} className="bg-white border-l-4 border-[#52b788] px-5 py-4 rounded-r-lg shadow-sm flex items-start">
-                  <span className="mr-3 text-xl">{item.emoji}</span>
-                  <span className="text-[1.05rem] leading-snug">{item.text}</span>
-                </li>
-              ))}
-            </ul>
-            
-            <div className="mt-10 bg-[#fdf8f0] border-2 border-[#52b788] rounded-xl p-6 italic text-[#2d6a4f] text-lg font-serif">
-              "If you said yes to any of these — I get it. I was there too."
+        <div className="container relative z-10 py-16 md:py-20">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+            {/* Left: copy */}
+            <div>
+              <span
+                className="inline-block text-xs font-bold uppercase tracking-widest px-5 py-2 rounded-full mb-6"
+                style={{ background: "oklch(0.72 0.11 78)", color: "oklch(0.20 0.015 50)" }}
+              >
+                Dave Ramsey's Financial Peace University
+              </span>
+              <E
+                k="hero-heading"
+                style={{
+                  color: "oklch(1 0 0)",
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontSize: "clamp(2rem, 5vw, 3.4rem)",
+                  fontWeight: "bold",
+                  lineHeight: "1.2",
+                  marginBottom: "20px",
+                }}
+              />
+              <E
+                k="hero-subheading"
+                style={{
+                  color: "oklch(0.92 0.015 148)",
+                  maxWidth: "580px",
+                  fontSize: "1.125rem",
+                  marginBottom: "12px",
+                }}
+              />
+              <div className="flex items-center gap-2 mb-8">
+                <Calendar size={16} style={{ color: "oklch(0.72 0.11 78)" }} />
+                <EditableBlock
+                  contentKey="hero-cohort-date"
+                  defaultContent={FPU_CONTENT["hero-cohort-date"]}
+                  as="span"
+                />
+              </div>
+              <div className="flex flex-col items-start gap-4">
+                <a
+                  href="https://www.financialpeace.com/app/classes/299D07"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-full font-bold text-sm transition-all hover:opacity-80"
+                  style={{
+                    background: "transparent",
+                    color: "oklch(0.72 0.09 145)",
+                    border: "2px solid oklch(0.72 0.09 145)",
+                  }}
+                >
+                  Sign Up for Class →
+                </a>
+              </div>
+              <p className="text-sm mt-4" style={{ color: "oklch(0.75 0.015 148)" }}>
+                FPU kits start at{" "}
+                <strong style={{ color: "oklch(0.72 0.11 78)" }}>$99</strong> · Optional 1:1
+                coaching add-on available
+              </p>
+            </div>
+
+            {/* Right: Lee Anne photo */}
+            <div className="flex justify-center md:justify-end">
+              <div className="relative">
+                <img
+                  src={PHOTO_LEEANNE_CHAIR}
+                  alt="Lee Anne — Financial Peace Coordinator"
+                  className="rounded-3xl object-cover w-full max-w-xs md:max-w-sm"
+                  style={{
+                    boxShadow: "0 20px 60px oklch(0.10 0.05 148 / 0.5)",
+                    border: "4px solid oklch(1 0 0 / 0.15)",
+                    objectPosition: "center 5%",
+                    aspectRatio: "3/4",
+                  }}
+                  loading="eager"
+                />
+                {/* Floating badge */}
+                <div
+                  className="absolute -bottom-4 -left-4 rounded-2xl px-4 py-3 text-center"
+                  style={{
+                    background: "oklch(0.72 0.11 78)",
+                    color: "oklch(0.20 0.015 50)",
+                    boxShadow: "0 4px 20px oklch(0.10 0.05 148 / 0.4)",
+                  }}
+                >
+                  <p className="font-bold text-sm">Starting at $99</p>
+                  <p className="text-xs opacity-80">9-week program</p>
+                </div>
+              </div>
             </div>
           </div>
-          
-          <div className="flex-1 w-full relative">
-            <div className="absolute inset-0 bg-[#d4a017] translate-x-4 translate-y-4 rounded-2xl" />
-            <img src={PHOTO_LEEANNE_VEGGIES} alt="Stressed with groceries" className="w-full h-auto rounded-2xl relative z-10 object-cover shadow-xl" />
+        </div>
+      </section>
+
+      {/* ── CAN YOU RELATE ── */}
+      <section className="py-20" style={{ background: "oklch(0.97 0.012 80)" }}>
+        <div className="container">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start max-w-5xl mx-auto">
+            {/* Left: pain points */}
+            <div>
+              <span className="badge-gold mb-3 inline-block">Can You Relate?</span>
+              <E k="relate-heading" />
+              <E k="relate-subtext" />
+              <E k="relate-pain-points" />
+              <E k="relate-quote" />
+            </div>
+            {/* Right: image */}
+            <div className="hidden lg:flex items-start justify-center pt-8">
+              <img
+                src={PHOTO_LEEANNE_VEGGIES}
+                alt="Lee Anne — warm and approachable"
+                className="rounded-3xl object-cover w-full max-w-sm"
+                style={{
+                  boxShadow: "0 8px 40px oklch(0.20 0.015 50 / 0.12)",
+                  border: "4px solid oklch(1 0 0)",
+                }}
+                loading="lazy"
+              />
+            </div>
           </div>
         </div>
       </section>
 
-      {/* MY STORY */}
-      <section className="bg-white py-20 px-6">
-        <div className="container max-w-5xl mx-auto flex flex-col md:flex-row-reverse gap-12 items-center fade-up">
-          <div className="flex-1">
-            <h2 className="font-serif text-3xl md:text-4xl text-[#1a2e1e] mb-6">I Know This Feeling Because I Lived It</h2>
-            <p className="mb-6 text-[1.05rem]">I'm not going to pretend I've always had it together. Here's what my reality actually looked like:</p>
-            
-            <ul className="flex flex-col gap-4 mb-8">
-              {[
-                "Crippling credit card debt that haunted me 24/7 and made every purchase feel heavy",
-                "The humiliation of my neighbor telling me where to get a free box of food",
-                "The tension with my husband when he mentioned going out to lunch",
-                "Knowing our car needed a tune-up but also knowing it wasn't happening with our current debt"
-              ].map((text, idx) => (
-                <li key={idx} className="relative pl-8 text-[1.05rem]">
-                  <span className="absolute left-0 text-[#2d6a4f] font-bold">→</span>
-                  {text}
-                </li>
-              ))}
-            </ul>
-            
-            <p className="text-[1.05rem]">And now? I'm a certified mindset life coach, health coach, and Financial Peace coach — and I get to help other families do what I did. Not because I had a perfect income, a perfect start, or a perfect marriage. But because I followed a process that works.</p>
+      {/* ── MY STORY ── */}
+      <section className="py-20" style={{ background: "oklch(1 0 0)" }}>
+        <div className="container max-w-5xl mx-auto">
+          {/* Full-width image banner */}
+          <div className="rounded-3xl overflow-hidden mb-12 relative" style={{ maxHeight: "380px" }}>
+            <img
+              src={PHOTO_LEEANNE_TABLE}
+              alt="Lee Anne working with a client"
+              className="w-full object-cover"
+              style={{ maxHeight: "380px", objectPosition: "center 30%" }}
+              loading="lazy"
+            />
+            <div
+              className="absolute inset-0 flex items-end p-8"
+              style={{
+                background:
+                  "linear-gradient(to top, oklch(0.20 0.015 50 / 0.75) 0%, transparent 60%)",
+              }}
+            >
+              <p
+                className="text-white font-bold text-xl max-w-lg"
+                style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(1.2rem, 2.5vw, 1.6rem)" }}
+              >
+                "The moment I stopped white-knuckling it alone — everything changed."
+              </p>
+            </div>
           </div>
-          
-          <div className="flex-1 w-full relative">
-            <div className="absolute inset-0 bg-[#52b788] -translate-x-4 translate-y-4 rounded-2xl" />
-            <img src={PHOTO_LEEANNE_CHAIR} alt="Lee Anne coaching" className="w-full h-auto rounded-2xl relative z-10 object-cover shadow-xl" />
+
+          <div className="max-w-2xl mx-auto">
+            <span className="badge-olive mb-3 inline-block">My Story</span>
+            <E k="story-heading" />
+            <E k="story-body" />
           </div>
         </div>
       </section>
 
-      {/* WHAT YOU GET */}
-      <section className="bg-[#fdf8f0] py-20 px-6">
-        <div className="container max-w-5xl mx-auto fade-up">
+      {/* ── MEET LEE ANNE ── */}
+      <section className="py-20" style={{ background: "oklch(0.97 0.012 80)" }}>
+        <div className="container max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-10 items-center">
+            {/* Photo */}
+            <div className="md:col-span-2 flex justify-center">
+              <img
+                src={LEEANNE_PHOTO}
+                alt="Lee Anne — Financial Peace Coordinator"
+                className="rounded-3xl object-cover w-full max-w-xs"
+                style={{
+                  border: "4px solid oklch(1 0 0)",
+                  boxShadow: "0 8px 40px oklch(0.20 0.015 50 / 0.12)",
+                }}
+                loading="lazy"
+              />
+            </div>
+            {/* Bio */}
+            <div className="md:col-span-3">
+              <span className="badge-gold mb-3 inline-block">Your Coordinator</span>
+              <E k="leeanne-heading" />
+              <E k="leeanne-bio" />
+              {/* Credential badges */}
+              <div className="flex flex-wrap gap-2 mt-6">
+                {[
+                  "Certified Mindset Life Coach",
+                  "Certified Health Coach",
+                  "FPU Coordinator",
+                ].map((c) => (
+                  <span
+                    key={c}
+                    className="text-xs font-bold px-3 py-1.5 rounded-full"
+                    style={{
+                      background: "oklch(0.95 0.03 148 / 0.5)",
+                      color: "oklch(0.38 0.09 148)",
+                      border: "1px solid oklch(0.72 0.09 145 / 0.3)",
+                    }}
+                  >
+                    {c}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── WHAT YOU'LL LEARN ── */}
+      <section className="py-20" style={{ background: "oklch(1 0 0)" }}>
+        <div className="container max-w-4xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="font-serif text-3xl md:text-4xl text-[#1a2e1e] mb-3">What You'll Walk Away With After 9 Weeks</h2>
-            <p className="text-[#5a7a5e] text-lg">Real skills. Real shifts. A real plan that works for real families.</p>
+            <span className="badge-gold mb-3 inline-block">The Curriculum</span>
+            <E k="curriculum-heading" />
+            <E k="curriculum-subtext" />
           </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <E k="curriculum-cards" />
+        </div>
+      </section>
+
+      {/* ── COHORT DETAILS ── */}
+      <section className="py-14 text-center" style={{ background: "oklch(0.38 0.09 148)" }}>
+        <div className="container max-w-2xl mx-auto">
+          <E
+            k="cohort-heading"
+            style={{
+              color: "oklch(1 0 0)",
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: "clamp(1.6rem, 3.5vw, 2.2rem)",
+              fontWeight: "bold",
+              marginBottom: "32px",
+            }}
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {[
-              { icon: "💸", title: "Your Debt Snowball, Started", desc: "Step-by-step guidance on how to begin — no guessing, no confusion, just a clear path forward." },
-              { icon: "📊", title: "A Budget You'll Actually Use", desc: "An in-depth plan built around your real life — not some spreadsheet that makes you want to cry." },
-              { icon: "🛡️", title: "Insurance You Need vs. Don't", desc: "Finally understand what you're actually paying for — and what you can cut without risk." },
-              { icon: "🧠", title: "Mindset Shifts", desc: "Because the numbers are only half the battle. We tackle the thinking that keeps people stuck." },
-              { icon: "🍽️", title: "Eating Well on a Budget", desc: "How to eat food that's actually enjoyable — not just 'rice and beans' every night." },
-              { icon: "🎉", title: "Fun on Zero Budget", desc: "How to create memories with your kids that they'll still be laughing about years later." }
-            ].map((feature, i) => (
-              <div key={i} className="bg-white rounded-xl p-6 shadow-sm border-t-[3px] border-[#52b788] transition-transform hover:-translate-y-1">
-                <div className="text-3xl mb-3">{feature.icon}</div>
-                <h3 className="font-bold text-[#1a2e1e] mb-2">{feature.title}</h3>
-                <p className="text-[#5a7a5e] text-sm leading-relaxed">{feature.desc}</p>
+              { icon: <Calendar size={24} />, label: "Starts", value: "May 12, 2026", sub: "Every Tuesday 6:30 PM to 7:15 PM" },
+              { icon: <Clock size={24} />, label: "Duration", value: "9 Weeks", sub: "" },
+              { icon: <Users size={24} />, label: "Format", value: "Live Group Sessions", sub: "" },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="rounded-2xl p-5 text-center"
+                style={{
+                  background: "oklch(1 0 0 / 0.10)",
+                  border: "1px solid oklch(1 0 0 / 0.15)",
+                }}
+              >
+                <div className="flex justify-center mb-2" style={{ color: "oklch(0.72 0.11 78)" }}>
+                  {item.icon}
+                </div>
+                <p
+                  className="text-xs font-bold uppercase tracking-widest mb-1"
+                  style={{ color: "oklch(0.75 0.015 148)" }}
+                >
+                  {item.label}
+                </p>
+                <p className="font-bold text-base" style={{ color: "oklch(1 0 0)" }}>
+                  {item.value}
+                </p>
+                {item.sub && (
+                  <p className="text-xs mt-1" style={{ color: "oklch(0.85 0.015 148)" }}>
+                    {item.sub}
+                  </p>
+                )}
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* MEET LEE ANNE */}
-      <section className="bg-white py-20 px-6">
-        <div className="container max-w-4xl mx-auto flex flex-col md:flex-row gap-10 items-center fade-up">
-          <div className="w-48 h-48 md:w-56 md:h-56 shrink-0 rounded-full border-8 border-[#fdf8f0] shadow-xl overflow-hidden">
-            <img src={LEEANNE_PHOTO} alt="Lee Anne" className="w-full h-full object-cover" />
-          </div>
-          <div>
-            <h2 className="font-serif text-3xl md:text-4xl text-[#1a2e1e] mb-4">Hi, I'm Lee Anne 👋</h2>
-            <p className="mb-4 text-[1.05rem]">I'm a certified mindset life coach, health coach, and Financial Peace coach — and someone who has lived every one of those bullet points above in real time.</p>
-            <p className="mb-4 text-[1.05rem]">I'm not going to lie to you: <strong className="text-[#2d6a4f]">it takes work, consistency, and trusting the process.</strong> But I'm going to walk alongside you every step of the way. We'll tackle the mindset roadblocks, the family resistance, and the daily strategies you need to actually stay the course.</p>
-            <p className="text-[1.05rem]">It is <em>possible</em> for you and your family — no matter how much debt you have right now. Your journey starts now.</p>
+      {/* ── WHO IT'S FOR ── */}
+      <section className="py-20" style={{ background: "oklch(0.97 0.012 80)" }}>
+        <div className="container max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* Image */}
+            <div className="hidden lg:block">
+              <img
+                src={PHOTO_COUCH}
+                alt="Lee Anne with a client — warm and supportive"
+                className="rounded-3xl object-cover w-full"
+                style={{
+                  boxShadow: "0 8px 40px oklch(0.20 0.015 50 / 0.10)",
+                  border: "4px solid oklch(1 0 0)",
+                  maxHeight: "500px",
+                  objectFit: "cover",
+                }}
+                loading="lazy"
+              />
+            </div>
+            {/* Content */}
+            <div>
+              <span className="badge-olive mb-3 inline-block">Is This For You?</span>
+              <E k="for-you-heading" />
+              <E k="for-you-list" />
+              <FpuSignUpForm buttonLabel="I'm In — Sign Up Free →" />
+            </div>
           </div>
         </div>
       </section>
 
-      {/* PRICING / SIGN UP */}
-      <section id="pricing" className="bg-[#1a2e1e] text-white py-24 px-6 text-center">
-        <div className="container max-w-3xl mx-auto fade-up">
-          <h2 className="font-serif text-3xl md:text-4xl text-[#52b788] mb-3">Ready to Change Everything?</h2>
-          <p className="opacity-80 mb-10 text-lg">Here's what's included — and what it costs.</p>
-          
-          <div className="bg-white/5 border-2 border-[#d4a017] rounded-3xl p-8 md:p-12 max-w-md mx-auto relative backdrop-blur-sm">
-            <div className="text-sm tracking-widest uppercase opacity-80 mb-4">Financial Peace University — 9 Weeks</div>
-            <div className="font-serif text-5xl text-[#d4a017] mb-2">~$130</div>
-            <div className="italic opacity-70 mb-8 text-sm">Approximate cost for your FPU materials.</div>
-            
-            <div className="text-left mb-8 space-y-3">
-              {[
-                "9 weeks of Dave Ramsey's FPU curriculum",
-                "Weekly group coaching with Lee Anne",
-                "Mindset + accountability support",
-                "Budget templates and tools",
-                "Access to our private community"
-              ].map((item, i) => (
-                <div key={i} className="flex items-start border-b border-white/10 pb-3 last:border-0">
-                  <span className="text-[#52b788] font-bold mr-3">✓</span>
-                  <span className="text-sm opacity-90">{item}</span>
+      {/* ── 1:1 COACHING ADD-ON ── */}
+      <section id="fpu-coaching" className="py-20" style={{ background: "oklch(0.985 0.008 80)" }}>
+        <div className="container max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* Content */}
+            <div>
+              <span className="badge-gold mb-3 inline-block">Optional Add-On</span>
+              <E k="coaching-heading" />
+              <E k="coaching-intro" />
+              <div
+                className="rounded-3xl p-8 mb-6"
+                style={{
+                  background: "oklch(1 0 0)",
+                  border: "2px solid oklch(0.72 0.11 78)",
+                  boxShadow: "0 4px 24px oklch(0.20 0.015 50 / 0.08)",
+                }}
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                  <div>
+                    <p
+                      className="text-xs font-bold uppercase tracking-widest mb-1"
+                      style={{ color: "oklch(0.52 0.015 50)" }}
+                    >
+                      1:1 Accountability Coaching
+                    </p>
+                    <p
+                      className="font-bold"
+                      style={{
+                        fontFamily: "'Cormorant Garamond', serif",
+                        fontSize: "2.4rem",
+                        color: "oklch(0.72 0.11 78)",
+                        lineHeight: 1,
+                      }}
+                    >
+                      $249
+                    </p>
+                    <p className="text-sm mt-1" style={{ color: "oklch(0.52 0.015 50)" }}>
+                      3 private sessions · 50 minutes each
+                    </p>
+                  </div>
+                  <CoachingCheckoutButton label="Add Coaching — $249 →" />
                 </div>
-              ))}
+                <E k="coaching-features" />
+              </div>
+              <div
+                className="rounded-2xl p-6 flex items-start gap-4"
+                style={{
+                  border: "1px solid oklch(0.72 0.09 145 / 0.40)",
+                  background: "oklch(0.97 0.015 148 / 0.3)",
+                }}
+              >
+                <ShieldCheck
+                  size={28}
+                  className="flex-shrink-0 mt-0.5"
+                  style={{ color: "oklch(0.38 0.09 148)" }}
+                />
+                <E k="coaching-guarantee" />
+              </div>
             </div>
-            
-            <div className="bg-[#d4a017]/10 border border-[#d4a017]/30 rounded-xl p-4 mb-8 text-sm opacity-90">
-              🗓️ Next class begins <strong>May 12</strong> · Limited spots available
+
+            {/* Coaching photo */}
+            <div className="hidden lg:flex justify-center">
+              <img
+                src={PHOTO_CONSULT_FORM}
+                alt="Client filling out a consult form"
+                className="rounded-3xl object-cover w-full max-w-sm"
+                style={{
+                  boxShadow: "0 8px 40px oklch(0.20 0.015 50 / 0.12)",
+                  border: "4px solid oklch(1 0 0)",
+                  maxHeight: "480px",
+                  objectFit: "cover",
+                }}
+                loading="lazy"
+              />
             </div>
-            
-            <a 
-              href="https://www.financialpeace.com/app/classes/299D07" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="inline-block w-full bg-[#d4a017] text-[#1a2e1e] font-bold py-4 rounded-full shadow-[0_4px_20px_rgba(212,160,23,0.35)] hover:-translate-y-1 hover:shadow-[0_8px_28px_rgba(212,160,23,0.45)] transition-all text-center text-lg"
+          </div>
+        </div>
+      </section>
+
+      {/* ── OBJECTIONS / FAQ ── */}
+      <section className="py-20" style={{ background: "oklch(0.97 0.012 80)" }}>
+        <div className="container max-w-2xl mx-auto">
+          <span className="badge-gold mb-3 inline-block">Your Questions, Answered</span>
+          <E k="faq-heading" />
+          <E k="faq-items" />
+        </div>
+      </section>
+
+      {/* ── PRICING & SIGN-UP ── */}
+      <section className="py-20" style={{ background: "oklch(1 0 0)" }}>
+        <div className="container max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <span className="badge-gold mb-3 inline-block">Get Started</span>
+            <h2
+              className="font-bold mb-4"
+              style={{
+                fontFamily: "'Cormorant Garamond', serif",
+                fontSize: "clamp(1.8rem, 3.5vw, 2.4rem)",
+                color: "oklch(0.20 0.015 50)",
+              }}
             >
-              Sign Up for the May 12 Class →
+              Two Simple Steps to Join
+            </h2>
+            <p className="text-base" style={{ color: "oklch(0.52 0.015 50)", maxWidth: "600px", margin: "0 auto" }}>
+              Purchase your FPU kit from the Dave Ramsey Store, then sign up for my class using the link below.
+            </p>
+          </div>
+
+          {/* Step 1: Buy Kit */}
+          <div className="mb-10">
+            <h3
+              className="font-bold text-lg mb-6 text-center"
+              style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.20 0.015 50)" }}
+            >
+              Step 1: Purchase Your Kit
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* All Access */}
+              <div
+                className="relative rounded-2xl p-8 text-center"
+                style={{
+                  background: "oklch(0.97 0.012 80)",
+                  border: "2px solid oklch(0.72 0.11 78)",
+                  boxShadow: "0 4px 24px oklch(0.20 0.015 50 / 0.08)",
+                }}
+              >
+                <div
+                  className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full"
+                  style={{ background: "oklch(0.72 0.11 78)", color: "oklch(0.20 0.015 50)" }}
+                >
+                  Best Value
+                </div>
+                <p
+                  className="font-bold mt-2"
+                  style={{
+                    fontFamily: "'Cormorant Garamond', serif",
+                    fontSize: "2.4rem",
+                    color: "oklch(0.38 0.09 148)",
+                    lineHeight: 1,
+                  }}
+                >
+                  $129
+                </p>
+                <p className="font-bold text-base mt-2 mb-3" style={{ color: "oklch(0.20 0.015 50)" }}>
+                  Financial Peace All Access
+                </p>
+                <ul className="text-sm text-left space-y-2 mb-6" style={{ color: "oklch(0.42 0.015 50)" }}>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 size={16} className="flex-shrink-0 mt-0.5" style={{ color: "oklch(0.38 0.09 148)" }} />
+                    12 months of Financial Peace University
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 size={16} className="flex-shrink-0 mt-0.5" style={{ color: "oklch(0.38 0.09 148)" }} />
+                    12 months of EveryDollar Premium
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 size={16} className="flex-shrink-0 mt-0.5" style={{ color: "oklch(0.38 0.09 148)" }} />
+                    Additional tools and resources
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 size={16} className="flex-shrink-0 mt-0.5" style={{ color: "oklch(0.38 0.09 148)" }} />
+                    Physical + digital workbook
+                  </li>
+                </ul>
+                <a
+                  href="https://www.ramseysolutions.com/store"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full font-bold text-sm transition-all hover:shadow-lg hover:-translate-y-0.5 w-full"
+                  style={{ background: "oklch(0.72 0.11 78)", color: "oklch(0.20 0.015 50)" }}
+                >
+                  Buy on Dave Ramsey Store
+                </a>
+              </div>
+
+              {/* Basic */}
+              <div
+                className="rounded-2xl p-8 text-center"
+                style={{
+                  background: "oklch(0.97 0.012 80)",
+                  border: "2px solid oklch(0.88 0.015 75)",
+                  boxShadow: "0 2px 12px oklch(0.20 0.015 50 / 0.05)",
+                }}
+              >
+                <p
+                  className="font-bold"
+                  style={{
+                    fontFamily: "'Cormorant Garamond', serif",
+                    fontSize: "2.4rem",
+                    color: "oklch(0.38 0.09 148)",
+                    lineHeight: 1,
+                  }}
+                >
+                  $99
+                </p>
+                <p className="font-bold text-base mt-2 mb-3" style={{ color: "oklch(0.20 0.015 50)" }}>
+                  FPU Basic
+                </p>
+                <ul className="text-sm text-left space-y-2 mb-6" style={{ color: "oklch(0.42 0.015 50)" }}>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 size={16} className="flex-shrink-0 mt-0.5" style={{ color: "oklch(0.38 0.09 148)" }} />
+                    12 months of Financial Peace University
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 size={16} className="flex-shrink-0 mt-0.5" style={{ color: "oklch(0.38 0.09 148)" }} />
+                    3 months of EveryDollar Premium
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 size={16} className="flex-shrink-0 mt-0.5" style={{ color: "oklch(0.38 0.09 148)" }} />
+                    Physical + digital workbook
+                  </li>
+                </ul>
+                <a
+                  href="https://www.ramseysolutions.com/store"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full font-bold text-sm transition-all hover:shadow-md w-full border"
+                  style={{ borderColor: "oklch(0.38 0.09 148)", color: "oklch(0.38 0.09 148)", background: "transparent" }}
+                >
+                  Buy on Dave Ramsey Store
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Step 2: Sign Up for Class */}
+          <div
+            className="rounded-3xl p-8 md:p-10 text-center"
+            style={{
+              background: "oklch(0.38 0.09 148)",
+              boxShadow: "0 8px 40px oklch(0.20 0.015 50 / 0.15)",
+            }}
+          >
+            <h3
+              className="font-bold text-lg mb-3"
+              style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(1 0 0)", fontSize: "clamp(1.4rem, 2.5vw, 1.8rem)" }}
+            >
+              Step 2: Sign Up for My Class
+            </h3>
+            <p className="text-sm mb-6" style={{ color: "oklch(0.85 0.015 148)", maxWidth: "480px", margin: "0 auto 24px" }}>
+              Once you have your kit, sign up for my class using the link below. It's free to join!
+            </p>
+            <a
+              href="https://www.financialpeace.com/app/classes/299D07"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 px-10 py-4 rounded-full font-bold text-base transition-all hover:shadow-xl hover:-translate-y-1"
+              style={{ background: "oklch(0.72 0.11 78)", color: "oklch(0.20 0.015 50)" }}
+            >
+              Sign Up for Lee Anne's Class →
             </a>
           </div>
+        </div>
+      </section>
+
+      {/* ── CLOSING CTA ── */}
+      <section
+        className="py-20 text-center"
+        style={{
+          background:
+            "linear-gradient(160deg, oklch(0.38 0.09 148) 0%, oklch(0.22 0.05 148) 100%)",
+        }}
+      >
+        <div className="container max-w-xl mx-auto">
+          {/* Pull quote */}
+          <div className="mb-10 flex justify-center">
+            <Quote size={36} style={{ color: "oklch(0.72 0.11 78)", opacity: 0.6 }} />
+          </div>
+          <E k="cta-heading" />
+          <E k="cta-body" />
+          <div className="flex flex-col items-center gap-4 mb-6">
+            <a
+              href="https://www.financialpeace.com/app/classes/299D07"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-full font-bold text-base transition-all hover:shadow-xl hover:-translate-y-1"
+              style={{ background: "oklch(0.72 0.11 78)", color: "oklch(0.20 0.015 50)" }}
+            >
+              Sign Up for Class →
+            </a>
+            <CoachingCheckoutButton label="Add 1:1 Coaching — $249" />
+          </div>
+          <p className="text-sm" style={{ color: "oklch(0.65 0.015 148)" }}>
+            Questions?{" "}
+            <a
+              href={GOOGLE_CALENDAR.discoveryCall}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+              style={{ color: "oklch(0.72 0.09 145)" }}
+            >
+              Book a free call
+            </a>{" "}
+            — I'd love to chat.
+          </p>
         </div>
       </section>
 

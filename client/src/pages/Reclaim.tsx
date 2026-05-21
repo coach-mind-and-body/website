@@ -1,9 +1,11 @@
+import { useEffect } from "react";
 import { Link } from "wouter";
 import { ArrowRight, CheckCircle2, Star } from "lucide-react";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import { BRAND, PROGRAM, GOOGLE_CALENDAR } from "../../../shared/brand";
-import { SEO } from "@/components/SEO";
+import { useMetaPixel } from "@/hooks/useMetaPixel";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 const RECLAIM_LETTERS = [
   { letter: "R", word: "Reclaim", desc: "Take back ownership of your body and your story." },
@@ -53,12 +55,21 @@ const FAQ = [
 ];
 
 export default function Reclaim() {
+  usePageTitle({
+    title: "R.E.C.L.A.I.M. Coaching Program | Mind and Body Reset",
+    description: "R.E.C.L.A.I.M. is a 6-session 1:1 coaching program for women 40+ ready to break free from diet culture, balance hormones, and build lasting health habits.",
+    keywords: "RECLAIM program, 1 on 1 coaching, women health coaching, diet culture recovery, hormonal balance, midlife wellness program, food freedom coaching"
+  });
+  const { trackViewContent } = useMetaPixel();
+
+  useEffect(() => {
+    // Fire ViewContent when visitor views the R.E.C.L.A.I.M. program page
+    trackViewContent({ content_name: "R.E.C.L.A.I.M. Program", content_category: "Coaching Program", content_type: "product" });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="min-h-screen" style={{ background: "oklch(0.97 0.008 10)" }}>
-      <SEO 
-        title="R.E.C.L.A.I.M. Program | Mind and Body Reset"
-        description="Join the 6-week R.E.C.L.A.I.M. program and learn the tools to stop obsessing over food, balance your hormones, and find peace with your body."
-      />
       <SiteNav />
 
       {/* Hero */}

@@ -5,6 +5,8 @@ import { Route, Switch, useLocation } from "wouter";
 import { useEffect } from "react";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { ChatProvider } from "./contexts/ChatContext";
+import ChatWidget from "./components/ChatWidget";
 
 // Public pages
 import Home from "./pages/Home";
@@ -22,8 +24,11 @@ import Disclaimer from "./pages/Disclaimer";
 import JoinLanding from "./pages/JoinLanding";
 import JoinThankYou from "./pages/JoinThankYou";
 import FinancialPeace from "./pages/FinancialPeace";
+import FinancialPeaceThankYou from "./pages/FinancialPeaceThankYou";
 import FPULandingPage from "./pages/FPULandingPage";
+import Podcast from "./pages/Podcast";
 import Login from "./pages/Login";
+import ResetPassword from "./pages/ResetPassword";
 import Glp1Recovery from "./pages/Glp1Recovery";
 import HolisticHealth from "./pages/HolisticHealth";
 
@@ -31,6 +36,7 @@ import HolisticHealth from "./pages/HolisticHealth";
 import Enroll from "./pages/Enroll";
 import MyProgram from "./pages/MyProgram";
 import Portal from "./pages/Portal";
+import ReclaimHub from "./pages/ReclaimHub";
 
 // Admin
 import Admin from "./pages/Admin";
@@ -49,6 +55,7 @@ function Router() {
       <Route path="/food-quiz" component={FoodQuiz} />
       <Route path="/food-quiz-thank-you" component={FoodQuizThankYou} />
       <Route path="/feel-great-system" component={FeelGreat} />
+      <Route path="/unicity" component={FeelGreat} />
       <Route path="/terms" component={Terms} />
       <Route path="/privacy" component={Privacy} />
       <Route path="/disclaimer" component={Disclaimer} />
@@ -57,8 +64,11 @@ function Router() {
       <Route path="/financial-peace-university" component={FinancialPeace} />
       <Route path="/financial-peace" component={FinancialPeace} />
       <Route path="/fpu" component={FinancialPeace} />
+      <Route path="/financial-peace/thank-you" component={FinancialPeaceThankYou} />
       <Route path="/fpu-may-12" component={FPULandingPage} />
+      <Route path="/midlife-health-podcast" component={Podcast} />
       <Route path="/login" component={Login} />
+      <Route path="/reset-password" component={ResetPassword} />
       
       {/* SEO Pillar Pages */}
       <Route path="/life-after-glp-1" component={Glp1Recovery} />
@@ -68,6 +78,7 @@ function Router() {
       <Route path="/enroll" component={Enroll} />
       <Route path="/my-program" component={MyProgram} />
       <Route path="/portal" component={Portal} />
+      <Route path="/portal/hub" component={ReclaimHub} />
 
       {/* Admin */}
       <Route path="/admin" component={Admin} />
@@ -95,11 +106,14 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
-        <TooltipProvider>
-          <Toaster />
-          <ScrollToTop />
-          <Router />
-        </TooltipProvider>
+        <ChatProvider>
+          <TooltipProvider>
+            <Toaster />
+            <ScrollToTop />
+            <Router />
+            <ChatWidget />
+          </TooltipProvider>
+        </ChatProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

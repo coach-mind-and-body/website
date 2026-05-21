@@ -9,7 +9,11 @@ import { enrollmentRouter } from "./routers/enrollment";
 import { clientFilesRouter } from "./routers/clientFiles";
 import { googleCalendarRouter } from "./routers/googleCalendarRouter";
 import { settingsRouter } from "./routers/settings";
-
+import { fpuRouter } from "./routers/fpu";
+import { pageEditorRouter } from "./routers/pageEditor";
+import { podcastRouter } from "./routers/podcast";
+import { seoOptimizerRouter } from "./routers/seoOptimizer";
+import { reclaimHubRouter } from "./routers/reclaimHub";
 export const appRouter = router({
   system: systemRouter,
   auth: router({
@@ -27,6 +31,11 @@ export const appRouter = router({
   clientFiles: clientFilesRouter,
   googleCalendar: googleCalendarRouter,
   settings: settingsRouter,
+  fpu: fpuRouter,
+  pageEditor: pageEditorRouter,
+  podcast: podcastRouter,
+  seoOptimizer: seoOptimizerRouter,
+  reclaimHub: reclaimHubRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -1,7 +1,13 @@
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 export default function Disclaimer() {
+  usePageTitle({
+    title: "Disclaimer | Mind and Body Reset",
+    description: "Important disclaimers about Mind & Body Reset coaching services — Lee Anne is a certified coach, not a medical professional.",
+    keywords: "disclaimer, coaching disclaimer, health disclaimer, not medical advice"
+  });
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "#ffffff" }}>
       <SiteNav />

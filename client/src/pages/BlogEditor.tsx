@@ -4,9 +4,12 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { useRoute, useLocation } from "wouter";
 import { getLoginUrl } from "@/const";
+import { RichTextEditor, type RichTextEditorHandle } from "@/components/RichTextEditor";
+import { SeoAnalysisPanel } from "@/components/SeoAnalysisPanel";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import {
   ArrowLeft, Save, Eye, EyeOff, Loader2, Upload, X, Plus,
-  ImagePlus, Clock, Calendar,
+  ImagePlus, Clock, Calendar, ChevronDown,
 } from "lucide-react";
 
 const DEFAULT_CATEGORIES = [
@@ -76,6 +79,11 @@ function nowMountain(): string {
 }
 
 export default function BlogEditor() {
+  usePageTitle({
+    title: "Blog Editor | Mind and Body Reset",
+    description: "Create and edit blog posts for the Mind & Body Reset health and wellness blog.",
+    keywords: "blog editor, content management, blog post"
+  });
   const { user, loading: authLoading, isAuthenticated } = useAuth();
   const [, navigate] = useLocation();
   const [, params] = useRoute("/admin/blog/:id");
@@ -92,6 +100,7 @@ export default function BlogEditor() {
   const [customCategory, setCustomCategory] = useState("");
   const [showCustomCategory, setShowCustomCategory] = useState(false);
   const [coverImage, setCoverImage] = useState("");
+  const [coverImageAlt, setCoverImageAlt] = useState("");
   const [uploadingCover, setUploadingCover] = useState(false);
   const [uploadingInline, setUploadingInline] = useState(false);
   const [published, setPublished] = useState(false);
@@ -99,10 +108,21 @@ export default function BlogEditor() {
   const [scheduledAt, setScheduledAt] = useState(""); // Mountain Time local string
   const [seoTitle, setSeoTitle] = useState("");
   const [seoDescription, setSeoDescription] = useState("");
+  // Schema markup
+  const [schemaTypes, setSchemaTypes] = useState<string[]>(["Article"]);
+  const [schemaFaqItems, setSchemaFaqItems] = useState<{question: string; answer: string}[]>([]);
+  const [schemaVideoUrl, setSchemaVideoUrl] = useState("");
+  const [schemaVideoDescription, setSchemaVideoDescription] = useState("");
+  const [schemaHowToSteps, setSchemaHowToSteps] = useState<{name: string; text: string}[]>([]);
+  const [schemaExpanded, setSchemaExpanded] = useState(false);
+  const [focusKeyword, setFocusKeyword] = useState("");
   const [saving, setSaving] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const inlineInputRef = useRef<HTMLInputElement>(null);
-  const contentRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<RichTextEditorHandle>(null);
+  const [viewMode, setViewMode] = useState<"edit" | "split" | "preview">("edit");
+  const [pendingImageUrl, setPendingImageUrl] = useState<string | null>(null);
+  const [imageAltText, setImageAltText] = useState("");
 
   // Fetch existing post for editing
   const { data: existingPost, isLoading: loadingPost } = trpc.blog.adminGetById.useQuery(
@@ -139,9 +159,23 @@ export default function BlogEditor() {
         setCategory(cat);
       }
       setCoverImage(existingPost.coverImage ?? "");
+      setCoverImageAlt(existingPost.coverImageAlt ?? "");
       setPublished(existingPost.published);
       setSeoTitle(existingPost.seoTitle ?? "");
       setSeoDescription(existingPost.seoDescription ?? "");
+
+      // Schema markup
+      if (existingPost.schemaTypes) {
+        setSchemaTypes(existingPost.schemaTypes.split(",").map(s => s.trim()).filter(Boolean));
+      }
+      if (existingPost.schemaFaqJson) {
+        try { setSchemaFaqItems(JSON.parse(existingPost.schemaFaqJson)); } catch {}
+      }
+      setSchemaVideoUrl(existingPost.schemaVideoUrl ?? "");
+      setSchemaVideoDescription(existingPost.schemaVideoDescription ?? "");
+      if (existingPost.schemaHowToStepsJson) {
+        try { setSchemaHowToSteps(JSON.parse(existingPost.schemaHowToStepsJson)); } catch {}
+      }
 
       // Set publish mode
       if (existingPost.published) {
@@ -188,12 +222,30 @@ export default function BlogEditor() {
     },
   });
 
-  const wordCount = useMemo(() => content.split(/\s+/).filter(Boolean).length, [content]);
+  // Strip HTML tags for word count
+  const wordCount = useMemo(() => {
+    const text = content.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+    return text ? text.split(" ").filter(Boolean).length : 0;
+  }, [content]);
 
   const resolvedCategory = useMemo(() => {
     if (category === "__custom__") return customCategory.trim();
     return category;
   }, [category, customCategory]);
+
+  // Determine if the scheduled date is in the past for button label
+  const scheduledDateIsPast = useMemo(() => {
+    if (publishMode !== "schedule" || !scheduledAt) return false;
+    try {
+      return new Date(mountainToUtc(scheduledAt)) <= new Date();
+    } catch { return false; }
+  }, [publishMode, scheduledAt]);
+
+  const saveButtonLabel = publishMode === "now"
+    ? "Publish Now"
+    : publishMode === "schedule"
+    ? (scheduledDateIsPast ? "Publish with Date" : "Schedule Post")
+    : "Save Draft";
 
   // Auth guard
   useEffect(() => {
@@ -224,7 +276,7 @@ export default function BlogEditor() {
     if (!content.trim()) { toast.error("Content is required"); return; }
 
     if (publishMode === "schedule" && !scheduledAt) {
-      toast.error("Please select a date and time for scheduling");
+      toast.error("Please select a date and time");
       return;
     }
 
@@ -233,6 +285,10 @@ export default function BlogEditor() {
     const isPublishNow = publishMode === "now";
     const isSchedule = publishMode === "schedule";
 
+    // Determine if the chosen date is in the past (publish immediately with backdate) or future (schedule)
+    const chosenDateUtc = isSchedule && scheduledAt ? mountainToUtc(scheduledAt) : undefined;
+    const chosenDateIsPast = chosenDateUtc ? new Date(chosenDateUtc) <= new Date() : false;
+
     const payload = {
       slug: slug.trim(),
       title: title.trim(),
@@ -240,17 +296,26 @@ export default function BlogEditor() {
       content: content.trim(),
       category: resolvedCategory || undefined,
       coverImage: coverImage.trim() || undefined,
-      published: isPublishNow,
-      scheduledAt: isSchedule ? mountainToUtc(scheduledAt) : undefined,
+      coverImageAlt: coverImageAlt.trim() || undefined,
+      // If schedule mode with a past date, publish immediately with that date
+      published: isPublishNow || (isSchedule && chosenDateIsPast),
+      publishedAt: isSchedule ? chosenDateUtc : undefined,
+      // Only schedule for future dates
+      scheduledAt: isSchedule && !chosenDateIsPast ? chosenDateUtc : undefined,
       seoTitle: seoTitle.trim() || undefined,
       seoDescription: seoDescription.trim() || undefined,
+      schemaTypes: schemaTypes.length > 0 ? schemaTypes.join(",") : undefined,
+      schemaFaqJson: schemaFaqItems.length > 0 ? JSON.stringify(schemaFaqItems) : undefined,
+      schemaVideoUrl: schemaVideoUrl.trim() || undefined,
+      schemaVideoDescription: schemaVideoDescription.trim() || undefined,
+      schemaHowToStepsJson: schemaHowToSteps.length > 0 ? JSON.stringify(schemaHowToSteps) : undefined,
     };
 
     if (isEditing && editId) {
       updatePost.mutate({
         id: editId,
         ...payload,
-        scheduledAt: isSchedule ? mountainToUtc(scheduledAt) : null,
+        scheduledAt: isSchedule && !chosenDateIsPast ? chosenDateUtc : null,
       });
     } else {
       createPost.mutate(payload);
@@ -309,26 +374,20 @@ export default function BlogEditor() {
     const file = e.target.files?.[0];
     if (!file) return;
     handleImageFile(file, (url) => {
-      // Insert Markdown image at cursor position
-      const textarea = contentRef.current;
-      if (textarea) {
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        const before = content.slice(0, start);
-        const after = content.slice(end);
-        const imgMarkdown = `\n![${file.name}](${url})\n`;
-        setContent(before + imgMarkdown + after);
-        // Move cursor after the inserted text
-        requestAnimationFrame(() => {
-          textarea.selectionStart = textarea.selectionEnd = start + imgMarkdown.length;
-          textarea.focus();
-        });
-      } else {
-        setContent(content + `\n![${file.name}](${url})\n`);
-      }
-      toast.success("Image inserted!");
+      // Show alt text dialog before inserting
+      setPendingImageUrl(url);
+      setImageAltText("");
     }, setUploadingInline);
     e.target.value = "";
+  };
+
+  const confirmImageInsert = () => {
+    if (pendingImageUrl && editorRef.current) {
+      editorRef.current.insertImage(pendingImageUrl, imageAltText);
+      toast.success("Image inserted!");
+    }
+    setPendingImageUrl(null);
+    setImageAltText("");
   };
 
   const handleCategoryChange = (value: string) => {
@@ -341,12 +400,6 @@ export default function BlogEditor() {
       setCustomCategory("");
     }
   };
-
-  const saveButtonLabel = publishMode === "now"
-    ? "Publish Now"
-    : publishMode === "schedule"
-    ? "Schedule Post"
-    : "Save Draft";
 
   return (
     <div className="min-h-screen" style={{ background: "oklch(0.18 0.025 160)" }}>
@@ -436,11 +489,29 @@ export default function BlogEditor() {
 
             {/* Content */}
             <div>
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
                 <label className="text-xs font-bold uppercase tracking-widest" style={{ color: "oklch(0.55 0.02 160)" }}>
-                  Content (Markdown supported)
+                  Content
                 </label>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  {/* View mode toggle */}
+                  <div className="flex items-center rounded-lg overflow-hidden" style={{ border: "1px solid oklch(0.35 0.02 160)" }}>
+                    {(["edit", "split", "preview"] as const).map((mode) => (
+                      <button
+                        key={mode}
+                        onClick={() => setViewMode(mode)}
+                        className="px-2.5 py-1.5 text-xs font-bold flex items-center gap-1 transition-all"
+                        style={{
+                          background: viewMode === mode ? "oklch(0.72 0.12 75)" : "oklch(0.28 0.02 160)",
+                          color: viewMode === mode ? "oklch(0.22 0.02 160)" : "oklch(0.65 0.02 160)",
+                        }}
+                        title={mode === "edit" ? "Editor only" : mode === "split" ? "Split view" : "Preview only"}
+                      >
+                        {mode === "edit" ? <Eye size={12} /> : mode === "split" ? <Eye size={12} /> : <Eye size={12} />}
+                        <span className="hidden sm:inline">{mode === "edit" ? "Edit" : mode === "split" ? "Split" : "Preview"}</span>
+                      </button>
+                    ))}
+                  </div>
                   <button
                     onClick={() => inlineInputRef.current?.click()}
                     disabled={uploadingInline}
@@ -463,14 +534,15 @@ export default function BlogEditor() {
                   </span>
                 </div>
               </div>
-              <textarea
-                ref={contentRef}
-                placeholder="Write your blog post content here... You can use Markdown formatting.&#10;&#10;Tip: Click 'Insert Image' above to add photos directly into your post."
+
+              {/* Rich Text Editor */}
+              <RichTextEditor
+                ref={editorRef}
                 value={content}
-                onChange={e => setContent(e.target.value)}
-                rows={24}
-                className="w-full rounded-xl px-4 py-3 text-sm font-mono resize-y leading-relaxed"
-                style={{ background: "oklch(0.22 0.02 160)", color: "oklch(0.88 0.01 160)", border: "1px solid oklch(0.35 0.02 160)", minHeight: "400px" }}
+                onChange={setContent}
+                onImageInsert={() => inlineInputRef.current?.click()}
+                placeholder="Write your blog post content here... Use the toolbar above for headings, bold, lists, and more."
+                viewMode={viewMode}
               />
             </div>
           </div>
@@ -516,7 +588,7 @@ export default function BlogEditor() {
                     color: publishMode === "schedule" ? "oklch(0.90 0.10 75)" : "oklch(0.88 0.01 160)",
                   }}
                 >
-                  <Calendar size={14} /> Schedule for Later
+                  <Calendar size={14} /> Set Publish Date (Past or Future)
                 </button>
 
                 {/* Schedule picker */}
@@ -530,13 +602,15 @@ export default function BlogEditor() {
                       type="datetime-local"
                       value={scheduledAt}
                       onChange={e => setScheduledAt(e.target.value)}
-                      min={nowMountain()}
                       className="w-full text-sm rounded-lg px-3 py-2"
                       style={{ background: "oklch(0.22 0.02 160)", color: "oklch(0.88 0.01 160)", border: "1px solid oklch(0.42 0.02 160)", colorScheme: "dark" }}
                     />
                     {scheduledAt && (
                       <p className="text-xs mt-2" style={{ color: "oklch(0.60 0.02 160)" }}>
-                        Will publish on {new Date(mountainToUtc(scheduledAt)).toLocaleString("en-US", { timeZone: "America/Denver", weekday: "short", month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true })} MT
+                        {new Date(mountainToUtc(scheduledAt)) <= new Date()
+                          ? `Will backdate to ${new Date(mountainToUtc(scheduledAt)).toLocaleString("en-US", { timeZone: "America/Denver", weekday: "short", month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true })} MT`
+                          : `Will publish on ${new Date(mountainToUtc(scheduledAt)).toLocaleString("en-US", { timeZone: "America/Denver", weekday: "short", month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true })} MT`
+                        }
                       </p>
                     )}
                   </div>
@@ -593,7 +667,7 @@ export default function BlogEditor() {
               <div className="space-y-3">
                 {coverImage && (
                   <div className="relative rounded-lg overflow-hidden">
-                    <img src={coverImage} alt="Cover" className="w-full h-40 object-cover" />
+                    <img src={coverImage} alt={coverImageAlt || "Cover"} className="w-full h-40 object-cover" />
                     <button
                       onClick={() => setCoverImage("")}
                       className="absolute top-2 right-2 p-1.5 rounded-full"
@@ -627,6 +701,19 @@ export default function BlogEditor() {
                     style={{ background: "oklch(0.28 0.02 160)", color: "oklch(0.88 0.01 160)", border: "1px solid oklch(0.35 0.02 160)" }}
                   />
                 </div>
+                {coverImage && (
+                  <div>
+                    <label className="text-xs mb-1 block" style={{ color: "oklch(0.60 0.02 160)" }}>Alt Text</label>
+                    <input
+                      type="text"
+                      placeholder="Describe the image for accessibility & SEO..."
+                      value={coverImageAlt}
+                      onChange={e => setCoverImageAlt(e.target.value)}
+                      className="w-full text-xs rounded-lg px-3 py-2"
+                      style={{ background: "oklch(0.28 0.02 160)", color: "oklch(0.88 0.01 160)", border: "1px solid oklch(0.35 0.02 160)" }}
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
@@ -663,6 +750,161 @@ export default function BlogEditor() {
               </div>
             </div>
 
+            {/* Schema Markup */}
+            <div className="rounded-xl overflow-hidden" style={{ background: "oklch(0.22 0.02 160)" }}>
+              <button
+                onClick={() => setSchemaExpanded(v => !v)}
+                className="w-full flex items-center justify-between px-5 py-4 text-left"
+              >
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "oklch(0.55 0.02 160)" }}>Schema Markup</p>
+                  <p className="text-xs mt-0.5" style={{ color: "oklch(0.72 0.12 75)" }}>{schemaTypes.join(", ") || "None"}</p>
+                </div>
+                <ChevronDown size={14} style={{ color: "oklch(0.55 0.02 160)", transform: schemaExpanded ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+              </button>
+              {schemaExpanded && (
+                <div className="px-5 pb-5 space-y-4 border-t" style={{ borderColor: "oklch(0.28 0.02 160)" }}>
+                  {/* Schema type toggles */}
+                  <div>
+                    <p className="text-xs font-bold mb-2 mt-3" style={{ color: "oklch(0.60 0.02 160)" }}>Schema Types</p>
+                    <div className="flex flex-wrap gap-2">
+                      {["Article", "FAQ", "VideoObject", "HowTo", "BlogPosting"].map(type => (
+                        <button
+                          key={type}
+                          onClick={() => setSchemaTypes(prev =>
+                            prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
+                          )}
+                          className="px-2.5 py-1 rounded-full text-xs font-bold transition-all"
+                          style={{
+                            background: schemaTypes.includes(type) ? "oklch(0.38 0.10 148)" : "oklch(0.28 0.02 160)",
+                            color: schemaTypes.includes(type) ? "white" : "oklch(0.65 0.02 160)",
+                            border: `1px solid ${schemaTypes.includes(type) ? "oklch(0.38 0.10 148)" : "oklch(0.35 0.02 160)"}`
+                          }}
+                        >
+                          {type}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* FAQ fields */}
+                  {schemaTypes.includes("FAQ") && (
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs font-bold" style={{ color: "oklch(0.60 0.02 160)" }}>FAQ Items</p>
+                        <button
+                          onClick={() => setSchemaFaqItems(prev => [...prev, { question: "", answer: "" }])}
+                          className="text-xs px-2 py-1 rounded-lg"
+                          style={{ background: "oklch(0.28 0.02 160)", color: "oklch(0.72 0.12 75)" }}
+                        >+ Add Q&A</button>
+                      </div>
+                      {schemaFaqItems.map((item, i) => (
+                        <div key={i} className="mb-3 p-3 rounded-lg space-y-2" style={{ background: "oklch(0.25 0.02 160)" }}>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs" style={{ color: "oklch(0.55 0.02 160)" }}>Q{i + 1}</span>
+                            <button onClick={() => setSchemaFaqItems(prev => prev.filter((_, j) => j !== i))} style={{ color: "oklch(0.55 0.02 160)" }}><X size={12} /></button>
+                          </div>
+                          <input
+                            type="text" placeholder="Question..."
+                            value={item.question}
+                            onChange={e => setSchemaFaqItems(prev => prev.map((it, j) => j === i ? { ...it, question: e.target.value } : it))}
+                            className="w-full text-xs rounded px-2 py-1.5"
+                            style={{ background: "oklch(0.28 0.02 160)", color: "oklch(0.88 0.01 160)", border: "1px solid oklch(0.35 0.02 160)" }}
+                          />
+                          <textarea
+                            placeholder="Answer..."
+                            value={item.answer}
+                            onChange={e => setSchemaFaqItems(prev => prev.map((it, j) => j === i ? { ...it, answer: e.target.value } : it))}
+                            rows={2}
+                            className="w-full text-xs rounded px-2 py-1.5 resize-none"
+                            style={{ background: "oklch(0.28 0.02 160)", color: "oklch(0.88 0.01 160)", border: "1px solid oklch(0.35 0.02 160)" }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* VideoObject fields */}
+                  {schemaTypes.includes("VideoObject") && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-bold" style={{ color: "oklch(0.60 0.02 160)" }}>Video Details</p>
+                      <input
+                        type="text" placeholder="YouTube URL..."
+                        value={schemaVideoUrl}
+                        onChange={e => setSchemaVideoUrl(e.target.value)}
+                        className="w-full text-xs rounded-lg px-3 py-2"
+                        style={{ background: "oklch(0.28 0.02 160)", color: "oklch(0.88 0.01 160)", border: "1px solid oklch(0.35 0.02 160)" }}
+                      />
+                      <textarea
+                        placeholder="Video description..."
+                        value={schemaVideoDescription}
+                        onChange={e => setSchemaVideoDescription(e.target.value)}
+                        rows={2}
+                        className="w-full text-xs rounded-lg px-3 py-2 resize-none"
+                        style={{ background: "oklch(0.28 0.02 160)", color: "oklch(0.88 0.01 160)", border: "1px solid oklch(0.35 0.02 160)" }}
+                      />
+                    </div>
+                  )}
+
+                  {/* HowTo fields */}
+                  {schemaTypes.includes("HowTo") && (
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs font-bold" style={{ color: "oklch(0.60 0.02 160)" }}>How-To Steps</p>
+                        <button
+                          onClick={() => setSchemaHowToSteps(prev => [...prev, { name: "", text: "" }])}
+                          className="text-xs px-2 py-1 rounded-lg"
+                          style={{ background: "oklch(0.28 0.02 160)", color: "oklch(0.72 0.12 75)" }}
+                        >+ Add Step</button>
+                      </div>
+                      {schemaHowToSteps.map((step, i) => (
+                        <div key={i} className="mb-3 p-3 rounded-lg space-y-2" style={{ background: "oklch(0.25 0.02 160)" }}>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs" style={{ color: "oklch(0.55 0.02 160)" }}>Step {i + 1}</span>
+                            <button onClick={() => setSchemaHowToSteps(prev => prev.filter((_, j) => j !== i))} style={{ color: "oklch(0.55 0.02 160)" }}><X size={12} /></button>
+                          </div>
+                          <input
+                            type="text" placeholder="Step name..."
+                            value={step.name}
+                            onChange={e => setSchemaHowToSteps(prev => prev.map((st, j) => j === i ? { ...st, name: e.target.value } : st))}
+                            className="w-full text-xs rounded px-2 py-1.5"
+                            style={{ background: "oklch(0.28 0.02 160)", color: "oklch(0.88 0.01 160)", border: "1px solid oklch(0.35 0.02 160)" }}
+                          />
+                          <textarea
+                            placeholder="Step instructions..."
+                            value={step.text}
+                            onChange={e => setSchemaHowToSteps(prev => prev.map((st, j) => j === i ? { ...st, text: e.target.value } : st))}
+                            rows={2}
+                            className="w-full text-xs rounded px-2 py-1.5 resize-none"
+                            style={{ background: "oklch(0.28 0.02 160)", color: "oklch(0.88 0.01 160)", border: "1px solid oklch(0.35 0.02 160)" }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* SEO Analysis Panel */}
+            <SeoAnalysisPanel
+              title={title}
+              seoTitle={seoTitle}
+              seoDescription={seoDescription || excerpt}
+              slug={slug}
+              content={content}
+              excerpt={excerpt}
+              category={resolvedCategory}
+              focusKeyword={focusKeyword}
+              onFocusKeywordChange={setFocusKeyword}
+              schemaTypes={schemaTypes}
+              onApplySeoTitle={setSeoTitle}
+              onApplySeoDescription={setSeoDescription}
+              onApplyTitle={(v) => { setTitle(v); setSlugManual(false); }}
+              onApplySlug={(v) => { setSlug(v); setSlugManual(true); }}
+              onApplyExcerpt={setExcerpt}
+            />
+
             {/* Preview link */}
             {isEditing && existingPost && (
               <a
@@ -678,6 +920,53 @@ export default function BlogEditor() {
           </div>
         </div>
       </div>
+
+      {/* Alt Text Dialog */}
+      {pendingImageUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: "oklch(0 0 0 / 0.6)" }}
+          onClick={(e) => { if (e.target === e.currentTarget) { setPendingImageUrl(null); setImageAltText(""); } }}
+        >
+          <div
+            className="rounded-xl p-6 w-full max-w-md shadow-2xl"
+            style={{ background: "oklch(0.22 0.025 160)", border: "1px solid oklch(0.30 0.02 160)" }}
+          >
+            <h3 className="text-base font-semibold mb-1" style={{ color: "oklch(0.92 0.01 160)" }}>Add Image Alt Text</h3>
+            <p className="text-xs mb-4" style={{ color: "oklch(0.60 0.02 160)" }}>Alt text describes the image for screen readers and improves SEO. Be descriptive and concise.</p>
+            <img src={pendingImageUrl} alt="Preview" className="w-full h-32 object-cover rounded-lg mb-4" />
+            <label className="block text-xs font-medium mb-1" style={{ color: "oklch(0.75 0.02 160)" }}>Alt Text</label>
+            <input
+              type="text"
+              value={imageAltText}
+              onChange={(e) => setImageAltText(e.target.value)}
+              placeholder="e.g. Lee Anne Chapman coaching session with a client"
+              autoFocus
+              onKeyDown={(e) => { if (e.key === "Enter") confirmImageInsert(); if (e.key === "Escape") { setPendingImageUrl(null); setImageAltText(""); } }}
+              className="w-full px-3 py-2 rounded-lg text-sm mb-4"
+              style={{ background: "oklch(0.18 0.025 160)", border: "1px solid oklch(0.35 0.025 160)", color: "oklch(0.92 0.01 160)", outline: "none" }}
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => { setPendingImageUrl(null); setImageAltText(""); }}
+                className="px-4 py-2 rounded-lg text-sm"
+                style={{ background: "oklch(0.28 0.025 160)", color: "oklch(0.75 0.02 160)" }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmImageInsert}
+                className="px-4 py-2 rounded-lg text-sm font-semibold"
+                style={{ background: "oklch(0.72 0.12 75)", color: "oklch(0.18 0.025 50)" }}
+              >
+                Insert Image
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

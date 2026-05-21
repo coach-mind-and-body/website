@@ -1,0 +1,1 @@
+ALTER TABLE `fpu_coaching_sessions` ADD `adminNotes` text;
