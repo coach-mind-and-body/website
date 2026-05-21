@@ -183,8 +183,8 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
               </div>
               <p className="text-sm mt-4" style={{ color: "oklch(0.75 0.015 148)" }}>
                 FPU kits start at{" "}
-                <strong style={{ color: "oklch(0.72 0.11 78)" }}>$99</strong> · Optional 1:1
-                coaching add-on available
+                <strong style={{ color: "oklch(0.72 0.11 78)" }}>$99</strong> · <a href="#fpu-coaching" className="underline transition-colors hover:opacity-80" style={{ color: "oklch(0.72 0.11 78)" }}>Optional 1:1
+                coaching add-on available</a>
               </p>
             </div>
 
