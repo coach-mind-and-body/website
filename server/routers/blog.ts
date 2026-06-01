@@ -6,7 +6,7 @@ import { getDb } from "../db";
 import { blogPosts } from "../../drizzle/schema";
 import { storagePut } from "../storage";
 import { TRPCError } from "@trpc/server";
-import { mailchimpSubscribe } from "../mailchimp";
+import { resendSubscribe } from "../resendSubscribe";
 
 function adminOnly(role: string | undefined) {
   if (role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Admins only" });
@@ -271,15 +271,13 @@ export const blogRouter = router({
       firstName: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
-      const result = await mailchimpSubscribe({
+      const result = await resendSubscribe({
         email: input.email,
         firstName: input.firstName,
-        tags: ["blog_sub"],
       });
+
       if (!result.success) {
-        // Don't expose internal errors — just return success to avoid leaking info
-        // but log for debugging
-        console.error("[Blog Subscribe] Mailchimp error:", result.error);
+        console.error("[Blog Subscribe] Resend error:", result.error);
       }
       // Always return success to the user (avoids email enumeration)
       return { success: true };
