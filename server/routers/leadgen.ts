@@ -22,7 +22,7 @@ export const leadgenRouter = router({
 
       // 1.5 Add to internal subscribers table
       try {
-        const { getDb } from "../db";
+        const { getDb } = await import("../db");
         const { subscribers } = await import("../../drizzle/schema");
         const { eq } = await import("drizzle-orm");
         
