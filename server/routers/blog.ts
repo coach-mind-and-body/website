@@ -15,10 +15,10 @@ function adminOnly(role: string | undefined) {
 export const blogRouter = router({
   // Public: list published posts (also auto-publishes scheduled posts that are due)
   list: publicProcedure
-    .input(z.object({ limit: z.number().min(1).max(50).default(10), category: z.string().optional() }))
+    .input(z.object({ limit: z.number().min(1).max(50).default(9), page: z.number().min(1).default(1), category: z.string().optional() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) return [];
+      if (!db) return { posts: [], totalCount: 0 };
 
       // Auto-publish any scheduled posts whose time has arrived
       const now = new Date();
@@ -35,12 +35,23 @@ export const blogRouter = router({
 
       const conditions = [eq(blogPosts.published, true)];
       if (input.category) conditions.push(eq(blogPosts.category, input.category));
-      return db
+      
+      const offset = (input.page - 1) * input.limit;
+      
+      const posts = await db
         .select()
         .from(blogPosts)
         .where(and(...conditions))
         .orderBy(desc(blogPosts.publishedAt))
-        .limit(input.limit);
+        .limit(input.limit)
+        .offset(offset);
+        
+      const [{ count }] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(blogPosts)
+        .where(and(...conditions));
+        
+      return { posts, totalCount: count };
     }),
 
   // Public: get single post by slug

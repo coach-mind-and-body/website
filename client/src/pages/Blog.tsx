@@ -1,9 +1,9 @@
 import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { ChevronRight, Search, X } from "lucide-react";
+import { Helmet } from "react-helmet-async";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
-import { BLOG_CATEGORIES } from "../../../shared/brand";
 import { trpc } from "@/lib/trpc";
 import { usePageTitle } from "@/hooks/usePageTitle";
 
@@ -22,9 +22,25 @@ export default function Blog() {
     description: "Articles on midlife wellness, nutrition, hormones, mindset, body image, and food freedom for women 40+ by certified coach Lee Anne Chapman.",
     keywords: "health blog, wellness blog, midlife nutrition, hormones blog, food freedom articles, women over 40 health, perimenopause, body image"
   });
+  
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const { data: dbPosts } = trpc.blog.list.useQuery({ limit: 50, category: selectedCategory ?? undefined });
+  const [page, setPage] = useState(1);
+  const limit = 9;
+
+  const { data: dbCategories } = trpc.blog.categories.useQuery();
+  const categories = dbCategories ?? [];
+
+  // Always fetch posts based on current page/category limit 9
+  const { data: postsData } = trpc.blog.list.useQuery({ 
+    limit, 
+    page, 
+    category: selectedCategory ?? undefined 
+  });
+
+  const dbPosts = postsData?.posts;
+  const totalCount = postsData?.totalCount ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / limit));
 
   const allPosts = useMemo(() => (dbPosts && dbPosts.length > 0)
     ? dbPosts.map(p => ({
@@ -36,7 +52,7 @@ export default function Blog() {
         coverImage: p.coverImage ?? null,
         readTime: Math.max(1, Math.ceil(p.content.replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length / 200)),
       }))
-    : STATIC_POSTS.filter(p => !selectedCategory || p.category === selectedCategory).map(p => ({ ...p, readTime: null })),
+    : STATIC_POSTS.filter(p => !selectedCategory || p.category === selectedCategory).slice(0, limit).map(p => ({ ...p, readTime: null })),
   [dbPosts, selectedCategory]);
 
   const posts = useMemo(() => {
@@ -49,8 +65,24 @@ export default function Blog() {
     );
   }, [allPosts, searchQuery]);
 
+  // Generate ItemList JSON-LD for SEO
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "itemListElement": posts.map((post, index) => ({
+      "@type": "ListItem",
+      "position": index + 1,
+      "url": `https://coach-mind-and-body.com/health-wellness-blog/${post.slug}`
+    }))
+  };
+
   return (
     <div className="min-h-screen" style={{ background: "oklch(0.97 0.008 10)" }}>
+      <Helmet>
+        <script type="application/ld+json">
+          {JSON.stringify(structuredData)}
+        </script>
+      </Helmet>
       <SiteNav />
 
       {/* Hero */}
@@ -100,7 +132,7 @@ export default function Blog() {
         <div className="container">
           <div className="flex flex-wrap gap-2 justify-center">
             <button
-              onClick={() => setSelectedCategory(null)}
+              onClick={() => { setSelectedCategory(null); setPage(1); }}
               className="px-4 py-1.5 rounded-full text-xs font-bold transition-all"
               style={{
                 background: !selectedCategory ? "oklch(0.22 0.02 160)" : "oklch(0.93 0.01 160)",
@@ -109,10 +141,10 @@ export default function Blog() {
             >
               All Topics
             </button>
-            {BLOG_CATEGORIES.map((cat) => (
+            {categories.map((cat) => (
               <button
                 key={cat}
-                onClick={() => setSelectedCategory(cat === selectedCategory ? null : cat)}
+                onClick={() => { setSelectedCategory(cat === selectedCategory ? null : cat); setPage(1); }}
                 className="px-4 py-1.5 rounded-full text-xs font-bold transition-all"
                 style={{
                   background: selectedCategory === cat ? "oklch(0.38 0.10 148)" : "oklch(0.93 0.01 160)",
@@ -170,6 +202,46 @@ export default function Blog() {
                   </div>
                 </Link>
               ))}
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && !searchQuery && (
+            <div className="mt-12 flex justify-center items-center gap-2">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="px-4 py-2 rounded-full text-sm font-bold disabled:opacity-50 transition-all"
+                style={{ background: "oklch(0.93 0.01 160)", color: "oklch(0.22 0.02 160)" }}
+              >
+                Previous
+              </button>
+              
+              <div className="flex gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className="w-10 h-10 rounded-full text-sm font-bold transition-all flex items-center justify-center"
+                    style={{
+                      background: page === p ? "oklch(0.22 0.02 160)" : "transparent",
+                      color: page === p ? "white" : "oklch(0.22 0.02 160)",
+                      border: page === p ? "none" : "1.5px solid oklch(0.85 0.02 160)"
+                    }}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="px-4 py-2 rounded-full text-sm font-bold disabled:opacity-50 transition-all"
+                style={{ background: "oklch(0.93 0.01 160)", color: "oklch(0.22 0.02 160)" }}
+              >
+                Next
+              </button>
             </div>
           )}
         </div>
