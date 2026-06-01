@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { publicProcedure, router } from "../_core/trpc";
-import { mailchimpSubscribe } from "../mailchimp";
+import { resendSubscribe } from "../resendSubscribe";
 
 const PLAYLIST_ID = "PL7rk7dm4oyzKumv4UU53xInS8sNof9q7H";
 const CHANNEL_ID = "UCMindandBodyResetCoach"; // fallback
@@ -65,13 +65,13 @@ export const podcastRouter = router({
       firstName: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
-      const result = await mailchimpSubscribe({
+      const result = await resendSubscribe({
         email: input.email,
         firstName: input.firstName,
-        tags: ["podcast"],
       });
+
       if (!result.success) {
-        console.error("[Podcast Subscribe] Mailchimp error:", result.error);
+        console.error("[Podcast Subscribe] Resend error:", result.error);
       }
       // Always return success to avoid email enumeration
       return { success: true };

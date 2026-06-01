@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { BRAND } from "../../../shared/brand";
 import { Instagram, Facebook, Youtube } from "lucide-react";
 
-const LOGO = BRAND.logoUrl;
+const LOGO = BRAND.logoWideUrl;
 
 export default function SiteFooter() {
   return (

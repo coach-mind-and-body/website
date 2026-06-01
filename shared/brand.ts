@@ -7,8 +7,8 @@ export const BRAND = {
   coachName: "Lee Anne",
   coachFullName: "Lee Anne",
   website: "https://mindandbodyresetcoach.com",
-  logoUrl:
-    "https://private-us-east-1.manuscdn.com/user_upload_by_module/session_file/310519663371864914/eCTnvmnMgtoPSEVJ.png?Expires=1804045266&Signature=oGKs8o9KfO0~k2qX3u2CKMepWZZW5o3EcRXjopM2siYxvI3DzRbe3dcUbowLpIu2H2S~WROdd5qnqPu1oywo6EINglVG~bq-4VUunML82Pu-wL2PFdMzfzUxBXxCOi4MKkh37bMY94XSxCBDUVWV9oc-XM4kRXIy6-fnMHAl2ML~zYqJ5LVzLrvh1zv5m1PPoqCz-03Zaph6z9JoW5zFOLZTmpjEQ5xPPUA1Hp3aHLWwwxoWMjYB87sQ2S6STFeNPDq2-84uk1-2Le84If1Zz8yL7DMdBrCP6Z1kUBb30jbaoLRtqUmypXBAhUdDGyNNbe9bjQ2SyG-zdIHX7u0W8g__&Key-Pair-Id=K2HSFNDJXOU9YS",
+  logoUrl: "/logo-circular.png",
+  logoWideUrl: "/logo-wide.png",
 } as const;
 
 export const GOOGLE_CALENDAR = {

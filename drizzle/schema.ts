@@ -301,3 +301,31 @@ export const moduleProgress = mysqlTable("module_progress", {
 
 export type ModuleProgress = typeof moduleProgress.$inferSelect;
 export type InsertModuleProgress = typeof moduleProgress.$inferInsert;
+
+// ── Email Automation ─────────────────────────────────────────────────────────
+export const subscribers = mysqlTable("subscribers", {
+  id: int("id").autoincrement().primaryKey(),
+  email: varchar("email", { length: 320 }).notNull().unique(),
+  firstName: varchar("firstName", { length: 255 }),
+  lastName: varchar("lastName", { length: 255 }),
+  segments: text("segments"), // JSON array of segment strings e.g. ["fpu", "podcast"]
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Subscriber = typeof subscribers.$inferSelect;
+export type InsertSubscriber = typeof subscribers.$inferInsert;
+
+export const sequenceEnrollments = mysqlTable("sequence_enrollments", {
+  id: int("id").autoincrement().primaryKey(),
+  subscriberId: int("subscriberId").notNull(),
+  sequenceId: varchar("sequenceId", { length: 255 }).notNull(), // e.g. "fpu_babystep_1"
+  currentStep: int("currentStep").default(0).notNull(), // 0 = not started
+  lastEmailedAt: timestamp("lastEmailedAt"),
+  status: mysqlEnum("status", ["active", "completed", "cancelled"]).default("active").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SequenceEnrollment = typeof sequenceEnrollments.$inferSelect;
+export type InsertSequenceEnrollment = typeof sequenceEnrollments.$inferInsert;

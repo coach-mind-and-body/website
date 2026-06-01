@@ -265,7 +265,46 @@ export const fpuRouter = router({
           name: input.name,
           email: input.email,
         });
+
+        // --- ENROLL IN EMAIL SEQUENCE ---
+        try {
+          const { subscribers, sequenceEnrollments } = await import("../../drizzle/schema");
+          const existingSub = await db.select().from(subscribers).where(eq(subscribers.email, input.email)).limit(1);
+          let subId;
+          
+          if (existingSub.length > 0) {
+            subId = existingSub[0].id;
+            const currentSegments = existingSub[0].segments ? JSON.parse(existingSub[0].segments) : [];
+            if (!currentSegments.includes("fpu")) {
+              currentSegments.push("fpu");
+              await db.update(subscribers).set({ segments: JSON.stringify(currentSegments) }).where(eq(subscribers.id, subId));
+            }
+          } else {
+            const result = await db.insert(subscribers).values({
+              email: input.email,
+              firstName: input.name,
+              segments: JSON.stringify(["fpu"]),
+            });
+            subId = result[0].insertId;
+          }
+
+          // Enroll in sequence if not already enrolled
+          const existingEnrollment = await db.select().from(sequenceEnrollments)
+            .where(and(eq(sequenceEnrollments.subscriberId, subId), eq(sequenceEnrollments.sequenceId, "fpu_babystep_1")))
+            .limit(1);
+            
+          if (existingEnrollment.length === 0) {
+            await db.insert(sequenceEnrollments).values({
+              subscriberId: subId,
+              sequenceId: "fpu_babystep_1",
+            });
+          }
+        } catch (e) {
+          console.error("Failed to enroll in FPU sequence:", e);
+        }
+        // --------------------------------
       }
+      
       // Notify Lee Anne so she can add the client to the Google Calendar event
       await sendOwnerFpuGroupSignUpEmail({
         clientName: input.name,

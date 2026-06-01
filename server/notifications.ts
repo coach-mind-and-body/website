@@ -639,3 +639,37 @@ export async function sendAssignmentFeedbackEmail(params: {
   const textBody = `Hi ${firstName},\n\nLee Anne left feedback on your assignment for ${moduleTitle}.\n\nRead it here: https://mindandbodyresetcoach.com/portal/hub`;
   return sendTransactionalEmail({ to: clientEmail, toName: clientName, subject, htmlBody, textBody });
 }
+
+export async function sendSnackHackEmail(params: {
+  clientEmail: string;
+  clientName: string;
+}): Promise<boolean> {
+  const { clientEmail, clientName } = params;
+  const firstName = clientName.split(" ")[0] || clientName;
+  const subject = `Your Guide: The Midlife Mindset Snack Hack`;
+  const pdfUrl = `${ENV.appPublicUrl}/late-night-snack-hack.pdf`;
+
+  const htmlBody = `
+    <div style="font-family:'Nunito Sans',Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+      <div style="background:linear-gradient(135deg,#5a7a5a 0%,#3a5a3a 100%);padding:40px;text-align:center;">
+        <h1 style="margin:0 0 8px;color:white;font-size:26px;font-weight:700;">The Midlife Mindset Guide</h1>
+        <p style="margin:0;color:rgba(255,255,255,0.85);font-size:15px;">Finding Peace and Control with Late-Night Snacking</p>
+      </div>
+      <div style="padding:36px 40px;">
+        <p style="color:#4a4a4a;font-size:16px;margin:0 0 16px;">Hi ${firstName},</p>
+        <p style="color:#4a4a4a;font-size:16px;margin:0 0 16px;">I'm so excited to share this guide with you. The evening hours don't have to be a battleground, and I hope these strategies bring you a profound sense of peace and control.</p>
+        <p style="color:#4a4a4a;font-size:16px;margin:0 0 16px;">You can download your free PDF guide below:</p>
+        
+        <div style="text-align:center;margin:32px 0;">
+          <a href="${pdfUrl}" style="display:inline-block;background:#c9a96e;color:white;padding:14px 36px;border-radius:9999px;text-decoration:none;font-size:16px;font-weight:700;">Download the PDF Guide</a>
+        </div>
+        
+        <p style="color:#4a4a4a;font-size:15px;margin-top:24px;">With love,<br/><strong>Lee Anne</strong><br/><span style="color:#8a9a8a;font-size:13px;">Certified Life &amp; Health Coach | Mind &amp; Body Reset</span></p>
+      </div>
+    </div>
+  `;
+
+  const textBody = `Hi ${firstName},\n\nHere is your Midlife Mindset Guide for late-night snacking.\n\nDownload the PDF here: ${pdfUrl}\n\nWith love,\nLee Anne\nMind & Body Reset`;
+
+  return sendTransactionalEmail({ to: clientEmail, toName: clientName, subject, htmlBody, textBody });
+}

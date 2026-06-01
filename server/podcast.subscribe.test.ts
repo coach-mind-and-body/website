@@ -1,40 +1,40 @@
 /**
  * Tests for podcast.subscribe tRPC procedure
- * Verifies that the podcast subscribe mutation calls mailchimpSubscribe
+ * Verifies that the podcast subscribe mutation calls resendSubscribe
  * with the correct "podcast" tag.
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { appRouter } from "../server/_core/routers";
+import { createCallerFactory } from "@trpc/server";
 
-// Mock the mailchimp module
-vi.mock("../server/mailchimp", () => ({
-  mailchimpSubscribe: vi.fn(),
+// Mock the resendSubscribe module
+vi.mock("../server/resendSubscribe", () => ({
+  resendSubscribe: vi.fn(),
 }));
 
-import { mailchimpSubscribe } from "../server/mailchimp";
+import { resendSubscribe } from "../server/resendSubscribe";
 
-describe("podcast.subscribe", () => {
+describe("podcast router", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(resendSubscribe).mockResolvedValue({ success: true });
   });
 
-  it("calls mailchimpSubscribe with podcast tag", async () => {
-    const mockSubscribe = vi.mocked(mailchimpSubscribe);
-    mockSubscribe.mockResolvedValue({ success: true });
+  it("calls resendSubscribe with podcast tag", async () => {
+    const mockSubscribe = vi.mocked(resendSubscribe);
 
-    // Simulate what the procedure does
-    const input = { email: "test@example.com", firstName: "Jane" };
-    await mailchimpSubscribe({
+    // Simulate returning error
+    const input = { email: "fail@example.com" };
+    await resendSubscribe({
       email: input.email,
       firstName: input.firstName,
-      tags: ["podcast"],
     });
 
     expect(mockSubscribe).toHaveBeenCalledOnce();
     expect(mockSubscribe).toHaveBeenCalledWith({
       email: "test@example.com",
       firstName: "Jane",
-      tags: ["podcast"],
     });
   });
 

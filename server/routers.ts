@@ -14,6 +14,9 @@ import { pageEditorRouter } from "./routers/pageEditor";
 import { podcastRouter } from "./routers/podcast";
 import { seoOptimizerRouter } from "./routers/seoOptimizer";
 import { reclaimHubRouter } from "./routers/reclaimHub";
+import { leadgenRouter } from "./routers/leadgen";
+import { cronRouter } from "./routers/cron";
+
 export const appRouter = router({
   system: systemRouter,
   auth: router({
@@ -36,6 +39,8 @@ export const appRouter = router({
   podcast: podcastRouter,
   seoOptimizer: seoOptimizerRouter,
   reclaimHub: reclaimHubRouter,
+  leadgen: leadgenRouter,
+  cron: cronRouter,
 });
 
 export type AppRouter = typeof appRouter;
