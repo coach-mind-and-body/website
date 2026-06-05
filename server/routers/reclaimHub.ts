@@ -10,6 +10,7 @@ import {
   enrollments
 } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
+import { getUpcomingEventsForEmail } from "../googleCalendar";
 
 function adminOnly(role: string | undefined) {
   if (role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Admins only" });
@@ -17,6 +18,12 @@ function adminOnly(role: string | undefined) {
 
 export const reclaimHubRouter = router({
   // ── Client Endpoints ────────────────────────────────────────────────────────
+  
+  // Get upcoming Google Meet appointments
+  getUpcomingAppointments: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.user?.email) return [];
+    return getUpcomingEventsForEmail(ctx.user.email);
+  }),
   
   // Get all published modules and the user's progress/submissions
   getModules: protectedProcedure.query(async ({ ctx }) => {

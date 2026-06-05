@@ -387,11 +387,11 @@ export function registerAuthRoutes(app: Express) {
       // initial /api/auth/google redirect — always use APP_PUBLIC_URL (custom domain).
       const origin = getPublicOrigin(req);
       let redirectUri = `${origin}/api/auth/google/callback`;
-      let postLoginRedirect = "/admin";
+      let statePostLoginRedirect: string | undefined;
       try {
         const stateData = JSON.parse(Buffer.from(stateParam, "base64url").toString());
         if (stateData.redirectUri) redirectUri = stateData.redirectUri;
-        if (stateData.postLoginRedirect) postLoginRedirect = stateData.postLoginRedirect;
+        if (stateData.postLoginRedirect) statePostLoginRedirect = stateData.postLoginRedirect;
       } catch (_) {}
 
       console.log("[Auth/Google] Callback - using redirectUri for token exchange:", redirectUri);
@@ -441,6 +441,8 @@ export function registerAuthRoutes(app: Express) {
         googleId: googleUser.sub,
         emailVerified: googleUser.email_verified ?? true,
       });
+
+      const postLoginRedirect = statePostLoginRedirect || (user.role === "admin" ? "/admin" : "/portal");
 
       await issueSession(res, req, user.openId, user.name || googleUser.name || "");
       res.setHeader("Cache-Control", "no-store, max-age=0");

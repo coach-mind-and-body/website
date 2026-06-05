@@ -55,6 +55,10 @@ export default function Portal() {
     { enabled: !!data?.enrollment?.id }
   );
 
+  const { data: upcomingEvents, isLoading: upcomingLoading } = trpc.reclaimHub.getUpcomingAppointments.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
+
   const uploadFile = trpc.clientFiles.upload.useMutation({
     onSuccess: () => {
       toast.success("File uploaded successfully!");
@@ -219,6 +223,45 @@ export default function Portal() {
             </p>
           )}
         </div>
+
+        {/* Upcoming Events Section */}
+        {upcomingEvents && upcomingEvents.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-bold mb-4" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
+              Upcoming Sessions
+            </h2>
+            <div className="space-y-3">
+              {upcomingEvents.map((event: any) => (
+                <div key={event.id} className="rounded-xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4" style={{ background: "white", border: "1px solid #f0e8e4" }}>
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "#e8f5e9", color: "#4caf50" }}>
+                      <Video size={20} />
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm" style={{ color: "#2d3b2d" }}>
+                        {event.summary}
+                      </p>
+                      <p className="text-xs mt-0.5 font-semibold" style={{ color: "#8a9a8a" }}>
+                        {new Date(event.startTime).toLocaleString()} — {new Date(event.endTime).toLocaleTimeString()}
+                      </p>
+                    </div>
+                  </div>
+                  {event.meetLink && (
+                    <a
+                      href={event.meetLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold shadow-sm transition-transform hover:scale-105"
+                      style={{ background: "#1a73e8", color: "white" }}
+                    >
+                      <Video size={16} /> Join Google Meet
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* RECLAIM Sessions — only shown for enrolled clients */}
         {enrollment && <>

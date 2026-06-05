@@ -250,6 +250,57 @@ export async function createCalendarEventWithMeet(params: CreateEventParams): Pr
   }
 }
 
+export async function getUpcomingEventsForEmail(email: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const [adminToken] = await db.select().from(googleTokens).limit(1);
+  if (!adminToken) return [];
+
+  const accessToken = await getValidAccessToken(adminToken.userId);
+  if (!accessToken) return [];
+
+  const timeMin = new Date().toISOString();
+  // Fetch next 30 days
+  const timeMax = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+  // `q` parameter searches the event summary, description, attendees, etc.
+  const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}&singleEvents=true&orderBy=startTime&q=${encodeURIComponent(email)}`;
+
+  try {
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const data = await res.json() as any;
+    if (!data.items) return [];
+
+    const events = data.items
+      .filter((event: any) => event.status !== "cancelled" && event.start?.dateTime)
+      .filter((event: any) => {
+        // Ensure the email is actually an attendee or in the description/summary
+        const attendeeEmails = (event.attendees ?? []).map((a: any) => a.email.toLowerCase());
+        return attendeeEmails.includes(email.toLowerCase()) || 
+               event.summary?.toLowerCase().includes(email.toLowerCase()) ||
+               event.description?.toLowerCase().includes(email.toLowerCase());
+      })
+      .map((event: any) => {
+        const meetEntry = event.conferenceData?.entryPoints?.find((e: any) => e.entryPointType === "video");
+        return {
+          id: event.id,
+          summary: event.summary,
+          startTime: new Date(event.start.dateTime),
+          endTime: new Date(event.end.dateTime),
+          meetLink: meetEntry?.uri ?? "",
+          htmlLink: event.htmlLink ?? "",
+        };
+      });
+
+    return events;
+  } catch (err) {
+    console.error("getUpcomingEventsForEmail error:", err);
+    return [];
+  }
+}
+
 // ── Google Calendar Webhook (Push Notifications) ──────────────────────────────
 // When a new event is created on Lee Anne's calendar via the booking page,
 // Google sends a push notification to our webhook endpoint.

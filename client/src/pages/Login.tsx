@@ -84,8 +84,8 @@ export default function Login() {
         toast.success(`Welcome back, ${data.user?.name || email}!`);
       }
 
-      // Redirect admins to /admin, regular users to home
-      const destination = data.user?.role === "admin" ? "/admin" : "/";
+      // Redirect admins to /admin, regular users to /portal
+      const destination = data.user?.role === "admin" ? "/admin" : "/portal";
       navigate(destination);
     } catch (err: any) {
       toast.error(err.message || "Something went wrong");

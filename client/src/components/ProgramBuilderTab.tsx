@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/RichTextEditor";
 
 export default function ProgramBuilderTab() {
   const { data: modules, refetch: refetchModules } = trpc.reclaimHub.adminListModules.useQuery();
@@ -152,12 +153,12 @@ export default function ProgramBuilderTab() {
               
               <div>
                 <Label style={{ color: "oklch(0.80 0.02 160)" }}>Content (Rich text/HTML)</Label>
-                <Textarea 
-                  rows={8}
-                  value={editingModule.content || ""} 
-                  onChange={e => setEditingModule({...editingModule, content: e.target.value})} 
-                  style={{ background: "oklch(0.18 0.02 160)", borderColor: "oklch(0.35 0.02 160)", color: "oklch(0.97 0.008 10)" }}
-                />
+                <div className="mt-2" style={{ border: "1px solid oklch(0.35 0.02 160)", borderRadius: "0.5rem", overflow: "hidden" }}>
+                  <RichTextEditor 
+                    value={editingModule.content || ""} 
+                    onChange={html => setEditingModule({...editingModule, content: html})}
+                  />
+                </div>
               </div>
 
               <div>
