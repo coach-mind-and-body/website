@@ -44,6 +44,7 @@ export default function ReclaimHub() {
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [fileUrls, setFileUrls] = useState<Record<number, string>>({});
   const [uploadingAssignmentId, setUploadingAssignmentId] = useState<number | null>(null);
+  const [expandedAssignmentId, setExpandedAssignmentId] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const uploadFile = trpc.clientFiles.upload.useMutation({
@@ -312,17 +313,39 @@ export default function ReclaimHub() {
                         const submission = submissions.find(s => s.assignmentId === assignment.id);
                         
                         return (
-                          <div key={assignment.id} className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border" style={{ borderColor: "oklch(0.92 0.02 75)" }}>
-                            <div className="flex gap-4 mb-6">
-                              <div className="w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center font-bold text-sm mt-1" style={{ background: "oklch(0.95 0.04 148)", color: "oklch(0.38 0.08 148)" }}>
-                                {idx + 1}
+                          <div key={assignment.id} className="bg-white rounded-2xl shadow-sm border overflow-hidden transition-all" style={{ borderColor: "oklch(0.92 0.02 75)" }}>
+                            <button 
+                              className="w-full text-left p-6 md:p-8 flex items-center justify-between gap-4"
+                              onClick={() => setExpandedAssignmentId(expandedAssignmentId === assignment.id ? null : assignment.id)}
+                            >
+                              <div className="flex gap-4 items-center">
+                                <div className="w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center font-bold text-sm" style={{ background: "oklch(0.95 0.04 148)", color: "oklch(0.38 0.08 148)" }}>
+                                  {idx + 1}
+                                </div>
+                                <p className="text-lg font-medium leading-relaxed" style={{ color: "oklch(0.28 0.05 148)" }}>
+                                  {assignment.question}
+                                </p>
                               </div>
-                              <p className="text-lg font-medium leading-relaxed" style={{ color: "oklch(0.28 0.05 148)" }}>
-                                {assignment.question}
-                              </p>
-                            </div>
+                              <div className="flex items-center gap-3">
+                                {submission && (
+                                  <span className="hidden md:inline-flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-full" style={{ background: "oklch(0.95 0.04 148)", color: "oklch(0.38 0.08 148)" }}>
+                                    <CheckCircle size={12} /> {submission.feedback ? "Reviewed" : "Submitted"}
+                                  </span>
+                                )}
+                                {expandedAssignmentId === assignment.id ? <ChevronUp size={20} style={{ color: "oklch(0.60 0.12 148)" }} /> : <ChevronDown size={20} style={{ color: "oklch(0.60 0.12 148)" }} />}
+                              </div>
+                            </button>
                             
-                            <div className="flex flex-col gap-4">
+                            <AnimatePresence>
+                              {expandedAssignmentId === assignment.id && (
+                                <motion.div 
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: "auto", opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  className="border-t"
+                                  style={{ borderColor: "oklch(0.92 0.02 75)" }}
+                                >
+                                  <div className="p-6 md:p-8 pt-6 flex flex-col gap-4">
                               <Textarea 
                                 rows={5}
                                 placeholder="Type your reflection here (or upload a document below)..."
@@ -377,8 +400,6 @@ export default function ReclaimHub() {
                                   </div>
                                 )}
                               </div>
-                            </div>
-                            
                             <div className="mt-4 flex items-center justify-between">
                               {submission ? (
                                 <p className="text-xs font-semibold flex items-center gap-1" style={{ color: "oklch(0.60 0.12 148)" }}>
@@ -402,6 +423,10 @@ export default function ReclaimHub() {
                                 <p className="text-sm leading-relaxed" style={{ color: "oklch(0.38 0.08 148)" }}>{submission.feedback}</p>
                               </div>
                             )}
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
                           </div>
                         );
                       })}

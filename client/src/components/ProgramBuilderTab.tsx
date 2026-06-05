@@ -180,7 +180,13 @@ export default function ProgramBuilderTab() {
                 <Label htmlFor="isPublished" style={{ color: "oklch(0.80 0.02 160)" }}>Publish this module (Clients can see it when unlocked)</Label>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t" style={{ borderColor: "oklch(0.30 0.02 160)" }}>
+              {editingModule.id && (
+                <div className="mt-8 pt-6 border-t" style={{ borderColor: "oklch(0.30 0.02 160)" }}>
+                  <ModuleAssignmentsEditor moduleId={editingModule.id} />
+                </div>
+              )}
+
+              <div className="flex justify-end gap-3 pt-4 mt-4 border-t" style={{ borderColor: "oklch(0.30 0.02 160)" }}>
                 <Button variant="outline" onClick={() => setEditingModule(null)} style={{ borderColor: "oklch(0.35 0.02 160)", color: "oklch(0.80 0.02 160)" }}>Cancel</Button>
                 <Button 
                   onClick={() => {
@@ -252,3 +258,112 @@ export default function ProgramBuilderTab() {
     </div>
   );
 }
+
+function ModuleAssignmentsEditor({ moduleId }: { moduleId: number }) {
+  const { data: assignments, refetch } = trpc.reclaimHub.adminListAssignments.useQuery({ moduleId });
+  const [adding, setAdding] = useState(false);
+  const [newQuestion, setNewQuestion] = useState("");
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editQuestion, setEditQuestion] = useState("");
+
+  const createAssignment = trpc.reclaimHub.adminCreateAssignment.useMutation({
+    onSuccess: () => { toast.success("Task added!"); refetch(); setAdding(false); setNewQuestion(""); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const updateAssignment = trpc.reclaimHub.adminUpdateAssignment.useMutation({
+    onSuccess: () => { toast.success("Task updated!"); refetch(); setEditingId(null); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const deleteAssignment = trpc.reclaimHub.adminDeleteAssignment.useMutation({
+    onSuccess: () => { toast.success("Task deleted!"); refetch(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-bold text-lg" style={{ color: "oklch(0.97 0.008 10)" }}>Tasks & Assignments</h3>
+        <Button 
+          size="sm" 
+          onClick={() => setAdding(!adding)}
+          style={{ background: "oklch(0.28 0.02 160)", color: "oklch(0.97 0.008 10)" }}
+        >
+          <Plus size={14} className="mr-1" /> Add Task
+        </Button>
+      </div>
+
+      {adding && (
+        <div className="p-4 rounded-lg mb-4" style={{ background: "oklch(0.18 0.02 160)", border: "1px solid oklch(0.35 0.02 160)" }}>
+          <Label style={{ color: "oklch(0.80 0.02 160)" }}>Task Prompt / Question</Label>
+          <Textarea 
+            value={newQuestion}
+            onChange={(e) => setNewQuestion(e.target.value)}
+            placeholder="e.g. What are your biggest triggers for food noise?"
+            className="mt-2 mb-3"
+            style={{ background: "oklch(0.12 0.01 160)", borderColor: "oklch(0.35 0.02 160)", color: "oklch(0.97 0.008 10)" }}
+          />
+          <div className="flex justify-end gap-2">
+            <Button size="sm" variant="outline" onClick={() => setAdding(false)} style={{ borderColor: "oklch(0.35 0.02 160)", color: "oklch(0.80 0.02 160)" }}>Cancel</Button>
+            <Button 
+              size="sm" 
+              onClick={() => createAssignment.mutate({ moduleId, question: newQuestion, order: (assignments?.length || 0) + 1 })}
+              disabled={!newQuestion || createAssignment.isPending}
+              style={{ background: "oklch(0.72 0.12 75)", color: "oklch(0.18 0.02 160)" }}
+            >
+              Save Task
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-3">
+        {(assignments || []).map((assignment, index) => (
+          <div key={assignment.id} className="p-4 rounded-lg flex flex-col gap-3" style={{ background: "oklch(0.18 0.02 160)", border: "1px solid oklch(0.30 0.02 160)" }}>
+            {editingId === assignment.id ? (
+              <>
+                <Textarea 
+                  value={editQuestion}
+                  onChange={(e) => setEditQuestion(e.target.value)}
+                  className="mb-2"
+                  style={{ background: "oklch(0.12 0.01 160)", borderColor: "oklch(0.35 0.02 160)", color: "oklch(0.97 0.008 10)" }}
+                />
+                <div className="flex justify-end gap-2">
+                  <Button size="sm" variant="outline" onClick={() => setEditingId(null)} style={{ borderColor: "oklch(0.35 0.02 160)", color: "oklch(0.80 0.02 160)" }}>Cancel</Button>
+                  <Button 
+                    size="sm" 
+                    onClick={() => updateAssignment.mutate({ id: assignment.id, question: editQuestion })}
+                    disabled={!editQuestion || updateAssignment.isPending}
+                    style={{ background: "oklch(0.72 0.12 75)", color: "oklch(0.18 0.02 160)" }}
+                  >
+                    Save
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex gap-3">
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5" style={{ background: "oklch(0.28 0.02 160)", color: "oklch(0.72 0.12 75)" }}>
+                    {index + 1}
+                  </div>
+                  <p className="text-sm" style={{ color: "oklch(0.97 0.008 10)" }}>{assignment.question}</p>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="icon" onClick={() => { setEditingId(assignment.id); setEditQuestion(assignment.question); }} style={{ color: "oklch(0.72 0.12 75)" }}>
+                    <Edit2 size={14} />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => { if(confirm("Delete task?")) deleteAssignment.mutate({ id: assignment.id }); }} style={{ color: "oklch(0.60 0.02 160)" }}>
+                    <Trash2 size={14} />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+        {assignments?.length === 0 && !adding && <p className="text-sm" style={{ color: "oklch(0.55 0.02 160)" }}>No tasks for this module yet.</p>}
+      </div>
+    </div>
+  );
+}
+
