@@ -27,7 +27,7 @@ const formSchema = z.object({
 export default function SnackHackLeadGen() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const subscribeMutation = trpc.leadgen.subscribeSnackHack.useMutation();
-  const { trackEvent } = useMetaPixel();
+  const { trackLead } = useMetaPixel();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -44,7 +44,7 @@ export default function SnackHackLeadGen() {
       toast.success("Success! Check your email for your free guide.");
       
       // Fire conversion events
-      trackEvent("Lead", { content_name: "Snack Hack Guide" });
+      trackLead({ content_name: "Snack Hack Guide" });
       if (typeof window !== "undefined" && (window as any).gtag) {
         (window as any).gtag("event", "generate_lead", {
           event_category: "engagement",
