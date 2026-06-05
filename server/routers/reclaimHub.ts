@@ -260,6 +260,23 @@ export const reclaimHubRouter = router({
       return { success: true };
     }),
 
+  adminUploadFile: protectedProcedure
+    .input(z.object({
+      fileName: z.string(),
+      mimeType: z.string(),
+      base64Data: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      adminOnly(ctx.user?.role);
+      const { storagePut } = await import("../storage");
+      const buffer = Buffer.from(input.base64Data, "base64");
+      const ext = input.fileName.split(".").pop() ?? "pdf";
+      const suffix = Math.random().toString(36).slice(2, 10);
+      const fileKey = `reclaim-modules/${suffix}.${ext}`;
+      const { url } = await storagePut(fileKey, buffer, input.mimeType);
+      return { url };
+    }),
+
   adminListAssignments: protectedProcedure
     .input(z.object({ moduleId: z.number() }))
     .query(async ({ ctx, input }) => {

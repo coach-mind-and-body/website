@@ -27,6 +27,14 @@ export default function ProgramBuilderTab() {
     onError: (e) => toast.error(e.message),
   });
 
+  const uploadFile = trpc.reclaimHub.adminUploadFile.useMutation({
+    onSuccess: (res) => { 
+      toast.success("File uploaded successfully!");
+      setEditingModule({ ...editingModule, pdfUrl: res.url });
+    },
+    onError: (e) => toast.error("Upload failed: " + e.message),
+  });
+
   const updateFeedback = trpc.reclaimHub.adminUpdateFeedback.useMutation({
     onSuccess: () => { toast.success("Feedback sent!"); refetchSubmissions(); },
     onError: (e) => toast.error(e.message),
@@ -163,11 +171,43 @@ export default function ProgramBuilderTab() {
 
               <div>
                 <Label style={{ color: "oklch(0.80 0.02 160)" }}>PDF Download URL (Optional)</Label>
-                <Input 
-                  value={editingModule.pdfUrl || ""} 
-                  onChange={e => setEditingModule({...editingModule, pdfUrl: e.target.value})} 
-                  style={{ background: "oklch(0.18 0.02 160)", borderColor: "oklch(0.35 0.02 160)", color: "oklch(0.97 0.008 10)" }}
-                />
+                <div className="flex items-center gap-2 mt-2">
+                  <Input 
+                    value={editingModule.pdfUrl || ""} 
+                    onChange={e => setEditingModule({...editingModule, pdfUrl: e.target.value})} 
+                    style={{ background: "oklch(0.18 0.02 160)", borderColor: "oklch(0.35 0.02 160)", color: "oklch(0.97 0.008 10)", flex: 1 }}
+                    placeholder="https://..."
+                  />
+                  <div className="flex-shrink-0">
+                    <input 
+                      type="file" 
+                      id="pdfUpload" 
+                      className="hidden" 
+                      accept=".pdf,.doc,.docx"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          const base64Data = (reader.result as string).split(',')[1];
+                          uploadFile.mutate({
+                            fileName: file.name,
+                            mimeType: file.type,
+                            base64Data,
+                          });
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                    <label 
+                      htmlFor="pdfUpload"
+                      className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium cursor-pointer transition-opacity ${uploadFile.isPending ? "opacity-50" : "hover:opacity-90"}`}
+                      style={{ background: "oklch(0.28 0.02 160)", color: "oklch(0.97 0.008 10)", border: "1px solid oklch(0.35 0.02 160)" }}
+                    >
+                      {uploadFile.isPending ? "Uploading..." : "Upload File"}
+                    </label>
+                  </div>
+                </div>
               </div>
 
               <div className="flex items-center gap-2 mt-4">
