@@ -224,6 +224,30 @@ export const siteSettings = mysqlTable("site_settings", {
 export type SiteSetting = typeof siteSettings.$inferSelect;
 export type InsertSiteSetting = typeof siteSettings.$inferInsert;
 
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = typeof notifications.$inferInsert;
+
+// ── Podcast Native Broadcasting ───────────────────────────────────────────────
+export const podcastSubscribers = mysqlTable("podcast_subscribers", {
+  id: int("id").autoincrement().primaryKey(),
+  email: varchar("email", { length: 320 }).notNull().unique(),
+  firstName: varchar("firstName", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type PodcastSubscriber = typeof podcastSubscribers.$inferSelect;
+export type InsertPodcastSubscriber = typeof podcastSubscribers.$inferInsert;
+
+export const broadcastedEpisodes = mysqlTable("broadcasted_episodes", {
+  id: int("id").autoincrement().primaryKey(),
+  videoId: varchar("videoId", { length: 255 }).notNull().unique(),
+  title: varchar("title", { length: 255 }),
+  broadcastedAt: timestamp("broadcastedAt").defaultNow().notNull(),
+});
+
+export type BroadcastedEpisode = typeof broadcastedEpisodes.$inferSelect;
+export type InsertBroadcastedEpisode = typeof broadcastedEpisodes.$inferInsert;
+
 // ── FPU Group Sign-Ups (name+email collected on /financial-peace) ───────────────────────
 export const fpuLeads = mysqlTable("fpu_leads", {
   id: int("id").autoincrement().primaryKey(),

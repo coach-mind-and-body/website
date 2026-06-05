@@ -10,6 +10,7 @@ import { registerStripeWebhook } from "../stripe";
 import { registerGoogleCalendarRoutes, registerGoogleCalendarWebhook } from "../googleCalendar";
 import { startCallFollowUpPoller } from "../callFollowUpPoller";
 import { startLmsPoller } from "../lmsPoller";
+import { startYoutubePoller } from "../youtubePoller";
 import { registerRssRoute } from "../rss";
 import { registerSitemapRoute } from "../sitemap";
 import { appRouter } from "../routers";
@@ -85,6 +86,8 @@ async function startServer() {
     startCallFollowUpPoller();
     // Start the LMS reminder polling service
     startLmsPoller();
+    // Start the YouTube Podcast broadcast polling service
+    startYoutubePoller();
   });
 }
 

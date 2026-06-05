@@ -65,6 +65,21 @@ export const podcastRouter = router({
       firstName: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
+      // 0. Save natively to Database for native broadcasting!
+      try {
+        const { getDb } = await import("../db");
+        const { podcastSubscribers } = await import("../../drizzle/schema");
+        const db = await getDb();
+        if (db) {
+          await db.insert(podcastSubscribers).values({
+            email: input.email,
+            firstName: input.firstName,
+          }).onDuplicateKeyUpdate({ set: { firstName: input.firstName } });
+        }
+      } catch (e) {
+        console.error("[Podcast Subscribe] Failed to save subscriber natively:", e);
+      }
+
       // 1. Subscribe to Audience
       const result = await resendSubscribe({
         email: input.email,
