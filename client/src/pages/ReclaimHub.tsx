@@ -64,14 +64,6 @@ export default function ReclaimHub() {
     }
   }, [loading, isAuthenticated]);
 
-  if (loading || isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "oklch(0.98 0.01 75)" }}>
-        <div className="w-10 h-10 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "oklch(0.38 0.08 148)" }} />
-      </div>
-    );
-  }
-
   const modules = data?.modules || [];
   const assignments = data?.assignments || [];
   const submissions = data?.submissions || [];
@@ -81,7 +73,7 @@ export default function ReclaimHub() {
 
   // Initialize answers from existing submissions when a module is selected
   useEffect(() => {
-    if (selectedModuleId) {
+    if (selectedModuleId && data) {
       const newAnswers: Record<number, string> = {};
       const newFileUrls: Record<number, string> = {};
       selectedAssignments.forEach(a => {
@@ -95,6 +87,14 @@ export default function ReclaimHub() {
       setFileUrls(newFileUrls);
     }
   }, [selectedModuleId, data]);
+
+  if (loading || isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "oklch(0.98 0.01 75)" }}>
+        <div className="w-10 h-10 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "oklch(0.38 0.08 148)" }} />
+      </div>
+    );
+  }
 
   const handleAnswerChange = (assignmentId: number, text: string) => {
     setAnswers(prev => ({ ...prev, [assignmentId]: text }));
