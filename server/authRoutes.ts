@@ -443,6 +443,7 @@ export function registerAuthRoutes(app: Express) {
       });
 
       await issueSession(res, req, user.openId, user.name || googleUser.name || "");
+      res.setHeader("Cache-Control", "no-store, max-age=0");
       res.status(200).send(`
         <html>
           <head>
