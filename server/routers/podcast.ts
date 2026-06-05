@@ -65,6 +65,7 @@ export const podcastRouter = router({
       firstName: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
+      // 1. Subscribe to Audience
       const result = await resendSubscribe({
         email: input.email,
         firstName: input.firstName,
@@ -73,7 +74,56 @@ export const podcastRouter = router({
       if (!result.success) {
         console.error("[Podcast Subscribe] Resend error:", result.error);
       }
-      // Always return success to avoid email enumeration
+
+      // 2. Fetch latest YouTube videos for Welcome Email
+      let episodesHTML = "";
+      try {
+        const feedUrl = `https://www.youtube.com/feeds/videos.xml?playlist_id=${PLAYLIST_ID}`;
+        const response = await fetch(feedUrl);
+        const xml = await response.text();
+        const episodes = parseYouTubeRSS(xml).slice(0, 3);
+        
+        episodesHTML = episodes.map(ep => `
+          <div style="margin-bottom: 24px;">
+            <a href="https://www.youtube.com/watch?v=${ep.videoId}">
+              <img src="${ep.thumbnail}" alt="${ep.title}" style="max-width: 100%; border-radius: 8px;" />
+            </a>
+            <h3 style="margin-top: 12px; margin-bottom: 4px;"><a href="https://www.youtube.com/watch?v=${ep.videoId}" style="color: #2d3b2d; text-decoration: none; font-size: 18px;">${ep.title}</a></h3>
+          </div>
+        `).join("");
+      } catch (e) {
+        console.error("[Podcast Subscribe] Failed to fetch latest YouTube videos:", e);
+      }
+
+      // 3. Send Welcome Email
+      try {
+        const { Resend } = await import("resend");
+        const { ENV } = await import("../_core/env");
+        if (ENV.resendApiKey) {
+          const resend = new Resend(ENV.resendApiKey);
+          await resend.emails.send({
+            from: ENV.resendFromEmail,
+            to: input.email,
+            subject: "Welcome to the Reclaim Your Body Podcast! 🎧",
+            html: `
+              <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #4a4a4a;">
+                <h1 style="color: #2d3b2d;">Welcome to the Podcast!</h1>
+                <p>Hi ${input.firstName || "there"},</p>
+                <p>Thank you for subscribing to the Reclaim Your Body Podcast! I'm so excited to share these conversations with you.</p>
+                <p>Here are some of my most recent episodes to get you started:</p>
+                <div style="margin-top: 30px;">
+                  ${episodesHTML}
+                </div>
+                <p>Talk soon,</p>
+                <p><strong>Lee Anne Chapman</strong></p>
+              </div>
+            `,
+          });
+        }
+      } catch (e) {
+        console.error("[Podcast Subscribe] Welcome email failed:", e);
+      }
+
       return { success: true };
     }),
 

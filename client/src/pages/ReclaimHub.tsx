@@ -12,6 +12,20 @@ import { BRAND } from "../../../shared/brand";
 import { Link } from "wouter";
 import { useRef } from "react";
 
+
+function getEmbedUrl(url: string) {
+  if (!url) return url;
+  if (url.includes('youtube.com/watch?v=')) {
+    const videoId = new URL(url).searchParams.get('v');
+    if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+  }
+  if (url.includes('youtu.be/')) {
+    const videoId = url.split('youtu.be/')[1]?.split('?')[0];
+    if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+  }
+  return url;
+}
+
 export default function ReclaimHub() {
   usePageTitle({
     title: "Reclaim Hub | Mind and Body Reset",
@@ -91,8 +105,8 @@ export default function ReclaimHub() {
 
   if (loading || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "oklch(0.98 0.01 75)" }}>
-        <div className="w-10 h-10 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "oklch(0.38 0.08 148)" }} />
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "#faf5f5" }}>
+        <div className="w-10 h-10 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "#c9a96e" }} />
       </div>
     );
   }
@@ -143,21 +157,21 @@ export default function ReclaimHub() {
   };
 
   return (
-    <div className="min-h-screen font-sans" style={{ background: "oklch(0.98 0.01 75)" }}>
+    <div className="min-h-screen font-sans" style={{ background: "#faf5f5" }}>
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b" style={{ borderColor: "oklch(0.92 0.02 75)" }}>
+      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b" style={{ borderColor: "#f0e8e4" }}>
         <div className="container max-w-5xl mx-auto px-6 h-20 flex items-center justify-between">
           <Link href="/portal" className="flex items-center gap-3 group">
             <img src={BRAND.logoUrl} alt={BRAND.name} className="w-10 h-10 rounded-full object-cover shadow-sm group-hover:scale-105 transition-transform" />
             <div>
-              <span className="block font-bold text-lg leading-tight" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.28 0.05 148)" }}>
+              <span className="block font-bold text-lg leading-tight" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
                 Reclaim Hub
               </span>
-              <span className="block text-xs" style={{ color: "oklch(0.55 0.02 75)" }}>Client Portal</span>
+              <span className="block text-xs" style={{ color: "#8a9a8a" }}>Client Portal</span>
             </div>
           </Link>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-sm" style={{ background: "oklch(0.38 0.08 148)", color: "white" }}>
+            <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-sm" style={{ background: "#c9a96e", color: "white" }}>
               {user?.name?.[0]?.toUpperCase() ?? "C"}
             </div>
           </div>
@@ -175,10 +189,10 @@ export default function ReclaimHub() {
               transition={{ duration: 0.3 }}
             >
               <div className="mb-12 text-center">
-                <h1 className="text-4xl md:text-5xl font-bold mb-4" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.28 0.05 148)" }}>
+                <h1 className="text-4xl md:text-5xl font-bold mb-4" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
                   Your Reclaim Journey
                 </h1>
-                <p className="text-lg max-w-2xl mx-auto" style={{ color: "oklch(0.45 0.02 75)" }}>
+                <p className="text-lg max-w-2xl mx-auto" style={{ color: "#5a6b5a" }}>
                   Explore your modules, complete assignments, and track your progress through the 6-session Mind & Body Reset program.
                 </p>
               </div>
@@ -198,32 +212,32 @@ export default function ReclaimHub() {
                       style={{ 
                         background: unlocked ? "white" : "oklch(0.96 0.01 75)",
                         border: "1px solid",
-                        borderColor: unlocked ? "oklch(0.85 0.04 148)" : "oklch(0.92 0.02 75)",
+                        borderColor: unlocked ? "oklch(0.85 0.04 148)" : "#f0e8e4",
                       }}
                       onClick={() => unlocked && setSelectedModuleId(mod.id)}
                     >
-                      <div className="h-3" style={{ background: unlocked ? "oklch(0.38 0.08 148)" : "oklch(0.80 0.02 75)" }} />
+                      <div className="h-3" style={{ background: unlocked ? "#c9a96e" : "oklch(0.80 0.02 75)" }} />
                       <div className="p-6">
                         <div className="flex justify-between items-start mb-4">
-                          <span className="text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full" style={{ background: unlocked ? "oklch(0.95 0.04 148)" : "oklch(0.90 0.02 75)", color: unlocked ? "oklch(0.38 0.08 148)" : "oklch(0.55 0.02 75)" }}>
+                          <span className="text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full" style={{ background: unlocked ? "#fbeee9" : "#e8c99a", color: unlocked ? "#c9a96e" : "#8a9a8a" }}>
                             Week {mod.order}
                           </span>
                           {!unlocked && <Lock size={18} style={{ color: "oklch(0.65 0.02 75)" }} />}
-                          {isCompleted && <CheckCircle size={18} style={{ color: "oklch(0.60 0.12 148)" }} />}
+                          {isCompleted && <CheckCircle size={18} style={{ color: "#8a9a8a" }} />}
                         </div>
-                        <h3 className="text-xl font-bold mb-2 leading-tight" style={{ fontFamily: "'Cormorant Garamond', serif", color: unlocked ? "oklch(0.28 0.05 148)" : "oklch(0.55 0.02 75)" }}>
+                        <h3 className="text-xl font-bold mb-2 leading-tight" style={{ fontFamily: "'Cormorant Garamond', serif", color: unlocked ? "#2d3b2d" : "#8a9a8a" }}>
                           {mod.title}
                         </h3>
-                        <p className="text-sm line-clamp-3 mb-6" style={{ color: "oklch(0.45 0.02 75)" }}>
+                        <p className="text-sm line-clamp-3 mb-6" style={{ color: "#5a6b5a" }}>
                           {mod.description || "Unlock this module after your coaching session to view the content."}
                         </p>
                         <div className="flex items-center justify-between mt-auto">
                           {unlocked ? (
-                            <span className="text-sm font-semibold flex items-center gap-2" style={{ color: "oklch(0.60 0.12 75)" }}>
+                            <span className="text-sm font-semibold flex items-center gap-2" style={{ color: "#c9a96e" }}>
                               <PlayCircle size={16} /> Enter Workshop
                             </span>
                           ) : (
-                            <span className="text-sm italic" style={{ color: "oklch(0.55 0.02 75)" }}>
+                            <span className="text-sm italic" style={{ color: "#8a9a8a" }}>
                               Locked until previous week is complete
                             </span>
                           )}
@@ -246,28 +260,28 @@ export default function ReclaimHub() {
               <button 
                 onClick={() => setSelectedModuleId(null)}
                 className="flex items-center gap-2 mb-8 text-sm font-semibold hover:opacity-70 transition-opacity"
-                style={{ color: "oklch(0.45 0.02 75)" }}
+                style={{ color: "#5a6b5a" }}
               >
                 <ArrowLeft size={16} /> Back to Modules
               </button>
 
-              <div className="bg-white rounded-3xl p-8 md:p-12 shadow-xl shadow-black/5 border" style={{ borderColor: "oklch(0.92 0.02 75)" }}>
+              <div className="bg-white rounded-3xl p-8 md:p-12 shadow-xl shadow-black/5 border" style={{ borderColor: "#f0e8e4" }}>
                 <div className="mb-8">
-                  <span className="text-sm font-bold uppercase tracking-widest px-3 py-1 rounded-full inline-block mb-4" style={{ background: "oklch(0.95 0.04 148)", color: "oklch(0.38 0.08 148)" }}>
+                  <span className="text-sm font-bold uppercase tracking-widest px-3 py-1 rounded-full inline-block mb-4" style={{ background: "#fbeee9", color: "#c9a96e" }}>
                     Module {selectedModule.order}
                   </span>
-                  <h1 className="text-3xl md:text-5xl font-bold mb-4" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.28 0.05 148)" }}>
+                  <h1 className="text-3xl md:text-5xl font-bold mb-4" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
                     {selectedModule.title}
                   </h1>
                   {selectedModule.description && (
-                    <p className="text-lg" style={{ color: "oklch(0.45 0.02 75)" }}>{selectedModule.description}</p>
+                    <p className="text-lg" style={{ color: "#5a6b5a" }}>{selectedModule.description}</p>
                   )}
                 </div>
 
                 {selectedModule.videoUrl && (
                   <div className="aspect-video w-full rounded-2xl overflow-hidden mb-12 shadow-lg bg-black/5">
                     <iframe 
-                      src={selectedModule.videoUrl} 
+                      src={getEmbedUrl(selectedModule.videoUrl)} 
                       className="w-full h-full border-0" 
                       allow="autoplay; fullscreen; picture-in-picture" 
                       allowFullScreen 
@@ -280,14 +294,14 @@ export default function ReclaimHub() {
                 )}
 
                 {selectedModule.pdfUrl && (
-                  <div className="mb-12 p-6 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4" style={{ background: "oklch(0.97 0.02 75)", border: "1px solid oklch(0.90 0.02 75)" }}>
+                  <div className="mb-12 p-6 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4" style={{ background: "#fbeee9", border: "1px solid #e8c99a" }}>
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-white shadow-sm text-red-500">
                         <FileText size={24} />
                       </div>
                       <div>
-                        <h4 className="font-bold text-lg" style={{ color: "oklch(0.28 0.05 148)" }}>Module Guide & Worksheets</h4>
-                        <p className="text-sm" style={{ color: "oklch(0.45 0.02 75)" }}>Download the companion PDF for this module.</p>
+                        <h4 className="font-bold text-lg" style={{ color: "#2d3b2d" }}>Module Guide & Worksheets</h4>
+                        <p className="text-sm" style={{ color: "#5a6b5a" }}>Download the companion PDF for this module.</p>
                       </div>
                     </div>
                     <a 
@@ -295,7 +309,7 @@ export default function ReclaimHub() {
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="px-6 py-3 rounded-full font-bold text-sm transition-transform hover:scale-105 shadow-md"
-                      style={{ background: "oklch(0.38 0.08 148)", color: "white" }}
+                      style={{ background: "#c9a96e", color: "white" }}
                     >
                       Download PDF
                     </a>
@@ -303,8 +317,8 @@ export default function ReclaimHub() {
                 )}
 
                 {selectedAssignments.length > 0 && (
-                  <div className="mt-16 pt-12 border-t" style={{ borderColor: "oklch(0.92 0.02 75)" }}>
-                    <h2 className="text-2xl md:text-3xl font-bold mb-8" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.28 0.05 148)" }}>
+                  <div className="mt-16 pt-12 border-t" style={{ borderColor: "#f0e8e4" }}>
+                    <h2 className="text-2xl md:text-3xl font-bold mb-8" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
                       Reflection & Assignments
                     </h2>
                     
@@ -313,26 +327,26 @@ export default function ReclaimHub() {
                         const submission = submissions.find(s => s.assignmentId === assignment.id);
                         
                         return (
-                          <div key={assignment.id} className="bg-white rounded-2xl shadow-sm border overflow-hidden transition-all" style={{ borderColor: "oklch(0.92 0.02 75)" }}>
+                          <div key={assignment.id} className="bg-white rounded-2xl shadow-sm border overflow-hidden transition-all" style={{ borderColor: "#f0e8e4" }}>
                             <button 
                               className="w-full text-left p-6 md:p-8 flex items-center justify-between gap-4"
                               onClick={() => setExpandedAssignmentId(expandedAssignmentId === assignment.id ? null : assignment.id)}
                             >
                               <div className="flex gap-4 items-center">
-                                <div className="w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center font-bold text-sm" style={{ background: "oklch(0.95 0.04 148)", color: "oklch(0.38 0.08 148)" }}>
+                                <div className="w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center font-bold text-sm" style={{ background: "#fbeee9", color: "#c9a96e" }}>
                                   {idx + 1}
                                 </div>
-                                <p className="text-lg font-medium leading-relaxed" style={{ color: "oklch(0.28 0.05 148)" }}>
+                                <p className="text-lg font-medium leading-relaxed" style={{ color: "#2d3b2d" }}>
                                   {assignment.question}
                                 </p>
                               </div>
                               <div className="flex items-center gap-3">
                                 {submission && (
-                                  <span className="hidden md:inline-flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-full" style={{ background: "oklch(0.95 0.04 148)", color: "oklch(0.38 0.08 148)" }}>
+                                  <span className="hidden md:inline-flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-full" style={{ background: "#fbeee9", color: "#c9a96e" }}>
                                     <CheckCircle size={12} /> {submission.feedback ? "Reviewed" : "Submitted"}
                                   </span>
                                 )}
-                                {expandedAssignmentId === assignment.id ? <ChevronUp size={20} style={{ color: "oklch(0.60 0.12 148)" }} /> : <ChevronDown size={20} style={{ color: "oklch(0.60 0.12 148)" }} />}
+                                {expandedAssignmentId === assignment.id ? <ChevronUp size={20} style={{ color: "#8a9a8a" }} /> : <ChevronDown size={20} style={{ color: "#8a9a8a" }} />}
                               </div>
                             </button>
                             
@@ -343,7 +357,7 @@ export default function ReclaimHub() {
                                   animate={{ height: "auto", opacity: 1 }}
                                   exit={{ height: 0, opacity: 0 }}
                                   className="border-t"
-                                  style={{ borderColor: "oklch(0.92 0.02 75)" }}
+                                  style={{ borderColor: "#f0e8e4" }}
                                 >
                                   <div className="p-6 md:p-8 pt-6 flex flex-col gap-4">
                               <Textarea 
@@ -352,13 +366,13 @@ export default function ReclaimHub() {
                                 value={answers[assignment.id] || ""}
                                 onChange={e => handleAnswerChange(assignment.id, e.target.value)}
                                 className="text-base resize-y p-4 rounded-xl border focus:ring-2"
-                                style={{ borderColor: "oklch(0.85 0.02 75)", color: "oklch(0.28 0.05 148)" }}
+                                style={{ borderColor: "#f0e8e4", color: "#2d3b2d" }}
                               />
 
-                              <div className="flex items-center justify-between p-4 rounded-xl border border-dashed" style={{ borderColor: "oklch(0.85 0.02 75)" }}>
+                              <div className="flex items-center justify-between p-4 rounded-xl border border-dashed" style={{ borderColor: "#f0e8e4" }}>
                                 <div>
-                                  <p className="text-sm font-semibold" style={{ color: "oklch(0.28 0.05 148)" }}>Upload a File (Optional)</p>
-                                  <p className="text-xs" style={{ color: "oklch(0.55 0.02 75)" }}>PDF, Word, Images, etc.</p>
+                                  <p className="text-sm font-semibold" style={{ color: "#2d3b2d" }}>Upload a File (Optional)</p>
+                                  <p className="text-xs" style={{ color: "#8a9a8a" }}>PDF, Word, Images, etc.</p>
                                 </div>
                                 {fileUrls[assignment.id] ? (
                                   <div className="flex items-center gap-3">
@@ -367,7 +381,7 @@ export default function ReclaimHub() {
                                       target="_blank" 
                                       rel="noopener noreferrer"
                                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold"
-                                      style={{ background: "oklch(0.95 0.04 148)", color: "oklch(0.38 0.08 148)" }}
+                                      style={{ background: "#fbeee9", color: "#c9a96e" }}
                                     >
                                       <FileText size={14} /> View Attached File
                                     </a>
@@ -389,7 +403,7 @@ export default function ReclaimHub() {
                                     <label 
                                       htmlFor={`file-${assignment.id}`}
                                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-opacity hover:opacity-80"
-                                      style={{ background: "oklch(0.95 0.04 148)", color: "oklch(0.38 0.08 148)" }}
+                                      style={{ background: "#fbeee9", color: "#c9a96e" }}
                                     >
                                       {uploadingAssignmentId === assignment.id ? (
                                         "Uploading..."
@@ -402,7 +416,7 @@ export default function ReclaimHub() {
                               </div>
                             <div className="mt-4 flex items-center justify-between">
                               {submission ? (
-                                <p className="text-xs font-semibold flex items-center gap-1" style={{ color: "oklch(0.60 0.12 148)" }}>
+                                <p className="text-xs font-semibold flex items-center gap-1" style={{ color: "#8a9a8a" }}>
                                   <CheckCircle size={14} /> Saved on {new Date(submission.submittedAt).toLocaleDateString()}
                                 </p>
                               ) : <div />}
@@ -411,16 +425,16 @@ export default function ReclaimHub() {
                                 onClick={() => submitAssignment.mutate({ assignmentId: assignment.id, answer: answers[assignment.id] || "", fileUrl: fileUrls[assignment.id] || "" })}
                                 disabled={(!answers[assignment.id] && !fileUrls[assignment.id]) || submitAssignment.isPending || uploadingAssignmentId === assignment.id}
                                 className="rounded-full px-6 font-bold shadow-md hover:shadow-lg transition-all"
-                                style={{ background: "oklch(0.38 0.08 148)", color: "white" }}
+                                style={{ background: "#c9a96e", color: "white" }}
                               >
                                 {submitAssignment.isPending ? "Saving..." : (submission ? "Update Submission" : "Save Submission")}
                               </Button>
                             </div>
 
                             {submission?.feedback && (
-                              <div className="mt-6 p-5 rounded-xl border-l-4" style={{ background: "oklch(0.98 0.04 75)", borderColor: "oklch(0.60 0.12 75)" }}>
-                                <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "oklch(0.60 0.12 75)" }}>Coach Feedback</p>
-                                <p className="text-sm leading-relaxed" style={{ color: "oklch(0.38 0.08 148)" }}>{submission.feedback}</p>
+                              <div className="mt-6 p-5 rounded-xl border-l-4" style={{ background: "oklch(0.98 0.04 75)", borderColor: "#c9a96e" }}>
+                                <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "#c9a96e" }}>Coach Feedback</p>
+                                <p className="text-sm leading-relaxed" style={{ color: "#c9a96e" }}>{submission.feedback}</p>
                               </div>
                             )}
                                   </div>
@@ -445,8 +459,8 @@ export default function ReclaimHub() {
                     disabled={!!selectedModule.progress?.completedAt || markModuleComplete.isPending}
                     className="rounded-full px-8 py-6 text-lg font-bold shadow-md hover:shadow-lg transition-all"
                     style={{ 
-                      background: selectedModule.progress?.completedAt ? "oklch(0.95 0.04 148)" : "oklch(0.38 0.08 148)", 
-                      color: selectedModule.progress?.completedAt ? "oklch(0.38 0.08 148)" : "white" 
+                      background: selectedModule.progress?.completedAt ? "#fbeee9" : "#c9a96e", 
+                      color: selectedModule.progress?.completedAt ? "#c9a96e" : "white" 
                     }}
                   >
                     {selectedModule.progress?.completedAt ? (

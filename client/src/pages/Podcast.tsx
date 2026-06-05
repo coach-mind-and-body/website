@@ -44,6 +44,8 @@ export default function Podcast() {
   const [firstName, setFirstName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
+  const [page, setPage] = useState(1);
+  const limit = 8;
 
   // Fetch episodes server-side to avoid CORS issues with YouTube RSS
   const { data: podcastData, isLoading: loading } = trpc.podcast.getEpisodes.useQuery(undefined, {
@@ -57,6 +59,9 @@ export default function Podcast() {
       setActiveVideo(episodes[0].id);
     }
   }, [episodes, activeVideo]);
+
+  const totalPages = Math.max(1, Math.ceil(episodes.length / limit));
+  const paginatedEpisodes = episodes.slice((page - 1) * limit, page * limit);
 
   const subscribeMutation = trpc.podcast.subscribe.useMutation({
     onSuccess: () => {
@@ -296,7 +301,7 @@ export default function Podcast() {
 
               {/* Episode grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                {episodes.map((ep) => (
+                {paginatedEpisodes.map((ep) => (
                   <button
                     key={ep.id}
                     onClick={() => {
@@ -357,7 +362,32 @@ export default function Podcast() {
                 ))}
               </div>
 
-              <div className="text-center pt-2">
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="mt-8 flex justify-center items-center gap-2">
+                  <button
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="px-4 py-2 rounded-full text-sm font-bold disabled:opacity-50 transition-all"
+                    style={{ background: "oklch(0.92 0.04 148)", color: "oklch(0.38 0.10 148)" }}
+                  >
+                    Previous
+                  </button>
+                  <span className="text-sm font-bold mx-2" style={{ color: "oklch(0.18 0.025 50)" }}>
+                    Page {page} of {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                    className="px-4 py-2 rounded-full text-sm font-bold disabled:opacity-50 transition-all"
+                    style={{ background: "oklch(0.92 0.04 148)", color: "oklch(0.38 0.10 148)" }}
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+
+              <div className="text-center pt-2 mt-8">
                 <a
                   href={YOUTUBE_CHANNEL}
                   target="_blank"
