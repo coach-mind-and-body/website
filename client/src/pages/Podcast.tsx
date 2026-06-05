@@ -45,7 +45,7 @@ export default function Podcast() {
   const [submitting, setSubmitting] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
   const [page, setPage] = useState(1);
-  const limit = 8;
+  const limit = 6;
 
   // Fetch episodes server-side to avoid CORS issues with YouTube RSS
   const { data: podcastData, isLoading: loading } = trpc.podcast.getEpisodes.useQuery(undefined, {
