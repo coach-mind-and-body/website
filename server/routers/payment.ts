@@ -6,6 +6,7 @@ import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { deposits, enrollments, coachingSessions, users } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
+import { enrollUserInSequence } from "../sequences";
 
 function getStripe() {
   return new Stripe(ENV.stripeSecretKey, { apiVersion: "2026-02-25.clover" });
@@ -318,6 +319,9 @@ export const paymentRouter = router({
       }));
       await db.insert(coachingSessions).values(sessionValues);
       console.log(`[linkDeposit] Created enrollment ${newEnrollment.id} + 6 sessions for user ${ctx.user!.id} (${userEmail})`);
+      
+      // Enroll in drip sequence
+      await enrollUserInSequence(userEmail, ctx.user!.name ?? null, "reclaim_6_week");
     }
 
     return { linked: true };

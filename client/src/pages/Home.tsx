@@ -68,8 +68,8 @@ export default function Home() {
   const progress = useScrollProgress();
   const { data: dbPosts } = trpc.blog.list.useQuery({ limit: 3 });
   useFadeUp([dbPosts]);
-  const displayPosts = (dbPosts && dbPosts.length > 0)
-    ? dbPosts.map(p => ({
+  const displayPosts = (dbPosts?.posts && dbPosts.posts.length > 0)
+    ? dbPosts.posts.map((p: any) => ({
         slug: p.slug,
         category: p.category ?? "Wellness",
         date: p.publishedAt ? new Date(p.publishedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "",
@@ -422,12 +422,12 @@ export default function Home() {
               </h2>
             </div>
             <Link href="/health-wellness-blog" className="hidden md:inline-flex items-center gap-1 font-bold text-sm" style={{ color: "oklch(0.55 0.11 72)" }}>
-              All Posts <ChevronRight size={16} />
+All Posts <ChevronRight size={16} />
             </Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {displayPosts.map((post) => (
-              <Link key={post.slug} href={`/health-wellness-blog/${post.slug}`} className="card-brand rounded-2xl overflow-hidden group fade-up block">
+            {displayPosts.map((post: any) => (
+              <Link key={post.slug} href={`/health-wellness-blog/${post.slug}`} className="group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-[#e8ddd0] flex flex-col h-full fade-up">
                 <div className="h-44 relative overflow-hidden" style={{ background: "oklch(0.93 0.06 78)" }}>
                   {post.coverImage && (
                     <img

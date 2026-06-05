@@ -4,12 +4,13 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { motion, AnimatePresence } from "framer-motion";
-import { Lock, PlayCircle, FileText, CheckCircle, ArrowLeft, Send } from "lucide-react";
+import { Lock, PlayCircle, FileText, CheckCircle, ArrowLeft, Send, Upload, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { BRAND } from "../../../shared/brand";
 import { Link } from "wouter";
+import { useRef } from "react";
 
 export default function ReclaimHub() {
   usePageTitle({
@@ -31,8 +32,31 @@ export default function ReclaimHub() {
     onError: (e) => toast.error(e.message),
   });
 
+  const markModuleComplete = trpc.reclaimHub.markModuleComplete.useMutation({
+    onSuccess: () => {
+      toast.success("Module marked as complete! Next module is now unlocked.");
+      refetch();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   const [selectedModuleId, setSelectedModuleId] = useState<number | null>(null);
   const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [fileUrls, setFileUrls] = useState<Record<number, string>>({});
+  const [uploadingAssignmentId, setUploadingAssignmentId] = useState<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const uploadFile = trpc.clientFiles.upload.useMutation({
+    onSuccess: (res, variables) => {
+      toast.success(`File uploaded successfully!`);
+      // Update fileUrl for the specific assignment
+      // (The assignmentId was passed via a temporary property we can't easily access here, so we will handle it in the callback)
+    },
+    onError: (e) => {
+      toast.error(e.message);
+      setUploadingAssignmentId(null);
+    },
+  });
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -49,7 +73,6 @@ export default function ReclaimHub() {
   }
 
   const modules = data?.modules || [];
-  const progress = data?.progress || [];
   const assignments = data?.assignments || [];
   const submissions = data?.submissions || [];
 
@@ -60,11 +83,16 @@ export default function ReclaimHub() {
   useEffect(() => {
     if (selectedModuleId) {
       const newAnswers: Record<number, string> = {};
+      const newFileUrls: Record<number, string> = {};
       selectedAssignments.forEach(a => {
         const sub = submissions.find(s => s.assignmentId === a.id);
-        if (sub) newAnswers[a.id] = sub.answer;
+        if (sub) {
+          if (sub.answer) newAnswers[a.id] = sub.answer;
+          if (sub.fileUrl) newFileUrls[a.id] = sub.fileUrl;
+        }
       });
       setAnswers(newAnswers);
+      setFileUrls(newFileUrls);
     }
   }, [selectedModuleId, data]);
 
@@ -72,8 +100,45 @@ export default function ReclaimHub() {
     setAnswers(prev => ({ ...prev, [assignmentId]: text }));
   };
 
-  const isUnlocked = (moduleId: number) => {
-    return progress.some(p => p.moduleId === moduleId);
+  const handleFileUpload = async (assignmentId: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("File must be under 10 MB");
+      return;
+    }
+
+    if (!data?.enrollment?.id) {
+      toast.error("Enrollment not found.");
+      return;
+    }
+
+    setUploadingAssignmentId(assignmentId);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = (reader.result as string).split(",")[1];
+      uploadFile.mutate(
+        {
+          enrollmentId: data.enrollment.id,
+          fileName: file.name,
+          mimeType: file.type || "application/octet-stream",
+          base64Data: base64,
+        },
+        {
+          onSuccess: (res) => {
+            setFileUrls(prev => ({ ...prev, [assignmentId]: res.url }));
+            setUploadingAssignmentId(null);
+          }
+        }
+      );
+    };
+    reader.onerror = () => {
+      toast.error("Failed to read file");
+      setUploadingAssignmentId(null);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = ""; // Reset
   };
 
   return (
@@ -119,8 +184,8 @@ export default function ReclaimHub() {
 
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {modules.map((mod, index) => {
-                  const unlocked = isUnlocked(mod.id);
-                  const isCompleted = progress.find(p => p.moduleId === mod.id)?.completedAt !== null && unlocked;
+                  const unlocked = mod.isUnlocked;
+                  const isCompleted = mod.progress?.completedAt !== undefined && mod.progress?.completedAt !== null && unlocked;
 
                   return (
                     <motion.div
@@ -140,7 +205,7 @@ export default function ReclaimHub() {
                       <div className="p-6">
                         <div className="flex justify-between items-start mb-4">
                           <span className="text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full" style={{ background: unlocked ? "oklch(0.95 0.04 148)" : "oklch(0.90 0.02 75)", color: unlocked ? "oklch(0.38 0.08 148)" : "oklch(0.55 0.02 75)" }}>
-                            Module {mod.order}
+                            Week {mod.order}
                           </span>
                           {!unlocked && <Lock size={18} style={{ color: "oklch(0.65 0.02 75)" }} />}
                           {isCompleted && <CheckCircle size={18} style={{ color: "oklch(0.60 0.12 148)" }} />}
@@ -158,7 +223,7 @@ export default function ReclaimHub() {
                             </span>
                           ) : (
                             <span className="text-sm italic" style={{ color: "oklch(0.55 0.02 75)" }}>
-                              Unlocks after session {mod.order}
+                              Locked until previous week is complete
                             </span>
                           )}
                         </div>
@@ -257,14 +322,62 @@ export default function ReclaimHub() {
                               </p>
                             </div>
                             
-                            <Textarea 
-                              rows={5}
-                              placeholder="Type your reflection here..."
-                              value={answers[assignment.id] || ""}
-                              onChange={e => handleAnswerChange(assignment.id, e.target.value)}
-                              className="text-base resize-y p-4 rounded-xl border focus:ring-2"
-                              style={{ borderColor: "oklch(0.85 0.02 75)", color: "oklch(0.28 0.05 148)" }}
-                            />
+                            <div className="flex flex-col gap-4">
+                              <Textarea 
+                                rows={5}
+                                placeholder="Type your reflection here (or upload a document below)..."
+                                value={answers[assignment.id] || ""}
+                                onChange={e => handleAnswerChange(assignment.id, e.target.value)}
+                                className="text-base resize-y p-4 rounded-xl border focus:ring-2"
+                                style={{ borderColor: "oklch(0.85 0.02 75)", color: "oklch(0.28 0.05 148)" }}
+                              />
+
+                              <div className="flex items-center justify-between p-4 rounded-xl border border-dashed" style={{ borderColor: "oklch(0.85 0.02 75)" }}>
+                                <div>
+                                  <p className="text-sm font-semibold" style={{ color: "oklch(0.28 0.05 148)" }}>Upload a File (Optional)</p>
+                                  <p className="text-xs" style={{ color: "oklch(0.55 0.02 75)" }}>PDF, Word, Images, etc.</p>
+                                </div>
+                                {fileUrls[assignment.id] ? (
+                                  <div className="flex items-center gap-3">
+                                    <a 
+                                      href={fileUrls[assignment.id]} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold"
+                                      style={{ background: "oklch(0.95 0.04 148)", color: "oklch(0.38 0.08 148)" }}
+                                    >
+                                      <FileText size={14} /> View Attached File
+                                    </a>
+                                    <button 
+                                      onClick={() => setFileUrls(prev => { const next = {...prev}; delete next[assignment.id]; return next; })}
+                                      className="text-xs text-red-500 hover:underline font-medium"
+                                    >
+                                      Remove
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center">
+                                    <input 
+                                      type="file" 
+                                      id={`file-${assignment.id}`} 
+                                      className="hidden" 
+                                      onChange={(e) => handleFileUpload(assignment.id, e)}
+                                    />
+                                    <label 
+                                      htmlFor={`file-${assignment.id}`}
+                                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-opacity hover:opacity-80"
+                                      style={{ background: "oklch(0.95 0.04 148)", color: "oklch(0.38 0.08 148)" }}
+                                    >
+                                      {uploadingAssignmentId === assignment.id ? (
+                                        "Uploading..."
+                                      ) : (
+                                        <><Upload size={14} /> Choose File</>
+                                      )}
+                                    </label>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                             
                             <div className="mt-4 flex items-center justify-between">
                               {submission ? (
@@ -274,12 +387,12 @@ export default function ReclaimHub() {
                               ) : <div />}
                               
                               <Button 
-                                onClick={() => submitAssignment.mutate({ assignmentId: assignment.id, answer: answers[assignment.id] || "" })}
-                                disabled={!answers[assignment.id] || submitAssignment.isPending}
+                                onClick={() => submitAssignment.mutate({ assignmentId: assignment.id, answer: answers[assignment.id] || "", fileUrl: fileUrls[assignment.id] || "" })}
+                                disabled={(!answers[assignment.id] && !fileUrls[assignment.id]) || submitAssignment.isPending || uploadingAssignmentId === assignment.id}
                                 className="rounded-full px-6 font-bold shadow-md hover:shadow-lg transition-all"
                                 style={{ background: "oklch(0.38 0.08 148)", color: "white" }}
                               >
-                                {submitAssignment.isPending ? "Saving..." : (submission ? "Update Answer" : "Save Answer")}
+                                {submitAssignment.isPending ? "Saving..." : (submission ? "Update Submission" : "Save Submission")}
                               </Button>
                             </div>
 
@@ -295,6 +408,30 @@ export default function ReclaimHub() {
                     </div>
                   </div>
                 )}
+                
+                {/* Module Completion Toggle */}
+                <div className="mt-16 flex justify-center">
+                  <Button
+                    onClick={() => {
+                      if (!selectedModule.progress?.completedAt) {
+                        markModuleComplete.mutate({ moduleId: selectedModule.id });
+                      }
+                    }}
+                    disabled={!!selectedModule.progress?.completedAt || markModuleComplete.isPending}
+                    className="rounded-full px-8 py-6 text-lg font-bold shadow-md hover:shadow-lg transition-all"
+                    style={{ 
+                      background: selectedModule.progress?.completedAt ? "oklch(0.95 0.04 148)" : "oklch(0.38 0.08 148)", 
+                      color: selectedModule.progress?.completedAt ? "oklch(0.38 0.08 148)" : "white" 
+                    }}
+                  >
+                    {selectedModule.progress?.completedAt ? (
+                      <><CheckCircle className="mr-2 h-5 w-5" /> Completed on {new Date(selectedModule.progress.completedAt).toLocaleDateString()}</>
+                    ) : (
+                      "Mark Module Complete"
+                    )}
+                  </Button>
+                </div>
+
               </div>
             </motion.div>
           )}

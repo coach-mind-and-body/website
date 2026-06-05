@@ -30,7 +30,8 @@ export default function Admin() {
 
   const { data: enrollments, refetch: refetchEnrollments } = trpc.enrollment.adminList.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
   const { data: leadsData, refetch: refetchLeads } = trpc.leads.list.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
-  const { data: blogPosts } = trpc.blog.list.useQuery({ limit: 50 }, { enabled: isAuthenticated && user?.role === "admin" });
+  const { data: blogData } = trpc.blog.list.useQuery({ limit: 50 }, { enabled: isAuthenticated && user?.role === "admin" });
+  const blogPosts = blogData?.posts;
   const { data: fpuClients, refetch: refetchFpu } = trpc.fpu.adminListCoaching.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
   const { data: fpuLeads, refetch: refetchFpuLeads } = trpc.fpu.adminListLeads.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
   const [fpuNotes, setFpuNotes] = useState<Record<number, string>>({});

@@ -1,0 +1,20 @@
+<USER_REQUEST>
+Is this what we are missing?
+id	slug	title	excerpt	content	category	coverImage	published	publishedAt	seoTitle	seoDescription	authorId	createdAt	updatedAt	scheduledAt	schemaTypes	schemaFaqJson	schemaVideoUrl	schemaVideoDescription	schemaHowToStepsJson	coverImageAlt
+1	stop-food-shame-healing-midlife-insulin-resistance	Stop Food Shame: Healing Midlife Insulin Resistance	If you're a woman in your 40s, 50s, or 60s struggling with insulin resistance, sudden weight gain, and constant food noise, you are not alone. Learn how mindset directly impacts your biochemistry.	"<p>If you're a woman in your 40s, 50s, or 60s struggling with insulin resistance, sudden weight gain, and constant food noise, you are not alone. Many women reach perimenopause and menopause feeling exhausted and discouraged because the dieting rules that worked in their 20s simply don't work anymore.</p>
+<p>What most metabolic programs fail to mention is this: Your mindset directly impacts your biochemistry. Learning how to ""clean up your thoughts"" isn't just self-helpâ€”it is a physiological tool for healing your relationship with food and stabilizing your blood sugar.</p>
+<h2>The Link Between Stress, Cortisol, and Insulin Resistance</h2>
+<p>In midlife, hormonal shifts change how your body processes stress and glucose. When your self-talk is harsh or shameful, your body perceives a threat. This triggers the sympathetic nervous system (fight-or-flight), releasing cortisol.</p>
+<p>High cortisol levels tell your liver to release more glucose into the bloodstream. If this happens chronically due to negative thought patterns, it worsens insulin resistance and makes weight loss feel impossible.</p>
+<h3>Common ""Toxic"" Thoughts That Stall Progress:</h3>
+<ul>
+  <li>""I can't trust myself around sugar.""</li>
+  <li>""My metabolism is broken because of menopause.""</li>
+  <li>""I've already ruined the day, so I might as well keep eating.""</li>
+</ul>
+<p>These thoughts create food shame, which leads to emotional eating and further metabolic d
+<truncated 45215 bytes>
+ks. She saw a therapist, did breathing exercises, and was prescribed an SSRI. While these were helpful, no one asked about her irregular periods or the fact that her brain's estrogen supply was fluctuating like a bad Wi-Fi signal.</p><p>When she finally connected with a provider who looked at the full pictureâ€”hormones AND mental healthâ€”the panic attacks stopped. The therapy wasn't "wrong," but the biological "fire alarm" finally had a reason to stop going off.</p><h2>What You Can Do Right Now</h2><p>If you are tired of being handed a prescription without being truly heard, take these proactive steps:</p><ul><li><p><strong>Track Your Symptoms:</strong> Note their relation to your cycle. Patterns are powerful information.</p></li><li><p><strong>Ask Specifically About Perimenopause:</strong> Don't wait for your doctor to bring it up; many won't.</p></li><li><p><strong>Request a Full Panel:</strong> Ask about FSH, estradiol, progesterone, and testosterone, not just TSH.</p></li><li><p><strong>Trust Your Symptoms:</strong> "Normal" labs don't rule out perimenopauseâ€”your lived experience matters.</p></li></ul><h2>You Are Not Suddenly Fragile</h2><p>You are navigating a massive neurological and hormonal transition that our culture barely acknowledges. You are doing it while still showing up for everyone else. The anxiety you're feeling deserves to be taken seriously, and so does the hormonal story underneath it.</p><p><strong>Letâ€™s Look at the Full Picture</strong> If you're ready to bridge the gap between your body and your mind, a <a target="_blank" rel="noopener noreferrer" href="/book">clarity call</a> might be the most important conversation you have this year. Letâ€™s explore your full story together.</p>	Mindset & Emotional Wellness	https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/blog-images/e
+<truncated 24042 bytes>
+
+NOTE: The output was truncated because it was too long. Use a more targeted query or a smaller range to get the information you need.

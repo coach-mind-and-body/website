@@ -7,6 +7,7 @@ import { deposits, fpuOrders, fpuCoachingSessions, enrollments, coachingSessions
 import { eq } from "drizzle-orm";
 import { notifyOwner } from "./_core/notification";
 import { sendOwnerEmail, sendReclaimWelcomeEmail, sendFpuWelcomeEmail } from "./notifications";
+import { enrollUserInSequence } from "./sequences";
 
 /**
  * Fire a server-side Purchase event via Meta Conversions API.
@@ -387,6 +388,9 @@ export function registerStripeWebhook(app: Express) {
                     }));
                     await db.insert(coachingSessions).values(sessionValues);
                     console.log(`[Stripe] Created enrollment ${newEnrollment.id} + 6 coaching sessions for user ${userId} (${clientEmail})`);
+                    
+                    // Enroll in drip sequence
+                    await enrollUserInSequence(clientEmail, clientName, "reclaim_6_week");
                   }
                 } else {
                   // Enrollment exists — update payment status

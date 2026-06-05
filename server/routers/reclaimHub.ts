@@ -6,7 +6,8 @@ import {
   programModules, 
   assignments, 
   assignmentSubmissions, 
-  moduleProgress 
+  moduleProgress,
+  enrollments
 } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
 
@@ -22,6 +23,23 @@ export const reclaimHubRouter = router({
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
     
+    // Verify enrollment
+    const enrollmentRows = await db
+      .select()
+      .from(enrollments)
+      .where(
+        and(
+          eq(enrollments.userId, ctx.user!.id),
+          eq(enrollments.program, "reclaim")
+        )
+      )
+      .limit(1);
+
+    const enrollment = enrollmentRows[0];
+    if (!enrollment || enrollment.status !== "active") {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Not actively enrolled in Reclaim." });
+    }
+
     // Fetch all published modules
     const modules = await db
       .select()
@@ -30,7 +48,7 @@ export const reclaimHubRouter = router({
       .orderBy(asc(programModules.order));
 
     // Fetch user's progress
-    const progress = await db
+    const progressRecords = await db
       .select()
       .from(moduleProgress)
       .where(eq(moduleProgress.userId, ctx.user!.id));
@@ -47,17 +65,50 @@ export const reclaimHubRouter = router({
       .from(assignmentSubmissions)
       .where(eq(assignmentSubmissions.userId, ctx.user!.id));
 
-    return { modules, progress, assignments: allAssignments, submissions };
+    // Calculate drip logic
+    const enrolledDate = new Date(enrollment.enrolledAt);
+    const now = new Date();
+    const daysSinceEnrollment = Math.floor((now.getTime() - enrolledDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    const enrichedModules = modules.map((mod, index) => {
+      const progress = progressRecords.find(p => p.moduleId === mod.id);
+      let isUnlocked = false;
+
+      if (index === 0) {
+        isUnlocked = true;
+      } else {
+        const previousModule = modules[index - 1];
+        const prevProgress = progressRecords.find(p => p.moduleId === previousModule.id);
+        
+        // Unlocked if previous is completed or 7 days have passed since enrollment per module index
+        if (prevProgress?.completedAt || daysSinceEnrollment >= index * 7) {
+          isUnlocked = true;
+        }
+      }
+
+      return {
+        ...mod,
+        isUnlocked,
+        progress: progress || null,
+      };
+    });
+
+    return { enrollment, modules: enrichedModules, assignments: allAssignments, submissions };
   }),
 
   submitAssignment: protectedProcedure
     .input(z.object({
       assignmentId: z.number(),
-      answer: z.string().min(1)
+      answer: z.string().optional(),
+      fileUrl: z.string().optional()
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      if (!input.answer && !input.fileUrl) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Provide either an answer or a file upload." });
+      }
 
       // Check if submission already exists
       const existing = await db
@@ -75,18 +126,52 @@ export const reclaimHubRouter = router({
         // Update existing submission
         await db
           .update(assignmentSubmissions)
-          .set({ answer: input.answer, submittedAt: new Date() })
+          .set({ answer: input.answer || null, fileUrl: input.fileUrl || null, submittedAt: new Date() })
           .where(eq(assignmentSubmissions.id, existing[0].id));
       } else {
         // Create new submission
         await db.insert(assignmentSubmissions).values({
           assignmentId: input.assignmentId,
           userId: ctx.user!.id,
-          answer: input.answer
+          answer: input.answer || null,
+          fileUrl: input.fileUrl || null
         });
       }
 
-      // TODO: Trigger email notification to Lee Anne
+      return { success: true };
+    }),
+
+  markModuleComplete: protectedProcedure
+    .input(z.object({ moduleId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const existing = await db
+        .select()
+        .from(moduleProgress)
+        .where(
+          and(
+            eq(moduleProgress.userId, ctx.user!.id),
+            eq(moduleProgress.moduleId, input.moduleId)
+          )
+        )
+        .limit(1);
+
+      if (existing.length > 0) {
+        if (!existing[0].completedAt) {
+          await db
+            .update(moduleProgress)
+            .set({ completedAt: new Date() })
+            .where(eq(moduleProgress.id, existing[0].id));
+        }
+      } else {
+        await db.insert(moduleProgress).values({
+          userId: ctx.user!.id,
+          moduleId: input.moduleId,
+          completedAt: new Date(),
+        });
+      }
 
       return { success: true };
     }),

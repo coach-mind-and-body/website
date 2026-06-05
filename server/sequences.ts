@@ -2,6 +2,7 @@ import { getDb } from "./db";
 import { subscribers, sequenceEnrollments } from "../drizzle/schema";
 import { eq, and, isNull, lte } from "drizzle-orm";
 import { FPU_EMAILS } from "./emails/fpuNewsletters";
+import { RECLAIM_EMAILS } from "./emails/reclaimSequence";
 import { sendTransactionalEmail } from "./notifications";
 
 export async function processEmailSequences() {
@@ -25,12 +26,7 @@ export async function processEmailSequences() {
     })
     .from(sequenceEnrollments)
     .innerJoin(subscribers, eq(sequenceEnrollments.subscriberId, subscribers.id))
-    .where(
-      and(
-        eq(sequenceEnrollments.status, "active"),
-        eq(sequenceEnrollments.sequenceId, "fpu_babystep_1")
-      )
-    );
+    .where(eq(sequenceEnrollments.status, "active"));
 
   for (const { enrollment, subscriber } of activeEnrollments) {
     const isFirstEmail = !enrollment.lastEmailedAt;
@@ -38,8 +34,9 @@ export async function processEmailSequences() {
 
     if (isFirstEmail || isDueForNext) {
       const stepIndex = enrollment.currentStep; // 0-indexed
+      const emailsList = enrollment.sequenceId === "reclaim_6_week" ? RECLAIM_EMAILS : FPU_EMAILS;
 
-      if (stepIndex >= FPU_EMAILS.length) {
+      if (stepIndex >= emailsList.length) {
         // Sequence completed!
         await db
           .update(sequenceEnrollments)
@@ -49,10 +46,10 @@ export async function processEmailSequences() {
       }
 
       // Generate the email content
-      const getEmailContent = FPU_EMAILS[stepIndex];
+      const getEmailContent = emailsList[stepIndex];
       const emailContent = getEmailContent(subscriber.firstName || "Friend");
 
-      console.log(`[Sequences] Sending FPU Email ${stepIndex + 1} to ${subscriber.email}`);
+      console.log(`[Sequences] Sending ${enrollment.sequenceId} Email ${stepIndex + 1} to ${subscriber.email}`);
       
       const success = await sendTransactionalEmail({
         to: subscriber.email,
@@ -78,4 +75,42 @@ export async function processEmailSequences() {
 
   console.log(`[Sequences] Processor finished. Sent ${emailsSent} emails.`);
   return { success: true, emailsSent };
+}
+
+export async function enrollUserInSequence(email: string, firstName: string | null, sequenceId: string) {
+  const db = await getDb();
+  if (!db) return false;
+
+  // Find or create subscriber
+  let subscriberId: number;
+  const existingSub = await db.select().from(subscribers).where(eq(subscribers.email, email)).limit(1);
+  if (existingSub.length > 0) {
+    subscriberId = existingSub[0].id;
+  } else {
+    const [newSub] = await db.insert(subscribers).values({
+      email,
+      firstName: firstName ?? null,
+      segments: JSON.stringify([sequenceId]),
+    }).$returningId();
+    subscriberId = newSub.id;
+  }
+
+  // Check if already enrolled
+  const existingEnrollment = await db
+    .select()
+    .from(sequenceEnrollments)
+    .where(and(eq(sequenceEnrollments.subscriberId, subscriberId), eq(sequenceEnrollments.sequenceId, sequenceId)))
+    .limit(1);
+
+  if (existingEnrollment.length === 0) {
+    await db.insert(sequenceEnrollments).values({
+      subscriberId,
+      sequenceId,
+      status: "active",
+      currentStep: 0,
+    });
+    console.log(`[Sequences] Enrolled ${email} in sequence: ${sequenceId}`);
+  }
+
+  return true;
 }
