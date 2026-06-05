@@ -138,7 +138,7 @@ export default function Admin() {
     <div className="min-h-screen" style={{ background: "oklch(0.12 0.01 160)" }}>
       {/* Admin header */}
       <header className="border-b" style={{ background: "oklch(0.18 0.02 160)", borderColor: "oklch(0.28 0.02 160)" }}>
-        <div className="container max-w-6xl mx-auto flex items-center justify-between h-14">
+        <div className="container max-w-6xl mx-auto px-4 md:px-6 lg:px-8 flex items-center justify-between h-16">
           <a href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <img src={BRAND.logoUrl} alt={BRAND.name} className="w-8 h-8 rounded-full object-cover" />
             <span className="font-bold text-sm" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.97 0.008 10)", fontSize: "1rem" }}>
@@ -154,7 +154,7 @@ export default function Admin() {
         </div>
       </header>
 
-      <div className="container max-w-6xl mx-auto py-8">
+      <div className="container max-w-6xl mx-auto px-4 md:px-6 lg:px-8 py-8">
         {/* Tab nav */}
         <div className="flex gap-1 mb-8 overflow-x-auto pb-1">
           {TABS.map(t => (
