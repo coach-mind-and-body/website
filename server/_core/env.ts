@@ -21,4 +21,9 @@ export const ENV = {
   ownerEmail: process.env.OWNER_EMAIL ?? "coach@mindandbodyresetcoach.com",
   metaConversionsApiToken: process.env.META_CONVERSIONS_API_TOKEN ?? "",
   metaPixelId: "1256633739205867",
+  r2AccessKeyId: process.env.R2_ACCESS_KEY_ID ?? "",
+  r2SecretAccessKey: process.env.R2_SECRET_ACCESS_KEY ?? "",
+  r2Endpoint: process.env.R2_ENDPOINT ?? "",
+  r2BucketName: process.env.R2_BUCKET_NAME ?? "mindbodyreset-assets",
+  r2PublicUrl: process.env.R2_PUBLIC_URL ?? "https://pub-c6f7a165acb046c283b129a93cb2c8ec.r2.dev",
 };

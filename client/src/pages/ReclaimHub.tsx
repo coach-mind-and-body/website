@@ -280,7 +280,7 @@ export default function ReclaimHub() {
                 )}
 
                 {selectedModule.pdfUrl && (
-                  <div className="mb-12 p-6 rounded-2xl flex items-center justify-between" style={{ background: "oklch(0.97 0.02 75)", border: "1px solid oklch(0.90 0.02 75)" }}>
+                  <div className="mb-12 p-6 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4" style={{ background: "oklch(0.97 0.02 75)", border: "1px solid oklch(0.90 0.02 75)" }}>
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-white shadow-sm text-red-500">
                         <FileText size={24} />
