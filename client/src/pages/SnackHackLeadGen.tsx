@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import { Helmet } from "react-helmet-async";
+import { useMetaPixel } from "../hooks/useMetaPixel";
 
 const formSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -26,6 +27,7 @@ const formSchema = z.object({
 export default function SnackHackLeadGen() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const subscribeMutation = trpc.leadgen.subscribeSnackHack.useMutation();
+  const { trackEvent } = useMetaPixel();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -40,6 +42,15 @@ export default function SnackHackLeadGen() {
       await subscribeMutation.mutateAsync(values);
       setIsSubmitted(true);
       toast.success("Success! Check your email for your free guide.");
+      
+      // Fire conversion events
+      trackEvent("Lead", { content_name: "Snack Hack Guide" });
+      if (typeof window !== "undefined" && (window as any).gtag) {
+        (window as any).gtag("event", "generate_lead", {
+          event_category: "engagement",
+          event_label: "Snack Hack Guide"
+        });
+      }
     } catch (err: any) {
       toast.error(err.message || "Something went wrong. Please try again.");
     }
