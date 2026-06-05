@@ -212,10 +212,10 @@ export const reclaimHubRouter = router({
   adminCreateModule: protectedProcedure
     .input(z.object({
       title: z.string().min(1),
-      description: z.string().optional(),
-      videoUrl: z.string().optional(),
-      content: z.string().optional(),
-      pdfUrl: z.string().optional(),
+      description: z.string().nullish(),
+      videoUrl: z.string().nullish(),
+      content: z.string().nullish(),
+      pdfUrl: z.string().nullish(),
       order: z.number(),
       isPublished: z.boolean().default(false)
     }))
@@ -232,10 +232,10 @@ export const reclaimHubRouter = router({
     .input(z.object({
       id: z.number(),
       title: z.string().optional(),
-      description: z.string().optional(),
-      videoUrl: z.string().optional(),
-      content: z.string().optional(),
-      pdfUrl: z.string().optional(),
+      description: z.string().nullish(),
+      videoUrl: z.string().nullish(),
+      content: z.string().nullish(),
+      pdfUrl: z.string().nullish(),
       order: z.number().optional(),
       isPublished: z.boolean().optional()
     }))
