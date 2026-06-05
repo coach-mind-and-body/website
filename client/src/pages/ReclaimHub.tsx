@@ -4,7 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { motion, AnimatePresence } from "framer-motion";
-import { Lock, PlayCircle, FileText, CheckCircle, ArrowLeft, Send, Upload, ExternalLink } from "lucide-react";
+import { Lock, PlayCircle, FileText, CheckCircle, ArrowLeft, Send, Upload, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
