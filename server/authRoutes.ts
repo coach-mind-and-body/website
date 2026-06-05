@@ -443,7 +443,17 @@ export function registerAuthRoutes(app: Express) {
       });
 
       await issueSession(res, req, user.openId, user.name || googleUser.name || "");
-      res.redirect(postLoginRedirect);
+      res.status(200).send(`
+        <html>
+          <head>
+            <meta http-equiv="refresh" content="0;url=${postLoginRedirect}" />
+            <title>Authenticating...</title>
+          </head>
+          <body>
+            <script>window.location.href = "${postLoginRedirect}";</script>
+          </body>
+        </html>
+      `);
     } catch (err) {
       console.error("[Auth] Google callback error", err);
       res.redirect("/?error=google_auth_failed");
