@@ -36,9 +36,26 @@ export const reclaimHubRouter = router({
       .limit(1);
 
     const enrollment = enrollmentRows[0];
-    if (!enrollment || enrollment.status !== "active") {
+    if (ctx.user!.role !== "admin" && (!enrollment || enrollment.status !== "active")) {
       throw new TRPCError({ code: "FORBIDDEN", message: "Not actively enrolled in Reclaim." });
     }
+
+    const effectiveEnrollment = (ctx.user!.role === "admin" && !enrollment) 
+      ? {
+          id: 0,
+          userId: ctx.user!.id,
+          program: "reclaim",
+          status: "active",
+          enrolledAt: new Date(new Date().getTime() - 100 * 24 * 60 * 60 * 1000), // 100 days ago to unlock everything
+          paymentType: "full",
+          depositPaid: true,
+          balancePaid: true,
+          clientName: ctx.user!.name,
+          clientEmail: ctx.user!.email,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        } 
+      : enrollment;
 
     // Fetch all published modules
     const modules = await db
@@ -66,7 +83,7 @@ export const reclaimHubRouter = router({
       .where(eq(assignmentSubmissions.userId, ctx.user!.id));
 
     // Calculate drip logic
-    const enrolledDate = new Date(enrollment.enrolledAt);
+    const enrolledDate = new Date(effectiveEnrollment.enrolledAt as Date);
     const now = new Date();
     const daysSinceEnrollment = Math.floor((now.getTime() - enrolledDate.getTime()) / (1000 * 60 * 60 * 24));
 
@@ -93,7 +110,7 @@ export const reclaimHubRouter = router({
       };
     });
 
-    return { enrollment, modules: enrichedModules, assignments: allAssignments, submissions };
+    return { enrollment: effectiveEnrollment, modules: enrichedModules, assignments: allAssignments, submissions };
   }),
 
   submitAssignment: protectedProcedure
