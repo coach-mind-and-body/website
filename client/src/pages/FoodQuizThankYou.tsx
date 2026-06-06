@@ -3,6 +3,7 @@ import { CheckCircle2, ArrowRight } from "lucide-react";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import { useMetaPixel } from "@/hooks/useMetaPixel";
+import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
 import { usePageTitle } from "@/hooks/usePageTitle";
 
 export default function FoodQuizThankYou() {
@@ -12,10 +13,12 @@ export default function FoodQuizThankYou() {
     keywords: "quiz results, food mindset type, wellness quiz results, personalized health tips"
   });
   const { trackLead } = useMetaPixel();
+  const ga = useGoogleAnalytics();
 
   // Fire Lead event when thank-you page loads (catches direct navigations and refreshes)
   useEffect(() => {
     trackLead({ content_name: "Food Quiz Thank You", content_category: "Quiz" });
+    ga.trackLead({ category: "Lead Generation", label: "Food Quiz Thank You" });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

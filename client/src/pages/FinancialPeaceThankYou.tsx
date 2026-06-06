@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import { CheckCircle2, Calendar, Mail, ArrowRight } from "lucide-react";
+import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
 import { usePageTitle } from "@/hooks/usePageTitle";
 
 const COACH_EMAIL = "coach@mindandbodyresetcoach.com";
@@ -17,10 +18,24 @@ export default function FinancialPeaceThankYou() {
     keywords: "FPU registration, Financial Peace University confirmed, Dave Ramsey class"
   });
   const btnRef = useRef<HTMLSpanElement>(null);
+  const ga = useGoogleAnalytics();
 
   // Scroll to top on mount
   useEffect(() => {
     window.scrollTo(0, 0);
+    
+    // We know they arrived here after a successful FPU coaching checkout ($249)
+    ga.trackPurchase({
+      transaction_id: "fpu_coaching_" + Date.now(),
+      value: 249,
+      currency: "USD",
+      items: [{
+        item_name: "FPU 1:1 Coaching Sessions",
+        price: 249,
+        currency: "USD"
+      }]
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Load the Google Calendar scheduling button and attach it to our element

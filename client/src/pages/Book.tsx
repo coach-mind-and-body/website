@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CheckCircle2, Calendar } from "lucide-react";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
@@ -6,6 +6,7 @@ import { GOOGLE_CALENDAR } from "../../../shared/brand";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { useMetaPixel } from "@/hooks/useMetaPixel";
+import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
 import { usePageTitle } from "@/hooks/usePageTitle";
 
 export default function Book() {
@@ -15,6 +16,7 @@ export default function Book() {
     keywords: "free discovery call, health coaching consultation, book appointment, wellness coach, women over 40, midlife health support"
   });
   const { trackLead } = useMetaPixel();
+  const ga = useGoogleAnalytics();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -22,8 +24,9 @@ export default function Book() {
 
   const submitLead = trpc.leads.submit.useMutation({
     onSuccess: () => {
-      // Fire Meta Pixel Lead event when discovery call is booked
+      // Fire Meta Pixel and GA Lead events when discovery call is booked
       trackLead({ content_name: "Discovery Call Booking", content_category: "Book a Call" });
+      ga.trackLead({ category: "Book a Call", label: "Discovery Call Booking" });
       setSubmitted(true);
     },
     onError: (err) => toast.error(err.message || "Something went wrong. Please try again."),

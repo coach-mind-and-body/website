@@ -9,6 +9,7 @@ import { EditModeProvider } from "@/contexts/EditModeContext";
 import { EditableBlock } from "@/components/EditableBlock";
 import { FPU_CONTENT } from "./FinancialPeaceContent";
 import { useMetaPixel } from "@/hooks/useMetaPixel";
+import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
 import { usePageTitle } from "@/hooks/usePageTitle";
 
 // CDN photos
@@ -34,6 +35,7 @@ function CoachingCheckoutButton({
   className?: string;
 }) {
   const { trackInitiateCheckout } = useMetaPixel();
+  const ga = useGoogleAnalytics();
   const checkoutMutation = trpc.fpu.createCoachingCheckout.useMutation({
     onSuccess: (data) => {
       if (data.url) {
@@ -54,6 +56,11 @@ function CoachingCheckoutButton({
       value: 249,
       currency: "USD",
       num_items: 1,
+    });
+    ga.trackInitiateCheckout({
+      items: [{ item_name: "FPU 1:1 Coaching Sessions", price: 249, currency: "USD" }],
+      value: 249,
+      currency: "USD"
     });
     checkoutMutation.mutate();
   };
@@ -99,10 +106,12 @@ export default function FinancialPeace() {
 
 function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
   const { trackViewContent } = useMetaPixel();
+  const ga = useGoogleAnalytics();
 
   useEffect(() => {
     // Fire ViewContent when visitor views the Financial Peace University page
     trackViewContent({ content_name: "Financial Peace University", content_category: "Financial Coaching", content_type: "product" });
+    ga.trackViewContent({ item_name: "Financial Peace University", item_category: "Financial Coaching" });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

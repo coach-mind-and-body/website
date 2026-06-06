@@ -8,6 +8,7 @@ import { EditModeProvider } from "@/contexts/EditModeContext";
 import { EditableBlock } from "@/components/EditableBlock";
 import { FPU_CONTENT } from "./FinancialPeaceContent";
 import { useMetaPixel } from "@/hooks/useMetaPixel";
+import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
 import { usePageTitle } from "@/hooks/usePageTitle";
 
 // CDN photos
@@ -21,6 +22,7 @@ const LEEANNE_PHOTO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/
 // ── Coaching checkout button ──────────────────────────────────────────────────
 function CoachingCheckoutButton({ label = "Add 1:1 Coaching — $249 →", className = "" }: { label?: string; className?: string; }) {
   const { trackInitiateCheckout } = useMetaPixel();
+  const ga = useGoogleAnalytics();
   const checkoutMutation = trpc.fpu.createCoachingCheckout.useMutation({
     onSuccess: (data) => {
       if (data.url) {
@@ -41,6 +43,11 @@ function CoachingCheckoutButton({ label = "Add 1:1 Coaching — $249 →", class
       value: 249,
       currency: "USD",
       num_items: 1,
+    });
+    ga.trackInitiateCheckout({
+      items: [{ item_name: "FPU 1:1 Coaching Sessions", price: 249, currency: "USD" }],
+      value: 249,
+      currency: "USD"
     });
     checkoutMutation.mutate();
   };
@@ -86,6 +93,7 @@ export default function FPULandingPage() {
 
 function FPULandingPageContent() {
   const { trackViewContent } = useMetaPixel();
+  const ga = useGoogleAnalytics();
 
   useEffect(() => {
     trackViewContent({ content_name: "Financial Peace University", content_category: "Financial Coaching", content_type: "product" });

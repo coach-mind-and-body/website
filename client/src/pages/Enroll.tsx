@@ -7,6 +7,7 @@ import { PROGRAM, GOOGLE_CALENDAR } from "../../../shared/brand";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { useMetaPixel } from "@/hooks/useMetaPixel";
+import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
 import { usePageTitle } from "@/hooks/usePageTitle";
 
 type Step = "choose" | "pay" | "schedule";
@@ -30,7 +31,20 @@ export default function Enroll() {
     if (params.get("success") === "1") {
       setPaymentDone(true);
       setStep("schedule");
+      
+      // We don't have the exact plan from URL, but we know they bought Reclaim
+      ga.trackPurchase({
+        transaction_id: "reclaim_" + Date.now(), // Generate a unique ID to prevent duplicate tracking
+        value: 597, // Approximate or full value
+        currency: "USD",
+        items: [{
+          item_name: "R.E.C.L.A.I.M. Program Checkout Success",
+          price: 597,
+          currency: "USD"
+        }]
+      });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const createCheckout = trpc.payment.createDepositCheckout.useMutation({
@@ -44,6 +58,7 @@ export default function Enroll() {
   });
 
   const { trackInitiateCheckout } = useMetaPixel();
+  const ga = useGoogleAnalytics();
 
   const handlePay = () => {
     trackInitiateCheckout({
@@ -52,6 +67,15 @@ export default function Enroll() {
       value: plan === "full" ? 597 : 200,
       currency: "USD",
       num_items: 1,
+    });
+    ga.trackInitiateCheckout({
+      items: [{
+        item_name: plan === "full" ? "R.E.C.L.A.I.M. Program - Full Payment" : "R.E.C.L.A.I.M. Program - Deposit",
+        price: plan === "full" ? 597 : 200,
+        currency: "USD",
+      }],
+      value: plan === "full" ? 597 : 200,
+      currency: "USD"
     });
     createCheckout.mutate({ plan });
   };

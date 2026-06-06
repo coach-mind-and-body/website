@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { useEffect } from "react";
 import { useMetaPixel } from "@/hooks/useMetaPixel";
+import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
 import { BRAND } from "../../../shared/brand";
 import { usePageTitle } from "@/hooks/usePageTitle";
 
@@ -11,6 +12,7 @@ export default function JoinThankYou() {
     keywords: "welcome, community joined, wellness resources, mind body reset"
   });
   const { trackLead } = useMetaPixel();
+  const ga = useGoogleAnalytics();
 
   // Fire Lead on the thank-you page as a confirmation signal —
   // this is the most reliable place to fire since the form submit may race with navigation
@@ -19,6 +21,7 @@ export default function JoinThankYou() {
       content_name: "Join the Community — Email Sign-Up",
       content_category: "Lead Magnet",
     });
+    ga.trackLead({ category: "Lead Magnet", label: "Join the Community Thank You Page" });
   }, []);
 
   return (

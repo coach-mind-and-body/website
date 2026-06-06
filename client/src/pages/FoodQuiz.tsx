@@ -4,6 +4,7 @@ import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import { useLocation } from "wouter";
 import { useMetaPixel } from "@/hooks/useMetaPixel";
+import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
 import { usePageTitle } from "@/hooks/usePageTitle";
 
 const ZAPIER_URL = "https://hooks.zapier.com/hooks/catch/22551341/uw0om13/";
@@ -65,6 +66,7 @@ export default function FoodQuiz() {
     keywords: "food quiz, mindset quiz, food freedom quiz, women over 40 quiz, diet culture quiz, free wellness quiz, food noise"
   });
   const { trackLead } = useMetaPixel();
+  const ga = useGoogleAnalytics();
   const [screen, setScreen] = useState<Screen>("start");
   const [currentIdx, setCurrentIdx] = useState(0);
   const [userAnswers, setUserAnswers] = useState<string[]>([]);
@@ -131,8 +133,10 @@ export default function FoodQuiz() {
       // no-cors fetch always "fails" silently — that's expected
     }
 
-    // Fire Meta Pixel Lead event when quiz is submitted
+    // Fire Meta Pixel and GA Lead events when quiz is submitted
     trackLead({ content_name: "Food Quiz", content_category: "Quiz" });
+    ga.trackLead({ category: "Lead Generation", label: "Food Quiz Completion" });
+    
     setTimeout(() => {
       navigate("/food-quiz-thank-you");
     }, 1500);

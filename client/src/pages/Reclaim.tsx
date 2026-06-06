@@ -5,6 +5,7 @@ import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import { BRAND, PROGRAM, GOOGLE_CALENDAR } from "../../../shared/brand";
 import { useMetaPixel } from "@/hooks/useMetaPixel";
+import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
 import { usePageTitle } from "@/hooks/usePageTitle";
 
 const RECLAIM_LETTERS = [
@@ -61,10 +62,12 @@ export default function Reclaim() {
     keywords: "RECLAIM program, 1 on 1 coaching, women health coaching, diet culture recovery, hormonal balance, midlife wellness program, food freedom coaching"
   });
   const { trackViewContent } = useMetaPixel();
+  const ga = useGoogleAnalytics();
 
   useEffect(() => {
     // Fire ViewContent when visitor views the R.E.C.L.A.I.M. program page
-    trackViewContent({ content_name: "R.E.C.L.A.I.M. Program", content_category: "Coaching Program", content_type: "product" });
+    trackViewContent({ content_name: "R.E.C.L.A.I.M. Coaching Program", content_category: "Coaching", content_type: "product" });
+    ga.trackViewContent({ item_name: "R.E.C.L.A.I.M. Coaching Program", item_category: "Coaching" });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

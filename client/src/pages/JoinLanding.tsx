@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useMetaPixel } from "@/hooks/useMetaPixel";
 import { BRAND } from "../../../shared/brand";
+import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
 import { usePageTitle } from "@/hooks/usePageTitle";
 
 const ZAPIER_WEBHOOK = "https://hooks.zapier.com/hooks/catch/22551341/uw0om13/";
@@ -20,6 +21,7 @@ export default function JoinLanding() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const { trackViewContent, trackLead } = useMetaPixel();
+  const ga = useGoogleAnalytics();
 
   // Fire ViewContent when the page loads — tells Meta someone saw the lead magnet offer
   useEffect(() => {
@@ -28,6 +30,7 @@ export default function JoinLanding() {
       content_category: "Lead Magnet",
       content_type: "product",
     });
+    ga.trackViewContent({ item_name: "Join the Community — Email Sign-Up", item_category: "Lead Magnet" });
   }, []);
 
   const handleSubmit = async () => {
@@ -61,6 +64,7 @@ export default function JoinLanding() {
       content_name: "Join the Community — Email Sign-Up",
       content_category: "Lead Magnet",
     });
+    ga.trackLead({ category: "Lead Magnet", label: "Join the Community — Email Sign-Up" });
 
     navigate("/join-thank-you");
   };
