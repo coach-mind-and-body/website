@@ -106,6 +106,7 @@ export const habitRouter = router({
       title: z.string(),
       description: z.string().optional(),
       order: z.number().default(0),
+      isActive: z.boolean().default(true),
     }))
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -114,7 +115,7 @@ export const habitRouter = router({
         title: input.title,
         description: input.description,
         order: input.order,
-        isActive: true,
+        isActive: input.isActive,
       });
       return { success: true };
     }),

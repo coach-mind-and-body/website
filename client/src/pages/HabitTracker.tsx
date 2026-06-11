@@ -103,8 +103,11 @@ export default function HabitTracker() {
       )}
 
       {/* Header */}
-      <div className="pt-12 pb-8 px-6 max-w-4xl mx-auto text-center">
+      <div className="pt-8 pb-8 px-6 max-w-4xl mx-auto text-center">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+          <Link href="/" className="inline-block mb-6 transition-transform hover:scale-105">
+            <img src="/logo-wide.jpg" alt="Mind & Body Reset" className="h-16 md:h-20 mx-auto object-contain rounded-xl shadow-sm" />
+          </Link>
           <h1 className="text-4xl md:text-5xl font-bold mb-4" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
             My Daily Reset
           </h1>
