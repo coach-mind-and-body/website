@@ -80,6 +80,7 @@ export default function SiteFooter() {
                 { href: "/about", label: "About Mind & Body" },
                 { href: "/reclaim", label: "R.E.C.L.A.I.M. Program" },
                 { href: "/health-wellness-blog", label: "Blog" },
+                { href: "/habit-tracker", label: "Free Habit Tracker" },
                 { href: "/book", label: "Book a Free Call" },
                 { href: "/financial-peace", label: "Financial Peace University" },
                 { href: "/midlife-health-podcast", label: "Podcast" },

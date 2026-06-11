@@ -200,6 +200,26 @@ export default function ReclaimHub() {
                 </p>
               </div>
 
+              {/* Free Habit Tracker Banner */}
+              <Link href="/habit-tracker" className="block mb-12">
+                <div className="p-8 rounded-3xl shadow-md transition-transform hover:scale-[1.02] flex flex-col md:flex-row items-center justify-between gap-6" style={{ background: "linear-gradient(135deg, #fbeee9 0%, #faf5f5 100%)", border: "1px solid #f0e8e4" }}>
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <CheckCircle size={20} style={{ color: "#c9a96e" }} />
+                      <h2 className="text-2xl font-bold" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
+                        My Daily Reset Tracker
+                      </h2>
+                    </div>
+                    <p className="text-sm" style={{ color: "#5a6b5a" }}>
+                      Track your daily habits—like hydrating, moving your body, and mindful minutes—to build lasting momentum.
+                    </p>
+                  </div>
+                  <div className="flex-shrink-0 px-6 py-3 rounded-full font-bold text-sm shadow-sm" style={{ background: "#c9a96e", color: "white" }}>
+                    Open Tracker
+                  </div>
+                </div>
+              </Link>
+
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {modules.map((mod, index) => {
                   const unlocked = mod.isUnlocked;
