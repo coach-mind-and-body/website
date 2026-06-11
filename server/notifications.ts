@@ -664,12 +664,30 @@ export async function sendSnackHackEmail(params: {
           <a href="${pdfUrl}" style="display:inline-block;background:#c9a96e;color:white;padding:14px 36px;border-radius:9999px;text-decoration:none;font-size:16px;font-weight:700;">Download the PDF Guide</a>
         </div>
         
+        <div style="background:#f9f5f0;border-left:4px solid #3a5a3a;padding:20px 24px;margin:32px 0;border-radius:0 8px 8px 0;">
+          <p style="margin:0 0 12px;font-size:16px;font-weight:700;color:#3a5a3a;">Bonus: Track Your Daily Reset</p>
+          <p style="margin:0 0 16px;color:#4a4a4a;font-size:15px;line-height:1.6;">I've also created a free habit tracker for you to use. You can track your daily habits right on your phone or computer to start building momentum today!</p>
+          <a href="${ENV.appPublicUrl}/habit-tracker" style="color:#3a5a3a;font-weight:700;text-decoration:underline;">Open Your Free Habit Tracker</a>
+        </div>
+
         <p style="color:#4a4a4a;font-size:15px;margin-top:24px;">With love,<br/><strong>Lee Anne</strong><br/><span style="color:#8a9a8a;font-size:13px;">Certified Life &amp; Health Coach | Mind &amp; Body Reset</span></p>
       </div>
     </div>
   `;
 
-  const textBody = `Hi ${firstName},\n\nHere is your Midlife Mindset Guide for late-night snacking.\n\nDownload the PDF here: ${pdfUrl}\n\nWith love,\nLee Anne\nMind & Body Reset`;
+  const textBody = `Hi ${firstName},
+
+Here is your Midlife Mindset Guide for late-night snacking.
+
+Download the PDF here: ${pdfUrl}
+
+Bonus: Track Your Daily Reset
+I've also created a free habit tracker for you to use. You can track your daily habits right on your phone or computer to start building momentum today!
+Access it here: ${ENV.appPublicUrl}/habit-tracker
+
+With love,
+Lee Anne
+Mind & Body Reset`;
 
   return sendTransactionalEmail({ to: clientEmail, toName: clientName, subject, htmlBody, textBody });
 }

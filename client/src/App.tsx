@@ -32,6 +32,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Glp1Recovery from "./pages/Glp1Recovery";
 import HolisticHealth from "./pages/HolisticHealth";
 import SnackHackLeadGen from "./pages/SnackHackLeadGen";
+import HabitTracker from "./pages/HabitTracker";
 
 // Enrollment & client portal
 import Enroll from "./pages/Enroll";
@@ -72,6 +73,7 @@ function Router() {
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/snack-hack" component={SnackHackLeadGen} />
       <Route path="/free-guide" component={SnackHackLeadGen} />
+      <Route path="/habit-tracker" component={HabitTracker} />
       
       {/* SEO Pillar Pages */}
       <Route path="/life-after-glp-1" component={Glp1Recovery} />

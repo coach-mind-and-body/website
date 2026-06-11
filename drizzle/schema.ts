@@ -355,3 +355,44 @@ export const sequenceEnrollments = mysqlTable("sequence_enrollments", {
 
 export type SequenceEnrollment = typeof sequenceEnrollments.$inferSelect;
 export type InsertSequenceEnrollment = typeof sequenceEnrollments.$inferInsert;
+
+// ── Habit Tracker ─────────────────────────────────────────────────────────────
+export const habitTemplates = mysqlTable("habit_templates", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  order: int("order").default(0).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type HabitTemplate = typeof habitTemplates.$inferSelect;
+export type InsertHabitTemplate = typeof habitTemplates.$inferInsert;
+
+export const userHabits = mysqlTable("user_habits", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  order: int("order").default(0).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type UserHabit = typeof userHabits.$inferSelect;
+export type InsertUserHabit = typeof userHabits.$inferInsert;
+
+export const userHabitLogs = mysqlTable("user_habit_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  userHabitId: int("userHabitId").notNull(),
+  userId: int("userId").notNull(),
+  dateStr: varchar("dateStr", { length: 10 }).notNull(), // YYYY-MM-DD
+  completed: boolean("completed").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type UserHabitLog = typeof userHabitLogs.$inferSelect;
+export type InsertUserHabitLog = typeof userHabitLogs.$inferInsert;

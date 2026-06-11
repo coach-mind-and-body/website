@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import AdminClientSessions from "@/components/AdminClientSessions";
 import AdminPaymentsTab from "@/components/AdminPaymentsTab";
+import AdminHabitsTab from "@/components/AdminHabitsTab";
 import PageEditorTab from "@/components/PageEditorTab";
 import ProgramBuilderTab from "@/components/ProgramBuilderTab";
 import { trpc } from "@/lib/trpc";
@@ -15,7 +16,7 @@ import { BRAND } from "../../../shared/brand";
 import { getLoginUrl } from "@/const";
 import { usePageTitle } from "@/hooks/usePageTitle";
 
-type AdminTab = "overview" | "clients" | "leads" | "fpu" | "fpugroup" | "programbuilder" | "blog" | "deposits" | "settings" | "pageeditor";
+type AdminTab = "overview" | "clients" | "leads" | "fpu" | "fpugroup" | "programbuilder" | "habits" | "blog" | "deposits" | "settings" | "pageeditor";
 
 export default function Admin() {
   usePageTitle({
@@ -106,6 +107,7 @@ export default function Admin() {
     { id: "fpu", label: "FPU Coaching", icon: <Video size={16} /> },
     { id: "fpugroup", label: "FPU Sign-Ups", icon: <UserPlus size={16} /> },
     { id: "programbuilder", label: "Program Builder", icon: <Layers size={16} /> },
+    { id: "habits", label: "Habits", icon: <Layers size={16} /> },
     { id: "pageeditor", label: "Edit Financial Peace", icon: <BookOpen size={16} /> },
     { id: "blog", label: "Blog", icon: <BookOpen size={16} /> },
     { id: "deposits", label: "Payments", icon: <CreditCard size={16} /> },
@@ -492,6 +494,11 @@ export default function Admin() {
         {/* Program Builder */}
         {tab === "programbuilder" && (
           <ProgramBuilderTab />
+        )}
+
+        {/* Habits */}
+        {tab === "habits" && (
+          <AdminHabitsTab />
         )}
 
         {/* Blog */}

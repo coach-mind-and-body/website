@@ -170,7 +170,10 @@ export default function ReclaimHub() {
               <span className="block text-xs" style={{ color: "#8a9a8a" }}>Client Portal</span>
             </div>
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
+            <Link href="/habit-tracker" className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold shadow-sm" style={{ background: "#fbeee9", color: "#c9a96e" }}>
+              <CheckCircle size={16} /> My Daily Reset
+            </Link>
             <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-sm" style={{ background: "#c9a96e", color: "white" }}>
               {user?.name?.[0]?.toUpperCase() ?? "C"}
             </div>

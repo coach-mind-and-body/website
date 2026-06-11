@@ -176,11 +176,16 @@ export default function Portal() {
                 Mind & Body Reset
               </span>
           </Link>
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm" style={{ background: "#fbeee9", color: "#c9a96e" }}>
-              {user?.name?.[0] ?? "C"}
+          <div className="flex items-center gap-4">
+            <Link href="/habit-tracker" className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm" style={{ background: "#fbeee9", color: "#c9a96e" }}>
+              <CheckCircle2 size={14} /> My Daily Reset
+            </Link>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm" style={{ background: "#fbeee9", color: "#c9a96e" }}>
+                {user?.name?.[0] ?? "C"}
+              </div>
+              <span className="text-sm font-semibold hidden sm:block" style={{ color: "#2d3b2d" }}>{user?.name}</span>
             </div>
-            <span className="text-sm font-semibold hidden sm:block" style={{ color: "#2d3b2d" }}>{user?.name}</span>
           </div>
         </div>
       </header>

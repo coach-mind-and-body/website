@@ -127,6 +127,13 @@
       "when": 1780349168711,
       "tag": "0017_premium_spitfire",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1781218423372,
+      "tag": "0018_chilly_mandarin",
+      "breakpoints": true
     }
   ]
 }
