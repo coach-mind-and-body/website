@@ -93,10 +93,10 @@ export default function HabitTracker() {
   const days = Array.from({ length: 7 }).map((_, i) => subDays(currentDate, 3 - i));
 
   return (
-    <div className="min-h-screen bg-[#FFF0F5] text-gray-900 pb-20">
+    <div className="min-h-screen text-gray-900 pb-20" style={{ background: "#faf5f5" }}>
       {/* Banner */}
       {!isAuthenticated && (
-        <div className="bg-[#D4AF37] text-white py-2 px-4 text-center text-sm flex items-center justify-center gap-2">
+        <div className="py-2 px-4 text-center text-sm flex items-center justify-center gap-2" style={{ background: "#c9a96e", color: "white" }}>
           <Info size={16} />
           <span>You are tracking on this device only. <Link href="/login" className="underline font-bold">Sign in</Link> to sync across all devices!</span>
         </div>
@@ -105,7 +105,7 @@ export default function HabitTracker() {
       {/* Header */}
       <div className="pt-12 pb-8 px-6 max-w-4xl mx-auto text-center">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-          <h1 className="text-4xl md:text-5xl font-bold mb-4" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#D4AF37" }}>
+          <h1 className="text-4xl md:text-5xl font-bold mb-4" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
             My Daily Reset
           </h1>
           <p className="text-gray-600 max-w-2xl mx-auto text-lg">
@@ -115,18 +115,18 @@ export default function HabitTracker() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 md:px-6">
-        <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-pink-100 p-6 md:p-8">
+        <div className="bg-white rounded-3xl shadow-xl overflow-hidden p-6 md:p-8" style={{ border: "1px solid #f0e8e4" }}>
           
           {/* Date Navigator */}
-          <div className="flex items-center justify-between mb-8 pb-6 border-b border-pink-50">
-            <Button variant="ghost" onClick={() => setCurrentDate(subDays(currentDate, 7))} className="text-pink-600 hover:text-pink-700 hover:bg-pink-50 rounded-full">
+          <div className="flex items-center justify-between mb-8 pb-6 border-b" style={{ borderColor: "#f0e8e4" }}>
+            <Button variant="ghost" onClick={() => setCurrentDate(subDays(currentDate, 7))} className="rounded-full hover:opacity-80 transition-opacity" style={{ color: "#c9a96e" }}>
               &larr; Prev Week
             </Button>
-            <div className="font-bold text-lg text-gray-700 flex items-center gap-2">
-              <CalendarIcon size={20} className="text-[#D4AF37]" />
+            <div className="font-bold text-lg flex items-center gap-2" style={{ color: "#2d3b2d" }}>
+              <CalendarIcon size={20} style={{ color: "#c9a96e" }} />
               {format(days[0], "MMM d")} - {format(days[6], "MMM d, yyyy")}
             </div>
-            <Button variant="ghost" onClick={() => setCurrentDate(addDays(currentDate, 7))} className="text-pink-600 hover:text-pink-700 hover:bg-pink-50 rounded-full">
+            <Button variant="ghost" onClick={() => setCurrentDate(addDays(currentDate, 7))} className="rounded-full hover:opacity-80 transition-opacity" style={{ color: "#c9a96e" }}>
               Next Week &rarr;
             </Button>
           </div>
@@ -137,14 +137,17 @@ export default function HabitTracker() {
               {/* Header Row */}
               <div className="grid grid-cols-8 gap-2 mb-4">
                 <div className="col-span-1"></div>
-                {days.map(day => (
-                  <div key={day.toISOString()} className="text-center">
-                    <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">{format(day, "EEE")}</div>
-                    <div className={`text-sm font-bold w-8 h-8 mx-auto flex items-center justify-center rounded-full ${isSameDay(day, new Date()) ? 'bg-pink-600 text-white' : 'text-gray-700'}`}>
-                      {format(day, "d")}
+                {days.map(day => {
+                  const isToday = isSameDay(day, new Date());
+                  return (
+                    <div key={day.toISOString()} className="text-center">
+                      <div className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: "#8a9a8a" }}>{format(day, "EEE")}</div>
+                      <div className={`text-sm font-bold w-8 h-8 mx-auto flex items-center justify-center rounded-full`} style={{ background: isToday ? "#c9a96e" : "transparent", color: isToday ? "white" : "#2d3b2d" }}>
+                        {format(day, "d")}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Habits Rows */}
@@ -155,9 +158,10 @@ export default function HabitTracker() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className="grid grid-cols-8 gap-2 items-center bg-pink-50/50 p-2 rounded-2xl hover:bg-pink-50 transition-colors"
+                    className="grid grid-cols-8 gap-2 items-center p-2 rounded-2xl transition-colors"
+                    style={{ background: "#faf5f5" }}
                   >
-                    <div className="col-span-1 font-semibold text-sm text-gray-800 pr-2 leading-tight">
+                    <div className="col-span-1 font-semibold text-sm pr-2 leading-tight" style={{ color: "#2d3b2d" }}>
                       {habit.title}
                     </div>
                     {days.map(day => {
@@ -169,9 +173,13 @@ export default function HabitTracker() {
                             onClick={() => toggleLog(habit.id, dateStr)}
                             className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
                               completed 
-                                ? 'bg-gradient-to-br from-[#D4AF37] to-yellow-500 text-white shadow-md scale-110' 
-                                : 'bg-white border-2 border-pink-100 text-transparent hover:border-pink-300 hover:scale-105'
+                                ? 'text-white shadow-md scale-110' 
+                                : 'bg-white text-transparent hover:scale-105'
                             }`}
+                            style={{ 
+                              background: completed ? "linear-gradient(135deg, #c9a96e 0%, #e8c99a 100%)" : "white",
+                              border: completed ? "none" : "2px solid #f0e8e4"
+                            }}
                           >
                             <Check size={20} strokeWidth={completed ? 3 : 2} className={completed ? 'opacity-100' : 'opacity-0'} />
                           </button>
@@ -188,19 +196,21 @@ export default function HabitTracker() {
 
       {/* CTA Section */}
       <div className="mt-20 max-w-3xl mx-auto text-center px-4">
-        <div className="bg-gradient-to-r from-pink-600 to-pink-500 rounded-3xl p-8 md:p-12 text-white shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-8 opacity-20">
+        <div className="rounded-3xl p-8 md:p-12 shadow-2xl relative overflow-hidden" style={{ background: "linear-gradient(135deg, #fbeee9 0%, #faf5f5 100%)", border: "1px solid #f0e8e4" }}>
+          <div className="absolute top-0 right-0 p-8 opacity-20" style={{ color: "#c9a96e" }}>
             <Sparkles size={120} />
           </div>
-          <h2 className="text-3xl md:text-4xl font-bold mb-4" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 relative z-10" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
             Ready for a Deeper Reset?
           </h2>
-          <p className="text-pink-100 mb-8 max-w-xl mx-auto text-lg">
+          <p className="mb-8 max-w-xl mx-auto text-lg relative z-10" style={{ color: "#5a6b5a" }}>
             Habits are just the beginning. Book a free discovery call to uncover what's really holding you back and learn how to rewire your mind for lasting change.
           </p>
-          <Button size="lg" className="bg-[#D4AF37] hover:bg-yellow-600 text-white font-bold px-8 py-6 rounded-full text-lg shadow-lg hover:shadow-xl transition-all hover:scale-105">
-            Book Free Discovery Call
-          </Button>
+          <div className="relative z-10">
+            <Link href="/book" className="inline-block rounded-full px-8 py-4 text-lg font-bold shadow-lg hover:shadow-xl transition-all hover:scale-105" style={{ background: "#c9a96e", color: "white" }}>
+              Book Free Discovery Call
+            </Link>
+          </div>
         </div>
       </div>
     </div>
