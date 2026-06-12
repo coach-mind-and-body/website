@@ -718,20 +718,20 @@ export async function sendSnackHackEmail(params: {
     </div>
   `;
 
-  const textBody = \`Hi \${firstName},
+  const textBody = `Hi ${firstName},
 
 I'm so excited to share this guide with you. The evening hours don't have to be a battleground. I hope these strategies bring you a profound sense of peace and control.
 
-Download the PDF here: \${pdfUrl}
+Download the PDF here: ${pdfUrl}
 
 Bonus: Track Your Daily Reset
 I've also created a free habit tracker for you to use. You can track your daily habits right on your phone or computer to start building momentum today!
-Access it here: \${ENV.appPublicUrl}/habit-tracker
+Access it here: ${ENV.appPublicUrl}/habit-tracker
 
-If you find this guide helpful but feel like you need some personal accountability and guidance to make these changes stick—I am here for you. Feel free to reply directly to this email to chat, or reach out at \${ENV.appPublicUrl}/contact
+If you find this guide helpful but feel like you need some personal accountability and guidance to make these changes stick—I am here for you. Feel free to reply directly to this email to chat, or reach out at ${ENV.appPublicUrl}/contact
 
 With love and excitement,
-Lee Anne\`;
+Lee Anne`;
 
   return sendTransactionalEmail({ to: clientEmail, toName: clientName, subject, htmlBody, textBody });
 }
