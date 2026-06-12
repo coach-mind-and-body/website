@@ -48,6 +48,7 @@ export const appRouter = router({
   habit: habitRouter,
   push: pushRouter,
   challenges: challengesRouter,
+  appUpdates: appUpdatesRouter,
 });
 
 export type AppRouter = typeof appRouter;

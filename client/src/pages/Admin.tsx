@@ -10,6 +10,8 @@ import { AdminDepositsTab } from "@/components/admin/AdminDepositsTab";
 import { AdminSettingsTab } from "@/components/admin/AdminSettingsTab";
 import { AdminPageEditorTab } from "@/components/admin/AdminPageEditorTab";
 import { AdminEngagementHub } from "@/components/admin/AdminEngagementHub";
+import PageEditorTab from "@/components/PageEditorTab";
+import ProgramBuilderTab from "@/components/ProgramBuilderTab";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
