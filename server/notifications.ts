@@ -277,6 +277,40 @@ export async function sendReclaimWelcomeEmail(params: {
   return sendTransactionalEmail({ to: clientEmail, toName: clientName, subject, htmlBody, textBody });
 }
 
+/** Welcome email sent when an admin manually creates an account for a client */
+export async function sendWelcomeAndSetPasswordEmail(params: {
+  clientEmail: string;
+  clientName: string;
+  resetToken: string;
+}): Promise<boolean> {
+  const { clientEmail, clientName, resetToken } = params;
+  const firstName = clientName.split(" ")[0] || clientName;
+  const subject = `Welcome to R.E.C.L.A.I.M., ${firstName}! Action Required`;
+  const resetUrl = `${ENV.appPublicUrl || "https://mindandbodyresetcoach.com"}/reset-password?token=${resetToken}`;
+
+  const htmlBody = `
+    <div style="font-family:'Nunito Sans',Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+      <div style="background:linear-gradient(135deg,#3a5a3a 0%,#5a7a5a 100%);padding:40px;text-align:center;">
+        <h1 style="margin:0 0 8px;color:white;font-size:28px;font-weight:700;">Welcome to R.E.C.L.A.I.M.</h1>
+        <p style="margin:0;color:rgba(255,255,255,0.85);font-size:15px;">Your account has been created!</p>
+      </div>
+      <div style="padding:36px 40px;">
+        <p style="color:#4a4a4a;font-size:16px;margin:0 0 16px;">Hi ${firstName},</p>
+        <p style="color:#4a4a4a;font-size:16px;margin:0 0 16px;">I'm so excited to welcome you to the <strong>R.E.C.L.A.I.M. program</strong>! I've created your client portal account.</p>
+        <p style="color:#4a4a4a;font-size:16px;margin:0 0 16px;">To get started, please set your password by clicking the button below (or you can choose to "Continue with Google" on the login page if you use a Google account):</p>
+        <div style="text-align:center;margin:28px 0;">
+          <a href="${resetUrl}" style="display:inline-block;background:#3a5a3a;color:white;padding:14px 36px;border-radius:9999px;text-decoration:none;font-size:16px;font-weight:700;">Set Your Password</a>
+        </div>
+        <p style="color:#4a4a4a;font-size:15px;margin-top:24px;">With love and excitement,<br/><strong>Lee Anne</strong></p>
+      </div>
+    </div>
+  `;
+
+  const textBody = `Hi ${firstName},\n\nWelcome to R.E.C.L.A.I.M.! I've created your client portal account.\n\nPlease set your password to get started:\n${resetUrl}\n\nWith love,\nLee Anne`;
+
+  return sendTransactionalEmail({ to: clientEmail, toName: clientName, subject, htmlBody, textBody });
+}
+
 /** Welcome email sent to a new FPU client after purchase */
 export async function sendFpuWelcomeEmail(params: {
   clientEmail: string;

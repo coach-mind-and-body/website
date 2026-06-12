@@ -4,7 +4,8 @@ import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { enrollments, coachingSessions, users, programModules, moduleProgress } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
-import { sendPostSessionEmail, sendPostSessionSMS, sendBalanceReminderEmail, sendModuleUnlockedEmail } from "../notifications";
+import crypto from "crypto";
+import { sendPostSessionEmail, sendPostSessionSMS, sendBalanceReminderEmail, sendModuleUnlockedEmail, sendWelcomeAndSetPasswordEmail } from "../notifications";
 import Stripe from "stripe";
 import { ENV } from "../_core/env";
 
@@ -104,20 +105,46 @@ export const enrollmentRouter = router({
       const email = input.clientEmail.toLowerCase().trim();
 
       // Find user by email
-      const userRows = await db
+      let userRows = await db
         .select({ id: users.id, name: users.name, email: users.email })
         .from(users)
         .where(eq(users.email, email))
         .limit(1);
 
-      if (!userRows[0]) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: `No account found for ${email}. Ask the client to sign up first, then enroll them.`,
-        });
-      }
+      let user = userRows[0];
+      let isNewUser = false;
+      let resetToken = "";
 
-      const user = userRows[0];
+      if (!user) {
+        // Create user if they don't exist
+        resetToken = crypto.randomBytes(32).toString("hex");
+        const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+        const [newUser] = await db.insert(users).values({
+          openId: `email:${email}`,
+          name: email.split("@")[0], // Default name
+          email: email,
+          loginMethod: "email",
+          emailVerified: true,
+          role: "user",
+          passwordResetToken: resetToken,
+          passwordResetExpiry: expiry,
+          lastSignedIn: new Date(),
+        }).$returningId();
+
+        if (!newUser) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create user account" });
+        }
+        
+        userRows = await db
+          .select({ id: users.id, name: users.name, email: users.email })
+          .from(users)
+          .where(eq(users.id, newUser.id))
+          .limit(1);
+        
+        user = userRows[0];
+        isNewUser = true;
+      }
 
       // Check if enrollment already exists
       const existing = await db
@@ -162,11 +189,21 @@ export const enrollmentRouter = router({
 
       console.log(`[Admin] Created enrollment ${newEnrollment.id} + 6 sessions for ${email} (user ${user.id})`);
 
+      if (isNewUser && resetToken) {
+        sendWelcomeAndSetPasswordEmail({
+          clientEmail: user.email!,
+          clientName: user.name || "Client",
+          resetToken,
+        }).catch(err => console.error("[Admin] Failed to send welcome email:", err));
+      }
+
       return {
         success: true,
         enrollmentId: newEnrollment.id,
         clientName: user.name ?? email,
-        message: `Enrollment created for ${user.name ?? email}. 6 coaching sessions are ready in their portal.`,
+        message: isNewUser 
+          ? `Account and enrollment created for ${user.name ?? email}. A welcome email was sent.`
+          : `Enrollment created for ${user.name ?? email}. 6 coaching sessions are ready in their portal.`,
       };
     }),
 

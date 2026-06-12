@@ -74,6 +74,7 @@ export default function Admin() {
   const [showEnrollModal, setShowEnrollModal] = useState(false);
   const [enrollEmail, setEnrollEmail] = useState("");
   const [enrollPaymentType, setEnrollPaymentType] = useState<"full" | "deposit">("deposit");
+  const [enrollPaymentStatus, setEnrollPaymentStatus] = useState<"paid" | "unpaid">("paid");
   const adminCreateEnrollment = trpc.enrollment.adminCreate.useMutation({
     onSuccess: (data) => {
       toast.success(data.message);
@@ -218,7 +219,7 @@ export default function Admin() {
               <DialogTitle style={{ color: "oklch(0.97 0.008 10)" }}>Manually Enroll a Client</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-2">
-              <p className="text-sm" style={{ color: "oklch(0.65 0.02 160)" }}>The client must have already created an account. Enter their email to create an enrollment and 6 coaching sessions.</p>
+              <p className="text-sm" style={{ color: "oklch(0.65 0.02 160)" }}>Enter their email to create an enrollment and 6 coaching sessions. If they don't have an account yet, one will be created automatically and they'll receive a welcome email to set their password.</p>
               <div>
                 <Label style={{ color: "oklch(0.80 0.02 160)" }}>Client Email</Label>
                 <Input
@@ -231,7 +232,7 @@ export default function Admin() {
                 />
               </div>
               <div>
-                <Label style={{ color: "oklch(0.80 0.02 160)" }}>Payment Type</Label>
+                <Label style={{ color: "oklch(0.80 0.02 160)" }}>Payment Plan</Label>
                 <div className="flex gap-3 mt-1">
                   <button
                     onClick={() => setEnrollPaymentType("deposit")}
@@ -253,11 +254,39 @@ export default function Admin() {
                   >Full Payment ($597)</button>
                 </div>
               </div>
+              <div>
+                <Label style={{ color: "oklch(0.80 0.02 160)" }}>Payment Status</Label>
+                <div className="flex gap-3 mt-1">
+                  <button
+                    onClick={() => setEnrollPaymentStatus("paid")}
+                    className="flex-1 py-2 rounded-lg text-sm font-semibold border transition-all"
+                    style={{
+                      background: enrollPaymentStatus === "paid" ? "oklch(0.72 0.12 75)" : "transparent",
+                      borderColor: "oklch(0.72 0.12 75)",
+                      color: enrollPaymentStatus === "paid" ? "oklch(0.18 0.02 160)" : "oklch(0.72 0.12 75)",
+                    }}
+                  >Paid (Outside Stripe)</button>
+                  <button
+                    onClick={() => setEnrollPaymentStatus("unpaid")}
+                    className="flex-1 py-2 rounded-lg text-sm font-semibold border transition-all"
+                    style={{
+                      background: enrollPaymentStatus === "unpaid" ? "oklch(0.72 0.12 75)" : "transparent",
+                      borderColor: "oklch(0.72 0.12 75)",
+                      color: enrollPaymentStatus === "unpaid" ? "oklch(0.18 0.02 160)" : "oklch(0.72 0.12 75)",
+                    }}
+                  >Unpaid (Collect Later)</button>
+                </div>
+              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowEnrollModal(false)} style={{ borderColor: "oklch(0.35 0.02 160)", color: "oklch(0.80 0.02 160)" }}>Cancel</Button>
               <Button
-                onClick={() => adminCreateEnrollment.mutate({ clientEmail: enrollEmail, paymentType: enrollPaymentType, depositPaid: true, balancePaid: enrollPaymentType === "full" })}
+                onClick={() => adminCreateEnrollment.mutate({ 
+                  clientEmail: enrollEmail, 
+                  paymentType: enrollPaymentType, 
+                  depositPaid: enrollPaymentStatus === "paid", 
+                  balancePaid: enrollPaymentStatus === "paid" && enrollPaymentType === "full" 
+                })}
                 disabled={!enrollEmail || adminCreateEnrollment.isPending}
                 style={{ background: "oklch(0.72 0.12 75)", color: "oklch(0.18 0.02 160)" }}
               >
