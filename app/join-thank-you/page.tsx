@@ -2,7 +2,7 @@ import JoinThankYouClient from './JoinThankYouClient';
 
 export const metadata = {
   title: "Welcome to the Community | Mind and Body Reset",
-  description: "Welcome! You\"
+  description: "Welcome! Your registration is complete."
 };
 
 export default function Page() {

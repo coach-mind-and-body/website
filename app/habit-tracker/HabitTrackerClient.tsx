@@ -55,6 +55,7 @@ export default function HabitTrackerClient() {
   const { data: updatesData } = trpc.appUpdates.getUpdates.useQuery();
   
   const [dismissedUpdates, setDismissedUpdates] = useState<number[]>(() => {
+    if (typeof window === 'undefined') return [];
     try {
       const saved = localStorage.getItem('dismissedUpdates');
       const parsed = saved ? JSON.parse(saved) : [];

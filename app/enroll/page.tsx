@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import EnrollClient from './EnrollClient';
 
 export const metadata = {
@@ -6,5 +7,9 @@ export const metadata = {
 };
 
 export default function Page() {
-  return <EnrollClient  />;
+  return (
+    <Suspense fallback={<div className="flex justify-center p-12">Loading...</div>}>
+      <EnrollClient  />
+    </Suspense>
+  );
 }

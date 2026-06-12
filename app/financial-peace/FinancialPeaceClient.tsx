@@ -94,7 +94,7 @@ function E({ k, style }: { k: string; style?: React.CSSProperties }) {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function FinancialPeace() {
   
-  const isAdminEdit = new URLSearchParams(window.location.search).get("admin_edit") === "1";
+  const isAdminEdit = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("admin_edit") === "1";
   return (
     <EditModeProvider page="financial-peace">
       <FinancialPeaceContent hideNav={isAdminEdit} />

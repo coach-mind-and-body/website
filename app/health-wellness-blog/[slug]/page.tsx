@@ -33,13 +33,13 @@ export async function generateMetadata(
       type: "article",
       publishedTime: post.publishedAt ? new Date(post.publishedAt).toISOString() : undefined,
       authors: ["Lee Anne Chapman"],
-      images: post.imageUrl ? [{ url: post.imageUrl }] : undefined,
+      images: post.coverImage ? [{ url: post.coverImage }] : undefined,
     },
     twitter: {
       card: "summary_large_image",
       title: post.title,
       description: post.excerpt || "",
-      images: post.imageUrl ? [post.imageUrl] : undefined,
+      images: post.coverImage ? [post.coverImage] : undefined,
     }
   };
 }
@@ -58,7 +58,7 @@ export default async function Page({ params }: Props) {
         "@type": "BlogPosting",
         "headline": post.title,
         "description": post.excerpt || "",
-        "image": post.imageUrl ? `https://www.mindandbodyresetcoach.com${post.imageUrl}` : undefined,
+        "image": post.coverImage ? `https://www.mindandbodyresetcoach.com${post.coverImage}` : undefined,
         "author": {
           "@type": "Person",
           "name": "Lee Anne Chapman"
