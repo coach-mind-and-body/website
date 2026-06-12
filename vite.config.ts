@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { defineConfig, type Plugin, type ViteDevServer } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
+import { VitePWA } from "vite-plugin-pwa";
 
 // =============================================================================
 // Manus Debug Collector - Vite Plugin
@@ -150,7 +151,38 @@ function vitePluginManusDebugCollector(): Plugin {
   };
 }
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
+const plugins = [
+  react(),
+  tailwindcss(),
+  jsxLocPlugin(),
+  vitePluginManusRuntime(),
+  vitePluginManusDebugCollector(),
+  VitePWA({
+    registerType: "autoUpdate",
+    devOptions: {
+      enabled: true,
+    },
+    manifest: {
+      name: "Mind & Body Reset",
+      short_name: "MBR",
+      theme_color: "#faf5f5",
+      background_color: "#faf5f5",
+      display: "standalone",
+      icons: [
+        {
+          src: "/logo-wide.jpg",
+          sizes: "192x192",
+          type: "image/jpeg"
+        },
+        {
+          src: "/logo-wide.jpg",
+          sizes: "512x512",
+          type: "image/jpeg"
+        }
+      ]
+    }
+  })
+];
 
 export default defineConfig({
   plugins,

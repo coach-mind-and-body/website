@@ -17,6 +17,8 @@ import { reclaimHubRouter } from "./routers/reclaimHub";
 import { leadgenRouter } from "./routers/leadgen";
 import { cronRouter } from "./routers/cron";
 import { habitRouter } from "./routers/habit";
+import { pushRouter } from "./routers/push";
+import { challengesRouter } from "./routers/challenges";
 
 export const appRouter = router({
   system: systemRouter,
@@ -43,6 +45,8 @@ export const appRouter = router({
   leadgen: leadgenRouter,
   cron: cronRouter,
   habit: habitRouter,
+  push: pushRouter,
+  challenges: challengesRouter,
 });
 
 export type AppRouter = typeof appRouter;

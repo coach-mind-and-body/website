@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Users, BookOpen, CreditCard, BarChart3, ChevronDown, ChevronUp, Bell, Link2, Link2Off, Calendar, Video, UserPlus, Layers } from "lucide-react";
+import { Users, BookOpen, CreditCard, BarChart3, ChevronDown, ChevronUp, Bell, Link2, Link2Off, Calendar, Video, UserPlus, Layers, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import AdminPaymentsTab from "@/components/AdminPaymentsTab";
 import AdminHabitsTab from "@/components/AdminHabitsTab";
 import PageEditorTab from "@/components/PageEditorTab";
 import ProgramBuilderTab from "@/components/ProgramBuilderTab";
+import { AdminChallengesTab } from "@/components/admin/AdminChallengesTab";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
@@ -16,7 +17,7 @@ import { BRAND } from "../../../shared/brand";
 import { getLoginUrl } from "@/const";
 import { usePageTitle } from "@/hooks/usePageTitle";
 
-type AdminTab = "overview" | "clients" | "leads" | "fpu" | "fpugroup" | "programbuilder" | "habits" | "blog" | "deposits" | "settings" | "pageeditor";
+type AdminTab = "overview" | "clients" | "leads" | "fpu" | "fpugroup" | "programbuilder" | "habits" | "challenges" | "blog" | "deposits" | "settings" | "pageeditor";
 
 export default function Admin() {
   usePageTitle({
@@ -108,6 +109,7 @@ export default function Admin() {
     { id: "fpugroup", label: "FPU Sign-Ups", icon: <UserPlus size={16} /> },
     { id: "programbuilder", label: "Program Builder", icon: <Layers size={16} /> },
     { id: "habits", label: "Habits", icon: <Layers size={16} /> },
+    { id: "challenges", label: "Challenges", icon: <Target size={16} /> },
     { id: "pageeditor", label: "Edit Financial Peace", icon: <BookOpen size={16} /> },
     { id: "blog", label: "Blog", icon: <BookOpen size={16} /> },
     { id: "deposits", label: "Payments", icon: <CreditCard size={16} /> },
@@ -499,6 +501,11 @@ export default function Admin() {
         {/* Habits */}
         {tab === "habits" && (
           <AdminHabitsTab />
+        )}
+
+        {/* Challenges */}
+        {tab === "challenges" && (
+          <AdminChallengesTab />
         )}
 
         {/* Blog */}

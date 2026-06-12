@@ -3,11 +3,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
-import { Check, Info, Calendar as CalendarIcon, Sparkles } from "lucide-react";
+import { Check, Info, Calendar as CalendarIcon, Sparkles, Flame, Bell, BellRing, Target, LogOut, Settings, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { format, subDays, addDays, isSameDay } from "date-fns";
+import { format, subDays, addDays, isSameDay, differenceInDays, parseISO } from "date-fns";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { Link } from "wouter";
+import { useWebPush } from "@/hooks/useWebPush";
+import { getDeviceId } from "@/lib/deviceId";
 
 type LocalHabit = {
   id: number;
@@ -33,7 +35,8 @@ export default function HabitTracker() {
     keywords: "habit tracker, daily habits, wellness tracker, mind body reset"
   });
 
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
+  const { isSupported, isSubscribed, isSubscribing, subscribeToPush } = useWebPush();
   
   // Data State
   const [localHabits, setLocalHabits] = useState<LocalHabit[]>([]);
@@ -42,11 +45,22 @@ export default function HabitTracker() {
   
   const [currentDate, setCurrentDate] = useState(new Date()); // For week navigation
   const [selectedDate, setSelectedDate] = useState(new Date()); // For mobile view & notes
+  const [isNotesExpanded, setIsNotesExpanded] = useState(false); // For expanding/collapsing daily notes
+  const [isSettingsExpanded, setIsSettingsExpanded] = useState(false);
 
   // TRPC
   const { data: templates } = trpc.habit.getTemplates.useQuery(undefined, { enabled: !isAuthenticated });
   const { data: userSyncData, refetch: refetchUserSync } = trpc.habit.getUserHabits.useQuery(undefined, { enabled: isAuthenticated });
   
+  const { data: activeChallengesData } = trpc.challenges.getActiveChallenges.useQuery();
+  const { data: userChallenges, refetch: refetchUserChallenges } = trpc.challenges.getUserChallenges.useQuery({ deviceId: getDeviceId() });
+  const joinChallengeMutation = trpc.challenges.joinChallenge.useMutation({
+    onSuccess: () => {
+      toast.success("Challenge joined!");
+      refetchUserChallenges();
+    }
+  });
+
   const toggleLogMutation = trpc.habit.toggleLog.useMutation({
     onSuccess: () => refetchUserSync(),
     onError: (e) => toast.error(e.message)
@@ -116,9 +130,20 @@ export default function HabitTracker() {
     }
   };
 
+  const [optimisticLogs, setOptimisticLogs] = useState<LocalLog[]>([]);
+
   const toggleLog = (habitId: number, dateStr: string) => {
     const isCompleted = isLogCompleted(habitId, dateStr);
     const newCompleted = !isCompleted;
+
+    // Optimistic Update
+    setOptimisticLogs(prev => {
+      const existing = prev.find(l => l.userHabitId === habitId && l.dateStr === dateStr);
+      if (existing) {
+        return prev.map(l => l === existing ? { ...l, completed: newCompleted } : l);
+      }
+      return [...prev, { userHabitId: habitId, dateStr, completed: newCompleted }];
+    });
 
     if (isAuthenticated) {
       toggleLogMutation.mutate({ userHabitId: habitId, dateStr, completed: newCompleted });
@@ -136,25 +161,58 @@ export default function HabitTracker() {
   };
 
   const isLogCompleted = (habitId: number, dateStr: string) => {
+    const opt = optimisticLogs.find(l => l.userHabitId === habitId && l.dateStr === dateStr);
+    if (opt) return opt.completed;
     return logs.some(l => l.userHabitId === habitId && l.dateStr === dateStr && l.completed);
   };
+
+  const currentStreak = (() => {
+    let streak = 0;
+    let checkDate = new Date();
+    while (true) {
+      const dStr = format(checkDate, "yyyy-MM-dd");
+      const didAnyHabit = activeHabits.some(h => isLogCompleted(h.id, dStr));
+      
+      if (didAnyHabit) {
+        streak++;
+        checkDate = subDays(checkDate, 1);
+      } else {
+        if (isSameDay(checkDate, new Date())) {
+          checkDate = subDays(checkDate, 1);
+          continue;
+        } else {
+          break;
+        }
+      }
+    }
+    return streak;
+  })();
 
   // Generate 7 days
   const days = Array.from({ length: 7 }).map((_, i) => subDays(currentDate, 3 - i));
   const isSelectedDate = (day: Date) => isSameDay(day, selectedDate);
 
+  const getChallengeProgress = (challengeId: number) => {
+    const uc = userChallenges?.find(u => u.challengeId === challengeId);
+    if (!uc) return null;
+    const start = new Date(uc.startDate);
+    const today = new Date();
+    const daysPassed = Math.max(0, differenceInDays(today, start) + 1);
+    return daysPassed;
+  };
+
   return (
     <div className="min-h-screen text-gray-900 pb-20" style={{ background: "#faf5f5" }}>
       {/* Banner */}
       {!isAuthenticated && (
-        <div className="py-2 px-4 text-center text-sm flex items-center justify-center gap-2" style={{ background: "#c9a96e", color: "white" }}>
+        <div className="py-2 px-4 text-center text-sm flex items-center justify-center gap-2 relative" style={{ background: "#c9a96e", color: "white" }}>
           <Info size={16} />
           <span>You are tracking on this device only. <Link href="/login" className="underline font-bold">Sign in</Link> to sync across all devices!</span>
         </div>
       )}
 
       {/* Header */}
-      <div className="pt-8 pb-8 px-6 max-w-4xl mx-auto text-center">
+      <div className="pt-8 pb-8 px-6 max-w-4xl mx-auto text-center relative">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
           <Link href="/" className="inline-block mb-6 transition-transform hover:scale-105">
             <img src="/logo-wide.jpg" alt="Mind & Body Reset" className="h-16 md:h-20 mx-auto object-contain rounded-xl shadow-sm" />
@@ -165,10 +223,68 @@ export default function HabitTracker() {
           <p className="text-gray-600 max-w-2xl mx-auto text-lg">
             Track your habits, celebrate your wins, and build momentum. Small daily shifts lead to massive transformations.
           </p>
+          <div className="flex justify-center mt-6">
+            <div className="flex items-center gap-2 px-5 py-2 rounded-full shadow-sm transition-all" style={{ background: currentStreak >= 3 ? "linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%)" : "#fcfaf9", color: currentStreak >= 3 ? "#d97706" : "#8a9a8a", border: currentStreak >= 3 ? "1px solid #ffda6a" : "1px solid #f0e8e4", fontWeight: "bold" }}>
+              <Flame size={20} className={currentStreak >= 3 ? "animate-pulse" : ""} style={{ fill: currentStreak >= 3 ? "#d97706" : "transparent" }} />
+              {currentStreak} Day Streak
+            </div>
+          </div>
         </motion.div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 md:px-6">
+      <div className="max-w-4xl mx-auto px-4 md:px-6 space-y-6">
+        
+        {/* Active Challenges Section */}
+        {activeChallengesData && activeChallengesData.length > 0 && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white rounded-3xl shadow-xl overflow-hidden p-6 md:p-8" style={{ border: "1px solid #f0e8e4" }}>
+            <h3 className="font-bold text-xl mb-4 flex items-center gap-2" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
+              <Target size={24} style={{ color: "#c9a96e" }} />
+              Active Challenges
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {activeChallengesData.map(challenge => {
+                const uc = userChallenges?.find(u => u.challengeId === challenge.id);
+                const progress = uc ? getChallengeProgress(challenge.id) : 0;
+                const isJoined = !!uc;
+                const percent = isJoined && progress !== null ? Math.min(100, Math.round((progress / challenge.durationDays) * 100)) : 0;
+
+                return (
+                  <div key={challenge.id} className="p-5 rounded-2xl border transition-all" style={{ background: isJoined ? "#faf5f5" : "white", borderColor: "#f0e8e4" }}>
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-bold text-lg" style={{ color: "#2d3b2d" }}>{challenge.title}</h4>
+                      {!isJoined ? (
+                        <Button 
+                          size="sm" 
+                          onClick={() => joinChallengeMutation.mutate({ challengeId: challenge.id, deviceId: getDeviceId() })}
+                          disabled={joinChallengeMutation.isPending}
+                          className="rounded-full h-8" style={{ background: "#c9a96e", color: "white" }}>
+                          <Plus size={16} className="mr-1" /> Join
+                        </Button>
+                      ) : (
+                        <div className="text-xs font-bold px-2 py-1 rounded-full" style={{ background: "#d4ecd4", color: "#2d5a2d" }}>Joined</div>
+                      )}
+                    </div>
+                    {challenge.description && <p className="text-sm text-gray-500 mb-4">{challenge.description}</p>}
+                    
+                    {isJoined && (
+                      <div className="mt-4">
+                        <div className="flex justify-between text-xs font-bold mb-1" style={{ color: "#8a9a8a" }}>
+                          <span>Day {progress} of {challenge.durationDays}</span>
+                          <span>{percent}%</span>
+                        </div>
+                        <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: "#f0e8e4" }}>
+                          <div className="h-full transition-all duration-1000" style={{ width: `${percent}%`, background: "#c9a96e" }} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Main Tracker Card */}
         <div className="bg-white rounded-3xl shadow-xl overflow-hidden p-6 md:p-8" style={{ border: "1px solid #f0e8e4" }}>
           
           {/* Date Navigator */}
@@ -306,40 +422,131 @@ export default function HabitTracker() {
           </div>
 
           {/* Daily Notes Section (Both Mobile & Desktop) */}
-          <motion.div 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }} 
-            className="mt-10 pt-8 border-t" 
-            style={{ borderColor: "#f0e8e4" }}
-          >
-            <div className="flex flex-col md:flex-row md:items-center justify-between mb-4">
-              <div>
-                <h3 className="font-bold text-xl md:text-2xl" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
+          <div className="mt-8 pt-6 border-t" style={{ borderColor: "#f0e8e4" }}>
+            <button 
+              onClick={() => setIsNotesExpanded(!isNotesExpanded)}
+              className="w-full flex items-center justify-between hover:bg-[#faf5f5] p-3 rounded-2xl transition-colors"
+            >
+              <div className="text-left">
+                <h3 className="font-bold text-xl" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
                   Daily Notes
                 </h3>
                 <p className="text-sm text-gray-500 mt-1">Reflect on your day, track your wins, or jot down thoughts for {format(selectedDate, "MMM d")}.</p>
               </div>
-            </div>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform duration-300 ${isNotesExpanded ? 'rotate-180' : ''}`} style={{ background: "#f0e8e4", color: "#2d3b2d" }}>
+                <svg width="14" height="8" viewBox="0 0 14 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M1 1L7 7L13 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+            </button>
             
-            <textarea
-              value={noteText}
-              onChange={(e) => setNoteText(e.target.value)}
-              placeholder="How are you feeling today?"
-              className="w-full h-32 md:h-40 p-5 rounded-2xl border focus:outline-none focus:ring-2 focus:ring-[#c9a96e]/50 transition-all resize-none shadow-inner text-base"
-              style={{ borderColor: "#f0e8e4", background: "#fcfaf9", color: "#2d3b2d" }}
-            />
-            <div className="mt-4 flex justify-end">
-              <Button 
-                onClick={handleSaveNote} 
-                disabled={saveNoteMutation.isPending || (!isAuthenticated && false)} 
-                className="rounded-full px-8 py-6 shadow-md hover:shadow-lg transition-all" 
-                style={{ background: "#c9a96e", color: "white" }}
-              >
-                {saveNoteMutation.isPending ? "Saving..." : "Save Note"}
-              </Button>
-            </div>
-          </motion.div>
+            <AnimatePresence>
+              {isNotesExpanded && (
+                <motion.div 
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="pt-4 px-2">
+                    <textarea
+                      value={noteText}
+                      onChange={(e) => setNoteText(e.target.value)}
+                      placeholder="How are you feeling today?"
+                      className="w-full h-32 md:h-40 p-5 rounded-2xl border focus:outline-none focus:ring-2 focus:ring-[#c9a96e]/50 transition-all resize-none shadow-inner text-base"
+                      style={{ borderColor: "#f0e8e4", background: "#fcfaf9", color: "#2d3b2d" }}
+                    />
+                    <div className="mt-4 flex justify-end">
+                      <Button 
+                        onClick={handleSaveNote} 
+                        disabled={saveNoteMutation.isPending} 
+                        className="rounded-full px-8 py-6 shadow-md hover:shadow-lg transition-all" 
+                        style={{ background: "#c9a96e", color: "white" }}
+                      >
+                        {saveNoteMutation.isPending ? "Saving..." : "Save Note"}
+                      </Button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
+          {/* Account & Preferences Section */}
+          <div className="mt-4 pt-4 border-t" style={{ borderColor: "#f0e8e4" }}>
+            <button 
+              onClick={() => setIsSettingsExpanded(!isSettingsExpanded)}
+              className="w-full flex items-center justify-between hover:bg-[#faf5f5] p-3 rounded-2xl transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <Settings size={20} style={{ color: "#c9a96e" }} />
+                <h3 className="font-bold text-lg" style={{ color: "#2d3b2d" }}>
+                  Account & Settings
+                </h3>
+              </div>
+              <div className={`transition-transform duration-300 ${isSettingsExpanded ? 'rotate-180' : ''}`} style={{ color: "#8a9a8a" }}>
+                <svg width="14" height="8" viewBox="0 0 14 8" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 1L7 7L13 1"/></svg>
+              </div>
+            </button>
+            
+            <AnimatePresence>
+              {isSettingsExpanded && (
+                <motion.div 
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="pt-4 px-3 pb-2 space-y-4">
+                    
+                    {/* Push Notifications Toggle */}
+                    <div className="flex items-center justify-between p-4 rounded-xl border" style={{ borderColor: "#f0e8e4", background: "#fcfaf9" }}>
+                      <div className="flex items-center gap-3">
+                        {isSubscribed ? <BellRing size={20} style={{ color: "#c9a96e" }} /> : <Bell size={20} style={{ color: "#8a9a8a" }} />}
+                        <div>
+                          <p className="font-bold text-sm" style={{ color: "#2d3b2d" }}>Challenge Notifications</p>
+                          <p className="text-xs text-gray-500">Get notified instantly when a new challenge drops.</p>
+                        </div>
+                      </div>
+                      <Button 
+                        size="sm"
+                        variant={isSubscribed ? "outline" : "default"}
+                        disabled={isSubscribed || isSubscribing || !isSupported}
+                        onClick={subscribeToPush}
+                        className="rounded-full"
+                        style={!isSubscribed ? { background: "#c9a96e", color: "white" } : { borderColor: "#c9a96e", color: "#c9a96e" }}
+                      >
+                        {isSubscribed ? "Enabled" : "Enable"}
+                      </Button>
+                    </div>
+
+                    {/* Account Sync */}
+                    <div className="flex items-center justify-between p-4 rounded-xl border" style={{ borderColor: "#f0e8e4", background: "#fcfaf9" }}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-200">
+                          {user ? <span className="font-bold text-gray-600">{user.email.charAt(0).toUpperCase()}</span> : <span className="text-gray-400">?</span>}
+                        </div>
+                        <div>
+                          <p className="font-bold text-sm" style={{ color: "#2d3b2d" }}>{isAuthenticated ? "Cloud Sync Active" : "Local Device Only"}</p>
+                          <p className="text-xs text-gray-500 truncate max-w-[150px] md:max-w-xs">{isAuthenticated ? user?.email : "Sign in to sync across devices"}</p>
+                        </div>
+                      </div>
+                      {isAuthenticated ? (
+                        <Button size="sm" variant="ghost" onClick={logout} className="text-gray-500 hover:text-red-500">
+                          <LogOut size={16} className="mr-1" /> Sign Out
+                        </Button>
+                      ) : (
+                        <Link href="/login">
+                          <Button size="sm" className="rounded-full" style={{ background: "#2d3b2d", color: "white" }}>Sign In</Button>
+                        </Link>
+                      )}
+                    </div>
+
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
 

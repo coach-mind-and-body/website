@@ -7,6 +7,7 @@ import {
   varchar,
   boolean,
   bigint,
+  date,
 } from "drizzle-orm/mysql-core";
 
 // ── Users ─────────────────────────────────────────────────────────────────────
@@ -236,7 +237,42 @@ export const podcastSubscribers = mysqlTable("podcast_subscribers", {
 });
 
 export type PodcastSubscriber = typeof podcastSubscribers.$inferSelect;
-export type InsertPodcastSubscriber = typeof podcastSubscribers.$inferInsert;
+// ── Push Notifications & Challenges ──────────────────────────────────────────
+
+export const pushSubscriptions = mysqlTable("push_subscriptions", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").references(() => users.id),
+  endpoint: text("endpoint").notNull(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  deviceId: text("deviceId"), // For anonymous users
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const challenges = mysqlTable("challenges", {
+  id: int("id").primaryKey().autoincrement(),
+  title: text("title").notNull(),
+  description: text("description"),
+  durationDays: int("durationDays").notNull().default(7),
+  isActive: boolean("isActive").notNull().default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const userChallenges = mysqlTable("user_challenges", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").references(() => users.id),
+  deviceId: text("deviceId"), // For anonymous users
+  challengeId: int("challengeId").references(() => challenges.id).notNull(),
+  startDate: date("startDate", { mode: "string" }).notNull(),
+  status: varchar("status", { length: 50, enum: ["active", "completed", "failed"] }).notNull().default("active"),
+});
+
+export type PushSubscription = typeof pushSubscriptions.$inferSelect;
+export type InsertPushSubscription = typeof pushSubscriptions.$inferInsert;
+export type Challenge = typeof challenges.$inferSelect;
+export type InsertChallenge = typeof challenges.$inferInsert;
+export type UserChallenge = typeof userChallenges.$inferSelect;
+export type InsertUserChallenge = typeof userChallenges.$inferInsert;
 
 export const broadcastedEpisodes = mysqlTable("broadcasted_episodes", {
   id: int("id").autoincrement().primaryKey(),
