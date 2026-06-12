@@ -112,6 +112,7 @@
     "twilio": "^5.12.2",
     "vaul": "^1.1.2",
     "web-push": "^3.6.7",
+    "workbox-precaching": "^7.4.1",
     "wouter": "3.7.1",
     "xml2js": "^0.6.2",
     "zod": "^4.1.12"

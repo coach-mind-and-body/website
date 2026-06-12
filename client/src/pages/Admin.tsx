@@ -160,9 +160,9 @@ export default function Admin() {
 
       <div className="container max-w-6xl mx-auto px-4 md:px-6 lg:px-8 py-8">
         {/* Tab nav */}
-        <div className="flex gap-1 mb-8 overflow-x-auto pb-1">
+        <div className="flex flex-wrap gap-2 mb-8 pb-1">
           {TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)} className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all" style={{
+            <button key={t.id} onClick={() => setTab(t.id)} className="flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all" style={{
               background: tab === t.id ? "oklch(0.72 0.12 75)" : "oklch(0.22 0.02 160)",
               color: tab === t.id ? "oklch(0.22 0.02 160)" : "oklch(0.65 0.02 160)",
             }}>

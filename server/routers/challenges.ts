@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { adminProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { challenges, userChallenges } from "../../drizzle/schema";
+import { challenges, userChallenges, userChallengeLogs } from "../../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import { format } from "date-fns";
 
@@ -16,14 +16,26 @@ export const challengesRouter = router({
     .input(z.object({ deviceId: z.string().optional() }))
     .query(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) return [];
+      if (!db) return { challenges: [], logs: [] };
 
+      let uc = [];
       if (ctx.user?.id) {
-        return db.select().from(userChallenges).where(eq(userChallenges.userId, ctx.user.id));
+        uc = await db.select().from(userChallenges).where(eq(userChallenges.userId, ctx.user.id));
       } else if (input.deviceId) {
-        return db.select().from(userChallenges).where(eq(userChallenges.deviceId, input.deviceId));
+        uc = await db.select().from(userChallenges).where(eq(userChallenges.deviceId, input.deviceId));
       }
-      return [];
+
+      if (uc.length === 0) return { challenges: [], logs: [] };
+
+      // Fetch all logs for these user_challenges
+      const uIds = uc.map(c => c.id);
+      const logs = [];
+      for (const uid of uIds) {
+        const cLogs = await db.select().from(userChallengeLogs).where(eq(userChallengeLogs.userChallengeId, uid));
+        logs.push(...cLogs);
+      }
+
+      return { challenges: uc, logs };
     }),
 
   joinChallenge: publicProcedure
@@ -34,7 +46,6 @@ export const challengesRouter = router({
 
       const startDate = format(new Date(), "yyyy-MM-dd");
 
-      // Check if already joined
       let existing;
       if (ctx.user?.id) {
         existing = await db.select().from(userChallenges).where(
@@ -56,6 +67,31 @@ export const challengesRouter = router({
         status: "active"
       });
 
+      return { success: true };
+    }),
+
+  toggleChallengeLog: publicProcedure
+    .input(z.object({ userChallengeId: z.number(), dateStr: z.string(), completed: z.boolean() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("DB Error");
+
+      if (input.completed) {
+        const existing = await db.select().from(userChallengeLogs).where(
+          and(eq(userChallengeLogs.userChallengeId, input.userChallengeId), eq(userChallengeLogs.dateStr, input.dateStr))
+        ).limit(1);
+
+        if (!existing || existing.length === 0) {
+          await db.insert(userChallengeLogs).values({
+            userChallengeId: input.userChallengeId,
+            dateStr: input.dateStr
+          });
+        }
+      } else {
+        await db.delete(userChallengeLogs).where(
+          and(eq(userChallengeLogs.userChallengeId, input.userChallengeId), eq(userChallengeLogs.dateStr, input.dateStr))
+        );
+      }
       return { success: true };
     }),
 

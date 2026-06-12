@@ -158,6 +158,9 @@ const plugins = [
   vitePluginManusRuntime(),
   vitePluginManusDebugCollector(),
   VitePWA({
+    strategies: "injectManifest",
+    srcDir: ".",
+    filename: "sw.ts",
     registerType: "autoUpdate",
     devOptions: {
       enabled: true,

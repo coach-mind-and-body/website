@@ -53,12 +53,17 @@ export default function HabitTracker() {
   const { data: userSyncData, refetch: refetchUserSync } = trpc.habit.getUserHabits.useQuery(undefined, { enabled: isAuthenticated });
   
   const { data: activeChallengesData } = trpc.challenges.getActiveChallenges.useQuery();
-  const { data: userChallenges, refetch: refetchUserChallenges } = trpc.challenges.getUserChallenges.useQuery({ deviceId: getDeviceId() });
+  const { data: userChallengesData, refetch: refetchUserChallenges } = trpc.challenges.getUserChallenges.useQuery({ deviceId: getDeviceId() });
   const joinChallengeMutation = trpc.challenges.joinChallenge.useMutation({
     onSuccess: () => {
       toast.success("Challenge joined!");
       refetchUserChallenges();
     }
+  });
+
+  const toggleChallengeLogMutation = trpc.challenges.toggleChallengeLog.useMutation({
+    onSuccess: () => refetchUserChallenges(),
+    onError: (e) => toast.error(e.message)
   });
 
   const toggleLogMutation = trpc.habit.toggleLog.useMutation({
@@ -193,12 +198,10 @@ export default function HabitTracker() {
   const isSelectedDate = (day: Date) => isSameDay(day, selectedDate);
 
   const getChallengeProgress = (challengeId: number) => {
-    const uc = userChallenges?.find(u => u.challengeId === challengeId);
-    if (!uc) return null;
-    const start = new Date(uc.startDate);
-    const today = new Date();
-    const daysPassed = Math.max(0, differenceInDays(today, start) + 1);
-    return daysPassed;
+    const uc = userChallengesData?.challenges.find(u => u.challengeId === challengeId);
+    if (!uc) return 0;
+    const logs = userChallengesData?.logs.filter(l => l.userChallengeId === uc.id) || [];
+    return logs.length;
   };
 
   return (
@@ -243,10 +246,14 @@ export default function HabitTracker() {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {activeChallengesData.map(challenge => {
-                const uc = userChallenges?.find(u => u.challengeId === challenge.id);
+                const uc = userChallengesData?.challenges.find(u => u.challengeId === challenge.id);
                 const progress = uc ? getChallengeProgress(challenge.id) : 0;
                 const isJoined = !!uc;
                 const percent = isJoined && progress !== null ? Math.min(100, Math.round((progress / challenge.durationDays) * 100)) : 0;
+                
+                const todayStr = format(new Date(), "yyyy-MM-dd");
+                const logs = userChallengesData?.logs.filter(l => l.userChallengeId === uc?.id) || [];
+                const isCompletedToday = logs.some(l => l.dateStr === todayStr);
 
                 return (
                   <div key={challenge.id} className="p-5 rounded-2xl border transition-all" style={{ background: isJoined ? "#faf5f5" : "white", borderColor: "#f0e8e4" }}>
@@ -261,20 +268,42 @@ export default function HabitTracker() {
                           <Plus size={16} className="mr-1" /> Join
                         </Button>
                       ) : (
-                        <div className="text-xs font-bold px-2 py-1 rounded-full" style={{ background: "#d4ecd4", color: "#2d5a2d" }}>Joined</div>
+                        <div className="text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1" style={{ background: isCompletedToday ? "#d4ecd4" : "#f0e8e4", color: isCompletedToday ? "#2d5a2d" : "#8a9a8a" }}>
+                          {isCompletedToday ? <><Check size={12} /> Done Today</> : "Joined"}
+                        </div>
                       )}
                     </div>
                     {challenge.description && <p className="text-sm text-gray-500 mb-4">{challenge.description}</p>}
                     
                     {isJoined && (
-                      <div className="mt-4">
-                        <div className="flex justify-between text-xs font-bold mb-1" style={{ color: "#8a9a8a" }}>
-                          <span>Day {progress} of {challenge.durationDays}</span>
-                          <span>{percent}%</span>
+                      <div className="mt-4 space-y-4">
+                        <div>
+                          <div className="flex justify-between text-xs font-bold mb-1" style={{ color: "#8a9a8a" }}>
+                            <span>{progress} of {challenge.durationDays} Days Completed</span>
+                            <span>{percent}%</span>
+                          </div>
+                          <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: "#f0e8e4" }}>
+                            <div className="h-full transition-all duration-1000" style={{ width: `${percent}%`, background: "#c9a96e" }} />
+                          </div>
                         </div>
-                        <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: "#f0e8e4" }}>
-                          <div className="h-full transition-all duration-1000" style={{ width: `${percent}%`, background: "#c9a96e" }} />
-                        </div>
+                        
+                        <Button
+                          className="w-full rounded-xl font-bold border-2"
+                          variant={isCompletedToday ? "outline" : "default"}
+                          disabled={toggleChallengeLogMutation.isPending}
+                          style={{
+                            background: isCompletedToday ? "transparent" : "#c9a96e",
+                            color: isCompletedToday ? "#c9a96e" : "white",
+                            borderColor: "#c9a96e"
+                          }}
+                          onClick={() => toggleChallengeLogMutation.mutate({
+                            userChallengeId: uc.id,
+                            dateStr: todayStr,
+                            completed: !isCompletedToday
+                          })}
+                        >
+                          {isCompletedToday ? "Completed for Today!" : "Complete for Today"}
+                        </Button>
                       </div>
                     )}
                   </div>

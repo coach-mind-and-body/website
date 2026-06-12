@@ -267,12 +267,20 @@ export const userChallenges = mysqlTable("user_challenges", {
   status: varchar("status", { length: 50, enum: ["active", "completed", "failed"] }).notNull().default("active"),
 });
 
+export const userChallengeLogs = mysqlTable("user_challenge_logs", {
+  id: int("id").primaryKey().autoincrement(),
+  userChallengeId: int("userChallengeId").references(() => userChallenges.id).notNull(),
+  dateStr: date("dateStr", { mode: "string" }).notNull(),
+});
+
 export type PushSubscription = typeof pushSubscriptions.$inferSelect;
 export type InsertPushSubscription = typeof pushSubscriptions.$inferInsert;
 export type Challenge = typeof challenges.$inferSelect;
 export type InsertChallenge = typeof challenges.$inferInsert;
 export type UserChallenge = typeof userChallenges.$inferSelect;
 export type InsertUserChallenge = typeof userChallenges.$inferInsert;
+export type UserChallengeLog = typeof userChallengeLogs.$inferSelect;
+export type InsertUserChallengeLog = typeof userChallengeLogs.$inferInsert;
 
 export const broadcastedEpisodes = mysqlTable("broadcasted_episodes", {
   id: int("id").autoincrement().primaryKey(),
