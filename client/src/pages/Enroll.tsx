@@ -196,9 +196,6 @@ export default function Enroll() {
                 <p className="text-xs text-center mt-3" style={{ color: "oklch(0.60 0.02 160)" }}>
                   You'll be redirected to Stripe's secure checkout. After payment, return here to book Session 1.
                 </p>
-                <button onClick={() => setStep("schedule")} className="w-full mt-3 py-2 text-xs underline" style={{ color: "oklch(0.55 0.02 160)" }}>
-                  Already paid? Skip to booking →
-                </button>
               </div>
             </div>
           )}
