@@ -19,6 +19,7 @@ import { cronRouter } from "./routers/cron";
 import { habitRouter } from "./routers/habit";
 import { pushRouter } from "./routers/push";
 import { challengesRouter } from "./routers/challenges";
+import { appUpdatesRouter } from "./routers/appUpdates";
 
 export const appRouter = router({
   system: systemRouter,

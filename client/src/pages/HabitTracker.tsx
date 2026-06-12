@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
-import { Check, Info, Calendar as CalendarIcon, Sparkles, Flame, Bell, BellRing, Target, LogOut, Settings, Plus } from "lucide-react";
+import { Check, Info, Calendar as CalendarIcon, Sparkles, Flame, Bell, BellRing, Target, LogOut, Settings, Plus, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format, subDays, addDays, isSameDay, differenceInDays, parseISO } from "date-fns";
 import { usePageTitle } from "@/hooks/usePageTitle";
@@ -54,6 +54,7 @@ export default function HabitTracker() {
   
   const { data: activeChallengesData } = trpc.challenges.getActiveChallenges.useQuery();
   const { data: userChallengesData, refetch: refetchUserChallenges } = trpc.challenges.getUserChallenges.useQuery({ deviceId: getDeviceId() });
+  const { data: updatesData } = trpc.appUpdates.getUpdates.useQuery();
   const joinChallengeMutation = trpc.challenges.joinChallenge.useMutation({
     onSuccess: () => {
       toast.success("Challenge joined!");
@@ -237,6 +238,54 @@ export default function HabitTracker() {
 
       <div className="max-w-4xl mx-auto px-4 md:px-6 space-y-6">
         
+        {/* Coach Updates Section */}
+        {updatesData && updatesData.length > 0 && (
+          <div className="space-y-4 mb-8">
+            <h3 className="font-bold text-xl flex items-center gap-2" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
+              <Megaphone size={24} style={{ color: "#c9a96e" }} />
+              Coach Updates
+            </h3>
+            <div className="grid grid-cols-1 gap-4">
+              {updatesData.map(update => {
+                let embedUrl = null;
+                if (update.videoUrl) {
+                  const ytMatch = update.videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+                  if (ytMatch && ytMatch[1]) {
+                    embedUrl = `https://www.youtube.com/embed/${ytMatch[1]}`;
+                  } else {
+                    const vimeoMatch = update.videoUrl.match(/vimeo\.com\/(?:.*#|.*\/videos\/)?([0-9]+)/i);
+                    if (vimeoMatch && vimeoMatch[1]) {
+                      embedUrl = `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+                    }
+                  }
+                }
+
+                return (
+                  <motion.div key={update.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-3xl shadow-md overflow-hidden p-6 md:p-8 border" style={{ borderColor: "#f0e8e4" }}>
+                    <div className="text-xs font-bold px-2 py-1 rounded-full mb-3 inline-block" style={{ background: "#f0e8e4", color: "#8a9a8a" }}>
+                      {format(new Date(update.createdAt), "MMMM d, yyyy")}
+                    </div>
+                    <h4 className="font-bold text-2xl mb-3" style={{ color: "#2d3b2d" }}>{update.title}</h4>
+                    <p className="text-gray-600 whitespace-pre-wrap leading-relaxed mb-6">{update.message}</p>
+                    
+                    {embedUrl && (
+                      <div className="relative w-full rounded-2xl overflow-hidden shadow-sm" style={{ paddingTop: '56.25%' }}>
+                        <iframe 
+                          src={embedUrl} 
+                          className="absolute top-0 left-0 w-full h-full"
+                          frameBorder="0" 
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                          allowFullScreen
+                        ></iframe>
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Active Challenges Section */}
         {activeChallengesData && activeChallengesData.length > 0 && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white rounded-3xl shadow-xl overflow-hidden p-6 md:p-8" style={{ border: "1px solid #f0e8e4" }}>

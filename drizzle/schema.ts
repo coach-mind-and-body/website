@@ -273,6 +273,14 @@ export const userChallengeLogs = mysqlTable("user_challenge_logs", {
   dateStr: date("dateStr", { mode: "string" }).notNull(),
 });
 
+export const appUpdates = mysqlTable("app_updates", {
+  id: int("id").primaryKey().autoincrement(),
+  title: varchar("title", { length: 255 }).notNull(),
+  message: text("message").notNull(),
+  videoUrl: text("videoUrl"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
 export type PushSubscription = typeof pushSubscriptions.$inferSelect;
 export type InsertPushSubscription = typeof pushSubscriptions.$inferInsert;
 export type Challenge = typeof challenges.$inferSelect;
@@ -281,6 +289,8 @@ export type UserChallenge = typeof userChallenges.$inferSelect;
 export type InsertUserChallenge = typeof userChallenges.$inferInsert;
 export type UserChallengeLog = typeof userChallengeLogs.$inferSelect;
 export type InsertUserChallengeLog = typeof userChallengeLogs.$inferInsert;
+export type AppUpdate = typeof appUpdates.$inferSelect;
+export type InsertAppUpdate = typeof appUpdates.$inferInsert;
 
 export const broadcastedEpisodes = mysqlTable("broadcasted_episodes", {
   id: int("id").autoincrement().primaryKey(),
