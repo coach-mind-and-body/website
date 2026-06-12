@@ -105,7 +105,7 @@ export default function HabitTracker() {
       if (storedHabits) {
         setLocalHabits(JSON.parse(storedHabits));
       } else if (templates) {
-        const initialHabits = templates.map(t => ({ id: t.id, title: t.title, isActive: true }));
+        const initialHabits = templates.map(t => ({ id: t.id, title: t.title, description: t.description, isActive: true }));
         setLocalHabits(initialHabits);
         localStorage.setItem("mbr_habits", JSON.stringify(initialHabits));
       }
@@ -475,8 +475,13 @@ export default function HabitTracker() {
                     className="grid grid-cols-8 gap-2 items-center p-2 rounded-2xl transition-colors"
                     style={{ background: "#faf5f5" }}
                   >
-                    <div className="col-span-1 font-semibold text-sm pr-2 leading-tight" style={{ color: "#2d3b2d" }}>
-                      {habit.title}
+                    <div className="col-span-1 pr-2">
+                      <div className="font-semibold text-sm leading-tight" style={{ color: "#2d3b2d" }}>
+                        {habit.title}
+                      </div>
+                      {habit.description && (
+                        <p className="text-xs font-normal text-gray-500 mt-1 leading-snug">{habit.description}</p>
+                      )}
                     </div>
                     {days.map(day => {
                       const dateStr = format(day, "yyyy-MM-dd");
@@ -549,7 +554,12 @@ export default function HabitTracker() {
                     className="w-full flex items-center justify-between p-5 rounded-2xl shadow-sm transition-all active:scale-95"
                     style={{ background: completed ? "linear-gradient(135deg, #c9a96e 0%, #e8c99a 100%)" : "#faf5f5", border: completed ? "none" : "1px solid #f0e8e4" }}
                   >
-                    <span className={`font-semibold text-left pr-4 ${completed ? 'text-white' : 'text-[#2d3b2d]'}`}>{habit.title}</span>
+                    <div className="flex-1 text-left pr-4">
+                      <div className={`font-semibold ${completed ? 'text-white' : 'text-[#2d3b2d]'}`}>{habit.title}</div>
+                      {habit.description && (
+                        <div className={`text-xs mt-1 ${completed ? 'text-white/80' : 'text-gray-500'}`}>{habit.description}</div>
+                      )}
+                    </div>
                     <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center shadow-inner ${completed ? 'bg-white/20' : 'bg-white border border-[#e8e8e8]'}`}>
                       <Check size={18} strokeWidth={completed ? 3 : 0} className={completed ? 'text-white' : 'text-transparent'} />
                     </div>
