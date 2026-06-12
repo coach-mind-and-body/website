@@ -667,10 +667,13 @@ export async function sendAssignmentFeedbackEmail(params: {
     <div style="font-family:'Nunito Sans',Arial,sans-serif;padding:36px 40px;">
       <p style="color:#4a4a4a;font-size:16px;">Hi ${firstName},</p>
       <p style="color:#4a4a4a;font-size:16px;">Lee Anne just reviewed your assignment for <strong>${moduleTitle}</strong> and left some feedback for you.</p>
-      <a href="https://mindandbodyresetcoach.com/portal/hub" style="display:inline-block;background:#3a5a3a;color:white;padding:14px 36px;border-radius:9999px;text-decoration:none;font-weight:700;">Read Feedback</a>
+      <p style="color:#4a4a4a;font-size:16px;">If you're finding these modules helpful but would like 1-on-1 support to dive deeper into your personal journey, I’d love to chat. You can reply directly to this email or <a href="${ENV.appPublicUrl}/contact" style="color:#3a5a3a;font-weight:bold;text-decoration:underline;">reach out here</a> to discuss coaching.</p>
+      <div style="margin-top:24px;">
+        <a href="https://mindandbodyresetcoach.com/portal/hub" style="display:inline-block;background:#3a5a3a;color:white;padding:14px 36px;border-radius:9999px;text-decoration:none;font-weight:700;">Read Feedback</a>
+      </div>
     </div>
   `;
-  const textBody = `Hi ${firstName},\n\nLee Anne left feedback on your assignment for ${moduleTitle}.\n\nRead it here: https://mindandbodyresetcoach.com/portal/hub`;
+  const textBody = `Hi ${firstName},\n\nLee Anne left feedback on your assignment for ${moduleTitle}.\n\nIf you're finding these modules helpful but would like 1-on-1 support to dive deeper into your personal journey, I’d love to chat. You can reply directly to this email or reach out here: ${ENV.appPublicUrl}/contact\n\nRead your feedback here: https://mindandbodyresetcoach.com/portal/hub`;
   return sendTransactionalEmail({ to: clientEmail, toName: clientName, subject, htmlBody, textBody });
 }
 
@@ -685,14 +688,13 @@ export async function sendSnackHackEmail(params: {
 
   const htmlBody = `
     <div style="font-family:'Nunito Sans',Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
-      <div style="background:linear-gradient(135deg,#5a7a5a 0%,#3a5a3a 100%);padding:40px;text-align:center;">
       <div style="background:linear-gradient(135deg,#fbeee9 0%,#f5dcd3 100%);padding:40px;text-align:center;">
         <h1 style="margin:0 0 8px;color:#8a7060;font-size:26px;font-weight:700;">The Midlife Mindset Guide</h1>
         <p style="margin:0;color:#8a7060;font-size:15px;">Finding Peace and Control with Late-Night Snacking</p>
       </div>
       <div style="padding:36px 40px;">
         <p style="color:#4a4a4a;font-size:16px;margin:0 0 16px;">Hi ${firstName},</p>
-        <p style="color:#4a4a4a;font-size:16px;margin:0 0 16px;">I'm so excited to share this guide with you. The evening hours don't have to be a battleground, and I hope these strategies bring you a profound sense of peace and control.</p>
+        <p style="color:#4a4a4a;font-size:16px;margin:0 0 16px;">I'm so excited to share this guide with you. The evening hours don't have to be a battleground. I hope these strategies bring you a profound sense of peace and control over your mindset.</p>
         <p style="color:#4a4a4a;font-size:16px;margin:0 0 16px;">You can download your free PDF guide below:</p>
         
         <div style="text-align:center;margin:32px 0;">
@@ -705,24 +707,28 @@ export async function sendSnackHackEmail(params: {
           <a href="${ENV.appPublicUrl}/habit-tracker" style="color:#c9a96e;font-weight:700;text-decoration:underline;">Open Your Free Habit Tracker</a>
         </div>
 
-        <p style="color:#4a4a4a;font-size:15px;margin-top:24px;">With love,<br/><strong>Lee Anne</strong><br/><span style="color:#8a9a8a;font-size:13px;">Certified Life &amp; Health Coach | Mind &amp; Body Reset</span></p>
+        <p style="color:#4a4a4a;font-size:16px;margin:0 0 16px;">If you find this guide helpful but feel like you need some personal accountability and guidance to make these changes stick—I am here for you.</p>
+        <p style="color:#4a4a4a;font-size:16px;margin:0 0 16px;">Feel free to <strong>reply directly to this email</strong> to chat, or <a href="${ENV.appPublicUrl}/contact" style="color:#c9a96e;font-weight:bold;text-decoration:underline;">click here to reach out</a> about my 1-on-1 coaching program.</p>
+
+        <p style="color:#4a4a4a;font-size:15px;margin-top:32px;">With love and excitement,<br/><strong>Lee Anne</strong><br/><span style="color:#8a9a8a;font-size:13px;">Certified Life &amp; Health Coach | Mind &amp; Body Reset</span></p>
       </div>
     </div>
   `;
 
-  const textBody = `Hi ${firstName},
+  const textBody = \`Hi \${firstName},
 
-Here is your Midlife Mindset Guide for late-night snacking.
+I'm so excited to share this guide with you. The evening hours don't have to be a battleground. I hope these strategies bring you a profound sense of peace and control.
 
-Download the PDF here: ${pdfUrl}
+Download the PDF here: \${pdfUrl}
 
 Bonus: Track Your Daily Reset
 I've also created a free habit tracker for you to use. You can track your daily habits right on your phone or computer to start building momentum today!
-Access it here: ${ENV.appPublicUrl}/habit-tracker
+Access it here: \${ENV.appPublicUrl}/habit-tracker
 
-With love,
-Lee Anne
-Mind & Body Reset`;
+If you find this guide helpful but feel like you need some personal accountability and guidance to make these changes stick—I am here for you. Feel free to reply directly to this email to chat, or reach out at \${ENV.appPublicUrl}/contact
+
+With love and excitement,
+Lee Anne\`;
 
   return sendTransactionalEmail({ to: clientEmail, toName: clientName, subject, htmlBody, textBody });
 }
