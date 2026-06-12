@@ -383,7 +383,7 @@ export default function Home() {
                 href="/reclaim"
                 className="btn-dark inline-flex items-center gap-2 text-sm"
               >
-                Learn More <ArrowRight size={14} />
+                Learn About Reclaim Program <ArrowRight size={14} />
               </Link>
             </div>
           </div>
