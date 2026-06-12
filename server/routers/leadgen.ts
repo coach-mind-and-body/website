@@ -20,6 +20,22 @@ export const leadgenRouter = router({
         console.error("[LeadGen] Resend subscribe error:", result.error);
       }
 
+      // 1.2 Fire Resend Custom Event for Automations
+      try {
+        const { ENV } = await import("../_core/env");
+        const { Resend } = await import("resend");
+        if (ENV.resendApiKey) {
+          const resend = new Resend(ENV.resendApiKey);
+          await resend.events.send({
+            event: "snack_hack_downloaded",
+            email: input.email,
+          });
+          console.log(`[LeadGen] Fired 'snack_hack_downloaded' event for ${input.email}`);
+        }
+      } catch (e) {
+        console.error("[LeadGen] Failed to fire resend event:", e);
+      }
+
       // 1.5 Add to internal subscribers table
       try {
         const { getDb } = await import("../db");
