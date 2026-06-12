@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { habitTemplates, userHabits, userHabitLogs } from "../../drizzle/schema";
+import { habitTemplates, userHabits, userHabitLogs, userDailyNotes } from "../../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 
 export const habitRouter = router({
@@ -17,10 +17,28 @@ export const habitRouter = router({
     const db = await getDb();
     if (!db) return { habits: [], logs: [] };
 
-    const habits = await db.select().from(userHabits).where(eq(userHabits.userId, ctx.user.id)).orderBy(userHabits.order);
-    const logs = await db.select().from(userHabitLogs).where(eq(userHabitLogs.userId, ctx.user.id));
+    let habits = await db.select().from(userHabits).where(eq(userHabits.userId, ctx.user.id)).orderBy(userHabits.order);
     
-    return { habits, logs };
+    // Auto-initialize from templates if user has no habits
+    if (habits.length === 0) {
+      const templates = await db.select().from(habitTemplates).where(eq(habitTemplates.isActive, true)).orderBy(habitTemplates.order);
+      if (templates.length > 0) {
+        const newHabits = templates.map(t => ({
+          userId: ctx.user.id,
+          title: t.title,
+          description: t.description,
+          order: t.order,
+          isActive: true,
+        }));
+        await db.insert(userHabits).values(newHabits);
+        habits = await db.select().from(userHabits).where(eq(userHabits.userId, ctx.user.id)).orderBy(userHabits.order);
+      }
+    }
+
+    const logs = await db.select().from(userHabitLogs).where(eq(userHabitLogs.userId, ctx.user.id));
+    const notes = await db.select().from(userDailyNotes).where(eq(userDailyNotes.userId, ctx.user.id));
+    
+    return { habits, logs, notes };
   }),
 
   syncHabit: protectedProcedure
@@ -89,6 +107,37 @@ export const habitRouter = router({
           userHabitId: input.userHabitId,
           dateStr: input.dateStr,
           completed: input.completed,
+        });
+      }
+      return { success: true };
+    }),
+
+  saveDailyNote: protectedProcedure
+    .input(z.object({
+      dateStr: z.string(),
+      note: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("DB Error");
+
+      const existing = await db.select().from(userDailyNotes)
+        .where(
+          and(
+            eq(userDailyNotes.userId, ctx.user.id),
+            eq(userDailyNotes.dateStr, input.dateStr)
+          )
+        ).limit(1);
+
+      if (existing.length > 0) {
+        await db.update(userDailyNotes)
+          .set({ note: input.note })
+          .where(eq(userDailyNotes.id, existing[0].id));
+      } else {
+        await db.insert(userDailyNotes).values({
+          userId: ctx.user.id,
+          dateStr: input.dateStr,
+          note: input.note,
         });
       }
       return { success: true };

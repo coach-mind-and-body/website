@@ -396,3 +396,15 @@ export const userHabitLogs = mysqlTable("user_habit_logs", {
 
 export type UserHabitLog = typeof userHabitLogs.$inferSelect;
 export type InsertUserHabitLog = typeof userHabitLogs.$inferInsert;
+
+export const userDailyNotes = mysqlTable("user_daily_notes", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  dateStr: varchar("dateStr", { length: 10 }).notNull(), // YYYY-MM-DD
+  note: text("note").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type UserDailyNote = typeof userDailyNotes.$inferSelect;
+export type InsertUserDailyNote = typeof userDailyNotes.$inferInsert;
