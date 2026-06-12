@@ -68,6 +68,8 @@ export default function HabitTracker() {
     setDismissedUpdates(next);
     localStorage.setItem('dismissedUpdates', JSON.stringify(next));
   };
+
+  const [showDismissed, setShowDismissed] = useState(false);
   const joinChallengeMutation = trpc.challenges.joinChallenge.useMutation({
     onSuccess: () => {
       toast.success("Challenge joined!");
@@ -252,14 +254,29 @@ export default function HabitTracker() {
       <div className="max-w-4xl mx-auto px-4 md:px-6 space-y-6">
         
         {/* Coach Updates Section */}
-        {updatesData && updatesData.filter(u => !dismissedUpdates.includes(u.id)).length > 0 && (
+        {updatesData && updatesData.length > 0 && (
           <div className="space-y-4 mb-8">
-            <h3 className="font-bold text-xl flex items-center gap-2" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
-              <Megaphone size={24} style={{ color: "#c9a96e" }} />
-              Coach Updates
-            </h3>
+            <div className="flex justify-between items-center">
+              <h3 className="font-bold text-xl flex items-center gap-2" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
+                <Megaphone size={24} style={{ color: "#c9a96e" }} />
+                Coach Updates
+              </h3>
+              {dismissedUpdates.length > 0 && (
+                <button 
+                  onClick={() => setShowDismissed(!showDismissed)}
+                  className="text-sm font-medium transition-colors"
+                  style={{ color: "#8a9a8a" }}
+                >
+                  {showDismissed ? "Hide Dismissed" : `View Dismissed (${dismissedUpdates.length})`}
+                </button>
+              )}
+            </div>
+            
             <div className="grid grid-cols-1 gap-4">
-              {updatesData.filter(u => !dismissedUpdates.includes(u.id)).map(update => {
+              {updatesData.filter(u => showDismissed ? true : !dismissedUpdates.includes(u.id)).length === 0 && (
+                <p className="text-gray-500 text-sm italic">You are all caught up on updates!</p>
+              )}
+              {updatesData.filter(u => showDismissed ? true : !dismissedUpdates.includes(u.id)).map(update => {
                 let isYouTube = false;
                 let videoId = null;
                 let embedUrl = null;
@@ -278,14 +295,21 @@ export default function HabitTracker() {
                 }
 
                 return (
-                  <motion.div key={update.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-3xl shadow-md overflow-hidden p-6 md:p-8 border relative" style={{ borderColor: "#f0e8e4" }}>
-                    <button 
-                      onClick={() => handleDismissUpdate(update.id)}
-                      className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 transition-colors"
-                      title="Dismiss Update"
-                    >
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                    </button>
+                  <motion.div key={update.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-3xl shadow-md overflow-hidden p-6 md:p-8 border relative" style={{ borderColor: "#f0e8e4", opacity: dismissedUpdates.includes(update.id) ? 0.6 : 1 }}>
+                    {!dismissedUpdates.includes(update.id) && (
+                      <button 
+                        onClick={() => handleDismissUpdate(update.id)}
+                        className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 transition-colors"
+                        title="Dismiss Update"
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                      </button>
+                    )}
+                    {dismissedUpdates.includes(update.id) && (
+                      <div className="absolute top-4 right-4 text-xs font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
+                        Dismissed
+                      </div>
+                    )}
                     <div className="text-xs font-bold px-2 py-1 rounded-full mb-3 inline-block" style={{ background: "#f0e8e4", color: "#8a9a8a" }}>
                       {format(new Date(update.createdAt), "MMMM d, yyyy")}
                     </div>
