@@ -199,9 +199,9 @@ export default function HabitTracker() {
   const isSelectedDate = (day: Date) => isSameDay(day, selectedDate);
 
   const getChallengeProgress = (challengeId: number) => {
-    const uc = userChallengesData?.challenges.find(u => u.challengeId === challengeId);
+    const uc = userChallengesData?.challenges?.find(u => u.challengeId === challengeId);
     if (!uc) return 0;
-    const logs = userChallengesData?.logs.filter(l => l.userChallengeId === uc.id) || [];
+    const logs = userChallengesData?.logs?.filter(l => l.userChallengeId === uc.id) || [];
     return logs.length;
   };
 
@@ -295,13 +295,13 @@ export default function HabitTracker() {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {activeChallengesData.map(challenge => {
-                const uc = userChallengesData?.challenges.find(u => u.challengeId === challenge.id);
+                const uc = userChallengesData?.challenges?.find(u => u.challengeId === challenge.id);
                 const progress = uc ? getChallengeProgress(challenge.id) : 0;
                 const isJoined = !!uc;
                 const percent = isJoined && progress !== null ? Math.min(100, Math.round((progress / challenge.durationDays) * 100)) : 0;
                 
                 const todayStr = format(new Date(), "yyyy-MM-dd");
-                const logs = userChallengesData?.logs.filter(l => l.userChallengeId === uc?.id) || [];
+                const logs = userChallengesData?.logs?.filter(l => l.userChallengeId === uc?.id) || [];
                 const isCompletedToday = logs.some(l => l.dateStr === todayStr);
 
                 return (
