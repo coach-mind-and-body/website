@@ -688,7 +688,10 @@ export async function sendSnackHackEmail(params: {
 
   const htmlBody = `
     <div style="font-family:'Nunito Sans',Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
-      <div style="background:linear-gradient(135deg,#fbeee9 0%,#f5dcd3 100%);padding:40px;text-align:center;">
+      <div style="background:#FDFBF7;padding:30px;text-align:center;border-bottom:1px solid #f0e8e4;">
+        <img src="${ENV.appPublicUrl}/logo-wide.jpg" alt="Mind & Body Reset" style="max-width:200px;height:auto;" />
+      </div>
+      <div style="background:linear-gradient(135deg,#fbeee9 0%,#f5dcd3 100%);padding:30px;text-align:center;">
         <h1 style="margin:0 0 8px;color:#8a7060;font-size:26px;font-weight:700;">The Midlife Mindset Guide</h1>
         <p style="margin:0;color:#8a7060;font-size:15px;">Finding Peace and Control with Late-Night Snacking</p>
       </div>
