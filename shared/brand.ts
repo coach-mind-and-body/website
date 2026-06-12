@@ -7,8 +7,8 @@ export const BRAND = {
   coachName: "Lee Anne",
   coachFullName: "Lee Anne",
   website: "https://mindandbodyresetcoach.com",
-  logoUrl: "/logo-circular.png",
-  logoWideUrl: "/logo-wide.jpg",
+  logoUrl: "/logo-new.jpg",
+  logoWideUrl: "/logo-new.jpg",
 } as const;
 
 export const GOOGLE_CALENDAR = {

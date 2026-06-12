@@ -1,0 +1,876 @@
+/* =============================================================
+   DESIGN: Mind & Body Reset
+   Brand Colors (matching reference site):
+   - Cream:         oklch(0.985 0.008 80)  — page background (warm off-white)
+   - Gold:          oklch(0.72 0.11 78)    — primary accent, CTA buttons, nav bar
+   - Olive Green:   oklch(0.42 0.09 140)   — hero tagline text only
+   - Forest Green:  oklch(0.32 0.09 148)   — email banner strip ONLY (not primary)
+   - Blush:         oklch(0.96 0.025 50)   — soft section backgrounds
+   - Espresso:      oklch(0.20 0.015 50)   — headings, dark text
+   - Muted:         oklch(0.52 0.015 50)   — secondary text, labels
+   Fonts: Cormorant Garamond (display) + Nunito Sans (body)
+   ============================================================= */
+
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+:root {
+  --radius: 0.625rem;
+
+  /* Page background — warm cream (not blush pink, not white) */
+  --background: oklch(0.985 0.008 80);
+  --foreground: oklch(0.20 0.015 50);
+
+  /* Cards — pure white for contrast against cream bg */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.20 0.015 50);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.20 0.015 50);
+
+  /* Primary = Gold (CTA buttons, nav bar, key accents) */
+  --primary: oklch(0.72 0.11 78);
+  --primary-foreground: oklch(1 0 0);
+
+  /* Secondary = Soft blush/peach (section backgrounds) */
+  --secondary: oklch(0.96 0.025 50);
+  --secondary-foreground: oklch(0.20 0.015 50);
+
+  --muted: oklch(0.94 0.01 80);
+  --muted-foreground: oklch(0.52 0.015 50);
+
+  /* Accent = Light gold tint (hover states, subtle highlights) */
+  --accent: oklch(0.94 0.04 78);
+  --accent-foreground: oklch(0.35 0.08 78);
+
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.90 0.015 80);
+  --input: oklch(0.90 0.015 80);
+  --ring: oklch(0.72 0.11 78);
+
+  /* Brand-specific tokens */
+  --gold: oklch(0.72 0.11 78);
+  --gold-light: oklch(0.93 0.06 78);
+  --gold-dark: oklch(0.55 0.11 72);
+  --gold-btn: oklch(0.68 0.12 76);       /* slightly deeper for button bg */
+
+  --olive: oklch(0.42 0.09 140);          /* hero tagline text */
+  --olive-light: oklch(0.55 0.07 140);
+
+  --forest: oklch(0.32 0.09 148);         /* email banner ONLY */
+  --forest-light: oklch(0.92 0.04 148);
+  --forest-dark: oklch(0.24 0.08 148);
+
+  --cream: oklch(0.985 0.008 80);
+  --cream-deep: oklch(0.96 0.025 50);     /* blush section bg */
+  --espresso: oklch(0.20 0.015 50);
+  --muted-brand: oklch(0.52 0.015 50);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Nunito Sans', sans-serif;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Cormorant Garamond', serif;
+  }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  a[href] {
+    @apply cursor-pointer;
+  }
+}
+
+@layer components {
+  .container {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+  @media (min-width: 640px) {
+    .container { padding-left: 2rem; padding-right: 2rem; }
+  }
+  @media (min-width: 1024px) {
+    .container { padding-left: 3rem; padding-right: 3rem; max-width: 1200px; }
+  }
+
+  .flex { min-height: 0; min-width: 0; }
+
+  /* ── Section watermark ── */
+  .section-watermark {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(5rem, 12vw, 9rem);
+    font-weight: 700;
+    line-height: 1;
+    color: oklch(0.72 0.11 78 / 0.07);
+    user-select: none;
+    pointer-events: none;
+  }
+
+  /* ── Scroll progress bar ── */
+  .scroll-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, oklch(0.72 0.11 78), oklch(0.55 0.11 72));
+    z-index: 9999;
+    transition: width 0.1s linear;
+  }
+
+  /* ── Fade-up animation ── */
+  .fade-up {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .fade-up.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ── Nav link — used on light nav bg ── */
+  .nav-link {
+    position: relative;
+    font-family: 'Nunito Sans', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: oklch(0.20 0.015 50);
+    transition: color 0.2s ease;
+  }
+  .nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: oklch(0.20 0.015 50);
+    transition: width 0.25s ease;
+  }
+  .nav-link:hover, .nav-link.active { color: oklch(0.20 0.015 50); }
+  .nav-link:hover::after, .nav-link.active::after { width: 100%; }
+
+  /* ── Nav link on gold bar (white text) ── */
+  .nav-link-gold {
+    position: relative;
+    font-family: 'Nunito Sans', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: oklch(1 0 0);
+    transition: color 0.2s ease, opacity 0.2s ease;
+  }
+  .nav-link-gold:hover { opacity: 0.85; }
+  .nav-link-gold.active { opacity: 1; text-decoration: underline; text-underline-offset: 4px; }
+
+  /* ── Pull quote ── */
+  .pull-quote {
+    border-left: 3px solid oklch(0.72 0.11 78);
+    padding-left: 1.5rem;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 1.2rem;
+    line-height: 1.7;
+    color: oklch(0.42 0.015 50);
+  }
+
+  /* ── Gold CTA button ── */
+  .btn-gold {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 2rem;
+    border-radius: 999px;
+    background: oklch(0.68 0.12 76);
+    color: oklch(1 0 0);
+    font-family: 'Nunito Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border: none;
+    transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+    box-shadow: 0 2px 12px oklch(0.68 0.12 76 / 0.35);
+  }
+  .btn-gold:hover {
+    background: oklch(0.62 0.13 74);
+    box-shadow: 0 4px 20px oklch(0.68 0.12 76 / 0.45);
+    transform: translateY(-1px);
+  }
+
+  /* ── Dark (espresso) button ── */
+  .btn-dark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 2rem;
+    border-radius: 999px;
+    background: oklch(0.20 0.015 50);
+    color: oklch(1 0 0);
+    font-family: 'Nunito Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border: none;
+    transition: background 0.2s ease, transform 0.15s ease;
+  }
+  .btn-dark:hover {
+    background: oklch(0.28 0.015 50);
+    transform: translateY(-1px);
+  }
+
+  /* ── Badge pills ── */
+  .badge-gold {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.75rem;
+    border-radius: 999px;
+    background: oklch(0.93 0.06 78);
+    color: oklch(0.45 0.12 72);
+    border: 1px solid oklch(0.82 0.10 78);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .badge-olive {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.75rem;
+    border-radius: 999px;
+    background: oklch(0.92 0.04 140);
+    color: oklch(0.35 0.09 140);
+    border: 1px solid oklch(0.78 0.07 140);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .badge-blush {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.75rem;
+    border-radius: 999px;
+    background: oklch(0.96 0.025 50);
+    color: oklch(0.45 0.06 50);
+    border: 1px solid oklch(0.88 0.04 50);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .badge-forest {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.75rem;
+    border-radius: 999px;
+    background: oklch(0.22 0.06 148);
+    color: oklch(0.97 0.008 80);
+    border: 1px solid oklch(0.28 0.08 148);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* ── Blog prose (HTML content from editor) ── */
+  .blog-prose h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+    font-weight: 700;
+    color: oklch(0.22 0.02 160);
+    line-height: 1.2;
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+  }
+  .blog-prose h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.4rem, 2.5vw, 1.9rem);
+    font-weight: 700;
+    color: oklch(0.22 0.02 160);
+    line-height: 1.3;
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+  }
+  .blog-prose h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: oklch(0.28 0.02 160);
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .blog-prose p {
+    font-size: 1rem;
+    line-height: 1.8;
+    color: oklch(0.45 0.02 160);
+    margin-bottom: 1.25rem;
+  }
+  .blog-prose strong {
+    font-weight: 700;
+    color: oklch(0.22 0.02 160);
+  }
+  .blog-prose em {
+    font-style: italic;
+    color: oklch(0.38 0.02 160);
+  }
+  .blog-prose ul {
+    list-style-type: disc;
+    padding-left: 1.5rem;
+    margin-bottom: 1.25rem;
+    color: oklch(0.45 0.02 160);
+  }
+  .blog-prose ol {
+    list-style-type: decimal;
+    padding-left: 1.5rem;
+    margin-bottom: 1.25rem;
+    color: oklch(0.45 0.02 160);
+  }
+  .blog-prose li {
+    font-size: 1rem;
+    line-height: 1.8;
+    margin-bottom: 0.25rem;
+  }
+  .blog-prose blockquote {
+    border-left: 4px solid oklch(0.72 0.12 75);
+    padding: 0.5rem 1.25rem;
+    margin: 1.5rem 0;
+    font-style: italic;
+    color: oklch(0.38 0.02 160);
+    background: oklch(0.95 0.02 75 / 0.4);
+    border-radius: 0 8px 8px 0;
+  }
+  .blog-prose hr {
+    border: none;
+    border-top: 1px solid oklch(0.85 0.01 160);
+    margin: 2rem 0;
+  }
+  .blog-prose img {
+    border-radius: 0.75rem;
+    margin: 1.5rem 0;
+    width: 100%;
+    object-fit: cover;
+    max-height: 480px;
+  }
+  .blog-prose a {
+    color: oklch(0.38 0.10 148);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .blog-prose a:hover {
+    color: oklch(0.28 0.10 148);
+  }
+  .blog-prose code {
+    background: oklch(0.90 0.01 160);
+    color: oklch(0.28 0.02 160);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-family: monospace;
+  }
+
+  /* ── Card variants ── */
+  .card-brand {
+    background: oklch(1 0 0);
+    border: 1px solid oklch(0.90 0.015 80);
+    box-shadow: 0 2px 16px oklch(0.20 0.015 50 / 0.06);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .card-brand:hover {
+    box-shadow: 0 6px 28px oklch(0.20 0.015 50 / 0.12);
+    transform: translateY(-2px);
+  }
+
+  /* ── Prose (blog content) ── */
+  .prose-brand {
+    color: oklch(0.42 0.015 50);
+    line-height: 1.8;
+    font-size: 1.05rem;
+  }
+  .prose-brand h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: oklch(0.20 0.015 50);
+    margin-top: 2.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .prose-brand h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: oklch(0.20 0.015 50);
+    margin-top: 2rem;
+    margin-bottom: 0.5rem;
+  }
+  .prose-brand p { margin-bottom: 1.25rem; }
+  .prose-brand strong { color: oklch(0.20 0.015 50); font-weight: 700; }
+  .prose-brand blockquote {
+    border-left: 3px solid oklch(0.72 0.11 78);
+    padding: 0.75rem 1.25rem;
+    background: oklch(0.97 0.015 78);
+    border-radius: 0 0.5rem 0.5rem 0;
+    font-style: italic;
+    margin: 1.5rem 0;
+  }
+
+  /* ── Gold star rating ── */
+  .star-gold { color: oklch(0.72 0.15 78); }
+
+  /* ── Section divider line ── */
+  .divider-gold {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, oklch(0.72 0.11 78), transparent);
+    border: none;
+    margin: 0;
+  }
+
+  /* ── FPU sign-up form inputs on dark (green) backgrounds ── */
+  input.fpu-input-dark::placeholder,
+  input.fpu-input-dark::-webkit-input-placeholder,
+  input.fpu-input-dark::-moz-placeholder {
+    color: oklch(0.88 0.015 148) !important;
+    opacity: 1 !important;
+  }
+}
+
+/* ── Tiptap Rich Text Editor ─────────────────────────────────────────────── */
+.rich-text-editor-content .tiptap {
+  min-height: 400px;
+  padding: 1rem 1.25rem;
+  outline: none;
+  color: oklch(0.88 0.015 160);
+  font-size: 0.9375rem;
+  line-height: 1.75;
+  background: oklch(0.22 0.025 160);
+}
+
+.rich-text-editor-content .tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: oklch(0.50 0.02 160);
+  pointer-events: none;
+  height: 0;
+}
+
+.rich-text-editor-content .tiptap h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 1.5rem 0 0.75rem;
+  color: oklch(0.95 0.01 160);
+}
+
+.rich-text-editor-content .tiptap h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 1.25rem 0 0.6rem;
+  color: oklch(0.92 0.01 160);
+}
+
+.rich-text-editor-content .tiptap h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 1rem 0 0.5rem;
+  color: oklch(0.90 0.01 160);
+}
+
+.rich-text-editor-content .tiptap p {
+  margin: 0 0 0.75rem;
+}
+
+.rich-text-editor-content .tiptap strong {
+  font-weight: 700;
+  color: oklch(0.95 0.01 160);
+}
+
+.rich-text-editor-content .tiptap em {
+  font-style: italic;
+}
+
+.rich-text-editor-content .tiptap u {
+  text-decoration: underline;
+}
+
+.rich-text-editor-content .tiptap s {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.rich-text-editor-content .tiptap ul {
+  list-style: disc;
+  padding-left: 1.5rem;
+  margin: 0.5rem 0 0.75rem;
+}
+
+.rich-text-editor-content .tiptap ol {
+  list-style: decimal;
+  padding-left: 1.5rem;
+  margin: 0.5rem 0 0.75rem;
+}
+
+.rich-text-editor-content .tiptap li {
+  margin-bottom: 0.25rem;
+}
+
+.rich-text-editor-content .tiptap blockquote {
+  border-left: 3px solid oklch(0.72 0.12 75);
+  padding-left: 1rem;
+  margin: 1rem 0;
+  color: oklch(0.72 0.02 160);
+  font-style: italic;
+}
+
+.rich-text-editor-content .tiptap hr {
+  border: none;
+  border-top: 1px solid oklch(0.30 0.02 160);
+  margin: 1.5rem 0;
+}
+
+.rich-text-editor-content .tiptap a {
+  color: oklch(0.72 0.12 75);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.rich-text-editor-content .tiptap a:hover {
+  color: oklch(0.82 0.12 75);
+}
+
+.rich-text-editor-content .tiptap img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+.rich-text-editor-content .tiptap code {
+  background: oklch(0.18 0.025 160);
+  padding: 0.1em 0.3em;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+  color: oklch(0.72 0.12 75);
+}
+
+.rich-text-editor-content .tiptap pre {
+  background: oklch(0.18 0.025 160);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 0.75rem 0;
+}
+
+.rich-text-editor-content .tiptap pre code {
+  background: none;
+  padding: 0;
+  color: oklch(0.88 0.015 160);
+}
+
+/* Public blog post rich text rendering */
+.blog-post-content h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 1.5rem 0 0.75rem;
+}
+
+.blog-post-content h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 1.5rem 0 0.6rem;
+}
+
+.blog-post-content h3 {
+  font-size: 1.35rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 1.25rem 0 0.5rem;
+}
+
+.blog-post-content p {
+  margin: 0 0 1rem;
+}
+
+.blog-post-content ul {
+  list-style: disc;
+  padding-left: 1.75rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.blog-post-content ol {
+  list-style: decimal;
+  padding-left: 1.75rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.blog-post-content li {
+  margin-bottom: 0.35rem;
+}
+
+.blog-post-content blockquote {
+  border-left: 3px solid oklch(0.72 0.12 75);
+  padding-left: 1.25rem;
+  margin: 1.25rem 0;
+  font-style: italic;
+  opacity: 0.85;
+}
+
+.blog-post-content hr {
+  border: none;
+  border-top: 1px solid oklch(0.88 0.015 75 / 0.3);
+  margin: 2rem 0;
+}
+
+.blog-post-content a {
+  color: oklch(0.45 0.09 10);
+  text-decoration: underline;
+}
+
+.blog-post-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+}
+
+.blog-post-content strong {
+  font-weight: 700;
+}
+
+.blog-post-content code {
+  background: oklch(0.92 0.01 75);
+  padding: 0.1em 0.3em;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+}
+
+/* ── YouTube Embed Styles ─────────────────────────────────────────────────── */
+/* Editor view */
+.rich-text-editor-content .tiptap div[data-youtube-video] {
+  margin: 1.25rem 0;
+  position: relative;
+  padding-bottom: 56.25%; /* 16:9 aspect ratio */
+  height: 0;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  background: oklch(0.15 0.02 160);
+}
+.rich-text-editor-content .tiptap div[data-youtube-video] iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 0.5rem;
+}
+
+/* Preview pane */
+.rich-text-preview-pane div[data-youtube-video],
+.blog-post-content div[data-youtube-video] {
+  margin: 1.5rem 0;
+  position: relative;
+  padding-bottom: 56.25%;
+  height: 0;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 20px oklch(0.20 0.015 50 / 0.12);
+}
+.rich-text-preview-pane div[data-youtube-video] iframe,
+.blog-post-content div[data-youtube-video] iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 0.75rem;
+}
+
+/* Fallback for youtube-embed class */
+.rich-text-editor-content .tiptap .youtube-embed,
+.rich-text-preview-pane .youtube-embed,
+.blog-post-content .youtube-embed,
+.blog-prose .youtube-embed {
+  margin: 1.5rem 0;
+  position: relative;
+  padding-bottom: 56.25%;
+  height: 0;
+  overflow: hidden;
+  border-radius: 0.75rem;
+}
+.rich-text-editor-content .tiptap .youtube-embed iframe,
+.rich-text-preview-pane .youtube-embed iframe,
+.blog-post-content .youtube-embed iframe,
+.blog-prose .youtube-embed iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 0.75rem;
+}
+
+/* ── Instagram Embed Styles ───────────────────────────────────────────────── */
+/* Editor view */
+.rich-text-editor-content .tiptap .instagram-embed-wrapper,
+.rich-text-editor-content .tiptap div[data-instagram-embed] {
+  margin: 1.25rem auto;
+  max-width: 480px;
+  text-align: center;
+}
+.rich-text-editor-content .tiptap .instagram-embed-wrapper iframe,
+.rich-text-editor-content .tiptap div[data-instagram-embed] iframe {
+  border: 1px solid oklch(0.30 0.02 160);
+  border-radius: 0.5rem;
+  max-width: 100%;
+}
+
+/* Preview pane & public blog */
+.rich-text-preview-pane .instagram-embed-wrapper,
+.rich-text-preview-pane div[data-instagram-embed],
+.blog-post-content .instagram-embed-wrapper,
+.blog-post-content div[data-instagram-embed],
+.blog-prose .instagram-embed-wrapper,
+.blog-prose div[data-instagram-embed] {
+  margin: 1.5rem auto;
+  max-width: 480px;
+  text-align: center;
+}
+.rich-text-preview-pane .instagram-embed-wrapper iframe,
+.rich-text-preview-pane div[data-instagram-embed] iframe,
+.blog-post-content .instagram-embed-wrapper iframe,
+.blog-post-content div[data-instagram-embed] iframe,
+.blog-prose .instagram-embed-wrapper iframe,
+.blog-prose div[data-instagram-embed] iframe {
+  border: 1px solid oklch(0.90 0.015 80);
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 12px oklch(0.20 0.015 50 / 0.08);
+  max-width: 100%;
+}
+
+/* ── Table Styles (editor) ────────────────────────────────────────────────── */
+.rich-text-editor-content .tiptap table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1rem 0;
+  table-layout: fixed;
+}
+.rich-text-editor-content .tiptap .tableWrapper {
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+.rich-text-editor-content .tiptap td,
+.rich-text-editor-content .tiptap th {
+  border: 1.5px solid oklch(0.40 0.03 160);
+  padding: 0.5rem 0.75rem;
+  min-width: 80px;
+  position: relative;
+  vertical-align: top;
+  cursor: text;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.rich-text-editor-content .tiptap td:hover,
+.rich-text-editor-content .tiptap th:hover {
+  background: oklch(0.20 0.03 160);
+  border-color: oklch(0.50 0.06 160);
+}
+.rich-text-editor-content .tiptap th {
+  background: oklch(0.18 0.025 160);
+  font-weight: 700;
+  color: oklch(0.92 0.01 160);
+  border-bottom-width: 2px;
+}
+/* Selected cell highlight */
+.rich-text-editor-content .tiptap .selectedCell {
+  background: oklch(0.25 0.04 160) !important;
+  border-color: oklch(0.60 0.12 75) !important;
+  box-shadow: inset 0 0 0 1px oklch(0.60 0.12 75 / 0.3);
+}
+/* Column resize handle */
+.rich-text-editor-content .tiptap .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: oklch(0.60 0.12 75);
+  cursor: col-resize;
+  z-index: 10;
+}
+/* Resize cursor on table */
+.rich-text-editor-content .tiptap.resize-cursor {
+  cursor: col-resize;
+}
+
+/* ── Table Styles (preview & public) ──────────────────────────────────────── */
+.rich-text-preview-pane table,
+.blog-post-content table,
+.blog-prose table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1.25rem 0;
+}
+.rich-text-preview-pane td,
+.rich-text-preview-pane th,
+.blog-post-content td,
+.blog-post-content th,
+.blog-prose td,
+.blog-prose th {
+  border: 1px solid oklch(0.88 0.015 80);
+  padding: 0.6rem 0.85rem;
+  text-align: left;
+}
+.rich-text-preview-pane th,
+.blog-post-content th,
+.blog-prose th {
+  background: oklch(0.96 0.025 50);
+  font-weight: 700;
+  color: oklch(0.20 0.015 50);
+}

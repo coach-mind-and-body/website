@@ -225,8 +225,6 @@ export const siteSettings = mysqlTable("site_settings", {
 export type SiteSetting = typeof siteSettings.$inferSelect;
 export type InsertSiteSetting = typeof siteSettings.$inferInsert;
 
-export type Notification = typeof notifications.$inferSelect;
-export type InsertNotification = typeof notifications.$inferInsert;
 
 // ── Podcast Native Broadcasting ───────────────────────────────────────────────
 export const podcastSubscribers = mysqlTable("podcast_subscribers", {

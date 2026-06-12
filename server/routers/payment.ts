@@ -44,7 +44,7 @@ export const paymentRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const stripe = getStripe();
-      const origin = (ctx.req.headers.origin as string) || "https://localhost:3000";
+      const origin = (ctx.req.headers.get("origin") as string) || "https://localhost:3000";
       const planCfg = PLAN_CONFIG[input.plan];
 
       // Capture user info if logged in (ctx.user may be set for publicProcedure too)
@@ -179,7 +179,7 @@ export const paymentRouter = router({
     if (enrollment.balancePaid) throw new TRPCError({ code: "BAD_REQUEST", message: "Balance already paid" });
 
     const stripe = getStripe();
-    const origin = (ctx.req.headers.origin as string) || "https://localhost:3000";
+    const origin = (ctx.req.headers.get("origin") as string) || "https://localhost:3000";
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",

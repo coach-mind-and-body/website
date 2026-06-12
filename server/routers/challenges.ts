@@ -18,7 +18,7 @@ export const challengesRouter = router({
       const db = await getDb();
       if (!db) return { challenges: [], logs: [] };
 
-      let uc = [];
+      let uc: any[] = [];
       if (ctx.user?.id) {
         uc = await db.select().from(userChallenges).where(eq(userChallenges.userId, ctx.user.id));
       } else if (input.deviceId) {

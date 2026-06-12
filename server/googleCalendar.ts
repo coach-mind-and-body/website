@@ -2,12 +2,12 @@
  * Google Calendar OAuth + API helpers
  * Handles: connect flow, token storage/refresh, event creation with Meet links
  */
-import type { Express, Request } from "express";
 import { getDb } from "./db";
 import { googleTokens } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { ENV } from "./_core/env";
 import { sdk } from "./_core/sdk";
+import { type Request } from "express";
 
 const SCOPES = [
   "https://www.googleapis.com/auth/calendar",
@@ -18,114 +18,6 @@ function getRedirectUri(req: Request) {
   const host = req.get("host") ?? "localhost:3000";
   const protocol = ENV.isProduction ? "https" : req.protocol;
   return `${protocol}://${host}/api/auth/google-calendar/callback`;
-}
-
-export function registerGoogleCalendarRoutes(app: Express) {
-  // Step 1: Redirect admin to Google consent screen
-  app.get("/api/auth/google-calendar/connect", async (req, res) => {
-    try {
-      const user = await sdk.authenticateRequest(req);
-      if (!user || user.role !== "admin") {
-        return res.status(403).json({ error: "Admin only" });
-      }
-      const redirectUri = getRedirectUri(req);
-      const params = new URLSearchParams({
-        client_id: ENV.googleClientId,
-        redirect_uri: redirectUri,
-        response_type: "code",
-        scope: SCOPES,
-        access_type: "offline",
-        prompt: "consent",
-        state: String(user.id),
-      });
-      res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params}`);
-    } catch {
-      res.status(403).json({ error: "Not authenticated" });
-    }
-  });
-
-  // Step 2: Handle callback, exchange code for tokens, store them
-  app.get("/api/auth/google-calendar/callback", async (req, res) => {
-    const { code, state, error } = req.query as Record<string, string>;
-    if (error || !code || !state) {
-      return res.redirect("/admin?gcal=error");
-    }
-    try {
-      const redirectUri = getRedirectUri(req);
-      const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-          code,
-          client_id: ENV.googleClientId,
-          client_secret: ENV.googleClientSecret,
-          redirect_uri: redirectUri,
-          grant_type: "authorization_code",
-        }),
-      });
-      const tokenData = await tokenRes.json() as {
-        access_token: string;
-        refresh_token: string;
-        expires_in: number;
-        error?: string;
-      };
-      if (tokenData.error || !tokenData.access_token) {
-        console.error("Google token exchange failed:", tokenData);
-        return res.redirect("/admin?gcal=error");
-      }
-
-      // Get the calendar owner's email
-      const profileRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
-        headers: { Authorization: `Bearer ${tokenData.access_token}` },
-      });
-      const profile = await profileRes.json() as { email?: string };
-
-      const userId = parseInt(state);
-      const expiresAt = Date.now() + tokenData.expires_in * 1000;
-
-      const db = await getDb();
-      if (!db) return res.redirect("/admin?gcal=error");
-
-      await db
-        .insert(googleTokens)
-        .values({
-          userId,
-          accessToken: tokenData.access_token,
-          refreshToken: tokenData.refresh_token,
-          expiresAt,
-          email: profile.email ?? null,
-        })
-        .onDuplicateKeyUpdate({
-          set: {
-            accessToken: tokenData.access_token,
-            refreshToken: tokenData.refresh_token,
-            expiresAt,
-            email: profile.email ?? null,
-          },
-        });
-
-      res.redirect("/admin?gcal=connected");
-    } catch (err) {
-      console.error("Google Calendar callback error:", err);
-      res.redirect("/admin?gcal=error");
-    }
-  });
-
-  // Step 3: Disconnect (delete tokens)
-  app.delete("/api/auth/google-calendar/disconnect", async (req, res) => {
-    try {
-      const user = await sdk.authenticateRequest(req);
-      if (!user || user.role !== "admin") {
-        return res.status(403).json({ error: "Admin only" });
-      }
-      const db = await getDb();
-      if (!db) return res.status(500).json({ error: "DB unavailable" });
-      await db.delete(googleTokens).where(eq(googleTokens.userId, user.id));
-      res.json({ success: true });
-    } catch {
-      res.status(500).json({ error: "Failed to disconnect" });
-    }
-  });
 }
 
 // ── Token helpers ─────────────────────────────────────────────────────────────
@@ -308,32 +200,6 @@ export async function getUpcomingEventsForEmail(email: string) {
 
 import { coachingSessions, enrollments, users } from "../drizzle/schema";
 
-export function registerGoogleCalendarWebhook(app: Express) {
-  /**
-   * POST /api/google-calendar/webhook
-   * Receives push notifications from Google Calendar.
-   * Google sends a sync notification when any event changes.
-   * We then poll the calendar for recent events and match them to sessions.
-   */
-  app.post("/api/google-calendar/webhook", async (req, res) => {
-    // Acknowledge immediately (Google requires 200 within 10s)
-    res.status(200).send("OK");
-
-    const channelId = req.headers["x-goog-channel-id"] as string;
-    const resourceState = req.headers["x-goog-resource-state"] as string;
-
-    // Ignore sync messages (initial handshake)
-    if (resourceState === "sync") return;
-
-    console.log(`[GCal Webhook] Notification received: state=${resourceState}, channel=${channelId}`);
-
-    try {
-      await syncRecentCalendarEvents();
-    } catch (err) {
-      console.error("[GCal Webhook] Sync error:", err);
-    }
-  });
-}
 
 /**
  * Fetches events created/updated in the last 24 hours from Lee Anne's calendar

@@ -39,7 +39,7 @@ export const fpuRouter = router({
   createCoachingCheckout: publicProcedure.mutation(async ({ ctx }) => {
     const stripe = getStripe();
     const origin =
-      (ctx.req.headers.origin as string) || "https://localhost:3000";
+      (ctx.req.headers.get("origin") as string) || "https://localhost:3000";
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -93,7 +93,7 @@ export const fpuRouter = router({
   createCheckout: publicProcedure.mutation(async ({ ctx }) => {
     const stripe = getStripe();
     const origin =
-      (ctx.req.headers.origin as string) || "https://localhost:3000";
+      (ctx.req.headers.get("origin") as string) || "https://localhost:3000";
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
