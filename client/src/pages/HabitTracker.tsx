@@ -55,6 +55,19 @@ export default function HabitTracker() {
   const { data: activeChallengesData } = trpc.challenges.getActiveChallenges.useQuery();
   const { data: userChallengesData, refetch: refetchUserChallenges } = trpc.challenges.getUserChallenges.useQuery({ deviceId: getDeviceId() });
   const { data: updatesData } = trpc.appUpdates.getUpdates.useQuery();
+  
+  const [dismissedUpdates, setDismissedUpdates] = useState<number[]>(() => {
+    try {
+      const saved = localStorage.getItem('dismissedUpdates');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+
+  const handleDismissUpdate = (id: number) => {
+    const next = [...dismissedUpdates, id];
+    setDismissedUpdates(next);
+    localStorage.setItem('dismissedUpdates', JSON.stringify(next));
+  };
   const joinChallengeMutation = trpc.challenges.joinChallenge.useMutation({
     onSuccess: () => {
       toast.success("Challenge joined!");
@@ -239,17 +252,17 @@ export default function HabitTracker() {
       <div className="max-w-4xl mx-auto px-4 md:px-6 space-y-6">
         
         {/* Coach Updates Section */}
-        {updatesData && updatesData.length > 0 && (
+        {updatesData && updatesData.filter(u => !dismissedUpdates.includes(u.id)).length > 0 && (
           <div className="space-y-4 mb-8">
             <h3 className="font-bold text-xl flex items-center gap-2" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
               <Megaphone size={24} style={{ color: "#c9a96e" }} />
               Coach Updates
             </h3>
             <div className="grid grid-cols-1 gap-4">
-              {updatesData.map(update => {
+              {updatesData.filter(u => !dismissedUpdates.includes(u.id)).map(update => {
                 let embedUrl = null;
                 if (update.videoUrl) {
-                  const ytMatch = update.videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+                  const ytMatch = update.videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
                   if (ytMatch && ytMatch[1]) {
                     embedUrl = `https://www.youtube.com/embed/${ytMatch[1]}`;
                   } else {
@@ -261,7 +274,14 @@ export default function HabitTracker() {
                 }
 
                 return (
-                  <motion.div key={update.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-3xl shadow-md overflow-hidden p-6 md:p-8 border" style={{ borderColor: "#f0e8e4" }}>
+                  <motion.div key={update.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-3xl shadow-md overflow-hidden p-6 md:p-8 border relative" style={{ borderColor: "#f0e8e4" }}>
+                    <button 
+                      onClick={() => handleDismissUpdate(update.id)}
+                      className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 transition-colors"
+                      title="Dismiss Update"
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
                     <div className="text-xs font-bold px-2 py-1 rounded-full mb-3 inline-block" style={{ background: "#f0e8e4", color: "#8a9a8a" }}>
                       {format(new Date(update.createdAt), "MMMM d, yyyy")}
                     </div>
