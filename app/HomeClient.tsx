@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from 'next/link';
+import Image from 'next/image';
 ;
 import { ArrowRight, Star, CheckCircle2, ChevronRight } from "lucide-react";
 import SiteNav from "@/components/SiteNav";
@@ -91,14 +92,14 @@ export default function Home() {
             {/* Left: Logo + Copy — centered */}
             <div className="fade-up flex flex-col items-center text-center">
               {/* Circular logo */}
-              <img
+              <Image
                 src={LOGO}
                 alt="Mind & Body Reset"
                 className="w-32 h-32 rounded-full object-cover mb-6"
                 style={{ border: "3px solid oklch(0.90 0.015 80)" }}
-                width="128"
-                height="128"
-                fetchPriority="high"
+                width={128}
+                height={128}
+                priority
               />
               <h1
                 className="font-bold leading-tight mb-5"
@@ -140,13 +141,13 @@ export default function Home() {
               >
                 Take This Free Quiz
               </p>
-              <img
+              <Image
                 src="https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/QuizResultsImageTransparent_917137c5.webp"
                 alt="Take the Free Quiz — Find Your Food & Mindset Type"
                 className="w-full max-w-lg lg:max-w-2xl object-contain drop-shadow-xl"
-                width="640"
-                height="352"
-                fetchPriority="high"
+                width={640}
+                height={352}
+                priority
               />
             </div>
           </div>
@@ -239,12 +240,14 @@ export default function Home() {
 
             <div className="fade-up">
               <div className="rounded-2xl overflow-hidden shadow-xl">
-                <img
+                <Image
                   src="https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/3542web-rigeljackson(2)_83b0d4af.webp"
                   alt="Lee Anne — Certified Life & Health Coach"
                   className="w-full object-cover"
                   style={{ maxHeight: "560px", objectPosition: "top" }}
-                  fetchPriority="high"
+                  width={682}
+                  height={1024}
+                  priority
                 />
               </div>
             </div>
@@ -264,9 +267,9 @@ export default function Home() {
                 Our Certifications
               </h3>
               <div className="flex gap-8 flex-wrap items-center">
-                <img src="https://img1.wsimg.com/isteam/ip/a5a9c59b-2adc-48fc-995e-909cdea8df57/Gemini_Generated_Image_crrbqocrrbqocrrb.png/:/rs=w:100,h:100,cg:true,m/cr=w:100,h:100" alt="Certified Coach" className="h-24 w-auto hover:scale-105 transition-transform" loading="lazy" width="100" height="100" />
-                <img src="https://img1.wsimg.com/isteam/ip/a5a9c59b-2adc-48fc-995e-909cdea8df57/FLAG_CERTIFIED_MARK%20(1).jpg/:/rs=w:102,h:100,cg:true,m/cr=w:102,h:100" alt="Fast Like A Girl Certified" className="h-24 w-auto hover:scale-105 transition-transform" loading="lazy" width="102" height="100" />
-                <img src="https://img1.wsimg.com/isteam/ip/a5a9c59b-2adc-48fc-995e-909cdea8df57/BTH%20Certified%20Coach%20Badge.png/:/rs=w:100,h:100,cg:true,m/cr=w:100,h:100" alt="Better Than Happy Certified" className="h-24 w-auto hover:scale-105 transition-transform" loading="lazy" width="100" height="100" />
+                <Image src="https://img1.wsimg.com/isteam/ip/a5a9c59b-2adc-48fc-995e-909cdea8df57/Gemini_Generated_Image_crrbqocrrbqocrrb.png/:/rs=w:100,h:100,cg:true,m/cr=w:100,h:100" alt="Certified Coach" className="h-24 w-auto hover:scale-105 transition-transform" width={100} height={100} />
+                <Image src="https://img1.wsimg.com/isteam/ip/a5a9c59b-2adc-48fc-995e-909cdea8df57/FLAG_CERTIFIED_MARK%20(1).jpg/:/rs=w:102,h:100,cg:true,m/cr=w:102,h:100" alt="Fast Like A Girl Certified" className="h-24 w-auto hover:scale-105 transition-transform" width={102} height={100} />
+                <Image src="https://img1.wsimg.com/isteam/ip/a5a9c59b-2adc-48fc-995e-909cdea8df57/BTH%20Certified%20Coach%20Badge.png/:/rs=w:100,h:100,cg:true,m/cr=w:100,h:100" alt="Better Than Happy Certified" className="h-24 w-auto hover:scale-105 transition-transform" width={100} height={100} />
               </div>
             </div>
 
@@ -429,11 +432,12 @@ All Posts <ChevronRight size={16} />
               <Link key={post.slug} href={`/health-wellness-blog/${post.slug}`} className="group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-[#e8ddd0] flex flex-col h-full fade-up">
                 <div className="h-44 relative overflow-hidden" style={{ background: "oklch(0.93 0.06 78)" }}>
                   {post.coverImage && (
-                    <img
+                    <Image
                       src={post.coverImage}
                       alt={post.title}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      loading="lazy"
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 33vw"
                     />
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
