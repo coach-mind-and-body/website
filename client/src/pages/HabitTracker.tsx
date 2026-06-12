@@ -59,7 +59,8 @@ export default function HabitTracker() {
   const [dismissedUpdates, setDismissedUpdates] = useState<number[]>(() => {
     try {
       const saved = localStorage.getItem('dismissedUpdates');
-      return saved ? JSON.parse(saved) : [];
+      const parsed = saved ? JSON.parse(saved) : [];
+      return Array.isArray(parsed) ? parsed : [];
     } catch { return []; }
   });
 
