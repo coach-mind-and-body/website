@@ -147,6 +147,7 @@ export default function Home() {
                 className="w-full max-w-lg lg:max-w-2xl object-contain drop-shadow-xl"
                 width={640}
                 height={352}
+                sizes="(max-width: 1024px) 100vw, 640px"
                 priority
               />
             </div>
@@ -247,6 +248,7 @@ export default function Home() {
                   style={{ maxHeight: "560px", objectPosition: "top" }}
                   width={682}
                   height={1024}
+                  sizes="(max-width: 1024px) 100vw, 682px"
                   priority
                 />
               </div>

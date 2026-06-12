@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Menu, X, UserCircle2, LogOut, LayoutDashboard } from "lucide-react";
 import { BRAND, GOOGLE_CALENDAR } from "@shared/brand";
@@ -96,10 +97,13 @@ export default function SiteNav() {
         <div className="flex items-center justify-between h-14">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 flex-shrink-0">
-            <img
+            <Image
               src={LOGO}
               alt="Mind & Body Reset"
               className="w-9 h-9 rounded-full object-cover border-2 border-white/40"
+              width={36}
+              height={36}
+              priority
             />
             <span
               className="font-bold hidden sm:block"
