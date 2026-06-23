@@ -1,4 +1,4 @@
-import { getDb } from './server/db';
+ï»¿import { getDb } from './server/db';
 import { programModules, blogPosts } from './drizzle/schema';
 import { eq, inArray } from 'drizzle-orm';
 import 'dotenv/config';
@@ -15,42 +15,42 @@ async function run() {
         {
             title: 'Module 1: Regulate Your Nervous System + Ease Food Noise',
             description: 'Begin with Mindfulness. Understand your relationship with food, body, and emotion. Shift from autopilot to awareness.',
-            content: '<h2>Week 1 – Awareness & Intention: Begin with Mindfulness</h2><p><strong>Core Focus:</strong> Understand your relationship with food, body, and emotion. Coaching Goal: Shift from autopilot to awareness.</p><p><strong>Mindset:</strong> Notice your thoughts. No judgment, just curiosity.</p><p><strong>Habits:</strong><br/>- Start daily Unimate + Balance routine<br/>- Hydration goal: ½ your body weight (oz)<br/>- Journal daily for 5 minutes</p><p><strong>Mantra:</strong> "Awareness is the first step toward peace."</p>',
+            content: '<h2>Week 1 â€“ Awareness & Intention: Begin with Mindfulness</h2><p><strong>Core Focus:</strong> Understand your relationship with food, body, and emotion. Coaching Goal: Shift from autopilot to awareness.</p><p><strong>Mindset:</strong> Notice your thoughts. No judgment, just curiosity.</p><p><strong>Habits:</strong><br/>- Start daily Unimate + Balance routine<br/>- Hydration goal: Â½ your body weight (oz)<br/>- Journal daily for 5 minutes</p><p><strong>Mantra:</strong> "Awareness is the first step toward peace."</p>',
             order: 1,
             isPublished: true,
         },
         {
             title: 'Module 2: Calm Your Hormones and Cravings',
             description: 'Decision & Commitment. Build self-trust and learn how to honor your plan.',
-            content: '<h2>Week 2 – Decision & Commitment: Build Self-Trust</h2><p><strong>Core Focus:</strong> Learn how to honor your plan — not perfectly, but consistently.</p><p><strong>Mindset:</strong> Make decisions from love, not guilt.</p><p><strong>Habits:</strong><br/>- Daily food rhythm<br/>- Pre-plan your day each morning<br/>- Keep one small promise daily</p><p><strong>Mantra:</strong> "Decide once. Honor daily."</p>',
+            content: '<h2>Week 2 â€“ Decision & Commitment: Build Self-Trust</h2><p><strong>Core Focus:</strong> Learn how to honor your plan â€” not perfectly, but consistently.</p><p><strong>Mindset:</strong> Make decisions from love, not guilt.</p><p><strong>Habits:</strong><br/>- Daily food rhythm<br/>- Pre-plan your day each morning<br/>- Keep one small promise daily</p><p><strong>Mantra:</strong> "Decide once. Honor daily."</p>',
             order: 2,
             isPublished: true,
         },
         {
             title: 'Module 3: Learn to Trust Your Body Again',
             description: 'Emotional Mastery. End emotional eating and all-or-nothing thinking.',
-            content: '<h2>Week 3 – Emotional Mastery: Feel Instead of Fix</h2><p><strong>Core Focus:</strong> Build emotional literacy and learn to process, not resist, feelings.</p><p><strong>Mindset:</strong> No emotion is dangerous when allowed.</p><p><strong>Habits:</strong><br/>- 3 deep breaths before eating<br/>- Pause when you feel an urge — name the emotion<br/>- Write 1 thought daily that calms your nervous system</p><p><strong>Mantra:</strong> "You can handle an urge without obeying it."</p>',
+            content: '<h2>Week 3 â€“ Emotional Mastery: Feel Instead of Fix</h2><p><strong>Core Focus:</strong> Build emotional literacy and learn to process, not resist, feelings.</p><p><strong>Mindset:</strong> No emotion is dangerous when allowed.</p><p><strong>Habits:</strong><br/>- 3 deep breaths before eating<br/>- Pause when you feel an urge â€” name the emotion<br/>- Write 1 thought daily that calms your nervous system</p><p><strong>Mantra:</strong> "You can handle an urge without obeying it."</p>',
             order: 3,
             isPublished: true,
         },
         {
             title: 'Module 4: Activate Fat Burning and Metabolic Healing',
             description: 'Body Respect & Consistency. Rebuild trust with your body through calm, consistent actions.',
-            content: '<h2>Week 4 – Body Respect & Consistency</h2><p><strong>Core Focus:</strong> Move from control to connection.</p><p><strong>Mindset:</strong> "My body isn’t broken — it’s communicating."</p><p><strong>Habits:</strong><br/>- Continue FGS routine<br/>- Add gentle movement<br/>- Prioritize rest and bedtime consistency</p><p><strong>Mantra:</strong> "Progress, not perfection."</p>',
+            content: '<h2>Week 4 â€“ Body Respect & Consistency</h2><p><strong>Core Focus:</strong> Move from control to connection.</p><p><strong>Mindset:</strong> "My body isnâ€™t broken â€” itâ€™s communicating."</p><p><strong>Habits:</strong><br/>- Continue FGS routine<br/>- Add gentle movement<br/>- Prioritize rest and bedtime consistency</p><p><strong>Mantra:</strong> "Progress, not perfection."</p>',
             order: 4,
             isPublished: true,
         },
         {
             title: 'Module 5: Interpret Your Emotions Instead of Eating Them',
             description: 'Identity & Empowerment. Step into the woman who lives calm, confident, and free.',
-            content: '<h2>Week 5 – Identity & Empowerment</h2><p><strong>Core Focus:</strong> Anchor new beliefs and habits into your identity.</p><p><strong>Mindset:</strong> Be ? Do ? Have. Act like the woman you’re becoming.</p><p><strong>Habits:</strong><br/>- Re-affirm daily "I am" statements<br/>- Morning visualization<br/>- Continue honoring one micro-habit per day</p><p><strong>Mantra:</strong> "I am her already."</p>',
+            content: '<h2>Week 5 â€“ Identity & Empowerment</h2><p><strong>Core Focus:</strong> Anchor new beliefs and habits into your identity.</p><p><strong>Mindset:</strong> Be ? Do ? Have. Act like the woman youâ€™re becoming.</p><p><strong>Habits:</strong><br/>- Re-affirm daily "I am" statements<br/>- Morning visualization<br/>- Continue honoring one micro-habit per day</p><p><strong>Mantra:</strong> "I am her already."</p>',
             order: 5,
             isPublished: true,
         },
         {
             title: 'Module 6: Make Your New Identity the Default',
             description: 'Integration & Celebration. Solidify lifelong confidence and self-coaching tools.',
-            content: '<h2>Week 6 – Integration & Celebration: Better Than Perfect</h2><p><strong>Core Focus:</strong> Maintain balance, celebrate growth, and design your next 90 days.</p><p><strong>Mindset:</strong> You don’t need perfection — you need peace.</p><p><strong>Habits:</strong><br/>- Choose your maintenance rhythm<br/>- Celebrate weekly wins<br/>- Teach one concept you’ve learned to someone else</p><p><strong>Mantra:</strong> "This is not the end — it’s my new normal."</p>',
+            content: '<h2>Week 6 â€“ Integration & Celebration: Better Than Perfect</h2><p><strong>Core Focus:</strong> Maintain balance, celebrate growth, and design your next 90 days.</p><p><strong>Mindset:</strong> You donâ€™t need perfection â€” you need peace.</p><p><strong>Habits:</strong><br/>- Choose your maintenance rhythm<br/>- Celebrate weekly wins<br/>- Teach one concept youâ€™ve learned to someone else</p><p><strong>Mantra:</strong> "This is not the end â€” itâ€™s my new normal."</p>',
             order: 6,
             isPublished: true,
         }
