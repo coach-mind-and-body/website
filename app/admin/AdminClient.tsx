@@ -29,7 +29,7 @@ export default function Admin() {
   const [sessionNotes, setSessionNotes] = useState<Record<number, string>>({});
   const [blogTab, setBlogTab] = useState<"published" | "scheduled" | "drafts">("published");
 
-  const { data: enrollments, refetch: refetchEnrollments } = trpc.enrollment.adminList.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
+  const { data: enrollments, refetch: refetchEnrollments } = trpc.enrollment.adminListAllUsers.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
   const { data: leadsData, refetch: refetchLeads } = trpc.leads.list.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
   const { data: blogPosts } = trpc.blog.adminList.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
   
@@ -325,7 +325,7 @@ export default function Admin() {
                       <div>
                         <p className="font-semibold text-sm" style={{ color: "oklch(0.97 0.008 10)" }}>{enrollment.clientName ?? `Client #${enrollment.userId}`}</p>
                         <p className="text-xs" style={{ color: "oklch(0.60 0.02 160)" }}>
-                          {enrollment.clientEmail ? `${enrollment.clientEmail} · ` : ""}{enrollment.paymentType === "full" ? "Paid in Full" : "Deposit"} · Enrolled {new Date(enrollment.enrolledAt).toLocaleDateString()}
+                          {enrollment.clientEmail ? `${enrollment.clientEmail} · ` : ""}{enrollment.paymentType === "full" ? "Paid in Full" : enrollment.paymentType === "deposit" ? "Deposit" : "App User"} · Enrolled {new Date(enrollment.enrolledAt).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
@@ -345,9 +345,9 @@ export default function Admin() {
                         <span className="text-xs px-2 py-1 rounded-full font-bold" style={{ background: "oklch(0.92 0.04 148)", color: "oklch(0.38 0.10 148)" }}>Paid in Full</span>
                       )}
                       <span className="text-xs px-2 py-1 rounded-full font-bold" style={{
-                        background: enrollment.status === "active" ? "oklch(0.92 0.04 148)" : "oklch(0.93 0.06 75)",
-                        color: enrollment.status === "active" ? "oklch(0.38 0.10 148)" : "oklch(0.45 0.12 65)",
-                      }}>{enrollment.status}</span>
+                        background: enrollment.status === "active" ? "oklch(0.92 0.04 148)" : enrollment.status === "habit-only" ? "oklch(0.90 0.02 160)" : "oklch(0.93 0.06 75)",
+                        color: enrollment.status === "active" ? "oklch(0.38 0.10 148)" : enrollment.status === "habit-only" ? "oklch(0.40 0.02 160)" : "oklch(0.45 0.12 65)",
+                      }}>{enrollment.status === "habit-only" ? "Habit Tracker" : enrollment.status}</span>
                       {expandedEnrollment === enrollment.id ? <ChevronUp size={16} style={{ color: "oklch(0.60 0.02 160)" }} /> : <ChevronDown size={16} style={{ color: "oklch(0.60 0.02 160)" }} />}
                     </div>
                   </button>

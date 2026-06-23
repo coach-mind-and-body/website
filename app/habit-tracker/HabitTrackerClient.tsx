@@ -13,12 +13,13 @@ import Link from "next/link";
 import { useWebPush } from "@/hooks/useWebPush";
 import { getDeviceId } from "@/lib/deviceId";
 
-type LocalHabit = { id: number; title: string; description?: string | null; isActive: boolean; };
+type LocalHabit = { id: number; title: string; description?: string | null; type: "boolean" | "numeric"; targetValue: number | null; unit: string | null; isActive: boolean; };
 
 type LocalLog = {
   userHabitId: number;
   dateStr: string;
   completed: boolean;
+  numericValue?: number | null;
 };
 
 type LocalNote = {
@@ -113,7 +114,7 @@ export default function HabitTrackerClient() {
       if (storedHabits) {
         setLocalHabits(JSON.parse(storedHabits));
       } else if (templates) {
-        const initialHabits = templates.map(t => ({ id: t.id, title: t.title, description: t.description, isActive: true }));
+        const initialHabits: LocalHabit[] = templates.map(t => ({ id: t.id, title: t.title, description: t.description, type: t.type as "boolean" | "numeric", targetValue: t.targetValue, unit: t.unit, isActive: true }));
         setLocalHabits(initialHabits);
         localStorage.setItem("mbr_habits", JSON.stringify(initialHabits));
       }
@@ -161,6 +162,34 @@ export default function HabitTrackerClient() {
 
   const [optimisticLogs, setOptimisticLogs] = useState<LocalLog[]>([]);
 
+  const logNumericHabit = (habitId: number, dateStr: string, value: number, target: number) => {
+    const isCompleted = value >= target;
+    
+    // Optimistic Update
+    setOptimisticLogs(prev => {
+      const existing = prev.find(l => l.userHabitId === habitId && l.dateStr === dateStr);
+      if (existing) {
+        return prev.map(l => l === existing ? { ...l, completed: isCompleted, numericValue: value } : l);
+      }
+      return [...prev, { userHabitId: habitId, dateStr, completed: isCompleted, numericValue: value }];
+    });
+
+    if (isAuthenticated) {
+      toggleLogMutation.mutate({ userHabitId: habitId, dateStr, completed: isCompleted, numericValue: value });
+    } else {
+      let newLogs = [...localLogs];
+      const existingIdx = newLogs.findIndex(l => l.userHabitId === habitId && l.dateStr === dateStr);
+      if (existingIdx >= 0) {
+        newLogs[existingIdx].completed = isCompleted;
+        newLogs[existingIdx].numericValue = value;
+      } else {
+        newLogs.push({ userHabitId: habitId, dateStr, completed: isCompleted, numericValue: value });
+      }
+      setLocalLogs(newLogs);
+      localStorage.setItem("mbr_habit_logs", JSON.stringify(newLogs));
+    }
+  };
+
   const toggleLog = (habitId: number, dateStr: string) => {
     const isCompleted = isLogCompleted(habitId, dateStr);
     const newCompleted = !isCompleted;
@@ -193,6 +222,13 @@ export default function HabitTrackerClient() {
     const opt = optimisticLogs.find(l => l.userHabitId === habitId && l.dateStr === dateStr);
     if (opt) return opt.completed;
     return logs.some(l => l.userHabitId === habitId && l.dateStr === dateStr && l.completed);
+  };
+
+  const getNumericValue = (habitId: number, dateStr: string) => {
+    const opt = optimisticLogs.find(l => l.userHabitId === habitId && l.dateStr === dateStr);
+    if (opt && opt.numericValue !== undefined) return opt.numericValue;
+    const existingLog = logs.find(l => l.userHabitId === habitId && l.dateStr === dateStr);
+    return existingLog?.numericValue || 0;
   };
 
   const currentStreak = (() => {
@@ -552,6 +588,49 @@ export default function HabitTrackerClient() {
               </h3>
               {activeHabits.map((habit, index) => {
                 const completed = isLogCompleted(habit.id, currentNoteDateStr);
+                
+                if (habit.type === "numeric") {
+                  const val = getNumericValue(habit.id, currentNoteDateStr) || 0;
+                  const target = habit.targetValue || 100;
+                  const pct = Math.min(100, Math.round((val / target) * 100));
+                  return (
+                    <motion.div
+                      key={habit.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      className="w-full flex flex-col p-5 rounded-2xl shadow-sm transition-all"
+                      style={{ background: completed ? "linear-gradient(135deg, #c9a96e 0%, #e8c99a 100%)" : "#faf5f5", border: completed ? "none" : "1px solid #f0e8e4" }}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex-1 text-left pr-4">
+                          <div className={`font-semibold ${completed ? 'text-white' : 'text-[#2d3b2d]'}`}>{habit.title}</div>
+                          {habit.description && (
+                            <div className={`text-xs mt-1 ${completed ? 'text-white/80' : 'text-gray-500'}`}>{habit.description}</div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input 
+                            type="number"
+                            min={0}
+                            value={val || ""}
+                            onChange={(e) => logNumericHabit(habit.id, currentNoteDateStr, parseInt(e.target.value) || 0, target)}
+                            className="w-16 h-8 text-center rounded-lg border focus:outline-none focus:ring-1 bg-white text-black"
+                            style={{ borderColor: "#e8e8e8", outline: "none" }}
+                          />
+                          <span className={`text-sm font-bold ${completed ? 'text-white' : 'text-[#2d3b2d]'}`}>{habit.unit || ""}</span>
+                        </div>
+                      </div>
+                      <div className="w-full h-2 rounded-full overflow-hidden mt-1" style={{ background: completed ? "rgba(255,255,255,0.3)" : "#e8e8e8" }}>
+                        <div className="h-full transition-all" style={{ width: `${pct}%`, background: completed ? "white" : "#c9a96e" }} />
+                      </div>
+                      <div className={`text-xs text-right mt-1 font-bold ${completed ? 'text-white' : 'text-gray-500'}`}>
+                        {val} / {target} {habit.unit || ""}
+                      </div>
+                    </motion.div>
+                  )
+                }
+
                 return (
                   <motion.button
                     key={habit.id}

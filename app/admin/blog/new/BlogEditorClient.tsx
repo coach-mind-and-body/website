@@ -418,7 +418,7 @@ export default function BlogEditorClient() {
               className="flex items-center gap-1.5 text-sm font-medium"
               style={{ color: "oklch(0.72 0.12 75)" }}
             >
-              <ArrowLeft size={16} /> Back to Admin
+              <ArrowLeft size={16} /> Return to Admin Dashboard
             </button>
             <span className="text-sm font-bold" style={{ color: "oklch(0.97 0.008 10)" }}>
               {isEditing ? "Edit Post" : "New Post"}

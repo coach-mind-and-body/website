@@ -414,6 +414,9 @@ export const habitTemplates = mysqlTable("habit_templates", {
   id: int("id").autoincrement().primaryKey(),
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
+  type: mysqlEnum("type", ["boolean", "numeric"]).default("boolean").notNull(),
+  targetValue: int("targetValue"),
+  unit: varchar("unit", { length: 50 }),
   order: int("order").default(0).notNull(),
   isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -428,6 +431,9 @@ export const userHabits = mysqlTable("user_habits", {
   userId: int("userId").notNull(),
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
+  type: mysqlEnum("type", ["boolean", "numeric"]).default("boolean").notNull(),
+  targetValue: int("targetValue"),
+  unit: varchar("unit", { length: 50 }),
   order: int("order").default(0).notNull(),
   isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -443,6 +449,7 @@ export const userHabitLogs = mysqlTable("user_habit_logs", {
   userId: int("userId").notNull(),
   dateStr: varchar("dateStr", { length: 10 }).notNull(), // YYYY-MM-DD
   completed: boolean("completed").default(true).notNull(),
+  numericValue: int("numericValue"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

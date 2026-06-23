@@ -27,6 +27,9 @@ export const habitRouter = router({
           userId: ctx.user.id,
           title: t.title,
           description: t.description,
+          type: t.type,
+          targetValue: t.targetValue,
+          unit: t.unit,
           order: t.order,
           isActive: true,
         }));
@@ -52,6 +55,9 @@ export const habitRouter = router({
       id: z.number().optional(), // If provided, update. Otherwise insert.
       title: z.string(),
       description: z.string().optional(),
+      type: z.enum(["boolean", "numeric"]).default("boolean"),
+      targetValue: z.number().nullable().optional(),
+      unit: z.string().nullable().optional(),
       order: z.number(),
       isActive: z.boolean(),
     }))
@@ -65,6 +71,9 @@ export const habitRouter = router({
           .set({
             title: input.title,
             description: input.description,
+            type: input.type,
+            targetValue: input.targetValue,
+            unit: input.unit,
             order: input.order,
             isActive: input.isActive,
           })
@@ -76,6 +85,9 @@ export const habitRouter = router({
           userId: ctx.user.id,
           title: input.title,
           description: input.description,
+          type: input.type,
+          targetValue: input.targetValue,
+          unit: input.unit,
           order: input.order,
           isActive: input.isActive,
         });
@@ -88,6 +100,7 @@ export const habitRouter = router({
       userHabitId: z.number(),
       dateStr: z.string(), // YYYY-MM-DD
       completed: z.boolean(),
+      numericValue: z.number().nullable().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -105,7 +118,7 @@ export const habitRouter = router({
 
       if (existing.length > 0) {
         await db.update(userHabitLogs)
-          .set({ completed: input.completed })
+          .set({ completed: input.completed, numericValue: input.numericValue })
           .where(eq(userHabitLogs.id, existing[0].id));
       } else {
         await db.insert(userHabitLogs).values({
@@ -113,6 +126,7 @@ export const habitRouter = router({
           userHabitId: input.userHabitId,
           dateStr: input.dateStr,
           completed: input.completed,
+          numericValue: input.numericValue,
         });
       }
       return { success: true };
@@ -175,6 +189,9 @@ export const habitRouter = router({
     .input(z.object({
       title: z.string(),
       description: z.string().optional(),
+      type: z.enum(["boolean", "numeric"]).default("boolean"),
+      targetValue: z.number().nullable().optional(),
+      unit: z.string().nullable().optional(),
       order: z.number().default(0),
       isActive: z.boolean().default(true),
     }))
@@ -184,6 +201,9 @@ export const habitRouter = router({
       await db.insert(habitTemplates).values({
         title: input.title,
         description: input.description,
+        type: input.type,
+        targetValue: input.targetValue,
+        unit: input.unit,
         order: input.order,
         isActive: input.isActive,
       });
@@ -195,6 +215,9 @@ export const habitRouter = router({
       id: z.number(),
       title: z.string(),
       description: z.string().optional(),
+      type: z.enum(["boolean", "numeric"]).default("boolean"),
+      targetValue: z.number().nullable().optional(),
+      unit: z.string().nullable().optional(),
       order: z.number(),
       isActive: z.boolean(),
     }))
@@ -205,6 +228,9 @@ export const habitRouter = router({
         .set({
           title: input.title,
           description: input.description,
+          type: input.type,
+          targetValue: input.targetValue,
+          unit: input.unit,
           order: input.order,
           isActive: input.isActive,
         })

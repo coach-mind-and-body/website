@@ -83,6 +83,35 @@ export const enrollmentRouter = router({
     return rows;
   }),
 
+  // Admin: list all users
+  adminListAllUsers: protectedProcedure.query(async ({ ctx }) => {
+    adminOnly(ctx.user?.role);
+    const db = await getDb();
+    if (!db) return [];
+    
+    // Get all users
+    const allUsers = await db.select().from(users).orderBy(desc(users.createdAt));
+    
+    // Get all enrollments to map status
+    const allEnrollments = await db.select().from(enrollments);
+    
+    return allUsers.map(user => {
+      const enrollment = allEnrollments.find(e => e.userId === user.id);
+      return {
+        id: enrollment?.id ?? -user.id, // Negative ID for users without enrollment
+        userId: user.id,
+        status: enrollment?.status ?? "habit-only",
+        paymentType: enrollment?.paymentType ?? null,
+        depositPaid: enrollment?.depositPaid ?? false,
+        balancePaid: enrollment?.balancePaid ?? false,
+        enrolledAt: enrollment?.enrolledAt ?? user.createdAt,
+        clientName: user.name,
+        clientEmail: user.email,
+        shareHabitsWithCoach: user.shareHabitsWithCoach,
+      };
+    }).sort((a, b) => b.enrolledAt.getTime() - a.enrolledAt.getTime());
+  }),
+
   /**
    * Admin: manually create an enrollment for a client by email.
    * Used when a client paid outside Stripe or needs to be manually enrolled.
