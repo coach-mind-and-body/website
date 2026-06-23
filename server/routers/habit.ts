@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { habitTemplates, userHabits, userHabitLogs, userDailyNotes } from "../../drizzle/schema";
+import { habitTemplates, userHabits, userHabitLogs, userDailyNotes, users } from "../../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 
 export const habitRouter = router({
@@ -37,8 +37,14 @@ export const habitRouter = router({
 
     const logs = await db.select().from(userHabitLogs).where(eq(userHabitLogs.userId, ctx.user.id));
     const notes = await db.select().from(userDailyNotes).where(eq(userDailyNotes.userId, ctx.user.id));
+    const userRecord = await db.select().from(users).where(eq(users.id, ctx.user.id)).limit(1);
     
-    return { habits, logs, notes };
+    return { 
+      habits, 
+      logs, 
+      notes, 
+      shareHabitsWithCoach: userRecord.length > 0 ? userRecord[0].shareHabitsWithCoach : false 
+    };
   }),
 
   syncHabit: protectedProcedure
@@ -143,6 +149,21 @@ export const habitRouter = router({
       return { success: true };
     }),
 
+  toggleShareHabits: protectedProcedure
+    .input(z.object({
+      share: z.boolean(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("DB Error");
+
+      await db.update(users)
+        .set({ shareHabitsWithCoach: input.share })
+        .where(eq(users.id, ctx.user.id));
+      
+      return { success: true };
+    }),
+
   // --- Admin: Manage Templates ---
   adminGetTemplates: adminProcedure.query(async () => {
     const db = await getDb();
@@ -198,5 +219,23 @@ export const habitRouter = router({
       if (!db) throw new Error("DB Error");
       await db.delete(habitTemplates).where(eq(habitTemplates.id, input.id));
       return { success: true };
+    }),
+
+  adminGetClientHabits: adminProcedure
+    .input(z.object({ userId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("DB Error");
+
+      const userRecord = await db.select().from(users).where(eq(users.id, input.userId)).limit(1);
+      if (userRecord.length === 0 || !userRecord[0].shareHabitsWithCoach) {
+        throw new Error("User has not shared habit progress with coaches.");
+      }
+
+      const habits = await db.select().from(userHabits).where(eq(userHabits.userId, input.userId)).orderBy(userHabits.order);
+      const logs = await db.select().from(userHabitLogs).where(eq(userHabitLogs.userId, input.userId));
+      const notes = await db.select().from(userDailyNotes).where(eq(userDailyNotes.userId, input.userId));
+      
+      return { habits, logs, notes };
     }),
 });

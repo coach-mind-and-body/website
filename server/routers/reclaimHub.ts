@@ -260,6 +260,37 @@ export const reclaimHubRouter = router({
       return { success: true };
     }),
 
+  adminAssignModule: protectedProcedure
+    .input(z.object({ userId: z.number(), moduleId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      adminOnly(ctx.user?.role);
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const existing = await db.select().from(moduleProgress)
+        .where(
+          and(
+            eq(moduleProgress.userId, input.userId),
+            eq(moduleProgress.moduleId, input.moduleId)
+          )
+        ).limit(1);
+
+      if (existing.length === 0) {
+        await db.insert(moduleProgress).values({
+          userId: input.userId,
+          moduleId: input.moduleId,
+          unlockedAt: new Date(),
+        });
+      } else {
+        // Just update unlockedAt if it already existed but perhaps wasn't unlocked
+        await db.update(moduleProgress)
+          .set({ unlockedAt: new Date() })
+          .where(eq(moduleProgress.id, existing[0].id));
+      }
+
+      return { success: true };
+    }),
+
   adminUploadFile: protectedProcedure
     .input(z.object({
       fileName: z.string(),

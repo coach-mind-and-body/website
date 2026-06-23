@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ad Creatives Builder</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 40px;
+            padding: 40px;
+            font-family: 'Inter', sans-serif;
+        }
+        .ad-container {
+            width: 1080px;
+            height: 1080px;
+            position: relative;
+            background-color: #5F7B5E; /* Dark Sage Green */
+            color: #F8D8D8; /* Pale Peach */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 80px;
+            box-sizing: border-box;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .concept-1 {
+            background-color: #F8D8D8; /* Pale Peach */
+            color: #5F7B5E;
+        }
+
+        .logo {
+            width: 300px;
+            height: 300px;
+            margin-bottom: 60px;
+            border-radius: 50%;
+            object-fit: contain;
+        }
+
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 84px;
+            line-height: 1.2;
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .concept-2 h1 {
+            color: #F8D8D8;
+        }
+
+        .highlight {
+            color: #D4A373; /* Warm Gold */
+            font-style: italic;
+        }
+
+        .btn {
+            margin-top: 60px;
+            background-color: #D4A373;
+            color: white;
+            padding: 24px 64px;
+            font-size: 32px;
+            font-weight: 600;
+            border-radius: 50px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 4px 15px rgba(212, 163, 115, 0.4);
+        }
+
+        .pdf-mockup {
+            position: absolute;
+            bottom: -150px;
+            right: -50px;
+            width: 500px;
+            height: 650px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: -10px -10px 40px rgba(0,0,0,0.15);
+            padding: 40px;
+            text-align: left;
+            transform: rotate(-5deg);
+        }
+
+        .pdf-mockup h3 {
+            font-family: 'Playfair Display', serif;
+            color: #5F7B5E;
+            font-size: 36px;
+            margin-top: 0;
+        }
+
+        .pdf-mockup p {
+            color: #333;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .concept-1 h1 {
+            text-align: left;
+            width: 100%;
+            max-width: 800px;
+            align-self: flex-start;
+            margin-top: 40px;
+        }
+
+        .concept-1 .logo {
+            align-self: flex-start;
+            width: 200px;
+            height: 200px;
+            margin-bottom: 40px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h2>Concept 1: The PDF Sneak Peek</h2>
+    <p>Take a screenshot of this square for perfect, typo-free ad copy.</p>
+    <div class="ad-container concept-1">
+        <img src="logo-circular.png" alt="Logo" class="logo" onerror="this.src='logo-new.jpg'">
+        <h1>Tired of the midnight kitchen raids?<br><br><span class="highlight">Get the free Late Night Snack Hack Guide.</span></h1>
+        
+        <div class="pdf-mockup">
+            <img src="logo-circular.png" alt="Logo" style="width: 80px; margin-bottom: 20px;" onerror="this.src='logo-new.jpg'">
+            <h3>The Midlife Mindset Guide</h3>
+            <p style="text-transform: uppercase; letter-spacing: 2px; font-size: 12px; color: #888;">Finding Peace and Control With Late-Night Snacking</p>
+            <div style="width: 100%; height: 2px; background: #eee; margin: 20px 0;"></div>
+            <h4 style="color: #5F7B5E; font-size: 24px; font-family: 'Playfair Display', serif;">1. Understanding the "Mental Food Fight"</h4>
+            <p>For many of us in midlife, the evening hours can feel like a battleground. We find ourselves caught in a "mental food fight"—that exhausting tug-of-war where one part of our brain demands we "be good" and "stay strong," while the other side is fixated entirely on the cookies in the pantry.</p>
+        </div>
+    </div>
+
+    <h2>Concept 2: The Direct Call-Out</h2>
+    <p>Take a screenshot of this square for perfect, typo-free ad copy.</p>
+    <div class="ad-container concept-2">
+        <img src="logo-circular.png" alt="Logo" class="logo" onerror="this.src='logo-new.jpg'">
+        <h1>Dear Women Over 40:<br><br>It's not a <span class="highlight">food fight.</span><br>It's a <span class="highlight">mindset shift.</span></h1>
+        <div class="btn">Download Now</div>
+    </div>
+
+</body>
+</html>

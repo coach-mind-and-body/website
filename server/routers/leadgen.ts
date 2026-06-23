@@ -2,6 +2,7 @@ import { z } from "zod";
 import { publicProcedure, router } from "../_core/trpc";
 import { resendSubscribe } from "../resendSubscribe";
 import { sendSnackHackEmail } from "../notifications";
+import { fireMetaPixelLead } from "../metaCapi";
 
 export const leadgenRouter = router({
   subscribeSnackHack: publicProcedure
@@ -19,6 +20,13 @@ export const leadgenRouter = router({
       if (!result.success) {
         console.error("[LeadGen] Resend subscribe error:", result.error);
       }
+
+      // 1.1 Fire server-side conversion event to Meta Conversions API (CAPI)
+      await fireMetaPixelLead({
+        customerEmail: input.email,
+        customerName: input.firstName,
+        contentName: "Snack Hack Download",
+      });
 
       // 1.2 Fire Resend Custom Event for Automations
       try {

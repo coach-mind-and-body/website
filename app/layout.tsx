@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
+import Script from "next/script";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.mindandbodyresetcoach.com"),
@@ -52,7 +53,7 @@ const jsonLd = {
   "image": "https://www.mindandbodyresetcoach.com/logo-new.jpg",
   "@id": "https://www.mindandbodyresetcoach.com/",
   "url": "https://www.mindandbodyresetcoach.com/",
-  "telephone": "",
+  "priceRange": "$$",
   "address": {
     "@type": "PostalAddress",
     "addressLocality": "Wasatch Front",
@@ -86,6 +87,35 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        {/* Google Analytics GA4 */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-09SQ5LHEEJ"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-09SQ5LHEEJ', { 'send_page_view': false });
+            window.addEventListener('load', function() { gtag('event', 'page_view'); });
+          `}
+        </Script>
+        {/* Meta Pixel */}
+        <Script id="meta-pixel" strategy="afterInteractive">
+          {`
+            !function(f,b,e,v,n,t,s)
+            {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+            n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+            if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+            n.queue=[];t=b.createElement(e);t.async=!0;
+            t.src=v;s=b.getElementsByTagName(e)[0];
+            s.parentNode.insertBefore(t,s)}(window, document,'script',
+            'https://connect.facebook.net/en_US/fbevents.js');
+            fbq('init', '1256633739205867');
+            fbq('track', 'PageView');
+          `}
+        </Script>
       </head>
       <body className="antialiased font-sans">
         <Providers>{children}</Providers>

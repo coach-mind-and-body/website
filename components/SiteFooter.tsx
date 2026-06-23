@@ -110,6 +110,7 @@ export default function SiteFooter() {
                 { href: "/terms", label: "Terms and Conditions" },
                 { href: "/privacy", label: "Privacy Policy" },
                 { href: "/disclaimer", label: "Health Disclaimer" },
+                { href: "/admin", label: "Admin Login" },
               ].map((link) => (
                 <Link
                   key={link.href}

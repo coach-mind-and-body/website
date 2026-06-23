@@ -94,6 +94,14 @@ export default function HabitTrackerClient() {
     },
     onError: (e) => toast.error(e.message)
   });
+
+  const toggleShareHabitsMutation = trpc.habit.toggleShareHabits.useMutation({
+    onSuccess: () => {
+      toast.success("Privacy settings updated");
+      refetchUserSync();
+    },
+    onError: (e) => toast.error(e.message)
+  });
   
   // Initialize Local Storage if not authenticated
   useEffect(() => {
@@ -667,6 +675,29 @@ export default function HabitTrackerClient() {
                         {isSubscribed ? "Enabled" : "Enable"}
                       </Button>
                     </div>
+
+                    {/* Share Habits Toggle */}
+                    {isAuthenticated && (
+                      <div className="flex items-center justify-between p-4 rounded-xl border" style={{ borderColor: "#f0e8e4", background: "#fcfaf9" }}>
+                        <div className="flex items-center gap-3">
+                          <Target size={20} style={{ color: "#c9a96e" }} />
+                          <div>
+                            <p className="font-bold text-sm" style={{ color: "#2d3b2d" }}>Coach Accountability</p>
+                            <p className="text-xs text-gray-500">Allow coaches to view your progress and notes.</p>
+                          </div>
+                        </div>
+                        <Button 
+                          size="sm"
+                          variant={userSyncData?.shareHabitsWithCoach ? "default" : "outline"}
+                          disabled={toggleShareHabitsMutation.isPending}
+                          onClick={() => toggleShareHabitsMutation.mutate({ share: !userSyncData?.shareHabitsWithCoach })}
+                          className="rounded-full"
+                          style={userSyncData?.shareHabitsWithCoach ? { background: "#c9a96e", color: "white" } : { borderColor: "#c9a96e", color: "#c9a96e" }}
+                        >
+                          {userSyncData?.shareHabitsWithCoach ? "Shared" : "Private"}
+                        </Button>
+                      </div>
+                    )}
 
                     {/* Account Sync */}
                     <div className="flex items-center justify-between p-4 rounded-xl border" style={{ borderColor: "#f0e8e4", background: "#fcfaf9" }}>

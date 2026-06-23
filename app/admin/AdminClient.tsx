@@ -11,6 +11,8 @@ import AdminPaymentsTab from "@/components/AdminPaymentsTab";
 import { AdminEngagementHub } from "@/components/admin/AdminEngagementHub";
 import PageEditorTab from "@/components/PageEditorTab";
 import ProgramBuilderTab from "@/components/ProgramBuilderTab";
+import AdminClientHabits from "@/components/AdminClientHabits";
+import AdminModuleAssignment from "@/components/AdminModuleAssignment";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -356,6 +358,12 @@ export default function Admin() {
                         enrollmentId={enrollment.id}
                         gcalConnected={!!gcalStatus?.connected}
                       />
+
+                      <p className="text-xs font-bold uppercase tracking-widest mt-6 mb-2" style={{ color: "oklch(0.60 0.02 160)" }}>Module Assignment</p>
+                      <AdminModuleAssignment userId={enrollment.userId} />
+
+                      <p className="text-xs font-bold uppercase tracking-widest mt-6 mb-2" style={{ color: "oklch(0.60 0.02 160)" }}>Habit Progress</p>
+                      <AdminClientHabits userId={enrollment.userId} />
                     </div>
                   )}
                 </div>

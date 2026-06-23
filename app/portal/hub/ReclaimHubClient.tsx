@@ -12,7 +12,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { BRAND } from "@shared/brand";
 import Link from 'next/link';
-;
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 import { useRef } from "react";
 
 
@@ -313,7 +319,32 @@ export default function ReclaimHub() {
                 )}
 
                 {selectedModule.content && (
-                  <div className="prose prose-lg prose-stone max-w-none mb-12" dangerouslySetInnerHTML={{ __html: selectedModule.content }} />
+                  (() => {
+                    const slides = selectedModule.content.split(/<hr\s*\/?>/i);
+                    if (slides.length <= 1) {
+                      return <div className="prose prose-lg prose-stone max-w-none mb-12" dangerouslySetInnerHTML={{ __html: selectedModule.content }} />;
+                    }
+                    return (
+                      <div className="mb-12 relative px-8 sm:px-12">
+                        <Carousel className="w-full">
+                          <CarouselContent>
+                            {slides.map((slideHtml: string, index: number) => (
+                              <CarouselItem key={index}>
+                                <div className="p-2 md:p-6">
+                                  <div className="prose prose-lg prose-stone max-w-none" dangerouslySetInnerHTML={{ __html: slideHtml }} />
+                                </div>
+                              </CarouselItem>
+                            ))}
+                          </CarouselContent>
+                          <CarouselPrevious className="hidden sm:flex" />
+                          <CarouselNext className="hidden sm:flex" />
+                        </Carousel>
+                        <div className="text-center mt-6 text-sm font-bold uppercase tracking-widest flex items-center justify-center gap-2" style={{ color: "#c9a96e" }}>
+                          <ArrowLeft size={14} /> Swipe to navigate <ArrowLeft size={14} className="rotate-180" />
+                        </div>
+                      </div>
+                    );
+                  })()
                 )}
 
                 {selectedModule.pdfUrl && (
