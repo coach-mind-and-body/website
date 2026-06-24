@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start -H 0.0.0.0",
+    "start": "node test-express.js",
     "worker": "tsx server/worker.ts",
     "check": "tsc --noEmit",
     "format": "prettier --write .",
