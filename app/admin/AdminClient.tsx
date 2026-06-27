@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Users, BookOpen, CreditCard, BarChart3, ChevronDown, ChevronUp, Bell, Link2, Link2Off, Calendar, Video, UserPlus, Layers, Target } from "lucide-react";
+import { Users, BookOpen, CreditCard, BarChart3, ChevronDown, ChevronUp, Bell, Link2, Link2Off, Calendar, Video, UserPlus, Layers, Target, Cookie } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import { BRAND } from "@shared/brand";
 import { getLoginUrl } from "@/lib/const";
 
-type AdminTab = "overview" | "clients" | "leads" | "fpu" | "fpugroup" | "programbuilder" | "engagement" | "blog" | "deposits" | "settings" | "pageeditor";
+type AdminTab = "overview" | "clients" | "leads" | "snackhack" | "fpu" | "fpugroup" | "programbuilder" | "engagement" | "blog" | "deposits" | "settings" | "pageeditor";
 
 export default function Admin() {
   
@@ -39,6 +39,11 @@ export default function Admin() {
   const currentBlogPosts = blogTab === "published" ? publishedPosts : blogTab === "scheduled" ? scheduledPosts : draftPosts;
   const { data: fpuClients, refetch: refetchFpu } = trpc.fpu.adminListCoaching.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
   const { data: fpuLeads, refetch: refetchFpuLeads } = trpc.fpu.adminListLeads.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
+  const { data: snackHackLeads, refetch: refetchSnackHackLeads } = trpc.leadgen.adminListSnackHack.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
+  const deleteSnackHackLead = trpc.leadgen.adminDeleteSnackHack.useMutation({
+    onSuccess: () => { toast.success("Snack Hack lead removed"); refetchSnackHackLeads(); },
+    onError: (e) => toast.error(e.message),
+  });
   const [fpuNotes, setFpuNotes] = useState<Record<number, string>>({});
   const [expandedFpu, setExpandedFpu] = useState<number | null>(null);
   const deleteFpuLead = trpc.fpu.adminDeleteLead.useMutation({
@@ -109,6 +114,7 @@ export default function Admin() {
     { id: "overview", label: "Overview", icon: <BarChart3 size={16} /> },
     { id: "clients", label: "Clients", icon: <Users size={16} /> },
     { id: "leads", label: "Leads", icon: <Bell size={16} /> },
+    { id: "snackhack", label: "Snack Hack Leads", icon: <Cookie size={16} /> },
     { id: "fpu", label: "FPU Coaching", icon: <Video size={16} /> },
     { id: "fpugroup", label: "FPU Sign-Ups", icon: <UserPlus size={16} /> },
     { id: "programbuilder", label: "Program Builder", icon: <Layers size={16} /> },
@@ -183,6 +189,7 @@ export default function Admin() {
                 { label: "Active Clients", value: enrollments?.filter(e => e.status === "active").length ?? 0, icon: <Users size={18} /> },
                 { label: "FPU Clients", value: fpuClients?.length ?? 0, icon: <Video size={18} /> },
                 { label: "New Leads", value: leadsData?.filter(l => l.status === "new").length ?? 0, icon: <Bell size={18} /> },
+                { label: "Snack Hack Leads", value: snackHackLeads?.length ?? 0, icon: <Cookie size={18} /> },
                 { label: "Blog Posts", value: blogPosts?.length ?? 0, icon: <BookOpen size={18} /> },
                 { label: "Total Enrollments", value: enrollments?.length ?? 0, icon: <CreditCard size={18} /> },
               ].map(stat => (
@@ -490,6 +497,67 @@ export default function Admin() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Snack Hack Leads */}
+        {tab === "snackhack" && (
+          <div>
+            <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+              <div>
+                <h2 className="font-bold text-2xl mb-2" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.97 0.008 10)" }}>
+                  Late Night Snack Hack Leads
+                </h2>
+                <p className="text-sm max-w-xl" style={{ color: "oklch(0.60 0.02 160)" }}>
+                  Sign-ups from{" "}
+                  <a href="/snack-hack" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: "oklch(0.72 0.12 75)" }}>
+                    mindandbodyresetcoach.com/snack-hack
+                  </a>
+                  . These are real email captures — each person received the free PDF guide.
+                </p>
+              </div>
+              <div className="rounded-xl px-5 py-4 text-center" style={{ background: "oklch(0.22 0.02 160)", minWidth: "140px" }}>
+                <div className="text-3xl font-bold" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.97 0.008 10)" }}>
+                  {snackHackLeads?.length ?? 0}
+                </div>
+                <div className="text-xs mt-1" style={{ color: "oklch(0.60 0.02 160)" }}>Total sign-ups</div>
+              </div>
+            </div>
+
+            {snackHackLeads && snackHackLeads.length > 0 ? (
+              <div className="space-y-3">
+                {snackHackLeads.map((lead) => (
+                  <div key={lead.id} className="flex items-center justify-between p-4 rounded-xl" style={{ background: "oklch(0.22 0.02 160)" }}>
+                    <div>
+                      <p className="font-semibold text-sm mb-1" style={{ color: "oklch(0.97 0.008 10)" }}>
+                        {lead.firstName?.trim() || "—"}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <a href={`mailto:${lead.email}`} className="text-xs underline" style={{ color: "oklch(0.72 0.12 75)" }}>
+                          {lead.email}
+                        </a>
+                        <span className="text-xs" style={{ color: "oklch(0.55 0.02 160)" }}>
+                          {new Date(lead.createdAt).toLocaleString(undefined, {
+                            dateStyle: "medium",
+                            timeStyle: "short",
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => deleteSnackHackLead.mutate({ id: lead.id })}
+                      disabled={deleteSnackHackLead.isPending}
+                      className="text-xs px-3 py-1.5 rounded-full font-semibold transition-all"
+                      style={{ background: "oklch(0.95 0.06 10)", color: "oklch(0.45 0.12 10)" }}
+                    >
+                      {deleteSnackHackLead.isPending ? "Removing..." : "Remove"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm" style={{ color: "oklch(0.55 0.02 160)" }}>No Snack Hack sign-ups yet.</p>
+            )}
           </div>
         )}
 

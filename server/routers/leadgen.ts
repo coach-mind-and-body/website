@@ -1,5 +1,8 @@
 ﻿import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { desc, eq, like } from "drizzle-orm";
+import { publicProcedure, adminProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { subscribers } from "../../drizzle/schema";
 import { resendSubscribe } from "../resendSubscribe";
 import { sendSnackHackEmail } from "../notifications";
 import { fireMetaPixelLead } from "../metaCapi";
@@ -126,6 +129,54 @@ export const leadgenRouter = router({
       });
 
       await addSubscriberSegment(input.email, input.firstName, "leadgen_join");
+      return { success: true };
+    }),
+
+  adminListSnackHack: adminProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return [];
+
+    const rows = await db
+      .select({
+        id: subscribers.id,
+        email: subscribers.email,
+        firstName: subscribers.firstName,
+        segments: subscribers.segments,
+        createdAt: subscribers.createdAt,
+      })
+      .from(subscribers)
+      .where(like(subscribers.segments, "%leadgen_snack_hack%"))
+      .orderBy(desc(subscribers.createdAt));
+
+    return rows;
+  }),
+
+  adminDeleteSnackHack: adminProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("DB unavailable");
+
+      const [row] = await db
+        .select()
+        .from(subscribers)
+        .where(eq(subscribers.id, input.id))
+        .limit(1);
+
+      if (!row) return { success: true };
+
+      const segments: string[] = row.segments ? JSON.parse(row.segments) : [];
+      const remaining = segments.filter((s) => s !== "leadgen_snack_hack");
+
+      if (remaining.length === 0) {
+        await db.delete(subscribers).where(eq(subscribers.id, input.id));
+      } else {
+        await db
+          .update(subscribers)
+          .set({ segments: JSON.stringify(remaining) })
+          .where(eq(subscribers.id, input.id));
+      }
+
       return { success: true };
     }),
 });
