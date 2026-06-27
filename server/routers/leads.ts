@@ -1,4 +1,4 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 import { eq, desc } from "drizzle-orm";
 import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
@@ -6,6 +6,8 @@ import { leads } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
 import { notifyOwner } from "../_core/notification";
 import { sendOwnerEmail } from "../notifications";
+import { fireMetaPixelLead } from "../metaCapi";
+import { metaTrackingInputSchema } from "@shared/metaTracking";
 
 function adminOnly(role: string | undefined) {
   if (role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Admins only" });
@@ -17,13 +19,15 @@ export const leadsRouter = router({
     .input(z.object({
       name: z.string().min(1, "Name is required"),
       email: z.string().email("Valid email required"),
-      phone: z.string().optional(),
-      notes: z.string().optional(),
-    }))
-    .mutation(async ({ input }) => {
+      phone: z.string().optional(), notes: z.string().optional() }).merge(metaTrackingInputSchema)).mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-      await db.insert(leads).values(input);
+      await db.insert(leads).values({
+        name: input.name,
+        email: input.email,
+        phone: input.phone,
+        notes: input.notes,
+      });
       // Notify Lee Anne
       await notifyOwner({
         title: "New Discovery Call Lead",
@@ -46,12 +50,24 @@ export const leadsRouter = router({
                 ${input.notes ? `<p style="margin:8px 0 0;font-size:14px;color:#6a6a6a;"><strong>Notes:</strong> ${input.notes}</p>` : ""}
               </div>
               <hr style="border:none;border-top:1px solid #e8e0d8;margin:28px 0;" />
-              <p style="color:#8a9a8a;font-size:13px;text-align:center;">Mind &amp; Body Reset — mindandbodyresetcoach.com</p>
+              <p style="color:#8a9a8a;font-size:13px;text-align:center;">Mind &amp; Body Reset â€” mindandbodyresetcoach.com</p>
             </div>
           </div>
         `,
         textBody: `New Discovery Call Lead!\n\nName: ${input.name}\nEmail: ${input.email}${input.phone ? `\nPhone: ${input.phone}` : ""}${input.notes ? `\nNotes: ${input.notes}` : ""}`,
       });
+      await fireMetaPixelLead({
+        customerEmail: input.email,
+        customerName: input.name,
+        customerPhone: input.phone,
+        contentName: "Discovery Call Booking",
+        eventSourceUrl: "https://mindandbodyresetcoach.com/book",
+        eventId: input.eventId,
+        req: ctx.req,
+        fbc: input.fbc,
+        fbp: input.fbp,
+      });
+
       return { success: true };
     }),
 
@@ -80,3 +96,5 @@ export const leadsRouter = router({
       return { success: true };
     }),
 });
+
+

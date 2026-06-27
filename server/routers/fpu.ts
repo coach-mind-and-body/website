@@ -1,4 +1,4 @@
-import Stripe from "stripe";
+﻿import Stripe from "stripe";
 import { z } from "zod";
 import { publicProcedure, protectedProcedure, adminProcedure, router } from "../_core/trpc";
 import { ENV } from "../_core/env";
@@ -6,16 +6,19 @@ import { getDb } from "../db";
 import { fpuOrders, fpuCoachingSessions, fpuLeads } from "../../drizzle/schema";
 import { sendOwnerFpuGroupSignUpEmail, sendFpuGroupSignUpConfirmationEmail } from "../notifications";
 import { eq, and, desc } from "drizzle-orm";
+import { metaTrackingInputSchema } from "@shared/metaTracking";
+import { extractMetaParamsFromRequest, metaParamsToStripeMetadata } from "../metaParamBuilder";
+import { fireMetaPixelLead } from "../metaCapi";
 
 function getStripe() {
   return new Stripe(ENV.stripeSecretKey, { apiVersion: "2026-02-25.clover" });
 }
 
-// ── Product definitions ────────────────────────────────────────────────────────
+// â”€â”€ Product definitions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-/** FPU class is FREE — Dave Ramsey handles enrollment. This product is no longer sold directly. */
+/** FPU class is FREE â€” Dave Ramsey handles enrollment. This product is no longer sold directly. */
 export const FPU_PRODUCT = {
-  name: "Financial Peace University — Cohort with Lee Anne",
+  name: "Financial Peace University â€” Cohort with Lee Anne",
   description:
     "9-week Dave Ramsey Financial Peace University course. Cohort starts May 12, 2025. Free enrollment via Dave Ramsey's platform.",
   price: 0,
@@ -24,7 +27,7 @@ export const FPU_PRODUCT = {
 
 /** 1:1 accountability coaching add-on: 3 x 50-min sessions for $249 */
 export const FPU_COACHING_PRODUCT = {
-  name: "FPU 1:1 Accountability Coaching — 3 Sessions",
+  name: "FPU 1:1 Accountability Coaching â€” 3 Sessions",
   description:
     "3 private 50-minute coaching sessions with Lee Anne to complement your Financial Peace University journey. Get personalized accountability, mindset coaching, and a plan tailored to your financial situation.",
   price: 24900, // $249 in cents
@@ -36,10 +39,11 @@ export const fpuRouter = router({
   /**
    * Public: create a Stripe Checkout session for FPU 1:1 coaching add-on ($249 / 3 sessions)
    */
-  createCoachingCheckout: publicProcedure.mutation(async ({ ctx }) => {
+  createCoachingCheckout: publicProcedure.input(metaTrackingInputSchema).mutation(async ({ ctx, input }) => {
     const stripe = getStripe();
     const origin =
       (ctx.req.headers.get("origin") as string) || "https://localhost:3000";
+    const tracking = extractMetaParamsFromRequest(ctx.req, { fbc: input.fbc, fbp: input.fbp });
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -64,6 +68,7 @@ export const fpuRouter = router({
         user_id: ctx.user?.id?.toString() ?? "",
         customer_email: ctx.user?.email ?? "",
         customer_name: ctx.user?.name ?? "",
+        ...metaParamsToStripeMetadata(tracking, input.eventId),
       },
       client_reference_id: ctx.user?.id?.toString() ?? "guest",
       success_url: `${origin}/financial-peace/thank-you`,
@@ -87,13 +92,14 @@ export const fpuRouter = router({
   }),
 
   /**
-   * Legacy: kept for backward compatibility — now redirects to coaching checkout
+   * Legacy: kept for backward compatibility â€” now redirects to coaching checkout
    * @deprecated Use createCoachingCheckout instead
    */
-  createCheckout: publicProcedure.mutation(async ({ ctx }) => {
+  createCheckout: publicProcedure.input(metaTrackingInputSchema).mutation(async ({ ctx, input }) => {
     const stripe = getStripe();
     const origin =
       (ctx.req.headers.get("origin") as string) || "https://localhost:3000";
+    const tracking = extractMetaParamsFromRequest(ctx.req, { fbc: input.fbc, fbp: input.fbp });
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -118,6 +124,7 @@ export const fpuRouter = router({
         user_id: ctx.user?.id?.toString() ?? "",
         customer_email: ctx.user?.email ?? "",
         customer_name: ctx.user?.name ?? "",
+        ...metaParamsToStripeMetadata(tracking, input.eventId),
       },
       client_reference_id: ctx.user?.id?.toString() ?? "guest",
       success_url: `${origin}/financial-peace/thank-you`,
@@ -254,11 +261,9 @@ export const fpuRouter = router({
     }),
 
   /**
-   * Public: sign up for the FPU group class — saves name+email and emails Lee Anne
+   * Public: sign up for the FPU group class â€” saves name+email and emails Lee Anne
    */
-  groupSignUp: publicProcedure
-    .input(z.object({ name: z.string().min(1), email: z.string().email() }))
-    .mutation(async ({ input }) => {
+  groupSignUp: publicProcedure.input(z.object({ name: z.string().min(1), email: z.string().email() }).merge(metaTrackingInputSchema)).mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (db) {
         await db.insert(fpuLeads).values({
@@ -315,6 +320,18 @@ export const fpuRouter = router({
         clientName: input.name,
         clientEmail: input.email,
       });
+
+      await fireMetaPixelLead({
+        customerEmail: input.email,
+        customerName: input.name,
+        contentName: "FPU Group Sign-Up",
+        eventSourceUrl: "https://mindandbodyresetcoach.com/financial-peace",
+        eventId: input.eventId,
+        req: ctx.req,
+        fbc: input.fbc,
+        fbp: input.fbp,
+      });
+
       return { success: true };
     }),
 
@@ -359,3 +376,5 @@ export const fpuRouter = router({
       return { paid: rows[0]?.status === "paid" };
     }),
 });
+
+

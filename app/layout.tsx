@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
 import Script from "next/script";
+import MetaParamBuilder from "@/components/MetaParamBuilder";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.mindandbodyresetcoach.com"),
@@ -118,9 +119,12 @@ export default function RootLayout({
         </Script>
       </head>
       <body className="antialiased font-sans">
+        <MetaParamBuilder />
         <Providers>{children}</Providers>
       </body>
     </html>
   );
 }
+
+
 

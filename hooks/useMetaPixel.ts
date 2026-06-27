@@ -1,10 +1,5 @@
-/**
- * useMetaPixel — lightweight wrapper around the Meta Pixel (fbq) global.
- *
- * Usage:
- *   const { trackLead, trackViewContent } = useMetaPixel();
- *   trackLead({ content_name: "Food Quiz" });
- *   trackViewContent({ content_name: "R.E.C.L.A.I.M. Program", content_category: "Coaching" });
+﻿/**
+ * useMetaPixel - lightweight wrapper around the Meta Pixel (fbq) global.
  */
 
 declare global {
@@ -29,9 +24,11 @@ interface ViewContentParams {
 }
 
 export function useMetaPixel() {
-  function track(event: string, params?: Record<string, unknown>) {
+  function track(event: string, params?: Record<string, unknown>, eventId?: string) {
     if (typeof window !== "undefined" && typeof window.fbq === "function") {
-      if (params) {
+      if (eventId) {
+        window.fbq("track", event, params ?? {}, { eventID: eventId });
+      } else if (params) {
         window.fbq("track", event, params);
       } else {
         window.fbq("track", event);
@@ -39,20 +36,20 @@ export function useMetaPixel() {
     }
   }
 
-  function trackLead(params?: LeadParams) {
-    track("Lead", params as Record<string, unknown>);
+  function trackLead(params?: LeadParams, eventId?: string) {
+    track("Lead", params as Record<string, unknown>, eventId);
   }
 
   function trackViewContent(params?: ViewContentParams) {
     track("ViewContent", params as Record<string, unknown>);
   }
 
-  function trackInitiateCheckout(params?: Record<string, unknown>) {
-    track("InitiateCheckout", params);
+  function trackInitiateCheckout(params?: Record<string, unknown>, eventId?: string) {
+    track("InitiateCheckout", params, eventId);
   }
 
-  function trackPurchase(params?: { value: number; currency: string }) {
-    track("Purchase", params as Record<string, unknown>);
+  function trackPurchase(params?: { value: number; currency: string }, eventId?: string) {
+    track("Purchase", params as Record<string, unknown>, eventId);
   }
 
   return { track, trackLead, trackViewContent, trackInitiateCheckout, trackPurchase };

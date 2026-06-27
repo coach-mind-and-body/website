@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { CheckCircle2, ArrowRight, Sparkles } from "lucide-react";
@@ -6,6 +6,8 @@ import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import { usePathname, useRouter } from 'next/navigation';
 import { useMetaPixel } from "@/hooks/useMetaPixel";
+import { getMetaParams, generateMetaEventId } from "@/hooks/useMetaParams";
+import { trpc } from "@/lib/trpc";
 import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
 
 
@@ -62,6 +64,7 @@ const questions = [
 type Screen = "start" | "quiz" | "email" | "submitting";
 
 export default function FoodQuiz() {
+  const submitFoodQuizLead = trpc.leadgen.submitFoodQuiz.useMutation();
   
   const { trackLead } = useMetaPixel();
   const ga = useGoogleAnalytics();
@@ -127,12 +130,22 @@ export default function FoodQuiz() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, result_letter: top, quiz_result: zapierTags[top] }),
       });
-    } catch (_) {
-      // no-cors fetch always "fails" silently — that's expected
-    }
+    } catch (_) {}
 
-    // Fire Meta Pixel and GA Lead events when quiz is submitted
-    trackLead({ content_name: "Food Quiz", content_category: "Quiz" });
+    const eventId = generateMetaEventId();
+    const meta = getMetaParams();
+    try {
+      await submitFoodQuizLead.mutateAsync({
+        email,
+        contentName: "Food Quiz",
+        resultLetter: top,
+        eventSourceUrl: typeof window !== "undefined" ? window.location.href : undefined,
+        ...meta,
+        eventId,
+      });
+    } catch (_) {}
+
+    trackLead({ content_name: "Food Quiz", content_category: "Quiz" }, eventId);
     ga.trackLead({ category: "Lead Generation", label: "Food Quiz Completion" });
     
     setTimeout(() => {
@@ -170,7 +183,7 @@ export default function FoodQuiz() {
 
           <div className="p-10 md:p-14">
 
-            {/* ── START SCREEN ── */}
+            {/* â”€â”€ START SCREEN â”€â”€ */}
             {screen === "start" && (
               <div className="text-center animate-in fade-in duration-300">
                 <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: "oklch(0.93 0.06 75)" }}>
@@ -180,7 +193,7 @@ export default function FoodQuiz() {
                   Ready to find your reset?
                 </h2>
                 <p className="text-base leading-relaxed mb-8" style={{ color: "oklch(0.45 0.02 160)", maxWidth: "420px", margin: "0 auto 2rem" }}>
-                  5 quick questions. No judgment. Just clarity on what's been holding you back — and a personalized plan to move forward.
+                  5 quick questions. No judgment. Just clarity on what's been holding you back â€” and a personalized plan to move forward.
                 </p>
                 <button
                   onClick={handleStart}
@@ -192,7 +205,7 @@ export default function FoodQuiz() {
               </div>
             )}
 
-            {/* ── QUIZ SCREEN ── */}
+            {/* â”€â”€ QUIZ SCREEN â”€â”€ */}
             {screen === "quiz" && (
               <div key={currentIdx} className="animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "oklch(0.55 0.02 160)" }}>
@@ -236,7 +249,7 @@ export default function FoodQuiz() {
               </div>
             )}
 
-            {/* ── EMAIL SCREEN ── */}
+            {/* â”€â”€ EMAIL SCREEN â”€â”€ */}
             {screen === "email" && (
               <div className="text-center animate-in fade-in duration-300">
                 <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: "oklch(0.93 0.06 75)" }}>
@@ -279,7 +292,7 @@ export default function FoodQuiz() {
               </div>
             )}
 
-            {/* ── SUBMITTING SCREEN ── */}
+            {/* â”€â”€ SUBMITTING SCREEN â”€â”€ */}
             {screen === "submitting" && (
               <div className="text-center animate-in fade-in duration-300 py-8">
                 <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse" style={{ background: "oklch(0.93 0.06 75)" }}>
@@ -302,3 +315,4 @@ export default function FoodQuiz() {
     </div>
   );
 }
+

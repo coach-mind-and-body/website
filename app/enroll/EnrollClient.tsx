@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import Link from 'next/link';
@@ -10,6 +10,7 @@ import { PROGRAM, GOOGLE_CALENDAR } from "@shared/brand";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { useMetaPixel } from "@/hooks/useMetaPixel";
+import { getMetaParams, generateMetaEventId } from "@/hooks/useMetaParams";
 import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
 
 type Step = "choose" | "pay" | "schedule";
@@ -73,7 +74,9 @@ export default function Enroll() {
       value: plan === "full" ? 597 : 200,
       currency: "USD"
     });
-    createCheckout.mutate({ plan });
+    const eventId = generateMetaEventId();
+    const meta = getMetaParams();
+    createCheckout.mutate({ plan, ...meta, eventId });
   };
 
   const selectPlan = (p: "full" | "deposit") => {
@@ -104,7 +107,7 @@ export default function Enroll() {
                     background: step === s ? "oklch(0.72 0.12 75)" : (["choose", "pay", "schedule"].indexOf(step) > i ? "oklch(0.38 0.10 148)" : "oklch(0.42 0.02 160)"),
                     color: step === s ? "oklch(0.22 0.02 160)" : "white",
                   }}>
-                    {["choose", "pay", "schedule"].indexOf(step) > i ? "✓" : i + 1}
+                    {["choose", "pay", "schedule"].indexOf(step) > i ? "âœ“" : i + 1}
                   </div>
                   <span className="text-xs font-semibold hidden sm:block" style={{ color: step === s ? "oklch(0.72 0.12 75)" : "oklch(0.60 0.02 160)" }}>
                     {s === "choose" ? "Choose Plan" : s === "pay" ? "Payment" : "Book Session 1"}
@@ -135,7 +138,7 @@ export default function Enroll() {
                   <div className="text-sm line-through mb-4" style={{ color: "oklch(0.55 0.02 160)" }}>${PROGRAM.originalPrice}</div>
                   <p className="text-sm mb-6" style={{ color: "oklch(0.65 0.02 160)" }}>One payment. Full access. Immediate enrollment.</p>
                   <button className="w-full py-3 rounded-full font-bold text-sm transition-all hover:shadow-lg" style={{ background: "oklch(0.72 0.12 75)", color: "oklch(0.22 0.02 160)" }}>
-                    Select — Pay in Full <ArrowRight size={14} className="inline ml-1" />
+                    Select â€” Pay in Full <ArrowRight size={14} className="inline ml-1" />
                   </button>
                 </div>
                 {/* Deposit */}
@@ -146,7 +149,7 @@ export default function Enroll() {
                   <div className="text-xs mb-4 px-3 py-1 rounded-full inline-block" style={{ background: "oklch(0.93 0.03 10)", color: "oklch(0.45 0.09 10)" }}>Non-refundable deposit</div>
                   <p className="text-sm mb-6" style={{ color: "oklch(0.45 0.02 160)" }}>Secure your spot now, pay balance before your first session.</p>
                   <button className="w-full py-3 rounded-full font-bold text-sm border-2 transition-all hover:shadow-md" style={{ borderColor: "oklch(0.45 0.12 65)", color: "oklch(0.45 0.12 65)", background: "transparent" }}>
-                    Select — ${PROGRAM.depositPrice} Deposit <ArrowRight size={14} className="inline ml-1" />
+                    Select â€” ${PROGRAM.depositPrice} Deposit <ArrowRight size={14} className="inline ml-1" />
                   </button>
                 </div>
               </div>
@@ -160,7 +163,7 @@ export default function Enroll() {
           {step === "pay" && !paymentDone && (
             <div className="max-w-lg mx-auto">
               <button onClick={() => setStep("choose")} className="inline-flex items-center gap-1 text-xs font-bold mb-6" style={{ color: "oklch(0.38 0.10 148)" }}>
-                ← Change Plan
+                â† Change Plan
               </button>
               <div className="card-brand rounded-2xl p-8">
                 <div className="flex items-center gap-2 mb-6">
@@ -174,7 +177,7 @@ export default function Enroll() {
                   <div>
                     <p className="font-bold text-sm" style={{ color: "oklch(0.22 0.02 160)" }}>{PROGRAM.fullName}</p>
                     <p className="text-xs" style={{ color: "oklch(0.55 0.02 160)" }}>
-                      {plan === "deposit" ? `$${PROGRAM.depositPrice} deposit (non-refundable) + $${PROGRAM.balancePrice} balance before Session 1` : `Full program — ${PROGRAM.sessionCount} sessions × ${PROGRAM.sessionDurationMins} min`}
+                      {plan === "deposit" ? `$${PROGRAM.depositPrice} deposit (non-refundable) + $${PROGRAM.balancePrice} balance before Session 1` : `Full program â€” ${PROGRAM.sessionCount} sessions Ã— ${PROGRAM.sessionDurationMins} min`}
                     </p>
                   </div>
                   <span className="font-bold text-xl" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.45 0.12 65)" }}>
@@ -187,7 +190,7 @@ export default function Enroll() {
                   className="w-full py-4 rounded-full font-bold text-base transition-all hover:shadow-xl disabled:opacity-60"
                   style={{ background: "oklch(0.22 0.02 160)", color: "oklch(0.97 0.008 10)" }}
                 >
-                  {createCheckout.isPending ? "Opening Checkout..." : `Pay $${plan === "full" ? PROGRAM.fullPrice : PROGRAM.depositPrice} Securely →`}
+                  {createCheckout.isPending ? "Opening Checkout..." : `Pay $${plan === "full" ? PROGRAM.fullPrice : PROGRAM.depositPrice} Securely â†’`}
                 </button>
                 <p className="text-xs text-center mt-3" style={{ color: "oklch(0.60 0.02 160)" }}>
                   You'll be redirected to Stripe's secure checkout. After payment, return here to book Session 1.
@@ -216,7 +219,7 @@ export default function Enroll() {
               </p>
               <div className="rounded-2xl overflow-hidden shadow-lg" style={{ border: "1px solid oklch(0.90 0.01 160)" }}>
                 <div className="flex items-center gap-2 px-5 py-3" style={{ background: "oklch(0.22 0.02 160)" }}>
-                  <span className="text-sm font-bold" style={{ color: "oklch(0.72 0.12 75)" }}>R.E.C.L.A.I.M. Session 1 — 50 Minutes</span>
+                  <span className="text-sm font-bold" style={{ color: "oklch(0.72 0.12 75)" }}>R.E.C.L.A.I.M. Session 1 â€” 50 Minutes</span>
                 </div>
                 <iframe
                   src={GOOGLE_CALENDAR.reclaimSession}
@@ -239,3 +242,4 @@ export default function Enroll() {
     </div>
   );
 }
+

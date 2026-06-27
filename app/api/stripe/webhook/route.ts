@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import Stripe from "stripe";
-import crypto from "crypto";
+import { fireMetaPixelPurchase } from "@/server/metaCapi";
+import { metaParamsFromStripeMetadata } from "@/server/metaParamBuilder";
 import { ENV } from "@/server/_core/env";
 import { getDb } from "@/server/db";
 import { deposits, fpuOrders, fpuCoachingSessions, enrollments, coachingSessions, users } from "@/drizzle/schema";
@@ -9,77 +10,25 @@ import { notifyOwner } from "@/server/_core/notification";
 import { sendOwnerEmail, sendReclaimWelcomeEmail, sendFpuWelcomeEmail } from "@/server/notifications";
 import { enrollUserInSequence } from "@/server/sequences";
 
-/**
- * Fire a server-side Purchase event via Meta Conversions API.
- * Runs after Stripe webhook confirms payment — more reliable than client-side pixel alone.
- * Hashes customer email with SHA-256 as required by Meta.
- */
-async function fireMetaPixelPurchase(params: {
-  value: number;        // amount in cents — converted to dollars before sending
-  currency: string;     // e.g. "USD"
-  content_name: string; // e.g. "R.E.C.L.A.I.M. Program - Full Payment"
-  content_category: string;
-  customerEmail?: string | null;
-  customerName?: string | null;
-}) {
-  try {
-    if (!ENV.metaConversionsApiToken) {
-      console.warn('[Meta CAPI] No access token configured — skipping Purchase event');
-      return;
-    }
-
-    // Hash PII with SHA-256 as required by Meta
-    const hashValue = (val: string) => crypto.createHash('sha256').update(val.trim().toLowerCase()).digest('hex');
-
-    const userData: Record<string, string | string[]> = {};
-    if (params.customerEmail) userData.em = [hashValue(params.customerEmail)];
-    if (params.customerName) {
-      const parts = params.customerName.trim().split(' ');
-      if (parts[0]) userData.fn = [hashValue(parts[0])];
-      if (parts.length > 1) userData.ln = [hashValue(parts.slice(1).join(' '))];
-    }
-    // Fallback: Meta requires at least one user_data field — use a placeholder if none available
-    if (Object.keys(userData).length === 0) {
-      userData.client_ip_address = '0.0.0.0';
-      userData.client_user_agent = 'Mozilla/5.0';
-    }
-
-    const payload = {
-      data: [{
-        event_name: 'Purchase',
-        event_time: Math.floor(Date.now() / 1000),
-        action_source: 'website',
-        event_source_url: 'https://mindandbodyresetcoach.com',
-        user_data: userData,
-        custom_data: {
-          value: (params.value / 100).toFixed(2),
-          currency: params.currency,
-          content_name: params.content_name,
-          content_category: params.content_category,
-          content_type: 'product',
-        },
-      }],
-    };
-
-    const url = `https://graph.facebook.com/v18.0/${ENV.metaPixelId}/events?access_token=${ENV.metaConversionsApiToken}`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    const result = await response.json() as { events_received?: number; error?: { message: string } };
-
-    if (result.error) {
-      console.error('[Meta CAPI] API error:', result.error.message);
-    } else {
-      console.log(`[Meta CAPI] Purchase event sent — events_received: ${result.events_received} | ${params.content_name} $${(params.value / 100).toFixed(2)} ${params.currency}`);
-    }
-  } catch (err) {
-    console.error('[Meta CAPI] Failed to fire Purchase event:', err);
-    // Don't throw — payment must succeed even if pixel tracking fails
+async function firePurchaseFromSession(
+  session: Stripe.Checkout.Session,
+  params: {
+    value: number;
+    currency: string;
+    content_name: string;
+    content_category: string;
+    customerEmail?: string | null;
+    customerName?: string | null;
   }
+) {
+  const meta = metaParamsFromStripeMetadata(session.metadata ?? undefined);
+  await fireMetaPixelPurchase({
+    ...params,
+    fbc: meta.fbc,
+    fbp: meta.fbp,
+    eventId: meta.eventId,
+  });
 }
-
 function getStripe() {
   return new Stripe(ENV.stripeSecretKey, { apiVersion: "2026-02-25.clover" });
 }
@@ -112,7 +61,7 @@ export async function POST(req: Request) {
         return new NextResponse(`Webhook Error: ${message}`, { status: 400 });
       }
 
-      // Handle test events — required for webhook verification in test mode
+      // Handle test events â€” required for webhook verification in test mode
       if (event.id.startsWith("evt_test_")) {
         console.log("[Stripe Webhook] Test event detected, returning verification response");
         return NextResponse.json({ verified: true });
@@ -143,7 +92,7 @@ export async function POST(req: Request) {
               // Fire Meta Conversions API Purchase event
               const amount = session.amount_total ?? (isCoaching ? 24900 : 0); // FPU coaching is $249
               if (amount > 0) {
-                await fireMetaPixelPurchase({
+                await firePurchaseFromSession(session, {
                   value: amount,
                   currency: session.currency?.toUpperCase() ?? "USD",
                   content_name: isCoaching ? "FPU 1:1 Coaching Sessions" : "Financial Peace University",
@@ -160,9 +109,9 @@ export async function POST(req: Request) {
               });
               // Send Manus in-app notification
               await notifyOwner({
-                title: isCoaching ? `New FPU Coaching Purchase — ${clientName}!` : `New FPU Enrollment — ${clientName}!`,
+                title: isCoaching ? `New FPU Coaching Purchase â€” ${clientName}!` : `New FPU Enrollment â€” ${clientName}!`,
                 content: isCoaching
-                  ? `${clientName} (${clientEmail}) just purchased 3 FPU 1:1 coaching sessions ($249). A welcome email with your booking link has been sent to them — they'll schedule their first session directly!`
+                  ? `${clientName} (${clientEmail}) just purchased 3 FPU 1:1 coaching sessions ($249). A welcome email with your booking link has been sent to them â€” they'll schedule their first session directly!`
                   : `${clientName} (${clientEmail}) just enrolled in Financial Peace University.`,
               });
               // Create 3 coaching session records for tracking
@@ -182,12 +131,12 @@ export async function POST(req: Request) {
                   console.log(`[Stripe] Created 3 FPU coaching sessions for ${clientEmail}`);
                 }
               }
-              // Send detailed owner email — different content for coaching vs group class
+              // Send detailed owner email â€” different content for coaching vs group class
               if (isCoaching) {
                 const htmlBody = `
                   <div style="font-family:'Nunito Sans',Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff;">
                     <div style="background:#c9a96e;padding:28px 40px;text-align:center;">
-                      <h1 style="margin:0;color:white;font-size:22px;font-weight:700;">New FPU 1:1 Coaching Client! 🎉</h1>
+                      <h1 style="margin:0;color:white;font-size:22px;font-weight:700;">New FPU 1:1 Coaching Client! ðŸŽ‰</h1>
                     </div>
                     <div style="padding:32px 40px;">
                       <p style="color:#4a4a4a;font-size:16px;">Hi Lee Anne! You have a new FPU 1:1 coaching client who just purchased 3 personal sessions:</p>
@@ -208,16 +157,16 @@ export async function POST(req: Request) {
                 `;
                 const textBody = `New FPU 1:1 Coaching Client!\n\nName: ${clientName}\nEmail: ${clientEmail}\nPurchased: 3 x 50-min 1:1 coaching sessions ($249)\n\nA welcome email has been sent to ${clientEmail} with your booking link. They'll schedule their first session directly. You can also reach out personally to welcome them!`;
                 await sendOwnerEmail({
-                  subject: `New FPU 1:1 Coaching Client: ${clientName} — $249`,
+                  subject: `New FPU 1:1 Coaching Client: ${clientName} â€” $249`,
                   htmlBody,
                   textBody,
                 });
               } else {
-                // Regular FPU group class — remind Lee Anne to add client to Tuesday recurring event
+                // Regular FPU group class â€” remind Lee Anne to add client to Tuesday recurring event
                 const fpuGroupHtml = `
                   <div style="font-family:'Nunito Sans',Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff;">
                     <div style="background:#c9a96e;padding:28px 40px;text-align:center;">
-                      <h1 style="margin:0;color:white;font-size:22px;font-weight:700;">New FPU Group Enrollment! 🎉</h1>
+                      <h1 style="margin:0;color:white;font-size:22px;font-weight:700;">New FPU Group Enrollment! ðŸŽ‰</h1>
                     </div>
                     <div style="padding:32px 40px;">
                       <p style="color:#4a4a4a;font-size:16px;">Hi Lee Anne! You have a new Financial Peace University student:</p>
@@ -232,7 +181,7 @@ export async function POST(req: Request) {
                           <li>Open your <strong>Google Calendar</strong> and find the recurring Tuesday FPU class event.</li>
                           <li>Click the event and select <strong>Edit this and following events</strong>.</li>
                           <li>In the <strong>Guests</strong> field, add: <strong>${clientEmail}</strong></li>
-                          <li>Save — Google Calendar will send them the invite automatically.</li>
+                          <li>Save â€” Google Calendar will send them the invite automatically.</li>
                         </ol>
                       </div>
                       <p style="color:#4a4a4a;font-size:14px;">A welcome email has already been sent to ${clientEmail} with class details.</p>
@@ -243,7 +192,7 @@ export async function POST(req: Request) {
                 `;
                 const fpuGroupText = `New FPU Group Enrollment!\n\nName: ${clientName}\nEmail: ${clientEmail}\n\nAction Required: Add ${clientEmail} to your recurring Tuesday FPU Google Calendar event (Edit this and following events, then add their email to Guests and save).\n\nA welcome email has been sent to the client.`;
                 await sendOwnerEmail({
-                  subject: `New FPU Student: ${clientName} — Add to Tuesday Class`,
+                  subject: `New FPU Student: ${clientName} â€” Add to Tuesday Class`,
                   htmlBody: fpuGroupHtml,
                   textBody: fpuGroupText,
                 });
@@ -267,7 +216,7 @@ export async function POST(req: Request) {
                 const balanceName = session.customer_details?.name ?? session.metadata?.customer_name ?? null;
                 const amount = session.amount_total ?? 39700; // $397 balance
                 if (amount > 0) {
-                  await fireMetaPixelPurchase({
+                  await firePurchaseFromSession(session, {
                     value: amount,
                     currency: session.currency?.toUpperCase() ?? "USD",
                     content_name: "R.E.C.L.A.I.M. Program - Balance Payment",
@@ -282,20 +231,20 @@ export async function POST(req: Request) {
                 });
                 // Also send email to coach@
                 await sendOwnerEmail({
-                  subject: "RECLAIM Balance Payment Received — $397",
+                  subject: "RECLAIM Balance Payment Received â€” $397",
                   htmlBody: `
                     <div style="font-family:'Nunito Sans',Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff;">
                       <div style="background:#c9a96e;padding:28px 40px;text-align:center;">
-                        <h1 style="margin:0;color:white;font-size:22px;font-weight:700;">RECLAIM Balance Paid! 🎉</h1>
+                        <h1 style="margin:0;color:white;font-size:22px;font-weight:700;">RECLAIM Balance Paid! ðŸŽ‰</h1>
                       </div>
                       <div style="padding:32px 40px;">
                         <p style="color:#4a4a4a;font-size:16px;">Hi Lee Anne! A client has paid their $397 RECLAIM balance.</p>
                         <div style="background:#f9f5f0;border-left:4px solid #c9a96e;padding:16px 20px;margin:20px 0;border-radius:0 8px 8px 0;">
                           <p style="margin:0;font-size:16px;color:#4a4a4a;"><strong>User ID:</strong> ${userId}</p>
-                          <p style="margin:8px 0 0;font-size:14px;color:#6a6a6a;">Enrollment ID: ${enrollmentId} — Balance: $397 paid in full</p>
+                          <p style="margin:8px 0 0;font-size:14px;color:#6a6a6a;">Enrollment ID: ${enrollmentId} â€” Balance: $397 paid in full</p>
                         </div>
                         <hr style="border:none;border-top:1px solid #e8e0d8;margin:28px 0;" />
-                        <p style="color:#8a9a8a;font-size:13px;text-align:center;">Mind &amp; Body Reset — mindandbodyresetcoach.com</p>
+                        <p style="color:#8a9a8a;font-size:13px;text-align:center;">Mind &amp; Body Reset â€” mindandbodyresetcoach.com</p>
                       </div>
                     </div>
                   `,
@@ -312,7 +261,7 @@ export async function POST(req: Request) {
               // Fire Meta Conversions API Purchase event
               const reclaimAmount = session.amount_total ?? (plan === "full" ? 59700 : 20000); // $597 full or $200 deposit
               if (reclaimAmount > 0) {
-                await fireMetaPixelPurchase({
+                await firePurchaseFromSession(session, {
                   value: reclaimAmount,
                   currency: session.currency?.toUpperCase() ?? "USD",
                   content_name: plan === "full" ? "R.E.C.L.A.I.M. Program - Full Payment" : "R.E.C.L.A.I.M. Program - Deposit",
@@ -388,7 +337,7 @@ export async function POST(req: Request) {
                     await enrollUserInSequence(clientEmail, clientName, "reclaim_6_week");
                   }
                 } else {
-                  // Enrollment exists — update payment status
+                  // Enrollment exists â€” update payment status
                   await db
                     .update(enrollments)
                     .set({
@@ -401,9 +350,9 @@ export async function POST(req: Request) {
                   console.log(`[Stripe] Updated existing enrollment for user ${userId}`);
                 }
               } else {
-                // No user account yet — enrollment will be created when they sign up
+                // No user account yet â€” enrollment will be created when they sign up
                 // The deposit record is saved with their email so it can be linked later
-                console.log(`[Stripe] Deposit paid by ${clientEmail} — no user account yet. Enrollment pending account creation.`);
+                console.log(`[Stripe] Deposit paid by ${clientEmail} â€” no user account yet. Enrollment pending account creation.`);
               }
 
               // Send welcome email to client
@@ -413,16 +362,16 @@ export async function POST(req: Request) {
                 isPaidInFull: plan === "full",
               });
               await notifyOwner({
-                title: plan === "full" ? "New RECLAIM Full Payment Received! 🎉" : "New $200 RECLAIM Deposit Received!",
-                content: `Client: ${clientName} (${clientEmail}) has ${plan === "full" ? "paid in full ($597)" : "paid the $200 deposit"}. ${userId ? "Enrollment created automatically." : "No account yet — enrollment pending sign-up."}`,
+                title: plan === "full" ? "New RECLAIM Full Payment Received! ðŸŽ‰" : "New $200 RECLAIM Deposit Received!",
+                content: `Client: ${clientName} (${clientEmail}) has ${plan === "full" ? "paid in full ($597)" : "paid the $200 deposit"}. ${userId ? "Enrollment created automatically." : "No account yet â€” enrollment pending sign-up."}`,
               });
               // Also send email to coach@
               await sendOwnerEmail({
-                subject: plan === "full" ? `New RECLAIM Client (Full Payment): ${clientName}` : `New RECLAIM Deposit: ${clientName} — $200`,
+                subject: plan === "full" ? `New RECLAIM Client (Full Payment): ${clientName}` : `New RECLAIM Deposit: ${clientName} â€” $200`,
                 htmlBody: `
                   <div style="font-family:'Nunito Sans',Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff;">
                     <div style="background:#c9a96e;padding:28px 40px;text-align:center;">
-                      <h1 style="margin:0;color:white;font-size:22px;font-weight:700;">${plan === "full" ? "New RECLAIM Full Payment! 🎉" : "New RECLAIM Deposit Received!"}</h1>
+                      <h1 style="margin:0;color:white;font-size:22px;font-weight:700;">${plan === "full" ? "New RECLAIM Full Payment! ðŸŽ‰" : "New RECLAIM Deposit Received!"}</h1>
                     </div>
                     <div style="padding:32px 40px;">
                       <p style="color:#4a4a4a;font-size:16px;">Hi Lee Anne! You have a new R.E.C.L.A.I.M. client:</p>
@@ -430,14 +379,14 @@ export async function POST(req: Request) {
                         <p style="margin:0 0 8px;font-size:18px;font-weight:700;color:#3a5a3a;">${clientName}</p>
                         <p style="margin:0;font-size:16px;color:#4a4a4a;"><strong>Email:</strong> <a href="mailto:${clientEmail}" style="color:#c9a96e;">${clientEmail}</a></p>
                         <p style="margin:8px 0 0;font-size:14px;color:#6a6a6a;">${plan === "full" ? "Paid in full: $597" : "Deposit paid: $200 (balance $397 remaining)"}</p>
-                        <p style="margin:8px 0 0;font-size:14px;color:#6a6a6a;">${userId ? "✅ Enrollment created automatically" : "⏳ No account yet — enrollment pending sign-up"}</p>
+                        <p style="margin:8px 0 0;font-size:14px;color:#6a6a6a;">${userId ? "âœ… Enrollment created automatically" : "â³ No account yet â€” enrollment pending sign-up"}</p>
                       </div>
                       <hr style="border:none;border-top:1px solid #e8e0d8;margin:28px 0;" />
-                      <p style="color:#8a9a8a;font-size:13px;text-align:center;">Mind &amp; Body Reset — mindandbodyresetcoach.com</p>
+                      <p style="color:#8a9a8a;font-size:13px;text-align:center;">Mind &amp; Body Reset â€” mindandbodyresetcoach.com</p>
                     </div>
                   </div>
                 `,
-                textBody: `New RECLAIM Client!\n\nName: ${clientName}\nEmail: ${clientEmail}\nPayment: ${plan === "full" ? "Full $597" : "$200 deposit (balance $397 remaining)"}\n${userId ? "Enrollment created automatically." : "No account yet — enrollment pending sign-up."}`,
+                textBody: `New RECLAIM Client!\n\nName: ${clientName}\nEmail: ${clientEmail}\nPayment: ${plan === "full" ? "Full $597" : "$200 deposit (balance $397 remaining)"}\n${userId ? "Enrollment created automatically." : "No account yet â€” enrollment pending sign-up."}`,
               });
             }
           } catch (dbErr) {
@@ -467,3 +416,4 @@ export async function POST(req: Request) {
 
       return NextResponse.json({ received: true });
 }
+

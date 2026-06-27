@@ -1,4 +1,4 @@
-import Stripe from "stripe";
+﻿import Stripe from "stripe";
 import { z } from "zod";
 import { eq, desc } from "drizzle-orm";
 import { ENV } from "../_core/env";
@@ -7,6 +7,8 @@ import { getDb } from "../db";
 import { deposits, enrollments, coachingSessions, users } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
 import { enrollUserInSequence } from "../sequences";
+import { metaTrackingInputSchema } from "@shared/metaTracking";
+import { extractMetaParamsFromRequest, metaParamsToStripeMetadata } from "../metaParamBuilder";
 
 function getStripe() {
   return new Stripe(ENV.stripeSecretKey, { apiVersion: "2026-02-25.clover" });
@@ -17,8 +19,8 @@ function adminOnly(role: string | undefined) {
 }
 
 const PLAN_CONFIG = {
-  full: { amount: 59700, label: "R.E.C.L.A.I.M. 6-Week Mind & Body Reset — Full Payment", desc: "Full enrollment in the 6-Week Mind & Body Reset program. Includes 6 private 50-minute coaching sessions with Lee Anne." },
-  deposit: { amount: 20000, label: "R.E.C.L.A.I.M. 6-Week Mind & Body Reset — Non-Refundable Deposit", desc: "Non-refundable deposit to secure your spot. Balance of $397 due before Session 1." },
+  full: { amount: 59700, label: "R.E.C.L.A.I.M. 6-Week Mind & Body Reset â€” Full Payment", desc: "Full enrollment in the 6-Week Mind & Body Reset program. Includes 6 private 50-minute coaching sessions with Lee Anne." },
+  deposit: { amount: 20000, label: "R.E.C.L.A.I.M. 6-Week Mind & Body Reset â€” Non-Refundable Deposit", desc: "Non-refundable deposit to secure your spot. Balance of $397 due before Session 1." },
 };
 
 const RECLAIM_SESSION_LABELS = [
@@ -38,9 +40,7 @@ export const paymentRouter = router({
    */
   createDepositCheckout: publicProcedure
     .input(
-      z.object({
-        plan: z.enum(["full", "deposit"]).default("full"),
-      })
+      z.object({ plan: z.enum(["full", "deposit"]).default("full") }).merge(metaTrackingInputSchema)
     )
     .mutation(async ({ input, ctx }) => {
       const stripe = getStripe();
@@ -50,8 +50,10 @@ export const paymentRouter = router({
       // Capture user info if logged in (ctx.user may be set for publicProcedure too)
       const loggedInUser = ctx.user ?? null;
 
+      const tracking = extractMetaParamsFromRequest(ctx.req, { fbc: input.fbc, fbp: input.fbp });
       const metadata: Record<string, string> = {
         plan: input.plan,
+        ...metaParamsToStripeMetadata(tracking, input.eventId),
       };
       if (loggedInUser) {
         metadata.user_id = loggedInUser.id.toString();
@@ -163,7 +165,7 @@ export const paymentRouter = router({
   /**
    * Client: pay remaining balance ($397) for deposit-plan enrollments
    */
-  payBalance: protectedProcedure.mutation(async ({ ctx }) => {
+  payBalance: protectedProcedure.input(metaTrackingInputSchema).mutation(async ({ ctx, input }) => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
 
@@ -180,6 +182,7 @@ export const paymentRouter = router({
 
     const stripe = getStripe();
     const origin = (ctx.req.headers.get("origin") as string) || "https://localhost:3000";
+    const tracking = extractMetaParamsFromRequest(ctx.req, { fbc: input.fbc, fbp: input.fbp });
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -190,7 +193,7 @@ export const paymentRouter = router({
           currency: "usd",
           unit_amount: 39700,
           product_data: {
-            name: "R.E.C.L.A.I.M. 6-Week Mind & Body Reset — Balance Payment",
+            name: "R.E.C.L.A.I.M. 6-Week Mind & Body Reset â€” Balance Payment",
             description: "Remaining balance for your 6-Week Mind & Body Reset program.",
           },
         },
@@ -202,6 +205,7 @@ export const paymentRouter = router({
         enrollment_id: enrollment.id.toString(),
         customer_email: ctx.user!.email ?? "",
         customer_name: ctx.user!.name ?? "",
+        ...metaParamsToStripeMetadata(tracking, input.eventId),
       },
       client_reference_id: ctx.user!.id.toString(),
       success_url: `${origin}/portal?balance_paid=1`,
@@ -266,7 +270,7 @@ export const paymentRouter = router({
   }),
 
   /**
-   * Called after user signs up — links any existing paid deposit to their new account
+   * Called after user signs up â€” links any existing paid deposit to their new account
    * and creates enrollment + sessions if not already created.
    */
   linkDepositToAccount: protectedProcedure.mutation(async ({ ctx }) => {
@@ -327,3 +331,5 @@ export const paymentRouter = router({
     return { linked: true };
   }),
 });
+
+

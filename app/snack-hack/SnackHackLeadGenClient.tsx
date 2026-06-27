@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -20,6 +20,7 @@ import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 
 import { useMetaPixel } from "@/hooks/useMetaPixel";
+import { getMetaParams, generateMetaEventId } from "@/hooks/useMetaParams";
 import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
 
 const formSchema = z.object({
@@ -43,15 +44,14 @@ export default function SnackHackLeadGen() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      await subscribeMutation.mutateAsync(values);
+      const eventId = generateMetaEventId();
+      const meta = getMetaParams();
+      await subscribeMutation.mutateAsync({ ...values, ...meta, eventId });
       setIsSubmitted(true);
       toast.success("Success! Check your email for your free guide.");
       
       // Fire conversion events
-      trackLead({
-        content_name: "Snack Hack Download",
-        content_category: "Lead Generation"
-      });
+      trackLead({ content_name: "Snack Hack Download", content_category: "Lead Generation" }, eventId);
       ga.trackLead({ category: "Lead Generation", label: "Snack Hack Download" });
     } catch (err: any) {
       toast.error(err.message || "Something went wrong. Please try again.");
@@ -84,7 +84,7 @@ export default function SnackHackLeadGen() {
                 End the <span className="text-[#c9a96e] italic">"Mental Food Fight"</span> Over Late-Night Snacking
               </h1>
               <p className="text-base sm:text-lg text-gray-700 mb-6 leading-relaxed">
-                If you're between 40 and 60, the evening hours can feel like a battleground. <strong>But it’s not a lack of willpower.</strong> Your body is navigating major hormone shifts.
+                If you're between 40 and 60, the evening hours can feel like a battleground. <strong>But itâ€™s not a lack of willpower.</strong> Your body is navigating major hormone shifts.
               </p>
               <p className="text-base sm:text-lg text-gray-700 mb-8 leading-relaxed">
                 Download the <strong>Midlife Mindset Guide</strong> to discover the biology behind your cravings and learn 7 actionable hacks to find lasting peace with your nighttime habits.
@@ -173,3 +173,4 @@ export default function SnackHackLeadGen() {
     </div>
   );
 }
+
