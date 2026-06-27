@@ -5,6 +5,7 @@ import { getDb } from "../db";
 import { subscribers } from "../../drizzle/schema";
 import { resendSubscribe } from "../resendSubscribe";
 import { sendSnackHackEmail } from "../notifications";
+import { enrollUserInSequence, SNACK_HACK_SEQUENCE_ID } from "../sequences";
 import { fireMetaPixelLead } from "../metaCapi";
 import { metaTrackingInputSchema } from "@shared/metaTracking";
 
@@ -90,6 +91,12 @@ export const leadgenRouter = router({
         clientEmail: input.email,
         clientName: input.firstName || "Friend",
       });
+
+      await enrollUserInSequence(
+        input.email,
+        input.firstName ?? null,
+        SNACK_HACK_SEQUENCE_ID
+      );
 
       return { success: true };
     }),

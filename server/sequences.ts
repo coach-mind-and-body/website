@@ -1,20 +1,98 @@
 import { getDb } from "./db";
 import { subscribers, sequenceEnrollments } from "../drizzle/schema";
-import { eq, and, isNull, lte } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { FPU_EMAILS } from "./emails/fpuNewsletters";
 import { RECLAIM_EMAILS } from "./emails/reclaimSequence";
+import {
+  SNACK_HACK_EMAILS,
+  SNACK_HACK_DAY_OFFSETS,
+} from "./emails/snackHackSequence";
 import { sendTransactionalEmail } from "./notifications";
 
-export async function processEmailSequences() {
-  console.log("[Sequences] Starting daily sequence processor...");
-  let emailsSent = 0;
+export const SNACK_HACK_SEQUENCE_ID = "snack_hack_nurture";
 
-  // 1. Fetch all active enrollments that are due for an email
-  // A subscriber is due if:
-  //   - They have never received an email (lastEmailedAt is null)
-  //   - Or they received an email 7+ days ago
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+type EmailGenerator = (name: string) => { subject: string; html: string };
+
+interface IntervalSequenceConfig {
+  type: "interval";
+  emails: EmailGenerator[];
+  /** Days to wait after the previous email before sending the next step. */
+  delayDays: number;
+}
+
+interface AbsoluteDaySequenceConfig {
+  type: "absolute_days";
+  emails: EmailGenerator[];
+  /** Days after enrollment when each email should send. */
+  dayOffsets: readonly number[];
+}
+
+type SequenceConfig = IntervalSequenceConfig | AbsoluteDaySequenceConfig;
+
+const SEQUENCE_CONFIG: Record<string, SequenceConfig> = {
+  reclaim_6_week: { type: "interval", emails: RECLAIM_EMAILS, delayDays: 7 },
+  fpu_babystep_1: { type: "interval", emails: FPU_EMAILS, delayDays: 7 },
+  [SNACK_HACK_SEQUENCE_ID]: {
+    type: "absolute_days",
+    emails: SNACK_HACK_EMAILS,
+    dayOffsets: SNACK_HACK_DAY_OFFSETS,
+  },
+};
+
+function getSequenceConfig(sequenceId: string): SequenceConfig | null {
+  return SEQUENCE_CONFIG[sequenceId] ?? null;
+}
+
+function isEnrollmentDue(
+  enrollment: typeof sequenceEnrollments.$inferSelect,
+  config: SequenceConfig
+): boolean {
+  const stepIndex = enrollment.currentStep;
+  const now = new Date();
+
+  if (config.type === "absolute_days") {
+    const offsetDays = config.dayOffsets[stepIndex];
+    if (offsetDays === undefined) return false;
+    const dueAt = new Date(enrollment.createdAt);
+    dueAt.setDate(dueAt.getDate() + offsetDays);
+    return now >= dueAt;
+  }
+
+  if (!enrollment.lastEmailedAt) return true;
+  const dueAt = new Date(enrollment.lastEmailedAt);
+  dueAt.setDate(dueAt.getDate() + config.delayDays);
+  return now >= dueAt;
+}
+
+async function sendSequenceStep(
+  enrollment: typeof sequenceEnrollments.$inferSelect,
+  subscriber: typeof subscribers.$inferSelect,
+  config: SequenceConfig
+): Promise<boolean> {
+  const stepIndex = enrollment.currentStep;
+  const getEmailContent = config.emails[stepIndex];
+  if (!getEmailContent) return false;
+
+  const emailContent = getEmailContent(subscriber.firstName || "Friend");
+
+  console.log(
+    `[Sequences] Sending ${enrollment.sequenceId} step ${stepIndex + 1} to ${subscriber.email}`
+  );
+
+  return sendTransactionalEmail({
+    to: subscriber.email,
+    toName:
+      `${subscriber.firstName || ""} ${subscriber.lastName || ""}`.trim() ||
+      "Friend",
+    subject: emailContent.subject,
+    htmlBody: emailContent.html,
+    textBody: "Please view this email in an HTML-compatible client.",
+  });
+}
+
+export async function processEmailSequences() {
+  console.log("[Sequences] Starting sequence processor...");
+  let emailsSent = 0;
 
   const db = await getDb();
   if (!db) return { success: false, error: "DB unavailable" };
@@ -29,47 +107,45 @@ export async function processEmailSequences() {
     .where(eq(sequenceEnrollments.status, "active"));
 
   for (const { enrollment, subscriber } of activeEnrollments) {
-    const isFirstEmail = !enrollment.lastEmailedAt;
-    const isDueForNext = enrollment.lastEmailedAt && new Date(enrollment.lastEmailedAt) <= sevenDaysAgo;
+    const config = getSequenceConfig(enrollment.sequenceId);
+    if (!config) {
+      console.warn(`[Sequences] Unknown sequence: ${enrollment.sequenceId}`);
+      continue;
+    }
 
-    if (isFirstEmail || isDueForNext) {
-      const stepIndex = enrollment.currentStep; // 0-indexed
-      const emailsList = enrollment.sequenceId === "reclaim_6_week" ? RECLAIM_EMAILS : FPU_EMAILS;
+    let currentEnrollment = enrollment;
 
-      if (stepIndex >= emailsList.length) {
-        // Sequence completed!
-        await db
-          .update(sequenceEnrollments)
-          .set({ status: "completed", updatedAt: new Date() })
-          .where(eq(sequenceEnrollments.id, enrollment.id));
-        continue;
-      }
+    // Catch up on any overdue steps (e.g. backfilled leads who missed Day 3 and Day 7).
+    while (currentEnrollment.currentStep < config.emails.length) {
+      if (!isEnrollmentDue(currentEnrollment, config)) break;
 
-      // Generate the email content
-      const getEmailContent = emailsList[stepIndex];
-      const emailContent = getEmailContent(subscriber.firstName || "Friend");
+      const success = await sendSequenceStep(
+        currentEnrollment,
+        subscriber,
+        config
+      );
+      if (!success) break;
 
-      console.log(`[Sequences] Sending ${enrollment.sequenceId} Email ${stepIndex + 1} to ${subscriber.email}`);
-      
-      const success = await sendTransactionalEmail({
-        to: subscriber.email,
-        toName: `${subscriber.firstName || ""} ${subscriber.lastName || ""}`.trim() || "Friend",
-        subject: emailContent.subject,
-        htmlBody: emailContent.html,
-        textBody: "Please view this email in an HTML-compatible client.", // Fallback
-      });
+      emailsSent++;
+      const nextStep = currentEnrollment.currentStep + 1;
+      const isComplete = nextStep >= config.emails.length;
 
-      if (success) {
-        emailsSent++;
-        await db
-          .update(sequenceEnrollments)
-          .set({
-            currentStep: stepIndex + 1,
-            lastEmailedAt: new Date(),
-            updatedAt: new Date(),
-          })
-          .where(eq(sequenceEnrollments.id, enrollment.id));
-      }
+      await db
+        .update(sequenceEnrollments)
+        .set({
+          currentStep: nextStep,
+          lastEmailedAt: new Date(),
+          status: isComplete ? "completed" : "active",
+          updatedAt: new Date(),
+        })
+        .where(eq(sequenceEnrollments.id, currentEnrollment.id));
+
+      currentEnrollment = {
+        ...currentEnrollment,
+        currentStep: nextStep,
+        lastEmailedAt: new Date(),
+        status: isComplete ? "completed" : "active",
+      };
     }
   }
 
@@ -77,29 +153,45 @@ export async function processEmailSequences() {
   return { success: true, emailsSent };
 }
 
-export async function enrollUserInSequence(email: string, firstName: string | null, sequenceId: string) {
+export async function enrollUserInSequence(
+  email: string,
+  firstName: string | null,
+  sequenceId: string,
+  opts?: { anchorDate?: Date }
+) {
   const db = await getDb();
   if (!db) return false;
 
-  // Find or create subscriber
   let subscriberId: number;
-  const existingSub = await db.select().from(subscribers).where(eq(subscribers.email, email)).limit(1);
+  const existingSub = await db
+    .select()
+    .from(subscribers)
+    .where(eq(subscribers.email, email))
+    .limit(1);
+
   if (existingSub.length > 0) {
     subscriberId = existingSub[0].id;
   } else {
-    const [newSub] = await db.insert(subscribers).values({
-      email,
-      firstName: firstName ?? null,
-      segments: JSON.stringify([sequenceId]),
-    }).$returningId();
+    const [newSub] = await db
+      .insert(subscribers)
+      .values({
+        email,
+        firstName: firstName ?? null,
+        segments: JSON.stringify([sequenceId]),
+      })
+      .$returningId();
     subscriberId = newSub.id;
   }
 
-  // Check if already enrolled
   const existingEnrollment = await db
     .select()
     .from(sequenceEnrollments)
-    .where(and(eq(sequenceEnrollments.subscriberId, subscriberId), eq(sequenceEnrollments.sequenceId, sequenceId)))
+    .where(
+      and(
+        eq(sequenceEnrollments.subscriberId, subscriberId),
+        eq(sequenceEnrollments.sequenceId, sequenceId)
+      )
+    )
     .limit(1);
 
   if (existingEnrollment.length === 0) {
@@ -108,6 +200,7 @@ export async function enrollUserInSequence(email: string, firstName: string | nu
       sequenceId,
       status: "active",
       currentStep: 0,
+      ...(opts?.anchorDate ? { createdAt: opts.anchorDate } : {}),
     });
     console.log(`[Sequences] Enrolled ${email} in sequence: ${sequenceId}`);
   }

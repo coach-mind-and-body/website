@@ -2,6 +2,7 @@ import "dotenv/config";
 import { startCallFollowUpPoller } from "./callFollowUpPoller";
 import { startLmsPoller } from "./lmsPoller";
 import { startYoutubePoller } from "./youtubePoller";
+import { startSequencePoller } from "./sequencePoller";
 
 console.log("Starting background worker pollers...");
 
@@ -13,6 +14,9 @@ startLmsPoller();
 
 // Start the YouTube Podcast broadcast polling service
 startYoutubePoller();
+
+// Process nurture email sequences (snack hack, reclaim, FPU)
+startSequencePoller();
 
 // Keep the process running
 process.on("SIGTERM", () => {
