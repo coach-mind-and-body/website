@@ -1,0 +1,44 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build outputs
+.next
+dist
+build
+*.dist
+
+# Git
+.git
+.gitignore
+
+# Env and secrets
+.env
+.env.*
+*.env
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# IDE and OS
+.idea
+.vscode
+*.swp
+.DS_Store
+Thumbs.db
+
+# Misc
+*.md
+docs
+scripts
+test-*.js
+test-*.ts
+vitest.config.ts
+tsconfig*.json
+tailwind.config.*
+postcss.config.*
+
+# Large assets not needed in image (if any)
+images
