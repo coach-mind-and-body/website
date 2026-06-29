@@ -1,29 +1,27 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import {
-  buildPlainDataFromUrl,
-  processRequestAndGetCookies,
-} from "@/server/metaParamBuilder";
+
 
 export function middleware(request: NextRequest) {
-  const cookies: Record<string, string> = {};
-  request.cookies.getAll().forEach((cookie) => {
-    cookies[cookie.name] = cookie.value;
-  });
+  const cookiesToSet: { name: string; value: string; maxAge: number; domain: string }[] = [];
+  const now = Date.now();
+  const domain = "mindandbodyresetcoach.com";
+  const maxAge = 60 * 60 * 24 * 90; // 90 days
 
-  const plainData = buildPlainDataFromUrl(
-    request.nextUrl.host,
-    request.nextUrl.pathname,
-    request.nextUrl.search,
-    cookies,
-    {
-      referer: request.headers.get("referer"),
-      xForwardedFor: request.headers.get("x-forwarded-for"),
-      protocol: request.nextUrl.protocol,
-    }
-  );
+  // Handle _fbp (Facebook Browser ID)
+  let fbp = request.cookies.get("_fbp")?.value;
+  if (!fbp) {
+    const random = Math.floor(Math.random() * 10000000000);
+    fbp = `fb.1.${now}.${random}`;
+    cookiesToSet.push({ name: "_fbp", value: fbp, maxAge, domain });
+  }
 
-  const cookiesToSet = processRequestAndGetCookies(plainData);
+  // Handle _fbc (Facebook Click ID)
+  const fbclid = request.nextUrl.searchParams.get("fbclid");
+  if (fbclid) {
+    const fbc = `fb.1.${now}.${fbclid}`;
+    cookiesToSet.push({ name: "_fbc", value: fbc, maxAge, domain });
+  }
   const response = NextResponse.next();
 
   for (const cookie of cookiesToSet) {

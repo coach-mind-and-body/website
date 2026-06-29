@@ -1,4 +1,4 @@
-﻿import {
+import {
   ParamBuilder,
   PlainDataObject,
   type CookieSettings,
@@ -101,11 +101,32 @@ export function buildPlainDataFromUrl(
   );
 }
 
+// Re-implement processRequestAndGetCookies for the Edge runtime
 export function processRequestAndGetCookies(
-  plainData: PlainDataObject
-): CookieSettings[] {
-  const builder = createBuilder();
-  return builder.processRequestFromContext(plainData);
+  plainData: any
+): { name: string; value: string; maxAge: number; domain: string }[] {
+  const cookiesToSet: { name: string; value: string; maxAge: number; domain: string }[] = [];
+  const now = Date.now();
+  const domain = "mindandbodyresetcoach.com";
+  const maxAge = 60 * 60 * 24 * 90; // 90 days
+
+  // Handle _fbp (Facebook Browser ID)
+  let fbp = plainData.cookies?.["_fbp"];
+  if (!fbp) {
+    const random = Math.floor(Math.random() * 10000000000);
+    fbp = `fb.1.${now}.${random}`;
+    cookiesToSet.push({ name: "_fbp", value: fbp, maxAge, domain });
+  }
+
+  // Handle _fbc (Facebook Click ID)
+  let fbc = plainData.cookies?.["_fbc"];
+  const fbclid = plainData.queryParams?.["fbclid"];
+  if (fbclid) {
+    fbc = `fb.1.${now}.${fbclid}`;
+    cookiesToSet.push({ name: "_fbc", value: fbc, maxAge, domain });
+  }
+
+  return cookiesToSet;
 }
 
 export function getParamBuilderForPii(): ParamBuilder {
