@@ -29,16 +29,17 @@ pnpm-debug.log*
 .DS_Store
 Thumbs.db
 
-# Misc
+# Misc / large / unnecessary for build or runtime
 *.md
 docs
 scripts
 test-*.js
 test-*.ts
 vitest.config.ts
-tsconfig*.json
-tailwind.config.*
-postcss.config.*
+client/
 
-# Large assets not needed in image (if any)
+# Note: Do NOT exclude tsconfig*.json, next.config.*, postcss.config.*,
+# tailwind.config.*, drizzle.config.ts etc. - they are required for the build.
+
+# Large assets (public/ is kept; images/ folder is source-only and can be excluded)
 images
