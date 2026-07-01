@@ -75,8 +75,8 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
             </div>
             <div className="flex items-center gap-3">
               <span className="text-xs px-2 py-1 rounded-full font-bold" style={{
-                background: contact.highestStatus === "reclaim" ? "oklch(0.92 0.04 148)" : contact.highestStatus === "discovery" ? "oklch(0.93 0.06 75)" : contact.highestStatus === "habit-only" ? "oklch(0.96 0.025 50)" : "oklch(0.985 0.008 80)",
-                color: contact.highestStatus === "reclaim" ? "oklch(0.38 0.10 148)" : contact.highestStatus === "discovery" ? "oklch(0.45 0.12 65)" : contact.highestStatus === "habit-only" ? "oklch(0.72 0.12 75)" : "oklch(0.42 0.015 50)",
+                background: contact.highestStatus === "reclaim" ? "oklch(0.92 0.04 148)" : contact.highestStatus === "discovery" ? "oklch(0.93 0.06 75)" : contact.highestStatus === "habit-only" ? "oklch(0.20 0.015 50)" : "oklch(0.985 0.008 80)",
+                color: contact.highestStatus === "reclaim" ? "oklch(0.38 0.10 148)" : contact.highestStatus === "discovery" ? "oklch(0.45 0.12 65)" : contact.highestStatus === "habit-only" ? "oklch(0.96 0.025 50)" : "oklch(0.42 0.015 50)",
               }}>
                 {contact.highestStatus === "reclaim" ? "Reclaim Client" : contact.highestStatus === "discovery" ? "Discovery Call" : contact.highestStatus === "fpu" ? "FPU Interest" : contact.highestStatus === "habit-only" ? "Habit Tracker" : "Subscriber"}
               </span>
