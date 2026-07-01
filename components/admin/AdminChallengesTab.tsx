@@ -35,38 +35,38 @@ export function AdminChallengesTab() {
 
   return (
     <div>
-      <h2 className="font-bold text-2xl mb-6" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.97 0.008 10)" }}>Manage Challenges</h2>
+      <h2 className="font-bold text-2xl mb-6" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.20 0.015 50)" }}>Manage Challenges</h2>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="p-6 rounded-2xl border" style={{ background: "oklch(0.18 0.02 160)", borderColor: "oklch(0.28 0.02 160)" }}>
-          <h3 className="font-bold text-lg mb-4" style={{ color: "oklch(0.97 0.008 10)" }}>Create New Challenge</h3>
+        <div className="p-6 rounded-2xl border" style={{ background: "oklch(0.96 0.025 50)", borderColor: "oklch(0.90 0.015 80)" }}>
+          <h3 className="font-bold text-lg mb-4" style={{ color: "oklch(0.20 0.015 50)" }}>Create New Challenge</h3>
           <div className="space-y-4">
             <div>
-              <label className="text-sm text-gray-400 block mb-1">Title</label>
-              <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. 7 Days of Hydration" style={{ background: "oklch(0.12 0.01 160)", color: "white", borderColor: "oklch(0.28 0.02 160)" }} />
+              <label className="text-sm block mb-1" style={{ color: "oklch(0.42 0.015 50)" }}>Title</label>
+              <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. 7 Days of Hydration" style={{ background: "oklch(0.985 0.008 80)", color: "oklch(0.20 0.015 50)", borderColor: "oklch(0.90 0.015 80)" }} />
             </div>
             <div>
-              <label className="text-sm text-gray-400 block mb-1">Description</label>
-              <Textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Short description of the challenge..." style={{ background: "oklch(0.12 0.01 160)", color: "white", borderColor: "oklch(0.28 0.02 160)" }} />
+              <label className="text-sm block mb-1" style={{ color: "oklch(0.42 0.015 50)" }}>Description</label>
+              <Textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Short description of the challenge..." style={{ background: "oklch(0.985 0.008 80)", color: "oklch(0.20 0.015 50)", borderColor: "oklch(0.90 0.015 80)" }} />
             </div>
             <div>
-              <label className="text-sm text-gray-400 block mb-1">Duration (Days)</label>
-              <Input type="number" value={duration} onChange={e => setDuration(Number(e.target.value))} style={{ background: "oklch(0.12 0.01 160)", color: "white", borderColor: "oklch(0.28 0.02 160)" }} />
+              <label className="text-sm block mb-1" style={{ color: "oklch(0.42 0.015 50)" }}>Duration (Days)</label>
+              <Input type="number" value={duration} onChange={e => setDuration(Number(e.target.value))} style={{ background: "oklch(0.985 0.008 80)", color: "oklch(0.20 0.015 50)", borderColor: "oklch(0.90 0.015 80)" }} />
             </div>
-            <Button onClick={handleCreate} disabled={createChallengeMutation.isPending} style={{ background: "oklch(0.72 0.12 75)", color: "oklch(0.22 0.02 160)" }}>
+            <Button onClick={handleCreate} disabled={createChallengeMutation.isPending} style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}>
               {createChallengeMutation.isPending ? "Creating..." : "Create Challenge"}
             </Button>
           </div>
         </div>
 
         <div>
-          <h3 className="font-bold text-lg mb-4" style={{ color: "oklch(0.97 0.008 10)" }}>Active Challenges</h3>
+          <h3 className="font-bold text-lg mb-4" style={{ color: "oklch(0.20 0.015 50)" }}>Active Challenges</h3>
           <div className="space-y-4">
             {challenges?.map(c => (
-              <div key={c.id} className="p-4 rounded-xl border flex flex-col gap-2" style={{ borderColor: "oklch(0.28 0.02 160)" }}>
+              <div key={c.id} className="p-4 rounded-xl border flex flex-col gap-2" style={{ borderColor: "oklch(0.90 0.015 80)", background: "oklch(1 0 0)" }}>
                 <div>
-                  <div className="font-bold text-white">{c.title}</div>
-                  <div className="text-sm text-gray-400">{c.durationDays} days</div>
+                  <div className="font-bold" style={{ color: "oklch(0.20 0.015 50)" }}>{c.title}</div>
+                  <div className="text-sm" style={{ color: "oklch(0.52 0.015 50)" }}>{c.durationDays} days</div>
                 </div>
                 <div className="mt-2 flex justify-end">
                   <Button 

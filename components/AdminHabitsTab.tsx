@@ -27,18 +27,18 @@ export default function AdminHabitsTab() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="font-bold text-2xl" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.97 0.008 10)" }}>Habit Templates</h2>
+        <h2 className="font-bold text-2xl" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.20 0.015 50)" }}>Habit Templates</h2>
         <Button 
           onClick={() => setEditing({ title: "", description: "", order: (templates?.length || 0) + 1, isActive: true })}
           className="rounded-full font-bold"
-          style={{ background: "oklch(0.72 0.12 75)", color: "oklch(0.22 0.02 160)" }}
+          style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}
         >
           <Plus size={16} className="mr-2" /> New Template
         </Button>
       </div>
 
       {editing && (
-        <div className="bg-white/5 rounded-xl p-6 mb-6 border border-white/10 text-white">
+        <div className="rounded-xl p-6 mb-6 border" style={{ background: "oklch(1 0 0)", borderColor: "oklch(0.90 0.015 80)", color: "oklch(0.20 0.015 50)" }}>
           <h3 className="font-bold mb-4">{editing.id ? "Edit Habit" : "New Habit"}</h3>
           <div className="space-y-4">
             <div>
@@ -46,7 +46,8 @@ export default function AdminHabitsTab() {
               <Input 
                 value={editing.title} 
                 onChange={e => setEditing({ ...editing, title: e.target.value })} 
-                className="bg-white/10 border-white/20"
+                className="border"
+                style={{ background: "oklch(0.985 0.008 80)", borderColor: "oklch(0.90 0.015 80)" }}
               />
             </div>
             <div>
@@ -54,7 +55,8 @@ export default function AdminHabitsTab() {
               <Textarea 
                 value={editing.description || ""} 
                 onChange={e => setEditing({ ...editing, description: e.target.value })} 
-                className="bg-white/10 border-white/20"
+                className="border"
+                style={{ background: "oklch(0.985 0.008 80)", borderColor: "oklch(0.90 0.015 80)" }}
               />
             </div>
             <div className="flex gap-4">
@@ -64,7 +66,8 @@ export default function AdminHabitsTab() {
                   type="number" 
                   value={editing.order} 
                   onChange={e => setEditing({ ...editing, order: parseInt(e.target.value) || 0 })} 
-                  className="bg-white/10 border-white/20"
+                  className="border"
+                  style={{ background: "oklch(0.985 0.008 80)", borderColor: "oklch(0.90 0.015 80)" }}
                 />
               </div>
               <div className="flex items-center gap-2 mt-6">
@@ -87,7 +90,7 @@ export default function AdminHabitsTab() {
                   createMutation.mutate({ title: editing.title, description: editing.description ?? undefined, order: editing.order, isActive: editing.isActive });
                 }
               }} disabled={!editing.title || createMutation.isPending || updateMutation.isPending}
-              className="bg-pink-600 hover:bg-pink-700 text-white">
+              className="bg-[oklch(0.72_0.12_75)] hover:bg-[oklch(0.68_0.12_75)] text-white">
                 Save
               </Button>
             </div>
@@ -97,14 +100,14 @@ export default function AdminHabitsTab() {
 
       <div className="space-y-3">
         {(templates || []).map(t => (
-          <div key={t.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl" style={{ background: "oklch(0.22 0.02 160)" }}>
+          <div key={t.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl" style={{ background: "oklch(1 0 0)" }}>
             <div>
-              <p className="font-bold text-lg" style={{ color: "oklch(0.97 0.008 10)" }}>{t.title} {!t.isActive && "(Inactive)"}</p>
-              {t.description && <p className="text-sm" style={{ color: "oklch(0.60 0.02 160)" }}>{t.description}</p>}
+              <p className="font-bold text-lg" style={{ color: "oklch(0.20 0.015 50)" }}>{t.title} {!t.isActive && "(Inactive)"}</p>
+              {t.description && <p className="text-sm" style={{ color: "oklch(0.52 0.015 50)" }}>{t.description}</p>}
             </div>
             <div className="flex gap-2 mt-3 sm:mt-0">
-              <Button variant="ghost" size="sm" onClick={() => setEditing({ id: t.id, title: t.title, description: t.description, order: t.order, isActive: t.isActive })} className="text-white"><Edit2 size={16} /></Button>
-              <Button variant="ghost" size="sm" onClick={() => { if (confirm("Delete this habit template?")) deleteMutation.mutate({ id: t.id }); }}><Trash2 size={16} className="text-red-400 hover:text-red-300" /></Button>
+              <Button variant="ghost" size="sm" onClick={() => setEditing({ id: t.id, title: t.title, description: t.description, order: t.order, isActive: t.isActive })} style={{ color: "oklch(0.42 0.015 50)" }}><Edit2 size={16} /></Button>
+              <Button variant="ghost" size="sm" onClick={() => { if (confirm("Delete this habit template?")) deleteMutation.mutate({ id: t.id }); }}><Trash2 size={16} className="text-red-500 hover:text-red-700" /></Button>
             </div>
           </div>
         ))}
