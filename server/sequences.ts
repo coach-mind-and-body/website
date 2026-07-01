@@ -7,9 +7,11 @@ import {
   SNACK_HACK_EMAILS,
   SNACK_HACK_DAY_OFFSETS,
 } from "./emails/snackHackSequence";
+import { FOOD_QUIZ_NURTURE_EMAILS } from "./emails/foodQuizNurture";
 import { sendTransactionalEmail } from "./notifications";
 
 export const SNACK_HACK_SEQUENCE_ID = "snack_hack_nurture";
+export const FOOD_QUIZ_SEQUENCE_ID = "food_quiz_nurture";
 
 type EmailGenerator = (name: string) => { subject: string; html: string };
 

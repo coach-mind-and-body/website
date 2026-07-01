@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { CheckCircle2, ArrowRight, Sparkles } from "lucide-react";
@@ -123,14 +123,8 @@ export default function FoodQuiz() {
       D: "Quiz-Feeler",
     };
 
-    try {
-      await fetch(ZAPIER_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, result_letter: top, quiz_result: zapierTags[top] }),
-      });
-    } catch (_) {}
+    // Zapier call removed. The backend now natively handles sending the result email
+    // and enrolling the user into the nurture sequence.
 
     const eventId = generateMetaEventId();
     const meta = getMetaParams();

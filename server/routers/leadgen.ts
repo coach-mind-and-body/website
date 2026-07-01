@@ -1,11 +1,17 @@
-﻿import { z } from "zod";
+import { z } from "zod";
 import { desc, eq, like } from "drizzle-orm";
 import { publicProcedure, adminProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { subscribers } from "../../drizzle/schema";
 import { resendSubscribe } from "../resendSubscribe";
-import { sendSnackHackEmail } from "../notifications";
-import { enrollUserInSequence, SNACK_HACK_SEQUENCE_ID } from "../sequences";
+import { sendSnackHackEmail, sendTransactionalEmail } from "../notifications";
+import { enrollUserInSequence, SNACK_HACK_SEQUENCE_ID, FOOD_QUIZ_SEQUENCE_ID } from "../sequences";
+import { 
+  getFoodQuizRebalancerEmail, 
+  getFoodQuizDoerEmail, 
+  getFoodQuizAchieverEmail, 
+  getFoodQuizFeelerEmail 
+} from "../emails/foodQuizResults";
 import { fireMetaPixelLead } from "../metaCapi";
 import { metaTrackingInputSchema } from "@shared/metaTracking";
 
@@ -118,6 +124,32 @@ export const leadgenRouter = router({
       });
 
       await addSubscriberSegment(input.email, input.firstName, "leadgen_food_quiz");
+
+      // Send initial Result Email
+      let emailTemplate;
+      if (input.resultLetter === "A") emailTemplate = getFoodQuizRebalancerEmail;
+      else if (input.resultLetter === "B") emailTemplate = getFoodQuizDoerEmail;
+      else if (input.resultLetter === "C") emailTemplate = getFoodQuizAchieverEmail;
+      else if (input.resultLetter === "D") emailTemplate = getFoodQuizFeelerEmail;
+
+      if (emailTemplate) {
+        const content = emailTemplate(input.firstName || "Friend");
+        await sendTransactionalEmail({
+          to: input.email,
+          toName: input.firstName || "Friend",
+          subject: content.subject,
+          htmlBody: content.html,
+          textBody: "Please view this email in an HTML-compatible client.",
+        });
+      }
+
+      // Enroll in the nurture sequence
+      await enrollUserInSequence(
+        input.email,
+        input.firstName ?? null,
+        FOOD_QUIZ_SEQUENCE_ID
+      );
+
       return { success: true };
     }),
 
