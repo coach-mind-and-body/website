@@ -31,7 +31,7 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
         <h2 className="font-bold text-2xl" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.20 0.015 50)" }}>Unified Contacts</h2>
-        <div className="flex items-center gap-2 p-1 rounded-lg" style={{ background: "oklch(0.96 0.025 50)" }}>
+        <div className="flex items-center gap-2 p-1 rounded-full" style={{ background: "oklch(0.96 0.025 50)" }}>
           {([
             { id: "all", label: "All" },
             { id: "reclaim", label: "Reclaim Clients" },
@@ -41,7 +41,7 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
             <button
               key={t.id}
               onClick={() => setFilter(t.id)}
-              className="px-3 py-1.5 rounded-md text-xs font-bold transition-all"
+              className="px-4 py-1.5 rounded-full text-xs font-bold transition-all"
               style={{
                 background: filter === t.id ? "oklch(1 0 0)" : "transparent",
                 color: filter === t.id ? "oklch(0.20 0.015 50)" : "oklch(0.52 0.015 50)",
