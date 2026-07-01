@@ -3,11 +3,14 @@ import { Users, Video, Calendar, Bell, ChevronRight, CheckCircle2 } from "lucide
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { trpc } from "@/lib/trpc";
 import AdminClientSessions from "../AdminClientSessions";
+import AdminModuleAssignment from "../AdminModuleAssignment";
+import AdminClientHabits from "../AdminClientHabits";
 import { toast } from "sonner";
 
 export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) {
   const { data: contacts, isLoading, refetch } = trpc.leads.unifiedContacts.useQuery();
   const [selectedContact, setSelectedContact] = useState<any>(null);
+  const [filter, setFilter] = useState<"all" | "reclaim" | "habit" | "leads">("all");
 
   const updateLeadStatus = trpc.leads.updateStatus.useMutation({
     onSuccess: () => { toast.success("Status updated!"); refetch(); },
@@ -16,13 +19,27 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
 
   if (isLoading) return <div className="text-sm" style={{ color: "oklch(0.55 0.02 160)" }}>Loading unified CRM contacts...</div>;
 
+  const filteredContacts = (contacts ?? []).filter((c: any) => {
+    if (filter === "all") return true;
+    if (filter === "reclaim") return c.highestStatus === "reclaim";
+    if (filter === "habit") return c.highestStatus === "habit-only";
+    if (filter === "leads") return ["discovery", "fpu", "subscriber"].includes(c.highestStatus);
+    return true;
+  });
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
         <h2 className="font-bold text-2xl" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.97 0.008 10)" }}>Unified Contacts</h2>
+        <div className="flex items-center gap-2 bg-white/5 p-1 rounded-lg">
+          <button onClick={() => setFilter("all")} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${filter === "all" ? "bg-white/10 text-white" : "text-gray-400 hover:text-white"}`}>All</button>
+          <button onClick={() => setFilter("reclaim")} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${filter === "reclaim" ? "bg-white/10 text-white" : "text-gray-400 hover:text-white"}`}>Reclaim Clients</button>
+          <button onClick={() => setFilter("habit")} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${filter === "habit" ? "bg-white/10 text-white" : "text-gray-400 hover:text-white"}`}>Habit Tracker</button>
+          <button onClick={() => setFilter("leads")} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${filter === "leads" ? "bg-white/10 text-white" : "text-gray-400 hover:text-white"}`}>Leads</button>
+        </div>
       </div>
       <div className="space-y-3">
-        {(contacts ?? []).map((contact: any) => (
+        {filteredContacts.map((contact: any) => (
           <button
             key={contact.email}
             onClick={() => setSelectedContact(contact)}
@@ -43,10 +60,10 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
             </div>
             <div className="flex items-center gap-3">
               <span className="text-xs px-2 py-1 rounded-full font-bold" style={{
-                background: contact.highestStatus === "reclaim" ? "oklch(0.92 0.04 148)" : contact.highestStatus === "discovery" ? "oklch(0.93 0.06 75)" : "oklch(0.28 0.02 160)",
-                color: contact.highestStatus === "reclaim" ? "oklch(0.38 0.10 148)" : contact.highestStatus === "discovery" ? "oklch(0.45 0.12 65)" : "oklch(0.70 0.02 160)",
+                background: contact.highestStatus === "reclaim" ? "oklch(0.92 0.04 148)" : contact.highestStatus === "discovery" ? "oklch(0.93 0.06 75)" : contact.highestStatus === "habit-only" ? "oklch(0.90 0.02 160)" : "oklch(0.28 0.02 160)",
+                color: contact.highestStatus === "reclaim" ? "oklch(0.38 0.10 148)" : contact.highestStatus === "discovery" ? "oklch(0.45 0.12 65)" : contact.highestStatus === "habit-only" ? "oklch(0.40 0.02 160)" : "oklch(0.70 0.02 160)",
               }}>
-                {contact.highestStatus === "reclaim" ? "Reclaim Client" : contact.highestStatus === "discovery" ? "Discovery Call" : contact.highestStatus === "fpu" ? "FPU Interest" : "Subscriber"}
+                {contact.highestStatus === "reclaim" ? "Reclaim Client" : contact.highestStatus === "discovery" ? "Discovery Call" : contact.highestStatus === "fpu" ? "FPU Interest" : contact.highestStatus === "habit-only" ? "Habit Tracker" : "Subscriber"}
               </span>
               <ChevronRight size={16} style={{ color: "oklch(0.60 0.02 160)" }} />
             </div>
@@ -109,13 +126,22 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
                 </div>
               )}
 
-              {selectedContact.enrollmentId && (
+              {selectedContact.enrollmentId && selectedContact.highestStatus !== 'habit-only' && (
                 <div className="mt-8 border-t pt-6" style={{ borderColor: "oklch(0.30 0.02 160)" }}>
                   <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: "oklch(0.60 0.02 160)" }}>Reclaim Session Management</p>
                   <AdminClientSessions
                     enrollmentId={selectedContact.enrollmentId}
                     gcalConnected={gcalConnected}
                   />
+                  <p className="text-xs font-bold uppercase tracking-widest mt-6 mb-2" style={{ color: "oklch(0.60 0.02 160)" }}>Module Assignment</p>
+                  <AdminModuleAssignment userId={selectedContact.userId} />
+                </div>
+              )}
+
+              {selectedContact.userId && selectedContact.shareHabitsWithCoach && (
+                <div className="mt-8 border-t pt-6" style={{ borderColor: "oklch(0.30 0.02 160)" }}>
+                  <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: "oklch(0.60 0.02 160)" }}>Habit Progress</p>
+                  <AdminClientHabits userId={selectedContact.userId} />
                 </div>
               )}
             </>

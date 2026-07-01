@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+
+import { useState, useEffect } from "react";
 import { Users, BookOpen, CreditCard, BarChart3, ChevronDown, ChevronUp, Bell, Link2, Link2Off, Calendar, Video, UserPlus, Layers, Target, Cookie } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -13,13 +14,14 @@ import PageEditorTab from "@/components/PageEditorTab";
 import ProgramBuilderTab from "@/components/ProgramBuilderTab";
 import AdminClientHabits from "@/components/AdminClientHabits";
 import AdminModuleAssignment from "@/components/AdminModuleAssignment";
+import { AdminContactsTab } from "@/components/admin/AdminContactsTab";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { BRAND } from "@shared/brand";
 import { getLoginUrl } from "@/lib/const";
 
-type AdminTab = "overview" | "clients" | "leads" | "snackhack" | "fpu" | "fpugroup" | "programbuilder" | "engagement" | "blog" | "deposits" | "settings" | "pageeditor";
+type AdminTab = "overview" | "contacts" | "snackhack" | "fpu" | "fpugroup" | "programbuilder" | "engagement" | "blog" | "deposits" | "settings" | "pageeditor";
 
 export default function Admin() {
   
@@ -112,8 +114,7 @@ export default function Admin() {
 
   const TABS: { id: AdminTab; label: string; icon: React.ReactNode }[] = [
     { id: "overview", label: "Overview", icon: <BarChart3 size={16} /> },
-    { id: "clients", label: "Clients", icon: <Users size={16} /> },
-    { id: "leads", label: "Leads", icon: <Bell size={16} /> },
+    { id: "contacts", label: "Contacts", icon: <Users size={16} /> },
     { id: "snackhack", label: "Snack Hack Leads", icon: <Cookie size={16} /> },
     { id: "fpu", label: "FPU Coaching", icon: <Video size={16} /> },
     { id: "fpugroup", label: "FPU Sign-Ups", icon: <UserPlus size={16} /> },
@@ -304,199 +305,20 @@ export default function Admin() {
           </DialogContent>
         </Dialog>
 
-        {/* Clients */}
-        {tab === "clients" && (
+        {/* Contacts */}
+        {tab === "contacts" && (
           <div>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="font-bold text-2xl" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.97 0.008 10)" }}>Client Enrollments</h2>
+            <div className="flex justify-end mb-4">
               <button
                 onClick={() => setShowEnrollModal(true)}
-                className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg"
+                className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg transition-opacity hover:opacity-80"
                 style={{ background: "oklch(0.72 0.12 75)", color: "oklch(0.18 0.02 160)" }}
               >
                 <UserPlus size={16} />
-                Enroll Client Manually
+                Enroll Reclaim Client Manually
               </button>
             </div>
-            <div className="space-y-4">
-              {(enrollments ?? []).map(enrollment => (
-                <div key={enrollment.id} className="rounded-xl overflow-hidden" style={{ background: "oklch(0.22 0.02 160)" }}>
-                  <button
-                    className="w-full flex items-center justify-between p-5 text-left"
-                    onClick={() => setExpandedEnrollment(expandedEnrollment === enrollment.id ? null : enrollment.id)}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm" style={{ background: "oklch(0.72 0.12 75)", color: "oklch(0.22 0.02 160)" }}>
-                        {(enrollment.clientName ?? "?").charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-sm" style={{ color: "oklch(0.97 0.008 10)" }}>{enrollment.clientName ?? `Client #${enrollment.userId}`}</p>
-                        <p className="text-xs" style={{ color: "oklch(0.60 0.02 160)" }}>
-                          {enrollment.clientEmail ? `${enrollment.clientEmail} · ` : ""}{enrollment.paymentType === "full" ? "Paid in Full" : enrollment.paymentType === "deposit" ? "Deposit" : "App User"} · Enrolled {new Date(enrollment.enrolledAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      {enrollment.paymentType === "deposit" && !enrollment.balancePaid && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); sendBalanceReminder.mutate({ enrollmentId: enrollment.id }); }}
-                          disabled={sendBalanceReminder.isPending}
-                          className="text-xs px-3 py-1 rounded-full font-bold border transition-all hover:opacity-80"
-                          style={{ borderColor: "oklch(0.72 0.12 75)", color: "oklch(0.72 0.12 75)", background: "transparent" }}
-                          title="Send $397 balance reminder email to client"
-                        >
-                          {sendBalanceReminder.isPending ? "Sending..." : "Send Balance Reminder"}
-                        </button>
-                      )}
-                      {enrollment.paymentType === "deposit" && enrollment.balancePaid && (
-                        <span className="text-xs px-2 py-1 rounded-full font-bold" style={{ background: "oklch(0.92 0.04 148)", color: "oklch(0.38 0.10 148)" }}>Paid in Full</span>
-                      )}
-                      <span className="text-xs px-2 py-1 rounded-full font-bold" style={{
-                        background: enrollment.status === "active" ? "oklch(0.92 0.04 148)" : enrollment.status === "habit-only" ? "oklch(0.90 0.02 160)" : "oklch(0.93 0.06 75)",
-                        color: enrollment.status === "active" ? "oklch(0.38 0.10 148)" : enrollment.status === "habit-only" ? "oklch(0.40 0.02 160)" : "oklch(0.45 0.12 65)",
-                      }}>{enrollment.status === "habit-only" ? "Habit Tracker" : enrollment.status}</span>
-                      {expandedEnrollment === enrollment.id ? <ChevronUp size={16} style={{ color: "oklch(0.60 0.02 160)" }} /> : <ChevronDown size={16} style={{ color: "oklch(0.60 0.02 160)" }} />}
-                    </div>
-                  </button>
-                  {expandedEnrollment === enrollment.id && (
-                    <div className="px-5 pb-5 border-t" style={{ borderColor: "oklch(0.30 0.02 160)" }}>
-                      <p className="text-xs font-bold uppercase tracking-widest mt-4 mb-2" style={{ color: "oklch(0.60 0.02 160)" }}>Session Management</p>
-                      <AdminClientSessions
-                        enrollmentId={enrollment.id}
-                        gcalConnected={!!gcalStatus?.connected}
-                      />
-
-                      <p className="text-xs font-bold uppercase tracking-widest mt-6 mb-2" style={{ color: "oklch(0.60 0.02 160)" }}>Module Assignment</p>
-                      <AdminModuleAssignment userId={enrollment.userId} />
-
-                      <p className="text-xs font-bold uppercase tracking-widest mt-6 mb-2" style={{ color: "oklch(0.60 0.02 160)" }}>Habit Progress</p>
-                      <AdminClientHabits userId={enrollment.userId} />
-                    </div>
-                  )}
-                </div>
-              ))}
-              {!enrollments?.length && <p className="text-sm" style={{ color: "oklch(0.55 0.02 160)" }}>No enrollments yet.</p>}
-            </div>
-          </div>
-        )}
-
-        {/* Leads */}
-        {tab === "leads" && (
-          <div>
-            <h2 className="font-bold text-2xl mb-6" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.97 0.008 10)" }}>Discovery Call Leads</h2>
-            <div className="space-y-3">
-              {(leadsData ?? []).map((lead: { id: number; name: string; email: string; status: "new" | "contacted" | "enrolled" | "not_a_fit"; phone: string | null; notes: string | null; createdAt: Date }) => (
-                <div key={lead.id} className="rounded-xl p-5" style={{ background: "oklch(0.22 0.02 160)" }}>
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="font-bold text-base mb-1" style={{ color: "oklch(0.97 0.008 10)" }}>{lead.name}</p>
-                      <p className="text-xs mb-1" style={{ color: "oklch(0.60 0.02 160)" }}>{lead.email}</p>
-                      {lead.phone && <p className="text-xs" style={{ color: "oklch(0.60 0.02 160)" }}>{lead.phone}</p>}
-                      {lead.notes && <p className="text-xs mt-2 italic" style={{ color: "oklch(0.65 0.02 160)" }}>"{lead.notes}"</p>}
-                      <p className="text-xs mt-2" style={{ color: "oklch(0.50 0.02 160)" }}>
-                        {new Date(lead.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
-                      </p>
-                    </div>
-                    <select
-                      value={lead.status}
-                      onChange={e => updateLead.mutate({ id: lead.id, status: e.target.value as "new" | "contacted" | "enrolled" | "not_a_fit" })}
-                      className="text-xs rounded-lg px-2 py-1.5 font-bold"
-                      style={{ background: "oklch(0.28 0.02 160)", color: "oklch(0.88 0.01 160)", border: "1px solid oklch(0.42 0.02 160)" }}
-                    >
-                      <option value="new">New</option>
-                      <option value="contacted">Contacted</option>
-                      <option value="enrolled">Enrolled</option>
-                      <option value="not_a_fit">Not a Fit</option>
-                    </select>
-                  </div>
-                </div>
-              ))}
-              {!leadsData?.length && <p className="text-sm" style={{ color: "oklch(0.55 0.02 160)" }}>No leads yet.</p>}
-            </div>
-          </div>
-        )}
-
-        {/* FPU Coaching */}
-        {tab === "fpu" && (
-          <div>
-            <h2 className="font-bold text-2xl mb-6" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.97 0.008 10)" }}>FPU 1:1 Coaching Clients</h2>
-            {!fpuClients?.length && (
-              <p className="text-sm" style={{ color: "oklch(0.55 0.02 160)" }}>No FPU coaching clients yet.</p>
-            )}
-            <div className="space-y-4">
-              {(fpuClients ?? []).map(({ order, sessions }) => (
-                <div key={order.id} className="rounded-xl overflow-hidden" style={{ background: "oklch(0.22 0.02 160)" }}>
-                  <button
-                    className="w-full flex items-center justify-between p-5 text-left"
-                    onClick={() => setExpandedFpu(expandedFpu === order.id ? null : order.id)}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm" style={{ background: "oklch(0.72 0.12 75)", color: "oklch(0.22 0.02 160)" }}>
-                        {(order.clientName ?? "?").charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-sm" style={{ color: "oklch(0.97 0.008 10)" }}>{order.clientName ?? `Client #${order.id}`}</p>
-                        <p className="text-xs" style={{ color: "oklch(0.60 0.02 160)" }}>
-                          {order.clientEmail} · Purchased {new Date(order.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs px-2 py-1 rounded-full font-bold" style={{ background: "oklch(0.92 0.04 148)", color: "oklch(0.38 0.10 148)" }}>
-                        {sessions.filter(s => s.completedAt).length}/{sessions.length} sessions done
-                      </span>
-                      {expandedFpu === order.id ? <ChevronUp size={16} style={{ color: "oklch(0.60 0.02 160)" }} /> : <ChevronDown size={16} style={{ color: "oklch(0.60 0.02 160)" }} />}
-                    </div>
-                  </button>
-                  {expandedFpu === order.id && (
-                    <div className="px-5 pb-5 border-t" style={{ borderColor: "oklch(0.30 0.02 160)" }}>
-                      <p className="text-xs font-bold uppercase tracking-widest mt-4 mb-3" style={{ color: "oklch(0.60 0.02 160)" }}>Sessions</p>
-                      <div className="space-y-3">
-                        {sessions.map(session => (
-                          <div key={session.id} className="rounded-lg p-4" style={{ background: "oklch(0.28 0.02 160)" }}>
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="flex items-center gap-2">
-                                <Video size={14} style={{ color: "oklch(0.72 0.12 75)" }} />
-                                <span className="text-sm font-semibold" style={{ color: "oklch(0.97 0.008 10)" }}>Session {session.sessionNumber}</span>
-                                {session.completedAt && (
-                                  <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ background: "oklch(0.92 0.04 148)", color: "oklch(0.38 0.10 148)" }}>Completed {new Date(session.completedAt).toLocaleDateString()}</span>
-                                )}
-                              </div>
-                              {!session.completedAt && (
-                                <button
-                                  onClick={() => fpuCompleteSession.mutate({ sessionId: session.id, notes: fpuNotes[session.id] })}
-                                  disabled={fpuCompleteSession.isPending}
-                                  className="text-xs px-3 py-1.5 rounded-full font-bold"
-                                  style={{ background: "oklch(0.72 0.12 75)", color: "oklch(0.22 0.02 160)" }}
-                                >
-                                  Mark Complete
-                                </button>
-                              )}
-                            </div>
-                            <textarea
-                              rows={2}
-                              placeholder="Coach notes for this session…"
-                              value={fpuNotes[session.id] ?? session.adminNotes ?? ""}
-                              onChange={e => setFpuNotes(prev => ({ ...prev, [session.id]: e.target.value }))}
-                              className="w-full text-xs rounded-lg px-3 py-2 resize-none"
-                              style={{ background: "oklch(0.22 0.02 160)", color: "oklch(0.88 0.01 160)", border: "1px solid oklch(0.38 0.02 160)" }}
-                            />
-                            <button
-                              onClick={() => fpuUpdateNotes.mutate({ sessionId: session.id, notes: fpuNotes[session.id] ?? session.adminNotes ?? "" })}
-                              disabled={fpuUpdateNotes.isPending}
-                              className="mt-2 text-xs px-3 py-1 rounded-full font-semibold"
-                              style={{ background: "oklch(0.35 0.02 160)", color: "oklch(0.72 0.12 75)" }}
-                            >
-                              Save Notes
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+            <AdminContactsTab gcalConnected={!!gcalStatus?.connected} />
           </div>
         )}
 

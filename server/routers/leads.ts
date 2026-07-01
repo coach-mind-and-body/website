@@ -118,11 +118,12 @@ export const leadsRouter = router({
     const db = await getDb();
     if (!db) return [];
 
-    const [allLeads, allSubscribers, allEnrollments, allFpu] = await Promise.all([
+    const [allLeads, allSubscribers, allEnrollments, allFpu, allUsers] = await Promise.all([
       db.select().from(leads),
       db.select().from(subscribers),
       db.select({
         id: enrollments.id,
+        userId: enrollments.userId,
         email: users.email,
         name: users.name,
         paymentType: enrollments.paymentType,
@@ -131,7 +132,8 @@ export const leadsRouter = router({
         status: enrollments.status,
         enrolledAt: enrollments.enrolledAt,
       }).from(enrollments).leftJoin(users, eq(users.id, enrollments.userId)),
-      db.select().from(fpuLeads)
+      db.select().from(fpuLeads),
+      db.select().from(users)
     ]);
 
     type TimelineEvent = { date: string; action: string; type: string };
@@ -141,11 +143,13 @@ export const leadsRouter = router({
       phone?: string;
       tags: string[];
       timeline: TimelineEvent[];
-      highestStatus: string; // 'reclaim', 'fpu', 'discovery', 'subscriber'
+      highestStatus: string; // 'reclaim', 'fpu', 'discovery', 'subscriber', 'habit-only'
       leadStatus?: string;
       leadId?: number;
       enrollmentStatus?: string;
       enrollmentId?: number;
+      userId?: number;
+      shareHabitsWithCoach?: boolean;
       notes?: string;
     };
 
@@ -194,6 +198,20 @@ export const leadsRouter = router({
         contact.highestStatus = 'reclaim';
       } else if (contact.highestStatus !== 'reclaim') {
         contact.highestStatus = 'discovery';
+      }
+    });
+
+    allUsers.forEach(user => {
+      if (!user.email) return;
+      const contact = getContact(user.email, user.name || 'Unknown');
+      contact.userId = user.id;
+      contact.shareHabitsWithCoach = user.shareHabitsWithCoach;
+      // If they are a registered user but haven't booked a call or bought reclaim, they are a habit-tracker user
+      if (contact.highestStatus === 'subscriber' || contact.highestStatus === 'fpu') {
+        contact.highestStatus = 'habit-only';
+      }
+      if (!contact.timeline.some(t => t.type === 'signup')) {
+         contact.timeline.push({ date: user.createdAt.toISOString(), action: 'Created Portal Account', type: 'signup' });
       }
     });
 
