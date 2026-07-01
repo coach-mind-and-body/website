@@ -72,7 +72,7 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
       </div>
 
       <Dialog open={!!selectedContact} onOpenChange={(open) => !open && setSelectedContact(null)}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto" style={{ background: "oklch(0.96 0.025 50)", border: "1px solid oklch(0.90 0.015 80)" }}>
+        <DialogContent className="max-w-5xl w-[90vw] max-h-[85vh] overflow-y-auto" style={{ background: "oklch(0.96 0.025 50)", border: "1px solid oklch(0.90 0.015 80)" }}>
           {selectedContact && (
             <>
               <DialogHeader>
