@@ -4,6 +4,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { BRAND } from "../../../shared/brand";
 import { trpc } from "../lib/trpc";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -27,6 +28,7 @@ const formSchema = z.object({
 
 export default function SnackHackLeadGen() {
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [, setLocation] = useLocation();
   const subscribeMutation = trpc.leadgen.subscribeSnackHack.useMutation();
   const { trackLead } = useMetaPixel();
   const ga = useGoogleAnalytics();
@@ -43,7 +45,6 @@ export default function SnackHackLeadGen() {
     try {
       await subscribeMutation.mutateAsync(values);
       setIsSubmitted(true);
-      toast.success("Success! Check your email for your free guide.");
       
       // Fire conversion events
       trackLead({
@@ -51,6 +52,9 @@ export default function SnackHackLeadGen() {
         content_category: "Lead Generation"
       });
       ga.trackLead({ category: "Lead Generation", label: "Snack Hack Download" });
+      
+      // Redirect to the upsell page
+      setLocation("/snack-hack-offer");
     } catch (err: any) {
       toast.error(err.message || "Something went wrong. Please try again.");
     }

@@ -47,8 +47,9 @@ RUN pnpm install --frozen-lockfile
 # ==========================================
 FROM base AS builder
 
-# Railway passes build variables (including DATABASE_URL) as build args for Dockerfile builds.
-# We must declare them explicitly with ARG so they are available as ENV during RUN steps.
+# Railway automatically passes service variables (like DATABASE_URL) as --build-arg
+# when using the DOCKERFILE builder. We must declare + export them so they are
+# visible to Node/pnpm/drizzle-kit inside RUN steps.
 ARG DATABASE_URL
 ENV DATABASE_URL=${DATABASE_URL}
 
@@ -60,7 +61,8 @@ COPY --from=deps /app/node_modules ./node_modules
 # Copy the rest of the source
 COPY . .
 
-# Run DB schema push (requires DATABASE_URL at build time, matching the previous nixpacks buildCommand)
+# Run DB schema push (requires DATABASE_URL at build time).
+# This is the same as the old "npm run db:push && npm run build" in railway.toml.
 RUN pnpm run db:push
 
 # Build the Next.js app

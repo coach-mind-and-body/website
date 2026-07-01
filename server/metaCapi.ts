@@ -1,4 +1,4 @@
-﻿import { ENV } from "./_core/env";
+import { ENV } from "./_core/env";
 import {
   extractMetaParamsFromRequest,
   getParamBuilderForPii,
@@ -199,5 +199,42 @@ export async function fireMetaPixelPurchase(params: MetaPurchaseParams) {
     });
   } catch (err) {
     console.error("[Meta CAPI] Failed to fire Purchase event:", err);
+  }
+}
+
+export interface MetaCrmParams {
+  eventName: string;
+  customerEmail?: string | null;
+  customerName?: string | null;
+  customerPhone?: string | null;
+  eventId?: string;
+}
+
+export async function fireMetaCrmEvent(params: MetaCrmParams) {
+  try {
+    const userData = buildUserData({
+      email: params.customerEmail,
+      name: params.customerName,
+      phone: params.customerPhone,
+    });
+
+    if (Object.keys(userData).length === 0) {
+      console.warn("[Meta CAPI] No user data for CRM event");
+      return;
+    }
+
+    await sendMetaEvent({
+      event_name: params.eventName,
+      event_time: Math.floor(Date.now() / 1000),
+      action_source: "system_generated",
+      event_id: params.eventId,
+      user_data: userData,
+      custom_data: {
+        event_source: "crm",
+        lead_event_source: "Mind & Body Reset CRM",
+      },
+    });
+  } catch (err) {
+    console.error("[Meta CAPI] Failed to fire CRM event:", err);
   }
 }

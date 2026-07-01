@@ -710,8 +710,13 @@ export async function sendSnackHackEmail(params: {
           <a href="${ENV.appPublicUrl}/habit-tracker" style="color:#c9a96e;font-weight:700;text-decoration:underline;">Open Your Free Habit Tracker</a>
         </div>
 
-        <p style="color:#4a4a4a;font-size:16px;margin:0 0 16px;">If you find this guide helpful but feel like you need some personal accountability and guidance to make these changes stick—I am here for you.</p>
-        <p style="color:#4a4a4a;font-size:16px;margin:0 0 16px;">Feel free to <strong>reply directly to this email</strong> to chat, or <a href="${ENV.appPublicUrl}/contact" style="color:#c9a96e;font-weight:bold;text-decoration:underline;">click here to reach out</a> about my 1-on-1 coaching program.</p>
+        <div style="margin:32px 0;padding:24px;border:1px solid #f0e8e4;border-radius:8px;background:#fff;">
+          <h3 style="margin:0 0 12px;font-size:18px;color:#3a5a3a;">Tired of doing it alone?</h3>
+          <p style="margin:0 0 16px;color:#4a4a4a;font-size:15px;line-height:1.6;">A PDF is a great start, but real, lasting transformation usually requires someone in your corner. I am offering a free 30-minute Discovery Call to help you map out a personalized plan for your body and your habits.</p>
+          <div style="text-align:center;">
+            <a href="${ENV.appPublicUrl}/book" style="display:inline-block;background:#3a5a3a;color:white;padding:12px 28px;border-radius:9999px;text-decoration:none;font-weight:700;">Book Your Free Discovery Call</a>
+          </div>
+        </div>
 
         <p style="color:#4a4a4a;font-size:15px;margin-top:32px;">With love and excitement,<br/><strong>Lee Anne</strong><br/><span style="color:#8a9a8a;font-size:13px;">Certified Life &amp; Health Coach | Mind &amp; Body Reset</span></p>
       </div>
@@ -728,7 +733,8 @@ Bonus: Track Your Daily Reset
 I've also created a free habit tracker for you to use. You can track your daily habits right on your phone or computer to start building momentum today!
 Access it here: ${ENV.appPublicUrl}/habit-tracker
 
-If you find this guide helpful but feel like you need some personal accountability and guidance to make these changes stick—I am here for you. Feel free to reply directly to this email to chat, or reach out at ${ENV.appPublicUrl}/contact
+If you're tired of doing it alone, I am offering a free 30-minute Discovery Call to help you map out a personalized plan for your body and your habits. 
+Book your free call here: ${ENV.appPublicUrl}/book
 
 With love and excitement,
 Lee Anne`;

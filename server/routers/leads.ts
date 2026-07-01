@@ -1,4 +1,4 @@
-﻿import { z } from "zod";
+import { z } from "zod";
 import { eq, desc } from "drizzle-orm";
 import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
@@ -6,7 +6,7 @@ import { leads } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
 import { notifyOwner } from "../_core/notification";
 import { sendOwnerEmail } from "../notifications";
-import { fireMetaPixelLead } from "../metaCapi";
+import { fireMetaPixelLead, fireMetaCrmEvent } from "../metaCapi";
 import { metaTrackingInputSchema } from "@shared/metaTracking";
 
 function adminOnly(role: string | undefined) {
@@ -90,9 +90,25 @@ export const leadsRouter = router({
       adminOnly(ctx.user?.role);
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      
+      const [lead] = await db.select().from(leads).where(eq(leads.id, input.id));
+      if (!lead) throw new TRPCError({ code: "NOT_FOUND", message: "Lead not found" });
+
       const updateData: Record<string, unknown> = { status: input.status };
       if (input.notes !== undefined) updateData.notes = input.notes;
       await db.update(leads).set(updateData).where(eq(leads.id, input.id));
+
+      if (input.status === "contacted" || input.status === "enrolled") {
+        const eventName = input.status.charAt(0).toUpperCase() + input.status.slice(1);
+        await fireMetaCrmEvent({
+          eventName,
+          customerEmail: lead.email,
+          customerName: lead.name,
+          customerPhone: lead.phone,
+          eventId: `crm_${lead.id}_${input.status}`,
+        });
+      }
+
       return { success: true };
     }),
 });
