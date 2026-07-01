@@ -90,25 +90,12 @@ export const reclaimHubRouter = router({
       .where(eq(assignmentSubmissions.userId, ctx.user!.id));
 
     // Calculate drip logic
-    const enrolledDate = new Date(effectiveEnrollment.enrolledAt as Date);
-    const now = new Date();
-    const daysSinceEnrollment = Math.floor((now.getTime() - enrolledDate.getTime()) / (1000 * 60 * 60 * 24));
-
     const enrichedModules = modules.map((mod, index) => {
       const progress = progressRecords.find(p => p.moduleId === mod.id);
-      let isUnlocked = false;
-
-      if (index === 0) {
-        isUnlocked = true;
-      } else {
-        const previousModule = modules[index - 1];
-        const prevProgress = progressRecords.find(p => p.moduleId === previousModule.id);
-        
-        // Unlocked if previous is completed or 7 days have passed since enrollment per module index
-        if (prevProgress?.completedAt || daysSinceEnrollment >= index * 7) {
-          isUnlocked = true;
-        }
-      }
+      
+      // Module is unlocked if the admin has explicitly assigned it (a progress record exists)
+      // OR if it's the very first module and we auto-unlock it for new clients so they have a starting point.
+      let isUnlocked = (progress !== undefined && progress.unlockedAt !== null) || index === 0;
 
       return {
         ...mod,
@@ -209,6 +196,15 @@ export const reclaimHubRouter = router({
     return db.select().from(programModules).orderBy(asc(programModules.order));
   }),
 
+  adminGetClientProgress: protectedProcedure
+    .input(z.object({ userId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      adminOnly(ctx.user?.role);
+      const db = await getDb();
+      if (!db) return [];
+      return db.select().from(moduleProgress).where(eq(moduleProgress.userId, input.userId));
+    }),
+
   adminCreateModule: protectedProcedure
     .input(z.object({
       title: z.string().min(1),
@@ -287,6 +283,24 @@ export const reclaimHubRouter = router({
           .set({ unlockedAt: new Date() })
           .where(eq(moduleProgress.id, existing[0].id));
       }
+
+      return { success: true };
+    }),
+
+  adminUnassignModule: protectedProcedure
+    .input(z.object({ userId: z.number(), moduleId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      adminOnly(ctx.user?.role);
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      await db.delete(moduleProgress)
+        .where(
+          and(
+            eq(moduleProgress.userId, input.userId),
+            eq(moduleProgress.moduleId, input.moduleId)
+          )
+        );
 
       return { success: true };
     }),
