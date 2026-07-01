@@ -366,6 +366,12 @@ export default function ReclaimHub() {
                       )}
                     </div>
                   )}
+                  {selectedModule.session?.adminNotes && (
+                    <div className="mb-6 p-6 rounded-2xl max-w-2xl" style={{ background: "#f5f8f5", border: "1px solid #e2ece2" }}>
+                      <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "#5a6b5a" }}>Coach Notes</p>
+                      <p className="text-base leading-relaxed" style={{ color: "#2d3b2d" }}>{selectedModule.session.adminNotes}</p>
+                    </div>
+                  )}
                 </div>
 
                 {selectedModule.videoUrl && (
