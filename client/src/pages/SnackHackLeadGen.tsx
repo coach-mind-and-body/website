@@ -43,14 +43,15 @@ export default function SnackHackLeadGen() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      await subscribeMutation.mutateAsync(values);
+      const eventId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
+      await subscribeMutation.mutateAsync({ ...values, eventId });
       setIsSubmitted(true);
       
       // Fire conversion events
       trackLead({
         content_name: "Snack Hack Download",
         content_category: "Lead Generation"
-      });
+      }, eventId);
       ga.trackLead({ category: "Lead Generation", label: "Snack Hack Download" });
       
       // Redirect to the upsell page
