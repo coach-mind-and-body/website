@@ -8,7 +8,7 @@ export function AdminEngagementHub() {
 
   return (
     <div>
-      <h2 className="font-bold text-3xl mb-2" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.97 0.008 10)" }}>
+      <h2 className="font-bold text-3xl mb-2" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.20 0.015 50)" }}>
         Engagement Hub
       </h2>
       <p className="text-gray-400 mb-8">Manage the daily habits, global challenges, and send push notifications to your users.</p>

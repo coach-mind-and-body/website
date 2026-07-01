@@ -135,29 +135,29 @@ export default function AdminClientSessions({ enrollmentId, gcalConnected }: Pro
           const isShowingScheduler = schedulingSession === sessionNum;
 
           return (
-            <div key={sessionNum} className="rounded-lg overflow-hidden" style={{ background: "oklch(0.28 0.02 160)" }}>
+            <div key={sessionNum} className="rounded-lg overflow-hidden" style={{ background: "oklch(0.985 0.008 80)" }}>
               <div className="flex items-center justify-between p-3">
                 <div className="flex items-center gap-3">
                   <div
                     className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
                     style={{
-                      background: isCompleted ? "oklch(0.38 0.10 148)" : isScheduled ? "oklch(0.72 0.12 75)" : "oklch(0.42 0.02 160)",
-                      color: isCompleted || isScheduled ? "oklch(0.22 0.02 160)" : "oklch(0.72 0.12 75)",
+                      background: isCompleted ? "oklch(0.38 0.10 148)" : isScheduled ? "oklch(0.72 0.12 75)" : "oklch(0.52 0.015 50)",
+                      color: isCompleted || isScheduled ? "oklch(1 0 0)" : "oklch(0.72 0.12 75)",
                     }}
                   >
                     {isCompleted ? <CheckCircle2 size={14} /> : isScheduled ? <Clock size={14} /> : sessionNum}
                   </div>
                   <div>
-                    <p className="text-sm font-semibold" style={{ color: "oklch(0.88 0.01 160)" }}>
+                    <p className="text-sm font-semibold" style={{ color: "oklch(0.20 0.015 50)" }}>
                       Session {sessionNum}: {SESSION_LABELS[sessionNum - 1]}
                     </p>
                     {isScheduled && session?.scheduledAt && (
-                      <p className="text-xs" style={{ color: "oklch(0.60 0.02 160)" }}>
+                      <p className="text-xs" style={{ color: "oklch(0.52 0.015 50)" }}>
                         {new Date(session.scheduledAt).toLocaleString()}
                       </p>
                     )}
                     {isCompleted && session?.completedAt && (
-                      <p className="text-xs" style={{ color: "oklch(0.60 0.02 160)" }}>
+                      <p className="text-xs" style={{ color: "oklch(0.52 0.015 50)" }}>
                         Completed {new Date(session.completedAt).toLocaleDateString()}
                       </p>
                     )}
@@ -179,7 +179,7 @@ export default function AdminClientSessions({ enrollmentId, gcalConnected }: Pro
                     <button
                       onClick={() => setSchedulingSession(isShowingScheduler ? null : sessionNum)}
                       className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold"
-                      style={{ background: "oklch(0.42 0.02 160)", color: "oklch(0.72 0.12 75)" }}
+                      style={{ background: "oklch(0.52 0.015 50)", color: "oklch(0.72 0.12 75)" }}
                     >
                       <Calendar size={11} /> {isScheduled ? "Reschedule" : "Schedule"}
                     </button>
@@ -198,26 +198,26 @@ export default function AdminClientSessions({ enrollmentId, gcalConnected }: Pro
 
               {/* Scheduler panel */}
               {isShowingScheduler && session && (
-                <div className="px-3 pb-3 border-t" style={{ borderColor: "oklch(0.35 0.02 160)" }}>
+                <div className="px-3 pb-3 border-t" style={{ borderColor: "oklch(0.90 0.015 80)" }}>
                   <div className="flex items-center gap-2 mt-3">
                     <input
                       type="datetime-local"
                       value={scheduleDateInputs[sessionNum] ?? ""}
                       onChange={e => setScheduleDateInputs(prev => ({ ...prev, [sessionNum]: e.target.value }))}
                       className="text-xs rounded-lg px-2 py-1.5 flex-1"
-                      style={{ background: "oklch(0.22 0.02 160)", color: "oklch(0.88 0.01 160)", border: "1px solid oklch(0.42 0.02 160)" }}
+                      style={{ background: "oklch(1 0 0)", color: "oklch(0.20 0.015 50)", border: "1px solid oklch(0.52 0.015 50)" }}
                     />
                     <button
                       onClick={() => handleSchedule(session)}
                       disabled={scheduleSession.isPending}
                       className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold"
-                      style={{ background: "oklch(0.72 0.12 75)", color: "oklch(0.22 0.02 160)" }}
+                      style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}
                     >
                       {scheduleSession.isPending ? "..." : gcalConnected ? <><Video size={11} /> Schedule + Meet</> : <><Calendar size={11} /> Schedule</>}
                     </button>
                   </div>
                   {!gcalConnected && (
-                    <p className="text-xs mt-1.5" style={{ color: "oklch(0.55 0.02 160)" }}>
+                    <p className="text-xs mt-1.5" style={{ color: "oklch(0.52 0.015 50)" }}>
                       Connect Google Calendar in Settings to auto-generate Meet links.
                     </p>
                   )}
@@ -233,8 +233,8 @@ export default function AdminClientSessions({ enrollmentId, gcalConnected }: Pro
                       onClick={() => setActiveNotesTab(prev => ({ ...prev, [sessionNum]: tab }))}
                       className="text-xs px-2 py-0.5 rounded-md font-semibold transition-all"
                       style={{
-                        background: (activeNotesTab[sessionNum] ?? 'shared') === tab ? 'oklch(0.72 0.12 75)' : 'oklch(0.32 0.02 160)',
-                        color: (activeNotesTab[sessionNum] ?? 'shared') === tab ? 'oklch(0.22 0.02 160)' : 'oklch(0.60 0.02 160)',
+                        background: (activeNotesTab[sessionNum] ?? 'shared') === tab ? 'oklch(0.72 0.12 75)' : 'oklch(0.90 0.015 80)',
+                        color: (activeNotesTab[sessionNum] ?? 'shared') === tab ? 'oklch(1 0 0)' : 'oklch(0.52 0.015 50)',
                       }}
                     >
                       {tab === 'shared' ? '👁 Shared with Client' : '🔒 Private Notes'}
@@ -248,7 +248,7 @@ export default function AdminClientSessions({ enrollmentId, gcalConnected }: Pro
                       value={sessionNotes[sessionNum] ?? session?.adminNotes ?? ""}
                       onChange={e => setSessionNotes(prev => ({ ...prev, [sessionNum]: e.target.value }))}
                       className="text-xs rounded-lg px-2 py-1 resize-none flex-1"
-                      style={{ background: "oklch(0.22 0.02 160)", color: "oklch(0.88 0.01 160)", border: "1px solid oklch(0.42 0.02 160)", height: "52px" }}
+                      style={{ background: "oklch(1 0 0)", color: "oklch(0.20 0.015 50)", border: "1px solid oklch(0.52 0.015 50)", height: "52px" }}
                     />
                   ) : (
                     <textarea
@@ -256,7 +256,7 @@ export default function AdminClientSessions({ enrollmentId, gcalConnected }: Pro
                       value={privateNotes[sessionNum] ?? session?.privateNotes ?? ""}
                       onChange={e => setPrivateNotes(prev => ({ ...prev, [sessionNum]: e.target.value }))}
                       className="text-xs rounded-lg px-2 py-1 resize-none flex-1"
-                      style={{ background: "oklch(0.22 0.02 160)", color: "oklch(0.88 0.01 160)", border: "1px solid oklch(0.55 0.08 30)", height: "52px" }}
+                      style={{ background: "oklch(1 0 0)", color: "oklch(0.20 0.015 50)", border: "1px solid oklch(0.55 0.08 30)", height: "52px" }}
                     />
                   )}
                   {session && (
@@ -282,14 +282,14 @@ export default function AdminClientSessions({ enrollmentId, gcalConnected }: Pro
       {/* ── Client Files ── */}
       <div className="mt-4">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "oklch(0.60 0.02 160)" }}>
+          <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "oklch(0.52 0.015 50)" }}>
             Client Files
           </p>
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
-            style={{ background: "oklch(0.72 0.12 75)", color: "oklch(0.22 0.02 160)" }}
+            style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}
           >
             <Upload size={12} /> {uploading ? "Uploading..." : "Upload File"}
           </button>
@@ -308,15 +308,15 @@ export default function AdminClientSessions({ enrollmentId, gcalConnected }: Pro
               <div
                 key={file.id}
                 className="flex items-center justify-between p-3 rounded-lg"
-                style={{ background: "oklch(0.28 0.02 160)" }}
+                style={{ background: "oklch(0.985 0.008 80)" }}
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <FileText size={16} style={{ color: "oklch(0.72 0.12 75)", flexShrink: 0 }} />
                   <div className="min-w-0">
-                    <p className="text-sm font-medium truncate" style={{ color: "oklch(0.88 0.01 160)" }}>
+                    <p className="text-sm font-medium truncate" style={{ color: "oklch(0.20 0.015 50)" }}>
                       {file.fileName}
                     </p>
-                    <p className="text-xs" style={{ color: "oklch(0.55 0.02 160)" }}>
+                    <p className="text-xs" style={{ color: "oklch(0.52 0.015 50)" }}>
                       {file.uploadedByRole === "admin" ? "Uploaded by coach" : "Uploaded by client"} · {new Date(file.createdAt).toLocaleDateString()}
                     </p>
                   </div>
@@ -349,7 +349,7 @@ export default function AdminClientSessions({ enrollmentId, gcalConnected }: Pro
             ))}
           </div>
         ) : (
-          <p className="text-xs" style={{ color: "oklch(0.55 0.02 160)" }}>
+          <p className="text-xs" style={{ color: "oklch(0.52 0.015 50)" }}>
             No files uploaded yet. Upload worksheets, resources, or session materials for this client.
           </p>
         )}

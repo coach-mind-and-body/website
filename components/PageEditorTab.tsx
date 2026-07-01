@@ -89,14 +89,14 @@ export default function PageEditorTab() {
       <div
         className="flex items-center justify-between gap-4 px-5 py-3 rounded-t-2xl border-b"
         style={{
-          background: "oklch(0.22 0.02 160)",
-          borderColor: "oklch(0.28 0.02 160)",
+          background: "oklch(1 0 0)",
+          borderColor: "oklch(0.985 0.008 80)",
         }}
       >
         <div className="flex items-center gap-3">
           <h2
             className="font-bold text-lg"
-            style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.97 0.008 10)" }}
+            style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.20 0.015 50)" }}
           >
             Financial Peace Page
           </h2>
@@ -116,8 +116,8 @@ export default function PageEditorTab() {
             onClick={toggleEditMode}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all"
             style={{
-              background: editMode ? "oklch(0.72 0.12 75)" : "oklch(0.28 0.02 160)",
-              color: editMode ? "oklch(0.22 0.02 160)" : "oklch(0.72 0.12 75)",
+              background: editMode ? "oklch(0.72 0.12 75)" : "oklch(0.985 0.008 80)",
+              color: editMode ? "oklch(1 0 0)" : "oklch(0.72 0.12 75)",
               border: editMode ? "none" : "2px solid oklch(0.72 0.12 75)",
             }}
           >
@@ -139,7 +139,7 @@ export default function PageEditorTab() {
               disabled={discardMutation.isPending}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all"
               style={{
-                background: "oklch(0.28 0.02 160)",
+                background: "oklch(0.985 0.008 80)",
                 color: "oklch(0.72 0.06 20)",
                 border: "2px solid oklch(0.72 0.06 20)",
               }}
@@ -159,8 +159,8 @@ export default function PageEditorTab() {
             disabled={!hasDraft || publishMutation.isPending}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
-              background: hasDraft ? "oklch(0.38 0.09 148)" : "oklch(0.28 0.02 160)",
-              color: hasDraft ? "oklch(1 0 0)" : "oklch(0.55 0.02 160)",
+              background: hasDraft ? "oklch(0.38 0.09 148)" : "oklch(0.985 0.008 80)",
+              color: hasDraft ? "oklch(1 0 0)" : "oklch(0.52 0.015 50)",
             }}
           >
             {publishMutation.isPending ? (

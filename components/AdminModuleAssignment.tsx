@@ -17,7 +17,7 @@ export default function AdminModuleAssignment({ userId }: { userId: number }) {
     onError: (e) => toast.error(e.message)
   });
 
-  if (isLoading) return <div className="text-xs" style={{ color: "oklch(0.60 0.02 160)" }}>Loading modules...</div>;
+  if (isLoading) return <div className="text-xs" style={{ color: "oklch(0.52 0.015 50)" }}>Loading modules...</div>;
 
   return (
     <div className="flex gap-2 items-center">
@@ -25,7 +25,7 @@ export default function AdminModuleAssignment({ userId }: { userId: number }) {
         value={selectedModule} 
         onChange={e => setSelectedModule(e.target.value ? Number(e.target.value) : "")}
         className="text-xs rounded-lg px-2 py-1.5"
-        style={{ background: "oklch(0.28 0.02 160)", color: "oklch(0.88 0.01 160)", border: "1px solid oklch(0.42 0.02 160)" }}
+        style={{ background: "oklch(0.985 0.008 80)", color: "oklch(0.20 0.015 50)", border: "1px solid oklch(0.52 0.015 50)" }}
       >
         <option value="">Select a Module</option>
         {modules?.map(m => (
@@ -36,7 +36,7 @@ export default function AdminModuleAssignment({ userId }: { userId: number }) {
         size="sm" 
         onClick={() => assignModule.mutate({ userId, moduleId: selectedModule as number })}
         disabled={selectedModule === "" || assignModule.isPending}
-        style={{ background: "oklch(0.72 0.12 75)", color: "oklch(0.18 0.02 160)" }}
+        style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}
       >
         Assign Module
       </Button>

@@ -135,13 +135,13 @@ export default function Admin() {
     }
   }, [loading, isAuthenticated]);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center" style={{ background: "oklch(0.12 0.01 160)" }}><div className="w-10 h-10 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "oklch(0.72 0.12 75)" }} /></div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center" style={{ background: "oklch(0.985 0.008 80)" }}><div className="w-10 h-10 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "oklch(0.72 0.12 75)" }} /></div>;
   if (!isAuthenticated || user?.role !== "admin") {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "oklch(0.12 0.01 160)" }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "oklch(0.985 0.008 80)" }}>
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-2" style={{ color: "oklch(0.97 0.008 10)" }}>Access Denied</h1>
-          <p style={{ color: "oklch(0.60 0.02 160)" }}>This area is for Lee Anne only.</p>
+          <h1 className="text-2xl font-bold mb-2" style={{ color: "oklch(0.20 0.015 50)" }}>Access Denied</h1>
+          <p style={{ color: "oklch(0.52 0.015 50)" }}>This area is for Lee Anne only.</p>
           <a href={getLoginUrl()} className="mt-4 inline-block text-sm underline" style={{ color: "oklch(0.72 0.12 75)" }}>Sign in to continue</a>
         </div>
       </div>
@@ -149,21 +149,21 @@ export default function Admin() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: "oklch(0.12 0.01 160)" }}>
+    <div className="min-h-screen" style={{ background: "oklch(0.985 0.008 80)" }}>
       {/* Admin header */}
-      <header className="border-b" style={{ background: "oklch(0.18 0.02 160)", borderColor: "oklch(0.28 0.02 160)" }}>
+      <header className="border-b" style={{ background: "oklch(0.96 0.025 50)", borderColor: "oklch(0.985 0.008 80)" }}>
         <div className="container max-w-6xl mx-auto px-4 md:px-6 lg:px-8 flex items-center justify-between h-16">
           <a href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <img src={BRAND.logoUrl} alt={BRAND.name} className="w-8 h-8 rounded-full object-cover" />
-            <span className="font-bold text-sm" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.97 0.008 10)", fontSize: "1rem" }}>
+            <span className="font-bold text-sm" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.20 0.015 50)", fontSize: "1rem" }}>
               Admin Portal
             </span>
           </a>
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: "oklch(0.72 0.12 75)", color: "oklch(0.22 0.02 160)" }}>
+            <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}>
               {user?.name?.[0] ?? "A"}
             </div>
-            <span className="text-xs font-semibold hidden sm:block" style={{ color: "oklch(0.65 0.02 160)" }}>{user?.name}</span>
+            <span className="text-xs font-semibold hidden sm:block" style={{ color: "oklch(0.42 0.015 50)" }}>{user?.name}</span>
           </div>
         </div>
       </header>
@@ -173,8 +173,8 @@ export default function Admin() {
         <div className="flex flex-wrap gap-2 mb-8 pb-1">
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)} className="flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all" style={{
-              background: tab === t.id ? "oklch(0.72 0.12 75)" : "oklch(0.22 0.02 160)",
-              color: tab === t.id ? "oklch(0.22 0.02 160)" : "oklch(0.65 0.02 160)",
+              background: tab === t.id ? "oklch(0.72 0.12 75)" : "oklch(1 0 0)",
+              color: tab === t.id ? "oklch(1 0 0)" : "oklch(0.42 0.015 50)",
             }}>
               {t.icon} {t.label}
             </button>
@@ -184,7 +184,7 @@ export default function Admin() {
         {/* Overview */}
         {tab === "overview" && (
           <div>
-            <h2 className="font-bold text-2xl mb-6" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.97 0.008 10)" }}>Dashboard Overview</h2>
+            <h2 className="font-bold text-2xl mb-6" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.20 0.015 50)" }}>Dashboard Overview</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
               {[
                 { label: "Active Clients", value: enrollments?.filter(e => e.status === "active").length ?? 0, icon: <Users size={18} /> },
@@ -194,21 +194,21 @@ export default function Admin() {
                 { label: "Blog Posts", value: blogPosts?.length ?? 0, icon: <BookOpen size={18} /> },
                 { label: "Total Enrollments", value: enrollments?.length ?? 0, icon: <CreditCard size={18} /> },
               ].map(stat => (
-                <div key={stat.label} className="rounded-xl p-5" style={{ background: "oklch(0.22 0.02 160)" }}>
+                <div key={stat.label} className="rounded-xl p-5" style={{ background: "oklch(1 0 0)" }}>
                   <div className="flex items-center gap-2 mb-2" style={{ color: "oklch(0.72 0.12 75)" }}>{stat.icon}</div>
-                  <div className="text-3xl font-bold mb-1" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.97 0.008 10)" }}>{stat.value}</div>
-                  <div className="text-xs" style={{ color: "oklch(0.60 0.02 160)" }}>{stat.label}</div>
+                  <div className="text-3xl font-bold mb-1" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.20 0.015 50)" }}>{stat.value}</div>
+                  <div className="text-xs" style={{ color: "oklch(0.52 0.015 50)" }}>{stat.label}</div>
                 </div>
               ))}
             </div>
             {/* Recent leads */}
-            <h3 className="font-bold text-lg mb-4" style={{ color: "oklch(0.97 0.008 10)" }}>Recent Leads</h3>
+            <h3 className="font-bold text-lg mb-4" style={{ color: "oklch(0.20 0.015 50)" }}>Recent Leads</h3>
             <div className="space-y-2">
               {(leadsData ?? []).slice(0, 5).map((lead: { id: number; name: string; email: string; status: string; phone: string | null; notes: string | null; createdAt: Date }) => (
-                <div key={lead.id} className="flex items-center justify-between p-4 rounded-xl" style={{ background: "oklch(0.22 0.02 160)" }}>
+                <div key={lead.id} className="flex items-center justify-between p-4 rounded-xl" style={{ background: "oklch(1 0 0)" }}>
                   <div>
-                    <p className="font-semibold text-sm" style={{ color: "oklch(0.97 0.008 10)" }}>{lead.name}</p>
-                    <p className="text-xs" style={{ color: "oklch(0.60 0.02 160)" }}>{lead.email}</p>
+                    <p className="font-semibold text-sm" style={{ color: "oklch(0.20 0.015 50)" }}>{lead.name}</p>
+                    <p className="text-xs" style={{ color: "oklch(0.52 0.015 50)" }}>{lead.email}</p>
                   </div>
                   <span className="text-xs px-2 py-1 rounded-full font-bold" style={{
                     background: lead.status === "new" ? "oklch(0.92 0.04 148)" : "oklch(0.93 0.06 75)",
@@ -216,32 +216,32 @@ export default function Admin() {
                   }}>{lead.status}</span>
                 </div>
               ))}
-              {!leadsData?.length && <p className="text-sm" style={{ color: "oklch(0.55 0.02 160)" }}>No leads yet.</p>}
+              {!leadsData?.length && <p className="text-sm" style={{ color: "oklch(0.52 0.015 50)" }}>No leads yet.</p>}
             </div>
           </div>
         )}
 
         {/* Manual Enrollment Modal */}
         <Dialog open={showEnrollModal} onOpenChange={setShowEnrollModal}>
-          <DialogContent style={{ background: "oklch(0.18 0.02 160)", border: "1px solid oklch(0.30 0.02 160)" }}>
+          <DialogContent style={{ background: "oklch(0.96 0.025 50)", border: "1px solid oklch(0.90 0.015 80)" }}>
             <DialogHeader>
-              <DialogTitle style={{ color: "oklch(0.97 0.008 10)" }}>Manually Enroll a Client</DialogTitle>
+              <DialogTitle style={{ color: "oklch(0.20 0.015 50)" }}>Manually Enroll a Client</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-2">
-              <p className="text-sm" style={{ color: "oklch(0.65 0.02 160)" }}>Enter their email to create an enrollment and 6 coaching sessions. If they don't have an account yet, one will be created automatically and they'll receive a welcome email to set their password.</p>
+              <p className="text-sm" style={{ color: "oklch(0.42 0.015 50)" }}>Enter their email to create an enrollment and 6 coaching sessions. If they don't have an account yet, one will be created automatically and they'll receive a welcome email to set their password.</p>
               <div>
-                <Label style={{ color: "oklch(0.80 0.02 160)" }}>Client Email</Label>
+                <Label style={{ color: "oklch(0.42 0.015 50)" }}>Client Email</Label>
                 <Input
                   type="email"
                   placeholder="client@email.com"
                   value={enrollEmail}
                   onChange={e => setEnrollEmail(e.target.value)}
                   className="mt-1"
-                  style={{ background: "oklch(0.22 0.02 160)", borderColor: "oklch(0.35 0.02 160)", color: "oklch(0.97 0.008 10)" }}
+                  style={{ background: "oklch(1 0 0)", borderColor: "oklch(0.90 0.015 80)", color: "oklch(0.20 0.015 50)" }}
                 />
               </div>
               <div>
-                <Label style={{ color: "oklch(0.80 0.02 160)" }}>Payment Plan</Label>
+                <Label style={{ color: "oklch(0.42 0.015 50)" }}>Payment Plan</Label>
                 <div className="flex gap-3 mt-1">
                   <button
                     onClick={() => setEnrollPaymentType("deposit")}
@@ -249,7 +249,7 @@ export default function Admin() {
                     style={{
                       background: enrollPaymentType === "deposit" ? "oklch(0.72 0.12 75)" : "transparent",
                       borderColor: "oklch(0.72 0.12 75)",
-                      color: enrollPaymentType === "deposit" ? "oklch(0.18 0.02 160)" : "oklch(0.72 0.12 75)",
+                      color: enrollPaymentType === "deposit" ? "oklch(0.96 0.025 50)" : "oklch(0.72 0.12 75)",
                     }}
                   >Deposit ($200)</button>
                   <button
@@ -258,13 +258,13 @@ export default function Admin() {
                     style={{
                       background: enrollPaymentType === "full" ? "oklch(0.72 0.12 75)" : "transparent",
                       borderColor: "oklch(0.72 0.12 75)",
-                      color: enrollPaymentType === "full" ? "oklch(0.18 0.02 160)" : "oklch(0.72 0.12 75)",
+                      color: enrollPaymentType === "full" ? "oklch(0.96 0.025 50)" : "oklch(0.72 0.12 75)",
                     }}
                   >Full Payment ($597)</button>
                 </div>
               </div>
               <div>
-                <Label style={{ color: "oklch(0.80 0.02 160)" }}>Payment Status</Label>
+                <Label style={{ color: "oklch(0.42 0.015 50)" }}>Payment Status</Label>
                 <div className="flex gap-3 mt-1">
                   <button
                     onClick={() => setEnrollPaymentStatus("paid")}
@@ -272,7 +272,7 @@ export default function Admin() {
                     style={{
                       background: enrollPaymentStatus === "paid" ? "oklch(0.72 0.12 75)" : "transparent",
                       borderColor: "oklch(0.72 0.12 75)",
-                      color: enrollPaymentStatus === "paid" ? "oklch(0.18 0.02 160)" : "oklch(0.72 0.12 75)",
+                      color: enrollPaymentStatus === "paid" ? "oklch(0.96 0.025 50)" : "oklch(0.72 0.12 75)",
                     }}
                   >Paid (Outside Stripe)</button>
                   <button
@@ -281,14 +281,14 @@ export default function Admin() {
                     style={{
                       background: enrollPaymentStatus === "unpaid" ? "oklch(0.72 0.12 75)" : "transparent",
                       borderColor: "oklch(0.72 0.12 75)",
-                      color: enrollPaymentStatus === "unpaid" ? "oklch(0.18 0.02 160)" : "oklch(0.72 0.12 75)",
+                      color: enrollPaymentStatus === "unpaid" ? "oklch(0.96 0.025 50)" : "oklch(0.72 0.12 75)",
                     }}
                   >Unpaid (Collect Later)</button>
                 </div>
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowEnrollModal(false)} style={{ borderColor: "oklch(0.35 0.02 160)", color: "oklch(0.80 0.02 160)" }}>Cancel</Button>
+              <Button variant="outline" onClick={() => setShowEnrollModal(false)} style={{ borderColor: "oklch(0.90 0.015 80)", color: "oklch(0.42 0.015 50)" }}>Cancel</Button>
               <Button
                 onClick={() => adminCreateEnrollment.mutate({ 
                   clientEmail: enrollEmail, 
@@ -297,7 +297,7 @@ export default function Admin() {
                   balancePaid: enrollPaymentStatus === "paid" && enrollPaymentType === "full" 
                 })}
                 disabled={!enrollEmail || adminCreateEnrollment.isPending}
-                style={{ background: "oklch(0.72 0.12 75)", color: "oklch(0.18 0.02 160)" }}
+                style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}
               >
                 {adminCreateEnrollment.isPending ? "Creating..." : "Create Enrollment"}
               </Button>
@@ -312,7 +312,7 @@ export default function Admin() {
               <button
                 onClick={() => setShowEnrollModal(true)}
                 className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg transition-opacity hover:opacity-80"
-                style={{ background: "oklch(0.72 0.12 75)", color: "oklch(0.18 0.02 160)" }}
+                style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}
               >
                 <UserPlus size={16} />
                 Enroll Reclaim Client Manually
@@ -327,10 +327,10 @@ export default function Admin() {
           <div>
             <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
               <div>
-                <h2 className="font-bold text-2xl mb-2" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.97 0.008 10)" }}>
+                <h2 className="font-bold text-2xl mb-2" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.20 0.015 50)" }}>
                   Late Night Snack Hack Leads
                 </h2>
-                <p className="text-sm max-w-xl" style={{ color: "oklch(0.60 0.02 160)" }}>
+                <p className="text-sm max-w-xl" style={{ color: "oklch(0.52 0.015 50)" }}>
                   Sign-ups from{" "}
                   <a href="/snack-hack" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: "oklch(0.72 0.12 75)" }}>
                     mindandbodyresetcoach.com/snack-hack
@@ -338,27 +338,27 @@ export default function Admin() {
                   . These are real email captures — each person received the free PDF guide.
                 </p>
               </div>
-              <div className="rounded-xl px-5 py-4 text-center" style={{ background: "oklch(0.22 0.02 160)", minWidth: "140px" }}>
-                <div className="text-3xl font-bold" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.97 0.008 10)" }}>
+              <div className="rounded-xl px-5 py-4 text-center" style={{ background: "oklch(1 0 0)", minWidth: "140px" }}>
+                <div className="text-3xl font-bold" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.20 0.015 50)" }}>
                   {snackHackLeads?.length ?? 0}
                 </div>
-                <div className="text-xs mt-1" style={{ color: "oklch(0.60 0.02 160)" }}>Total sign-ups</div>
+                <div className="text-xs mt-1" style={{ color: "oklch(0.52 0.015 50)" }}>Total sign-ups</div>
               </div>
             </div>
 
             {snackHackLeads && snackHackLeads.length > 0 ? (
               <div className="space-y-3">
                 {snackHackLeads.map((lead) => (
-                  <div key={lead.id} className="flex items-center justify-between p-4 rounded-xl" style={{ background: "oklch(0.22 0.02 160)" }}>
+                  <div key={lead.id} className="flex items-center justify-between p-4 rounded-xl" style={{ background: "oklch(1 0 0)" }}>
                     <div>
-                      <p className="font-semibold text-sm mb-1" style={{ color: "oklch(0.97 0.008 10)" }}>
+                      <p className="font-semibold text-sm mb-1" style={{ color: "oklch(0.20 0.015 50)" }}>
                         {lead.firstName?.trim() || "—"}
                       </p>
                       <div className="flex flex-wrap items-center gap-3">
                         <a href={`mailto:${lead.email}`} className="text-xs underline" style={{ color: "oklch(0.72 0.12 75)" }}>
                           {lead.email}
                         </a>
-                        <span className="text-xs" style={{ color: "oklch(0.55 0.02 160)" }}>
+                        <span className="text-xs" style={{ color: "oklch(0.52 0.015 50)" }}>
                           {new Date(lead.createdAt).toLocaleString(undefined, {
                             dateStyle: "medium",
                             timeStyle: "short",
@@ -378,7 +378,7 @@ export default function Admin() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm" style={{ color: "oklch(0.55 0.02 160)" }}>No Snack Hack sign-ups yet.</p>
+              <p className="text-sm" style={{ color: "oklch(0.52 0.015 50)" }}>No Snack Hack sign-ups yet.</p>
             )}
           </div>
         )}
@@ -386,16 +386,16 @@ export default function Admin() {
         {/* FPU Group Sign-Ups */}
         {tab === "fpugroup" && (
           <div>
-            <h2 className="font-bold text-2xl mb-6" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.97 0.008 10)" }}>FPU Group Sign-Ups</h2>
+            <h2 className="font-bold text-2xl mb-6" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.20 0.015 50)" }}>FPU Group Sign-Ups</h2>
             {fpuLeads && fpuLeads.length > 0 ? (
               <div className="space-y-3">
                 {fpuLeads.map((lead: { id: number; name: string; email: string; createdAt: Date }) => (
-                  <div key={lead.id} className="flex items-center justify-between p-4 rounded-xl" style={{ background: "oklch(0.22 0.02 160)" }}>
+                  <div key={lead.id} className="flex items-center justify-between p-4 rounded-xl" style={{ background: "oklch(1 0 0)" }}>
                     <div>
-                      <p className="font-semibold text-sm mb-1" style={{ color: "oklch(0.97 0.008 10)" }}>{lead.name}</p>
+                      <p className="font-semibold text-sm mb-1" style={{ color: "oklch(0.20 0.015 50)" }}>{lead.name}</p>
                       <div className="flex items-center gap-3">
                         <span className="text-xs" style={{ color: "oklch(0.72 0.12 75)" }}>{lead.email}</span>
-                        <span className="text-xs" style={{ color: "oklch(0.55 0.02 160)" }}>Signed up {new Date(lead.createdAt).toLocaleDateString()}</span>
+                        <span className="text-xs" style={{ color: "oklch(0.52 0.015 50)" }}>Signed up {new Date(lead.createdAt).toLocaleDateString()}</span>
                       </div>
                     </div>
                     <button
@@ -410,7 +410,7 @@ export default function Admin() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm" style={{ color: "oklch(0.55 0.02 160)" }}>No FPU group sign-ups yet.</p>
+              <p className="text-sm" style={{ color: "oklch(0.52 0.015 50)" }}>No FPU group sign-ups yet.</p>
             )}
           </div>
         )}
@@ -434,13 +434,13 @@ export default function Admin() {
         {tab === "blog" && (
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-2xl" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.97 0.008 10)" }}>Blog Posts</h2>
-              <a href="/admin/blog/new" className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold" style={{ background: "oklch(0.72 0.12 75)", color: "oklch(0.22 0.02 160)" }}>
+              <h2 className="font-bold text-2xl" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.20 0.015 50)" }}>Blog Posts</h2>
+              <a href="/admin/blog/new" className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold" style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}>
                 + New Post
               </a>
             </div>
 
-            <div className="flex gap-4 mb-6 border-b" style={{ borderColor: "oklch(0.28 0.02 160)" }}>
+            <div className="flex gap-4 mb-6 border-b" style={{ borderColor: "oklch(0.985 0.008 80)" }}>
               {(["published", "scheduled", "drafts"] as const).map(bt => (
                 <button
                   key={bt}
@@ -448,11 +448,11 @@ export default function Admin() {
                   className={`pb-2 text-sm font-bold transition-all ${blogTab === bt ? "border-b-2" : "opacity-60"}`}
                   style={{ 
                     borderColor: blogTab === bt ? "oklch(0.72 0.12 75)" : "transparent",
-                    color: blogTab === bt ? "oklch(0.97 0.008 10)" : "oklch(0.65 0.02 160)"
+                    color: blogTab === bt ? "oklch(0.20 0.015 50)" : "oklch(0.42 0.015 50)"
                   }}
                 >
                   {bt === "published" ? "Published" : bt === "scheduled" ? "Scheduled" : "Drafts"}
-                  <span className="ml-2 text-xs px-1.5 py-0.5 rounded-full" style={{ background: "oklch(0.22 0.02 160)", color: "oklch(0.60 0.02 160)" }}>
+                  <span className="ml-2 text-xs px-1.5 py-0.5 rounded-full" style={{ background: "oklch(1 0 0)", color: "oklch(0.52 0.015 50)" }}>
                     {bt === "published" ? publishedPosts.length : bt === "scheduled" ? scheduledPosts.length : draftPosts.length}
                   </span>
                 </button>
@@ -461,12 +461,12 @@ export default function Admin() {
 
             <div className="space-y-3">
               {currentBlogPosts.map((post: any) => (
-                <div key={post.id} className="flex items-center justify-between p-4 rounded-xl" style={{ background: "oklch(0.22 0.02 160)" }}>
+                <div key={post.id} className="flex items-center justify-between p-4 rounded-xl" style={{ background: "oklch(1 0 0)" }}>
                   <div>
-                    <p className="font-semibold text-sm mb-1" style={{ color: "oklch(0.97 0.008 10)" }}>{post.title}</p>
+                    <p className="font-semibold text-sm mb-1" style={{ color: "oklch(0.20 0.015 50)" }}>{post.title}</p>
                     <div className="flex items-center gap-3">
                       {post.category && <span className="text-xs" style={{ color: "oklch(0.72 0.12 75)" }}>{post.category}</span>}
-                      <span className="text-xs" style={{ color: "oklch(0.55 0.02 160)" }}>
+                      <span className="text-xs" style={{ color: "oklch(0.52 0.015 50)" }}>
                         {post.published && post.publishedAt 
                           ? new Date(post.publishedAt).toLocaleDateString() 
                           : post.scheduledAt 
@@ -484,12 +484,12 @@ export default function Admin() {
                     </span>
                     <a href={`/admin/blog/${post.id}`} className="text-xs underline" style={{ color: "oklch(0.72 0.12 75)" }}>Edit</a>
                     {post.published && (
-                      <a href={`/health-wellness-blog/${post.slug}`} target="_blank" rel="noopener noreferrer" className="text-xs underline" style={{ color: "oklch(0.55 0.02 160)" }}>View</a>
+                      <a href={`/health-wellness-blog/${post.slug}`} target="_blank" rel="noopener noreferrer" className="text-xs underline" style={{ color: "oklch(0.52 0.015 50)" }}>View</a>
                     )}
                   </div>
                 </div>
               ))}
-              {!currentBlogPosts.length && <p className="text-sm" style={{ color: "oklch(0.55 0.02 160)" }}>No {blogTab} posts yet.</p>}
+              {!currentBlogPosts.length && <p className="text-sm" style={{ color: "oklch(0.52 0.015 50)" }}>No {blogTab} posts yet.</p>}
             </div>
           </div>
         )}
@@ -497,16 +497,16 @@ export default function Admin() {
         {/* Settings / Integrations */}
         {tab === "settings" && (
           <div>
-            <h2 className="font-bold text-2xl mb-6" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.97 0.008 10)" }}>Settings & Integrations</h2>
-            <div className="rounded-2xl p-6" style={{ background: "oklch(0.22 0.02 160)" }}>
+            <h2 className="font-bold text-2xl mb-6" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.20 0.015 50)" }}>Settings & Integrations</h2>
+            <div className="rounded-2xl p-6" style={{ background: "oklch(1 0 0)" }}>
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: "oklch(0.28 0.02 160)" }}>
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: "oklch(0.985 0.008 80)" }}>
                     <Calendar size={22} style={{ color: "oklch(0.72 0.12 75)" }} />
                   </div>
                   <div>
-                    <h3 className="font-bold text-base mb-1" style={{ color: "oklch(0.97 0.008 10)" }}>Google Calendar</h3>
-                    <p className="text-sm mb-2" style={{ color: "oklch(0.60 0.02 160)" }}>
+                    <h3 className="font-bold text-base mb-1" style={{ color: "oklch(0.20 0.015 50)" }}>Google Calendar</h3>
+                    <p className="text-sm mb-2" style={{ color: "oklch(0.52 0.015 50)" }}>
                       Connect your Google Calendar to auto-create sessions with Google Meet links when you schedule client appointments.
                     </p>
                     {gcalStatus?.connected ? (
@@ -516,7 +516,7 @@ export default function Admin() {
                         </span>
                       </div>
                     ) : (
-                      <p className="text-xs" style={{ color: "oklch(0.55 0.02 160)" }}>Not connected</p>
+                      <p className="text-xs" style={{ color: "oklch(0.52 0.015 50)" }}>Not connected</p>
                     )}
                   </div>
                 </div>
@@ -533,7 +533,7 @@ export default function Admin() {
                     <a
                       href="/api/auth/google-calendar/connect"
                       className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold"
-                      style={{ background: "oklch(0.72 0.12 75)", color: "oklch(0.22 0.02 160)" }}
+                      style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}
                     >
                       <Link2 size={14} /> Connect Google Calendar
                     </a>
@@ -541,8 +541,8 @@ export default function Admin() {
                 </div>
               </div>
               {gcalStatus?.connected && (
-                <div className="mt-5 pt-5 border-t" style={{ borderColor: "oklch(0.30 0.02 160)" }}>
-                  <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "oklch(0.60 0.02 160)" }}>What happens when connected</p>
+                <div className="mt-5 pt-5 border-t" style={{ borderColor: "oklch(0.90 0.015 80)" }}>
+                  <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "oklch(0.52 0.015 50)" }}>What happens when connected</p>
                   <ul className="space-y-1.5">
                     {[
                       "When you schedule a session, a Google Calendar event is automatically created",
@@ -550,7 +550,7 @@ export default function Admin() {
                       "Both you and the client receive a calendar invite",
                       "Join Meet buttons appear in both your admin portal and the client portal",
                     ].map(item => (
-                      <li key={item} className="flex items-start gap-2 text-xs" style={{ color: "oklch(0.70 0.02 160)" }}>
+                      <li key={item} className="flex items-start gap-2 text-xs" style={{ color: "oklch(0.42 0.015 50)" }}>
                         <Video size={12} className="mt-0.5 flex-shrink-0" style={{ color: "oklch(0.72 0.12 75)" }} />
                         {item}
                       </li>
