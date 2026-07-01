@@ -84,7 +84,7 @@ export default function SnackHackLeadGen() {
                 End the <span className="text-[#c9a96e] italic">"Mental Food Fight"</span> Over Late-Night Snacking
               </h1>
               <p className="text-base sm:text-lg text-gray-700 mb-6 leading-relaxed">
-                If you're between 40 and 60, the evening hours can feel like a battleground. <strong>But itâ€™s not a lack of willpower.</strong> Your body is navigating major hormone shifts.
+                If you're between 40 and 60, the evening hours can feel like a battleground. <strong>But it’s not a lack of willpower.</strong> Your body is navigating major hormone shifts.
               </p>
               <p className="text-base sm:text-lg text-gray-700 mb-8 leading-relaxed">
                 Download the <strong>Midlife Mindset Guide</strong> to discover the biology behind your cravings and learn 7 actionable hacks to find lasting peace with your nighttime habits.

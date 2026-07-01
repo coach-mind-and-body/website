@@ -50,7 +50,7 @@ export const leadsRouter = router({
                 ${input.notes ? `<p style="margin:8px 0 0;font-size:14px;color:#6a6a6a;"><strong>Notes:</strong> ${input.notes}</p>` : ""}
               </div>
               <hr style="border:none;border-top:1px solid #e8e0d8;margin:28px 0;" />
-              <p style="color:#8a9a8a;font-size:13px;text-align:center;">Mind &amp; Body Reset â€” mindandbodyresetcoach.com</p>
+              <p style="color:#8a9a8a;font-size:13px;text-align:center;">Mind &amp; Body Reset — mindandbodyresetcoach.com</p>
             </div>
           </div>
         `,

@@ -24,14 +24,14 @@ export default function JoinLanding() {
   const { trackViewContent, trackLead } = useMetaPixel();
   const ga = useGoogleAnalytics();
 
-  // Fire ViewContent when the page loads â€” tells Meta someone saw the lead magnet offer
+  // Fire ViewContent when the page loads — tells Meta someone saw the lead magnet offer
   useEffect(() => {
     trackViewContent({
-      content_name: "Join the Community â€” Email Sign-Up",
+      content_name: "Join the Community — Email Sign-Up",
       content_category: "Lead Magnet",
       content_type: "product",
     });
-    ga.trackViewContent({ item_name: "Join the Community â€” Email Sign-Up", item_category: "Lead Magnet" });
+    ga.trackViewContent({ item_name: "Join the Community — Email Sign-Up", item_category: "Lead Magnet" });
   }, []);
 
   const handleSubmit = async () => {
@@ -57,7 +57,7 @@ export default function JoinLanding() {
         }),
       });
     } catch {
-      // no-cors mode â€” errors are expected, proceed regardless
+      // no-cors mode — errors are expected, proceed regardless
     }
 
     const eventId = generateMetaEventId();
@@ -74,7 +74,7 @@ export default function JoinLanding() {
     } catch (_) {}
 
     trackLead({ content_name: "Join the Community - Email Sign-Up", content_category: "Lead Magnet" }, eventId);
-    ga.trackLead({ category: "Lead Magnet", label: "Join the Community â€” Email Sign-Up" });
+    ga.trackLead({ category: "Lead Magnet", label: "Join the Community — Email Sign-Up" });
 
     router.push("/join-thank-you");
   };
@@ -94,7 +94,7 @@ export default function JoinLanding() {
           border: "1px solid #eee",
         }}
       >
-        {/* Left â€” Peach opt-in */}
+        {/* Left — Peach opt-in */}
         <div
           className="flex flex-col justify-center items-center text-center px-10 py-16"
           style={{ flex: "0.8", minWidth: "320px", background: "#fbeee9" }}
@@ -163,7 +163,7 @@ export default function JoinLanding() {
                 cursor: loading ? "not-allowed" : "pointer",
               }}
             >
-              {loading ? "Sendingâ€¦" : "Count Me In â†’"}
+              {loading ? "Sending…" : "Count Me In →"}
             </button>
           </div>
 
@@ -174,7 +174,7 @@ export default function JoinLanding() {
           </p>
         </div>
 
-        {/* Right â€” Copy + image */}
+        {/* Right — Copy + image */}
         <div
           className="flex flex-col justify-center px-14 py-16"
           style={{ flex: "1", minWidth: "320px", background: "#ffffff" }}

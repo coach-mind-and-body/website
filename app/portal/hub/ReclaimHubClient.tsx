@@ -6,7 +6,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/use-auth";
 import { getLoginUrl } from "@/lib/const";
 import { motion, AnimatePresence } from "framer-motion";
-import { Lock, PlayCircle, FileText, CheckCircle, ArrowLeft, Send, Upload, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
+import { Lock, PlayCircle, FileText, CheckCircle, ArrowLeft, Send, Upload, ExternalLink, ChevronDown, ChevronUp, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -303,7 +303,31 @@ export default function ReclaimHub() {
                     {selectedModule.title}
                   </h1>
                   {selectedModule.description && (
-                    <p className="text-lg" style={{ color: "#5a6b5a" }}>{selectedModule.description}</p>
+                    <p className="text-lg mb-6" style={{ color: "#5a6b5a" }}>{selectedModule.description}</p>
+                  )}
+                  {selectedModule.session && selectedModule.session.status === "scheduled" && (
+                    <div className="flex items-center gap-4 p-4 rounded-xl shadow-sm mb-6 max-w-2xl" style={{ background: "#fdf8f5", border: "1px solid #f0e8e4" }}>
+                      <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold shrink-0" style={{ background: "#c9a96e" }}>
+                        <Calendar size={20} />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-bold" style={{ color: "#2d3b2d" }}>Upcoming Coaching Session</p>
+                        <p className="text-xs font-semibold mt-1" style={{ color: "#8a9a8a" }}>
+                          {new Date(selectedModule.session.scheduledAt!).toLocaleString("en-US", { dateStyle: "long", timeStyle: "short" })}
+                        </p>
+                      </div>
+                      {selectedModule.session.googleMeetLink && (
+                        <a 
+                          href={selectedModule.session.googleMeetLink} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="px-4 py-2 rounded-lg font-bold text-sm text-white shrink-0 shadow-sm transition-transform hover:scale-105"
+                          style={{ background: "#2d3b2d" }}
+                        >
+                          Join Google Meet
+                        </a>
+                      )}
+                    </div>
                   )}
                 </div>
 

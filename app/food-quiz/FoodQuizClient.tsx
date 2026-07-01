@@ -187,7 +187,7 @@ export default function FoodQuiz() {
                   Ready to find your reset?
                 </h2>
                 <p className="text-base leading-relaxed mb-8" style={{ color: "oklch(0.45 0.02 160)", maxWidth: "420px", margin: "0 auto 2rem" }}>
-                  5 quick questions. No judgment. Just clarity on what's been holding you back â€” and a personalized plan to move forward.
+                  5 quick questions. No judgment. Just clarity on what's been holding you back — and a personalized plan to move forward.
                 </p>
                 <button
                   onClick={handleStart}

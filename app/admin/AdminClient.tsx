@@ -42,6 +42,7 @@ export default function Admin() {
   const { data: fpuClients, refetch: refetchFpu } = trpc.fpu.adminListCoaching.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
   const { data: fpuLeads, refetch: refetchFpuLeads } = trpc.fpu.adminListLeads.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
   const { data: snackHackLeads, refetch: refetchSnackHackLeads } = trpc.leadgen.adminListSnackHack.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
+  const { data: upcomingSessions } = trpc.enrollment.adminUpcomingSessions.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
   const deleteSnackHackLead = trpc.leadgen.adminDeleteSnackHack.useMutation({
     onSuccess: () => { toast.success("Snack Hack lead removed"); refetchSnackHackLeads(); },
     onError: (e) => toast.error(e.message),
@@ -202,22 +203,58 @@ export default function Admin() {
                 </div>
               ))}
             </div>
-            {/* Recent leads */}
-            <h3 className="font-bold text-lg mb-4" style={{ color: "oklch(0.20 0.015 50)" }}>Recent Leads</h3>
-            <div className="space-y-2">
-              {(leadsData ?? []).slice(0, 5).map((lead: { id: number; name: string; email: string; status: string; phone: string | null; notes: string | null; createdAt: Date }) => (
-                <div key={lead.id} className="flex items-center justify-between p-4 rounded-xl" style={{ background: "oklch(1 0 0)" }}>
-                  <div>
-                    <p className="font-semibold text-sm" style={{ color: "oklch(0.20 0.015 50)" }}>{lead.name}</p>
-                    <p className="text-xs" style={{ color: "oklch(0.52 0.015 50)" }}>{lead.email}</p>
-                  </div>
-                  <span className="text-xs px-2 py-1 rounded-full font-bold" style={{
-                    background: lead.status === "new" ? "oklch(0.92 0.04 148)" : "oklch(0.93 0.06 75)",
-                    color: lead.status === "new" ? "oklch(0.38 0.10 148)" : "oklch(0.45 0.12 65)",
-                  }}>{lead.status}</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Upcoming Meetings */}
+              <div>
+                <h3 className="font-bold text-lg mb-4" style={{ color: "oklch(0.20 0.015 50)" }}>Upcoming Meetings</h3>
+                <div className="space-y-2">
+                  {(upcomingSessions ?? []).map((session) => (
+                    <div key={session.id} className="flex items-start justify-between p-4 rounded-xl shadow-sm" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.015 80)" }}>
+                      <div>
+                        <p className="font-semibold text-sm" style={{ color: "oklch(0.20 0.015 50)" }}>
+                          {session.clientName} <span className="text-xs font-normal" style={{ color: "oklch(0.52 0.015 50)" }}>({session.clientEmail})</span>
+                        </p>
+                        <p className="text-xs font-bold mt-1" style={{ color: "oklch(0.72 0.12 75)" }}>Session {session.sessionNumber}</p>
+                        <p className="text-xs mt-1" style={{ color: "oklch(0.52 0.015 50)" }}>
+                          {new Date(session.scheduledAt!).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}
+                        </p>
+                      </div>
+                      {session.googleMeetLink && (
+                        <a 
+                          href={session.googleMeetLink} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 rounded-lg text-xs font-bold text-white shadow-sm transition-transform hover:scale-105"
+                          style={{ background: "oklch(0.72 0.12 75)" }}
+                        >
+                          Join Meet
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                  {!upcomingSessions?.length && <p className="text-sm" style={{ color: "oklch(0.52 0.015 50)" }}>No upcoming meetings.</p>}
                 </div>
-              ))}
-              {!leadsData?.length && <p className="text-sm" style={{ color: "oklch(0.52 0.015 50)" }}>No leads yet.</p>}
+              </div>
+
+              {/* Recent leads */}
+              <div>
+                <h3 className="font-bold text-lg mb-4" style={{ color: "oklch(0.20 0.015 50)" }}>Recent Leads</h3>
+                <div className="space-y-2">
+                  {(leadsData ?? []).slice(0, 5).map((lead: { id: number; name: string; email: string; status: string; phone: string | null; notes: string | null; createdAt: Date }) => (
+                    <div key={lead.id} className="flex items-center justify-between p-4 rounded-xl shadow-sm" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.015 80)" }}>
+                      <div>
+                        <p className="font-semibold text-sm" style={{ color: "oklch(0.20 0.015 50)" }}>{lead.name}</p>
+                        <p className="text-xs" style={{ color: "oklch(0.52 0.015 50)" }}>{lead.email}</p>
+                      </div>
+                      <span className="text-xs px-2 py-1 rounded-full font-bold" style={{
+                        background: lead.status === "new" ? "oklch(0.92 0.04 148)" : "oklch(0.93 0.06 75)",
+                        color: lead.status === "new" ? "oklch(0.38 0.10 148)" : "oklch(0.45 0.12 65)",
+                      }}>{lead.status}</span>
+                    </div>
+                  ))}
+                  {!leadsData?.length && <p className="text-sm" style={{ color: "oklch(0.52 0.015 50)" }}>No leads yet.</p>}
+                </div>
+              </div>
             </div>
           </div>
         )}

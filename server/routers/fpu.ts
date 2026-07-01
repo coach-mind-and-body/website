@@ -16,9 +16,9 @@ function getStripe() {
 
 // â”€â”€ Product definitions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-/** FPU class is FREE â€” Dave Ramsey handles enrollment. This product is no longer sold directly. */
+/** FPU class is FREE — Dave Ramsey handles enrollment. This product is no longer sold directly. */
 export const FPU_PRODUCT = {
-  name: "Financial Peace University â€” Cohort with Lee Anne",
+  name: "Financial Peace University — Cohort with Lee Anne",
   description:
     "9-week Dave Ramsey Financial Peace University course. Cohort starts May 12, 2025. Free enrollment via Dave Ramsey's platform.",
   price: 0,
@@ -27,7 +27,7 @@ export const FPU_PRODUCT = {
 
 /** 1:1 accountability coaching add-on: 3 x 50-min sessions for $249 */
 export const FPU_COACHING_PRODUCT = {
-  name: "FPU 1:1 Accountability Coaching â€” 3 Sessions",
+  name: "FPU 1:1 Accountability Coaching — 3 Sessions",
   description:
     "3 private 50-minute coaching sessions with Lee Anne to complement your Financial Peace University journey. Get personalized accountability, mindset coaching, and a plan tailored to your financial situation.",
   price: 24900, // $249 in cents
@@ -92,7 +92,7 @@ export const fpuRouter = router({
   }),
 
   /**
-   * Legacy: kept for backward compatibility â€” now redirects to coaching checkout
+   * Legacy: kept for backward compatibility — now redirects to coaching checkout
    * @deprecated Use createCoachingCheckout instead
    */
   createCheckout: publicProcedure.input(metaTrackingInputSchema).mutation(async ({ ctx, input }) => {
@@ -261,7 +261,7 @@ export const fpuRouter = router({
     }),
 
   /**
-   * Public: sign up for the FPU group class â€” saves name+email and emails Lee Anne
+   * Public: sign up for the FPU group class — saves name+email and emails Lee Anne
    */
   groupSignUp: publicProcedure.input(z.object({ name: z.string().min(1), email: z.string().email() }).merge(metaTrackingInputSchema)).mutation(async ({ input, ctx }) => {
       const db = await getDb();

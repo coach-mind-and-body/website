@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, asc } from "drizzle-orm";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { enrollments, coachingSessions, users, programModules, moduleProgress } from "../../drizzle/schema";
@@ -110,6 +110,31 @@ export const enrollmentRouter = router({
         shareHabitsWithCoach: user.shareHabitsWithCoach,
       };
     }).sort((a, b) => b.enrolledAt.getTime() - a.enrolledAt.getTime());
+  }),
+
+  // Admin: get all upcoming scheduled sessions across all users
+  adminUpcomingSessions: protectedProcedure.query(async ({ ctx }) => {
+    adminOnly(ctx.user?.role);
+    const db = await getDb();
+    if (!db) return [];
+    
+    const upcoming = await db
+      .select({
+        id: coachingSessions.id,
+        sessionNumber: coachingSessions.sessionNumber,
+        scheduledAt: coachingSessions.scheduledAt,
+        googleMeetLink: coachingSessions.googleMeetLink,
+        clientName: users.name,
+        clientEmail: users.email,
+        userId: users.id,
+        enrollmentId: coachingSessions.enrollmentId,
+      })
+      .from(coachingSessions)
+      .innerJoin(users, eq(coachingSessions.userId, users.id))
+      .where(eq(coachingSessions.status, "scheduled"))
+      .orderBy(asc(coachingSessions.scheduledAt));
+
+    return upcoming.filter(s => s.scheduledAt !== null);
   }),
 
   /**

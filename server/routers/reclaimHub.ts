@@ -7,7 +7,8 @@ import {
   assignments, 
   assignmentSubmissions, 
   moduleProgress,
-  enrollments
+  enrollments,
+  coachingSessions
 } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
 import { getUpcomingEventsForEmail } from "../googleCalendar";
@@ -89,9 +90,16 @@ export const reclaimHubRouter = router({
       .from(assignmentSubmissions)
       .where(eq(assignmentSubmissions.userId, ctx.user!.id));
 
+    // Fetch user's coaching sessions
+    const sessions = await db
+      .select()
+      .from(coachingSessions)
+      .where(eq(coachingSessions.userId, ctx.user!.id));
+
     // Calculate drip logic
     const enrichedModules = modules.map((mod, index) => {
       const progress = progressRecords.find(p => p.moduleId === mod.id);
+      const session = sessions.find(s => s.sessionNumber === mod.order);
       
       // Module is unlocked if the admin has explicitly assigned it (a progress record exists)
       // OR if it's the very first module and we auto-unlock it for new clients so they have a starting point.
@@ -101,6 +109,7 @@ export const reclaimHubRouter = router({
         ...mod,
         isUnlocked,
         progress: progress || null,
+        session: session || null,
       };
     });
 

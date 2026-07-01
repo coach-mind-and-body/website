@@ -194,7 +194,7 @@ export default function Portal() {
         {/* Welcome banner */}
         <div className="rounded-2xl p-8 mb-8" style={{ background: "linear-gradient(135deg, #fbeee9 0%, #faf5f5 100%)", border: "1px solid #f0e8e4" }}>
           <h1 className="text-3xl font-bold mb-2" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
-            Welcome back, {user?.name?.split(" ")[0] ?? "there"} ðŸ‘‹
+            Welcome back, {user?.name?.split(" ")[0] ?? "there"} 👋
           </h1>
           {enrollment ? (
             <>
@@ -214,7 +214,7 @@ export default function Portal() {
                 </span>
               </div>
               <p className="text-xs mt-2" style={{ color: "#8a9a8a" }}>
-                {enrollment.paymentType === "full" ? "Paid in Full âœ“" : "Deposit Paid â€” Balance Due Before Session 3"}
+                {enrollment.paymentType === "full" ? "Paid in Full ✓" : "Deposit Paid — Balance Due Before Session 3"}
               </p>
               <div className="mt-6">
                 <Link href="/portal/hub" className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm transition-transform hover:scale-105 shadow-sm" style={{ background: "#c9a96e", color: "white" }}>
@@ -224,7 +224,7 @@ export default function Portal() {
             </>
           ) : (
             <p className="text-base" style={{ color: "#5a6b5a" }}>
-              Your coaching portal â€” manage sessions, files, and more.
+              Your coaching portal — manage sessions, files, and more.
             </p>
           )}
         </div>
@@ -247,7 +247,7 @@ export default function Portal() {
                         {event.summary}
                       </p>
                       <p className="text-xs mt-0.5 font-semibold" style={{ color: "#8a9a8a" }}>
-                        {new Date(event.startTime).toLocaleString()} â€” {new Date(event.endTime).toLocaleTimeString()}
+                        {new Date(event.startTime).toLocaleString()} — {new Date(event.endTime).toLocaleTimeString()}
                       </p>
                     </div>
                   </div>
@@ -268,7 +268,7 @@ export default function Portal() {
           </div>
         )}
 
-        {/* RECLAIM Sessions â€” only shown for enrolled clients */}
+        {/* RECLAIM Sessions — only shown for enrolled clients */}
         {enrollment && <>
         <h2 className="text-xl font-bold mb-4" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
           Your R.E.C.L.A.I.M. Sessions
@@ -442,7 +442,7 @@ export default function Portal() {
             Need support between sessions?
           </h3>
           <p className="text-sm mb-4" style={{ color: "#a0b8a0" }}>
-            Reach out anytime â€” we're here to support your reset journey.
+            Reach out anytime — we're here to support your reset journey.
           </p>
           <Link href="/book" className="inline-block px-6 py-3 rounded-full font-bold text-sm" style={{ background: "#c9a96e", color: "white" }}>
               Book a Support Call
@@ -471,7 +471,7 @@ function FpuCoachingSection({ order, sessions }: { order: any; sessions: any[] }
             FPU 1:1 Accountability Coaching
           </h2>
           <p className="text-xs" style={{ color: "#8a9a8a" }}>
-            3 private 50-minute sessions Â· {order.status === "paid" ? "Paid âœ“" : "Pending payment"}
+            3 private 50-minute sessions Â· {order.status === "paid" ? "Paid ✓" : "Pending payment"}
           </p>
         </div>
       </div>

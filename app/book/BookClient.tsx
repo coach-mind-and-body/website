@@ -53,7 +53,7 @@ export default function Book() {
             Book Your Free Discovery Call
           </h1>
           <p className="text-base leading-relaxed" style={{ color: "oklch(0.45 0.02 160)", maxWidth: "480px", margin: "0 auto" }}>
-            In this free 30-minute call, you'll learn a new way that women just like you are losing the weight and keeping it off forever â€” and whether the R.E.C.L.A.I.M. program is right for you.
+            In this free 30-minute call, you'll learn a new way that women just like you are losing the weight and keeping it off forever — and whether the R.E.C.L.A.I.M. program is right for you.
           </p>
         </div>
       </section>
@@ -69,7 +69,7 @@ export default function Book() {
                   Let Us Know You're Coming
                 </h2>
                 <p className="text-sm mb-6" style={{ color: "oklch(0.55 0.02 160)" }}>
-                  Fill in your details and we'll get you set up â€” then you'll pick a time that works for you.
+                  Fill in your details and we'll get you set up — then you'll pick a time that works for you.
                 </p>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
@@ -113,7 +113,7 @@ export default function Book() {
                     className="w-full py-3 rounded-full font-bold text-sm transition-all hover:shadow-lg disabled:opacity-60"
                     style={{ background: "oklch(0.38 0.10 148)", color: "white" }}
                   >
-                    {submitLead.isPending ? "Saving..." : "Save My Info & Pick a Time â†’"}
+                    {submitLead.isPending ? "Saving..." : "Save My Info & Pick a Time →"}
                   </button>
                 </form>
               </div>
@@ -121,7 +121,7 @@ export default function Book() {
               {/* What to expect */}
               <div className="mt-6 space-y-3">
                 {[
-                  "No sales pressure â€” just a real conversation",
+                  "No sales pressure — just a real conversation",
                   "Learn what's actually keeping you stuck",
                   "Find out if R.E.C.L.A.I.M. is right for you",
                   "Walk away with at least one actionable insight",
