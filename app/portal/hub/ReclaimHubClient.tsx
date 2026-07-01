@@ -206,6 +206,43 @@ export default function ReclaimHub() {
                 </p>
               </div>
 
+              {/* Next Upcoming Session Banner */}
+              {(() => {
+                const upcomingSession = modules
+                  .map(m => m.session)
+                  .filter(s => s && s.status === "scheduled")
+                  .sort((a, b) => new Date(a!.scheduledAt!).getTime() - new Date(b!.scheduledAt!).getTime())[0];
+                
+                if (!upcomingSession) return null;
+                
+                return (
+                  <div className="flex items-center justify-between gap-4 p-6 rounded-3xl shadow-md mb-6 transition-transform hover:scale-[1.01]" style={{ background: "#2d3b2d", border: "1px solid #1a231a" }}>
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold shrink-0" style={{ background: "#c9a96e" }}>
+                        <Calendar size={20} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-white">Next Upcoming Coaching Session</p>
+                        <p className="text-xs font-semibold mt-1" style={{ color: "#a8b8a8" }}>
+                          Session {upcomingSession.sessionNumber} • {new Date(upcomingSession.scheduledAt!).toLocaleString("en-US", { dateStyle: "long", timeStyle: "short" })}
+                        </p>
+                      </div>
+                    </div>
+                    {upcomingSession.googleMeetLink && (
+                      <a 
+                        href={upcomingSession.googleMeetLink} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="px-5 py-2.5 rounded-full font-bold text-sm shadow-sm transition-transform hover:scale-105 shrink-0"
+                        style={{ background: "#c9a96e", color: "white" }}
+                      >
+                        Join Meet
+                      </a>
+                    )}
+                  </div>
+                );
+              })()}
+
               {/* Free Habit Tracker Banner */}
               <Link href="/habit-tracker" className="block mb-12">
                 <div className="p-8 rounded-3xl shadow-md transition-transform hover:scale-[1.02] flex flex-col md:flex-row items-center justify-between gap-6" style={{ background: "linear-gradient(135deg, #fbeee9 0%, #faf5f5 100%)", border: "1px solid #f0e8e4" }}>

@@ -1,4 +1,5 @@
 import AdminClient from './AdminClient';
+import { Suspense } from 'react';
 
 export const metadata = {
   title: "Admin Dashboard | Mind and Body Reset",
@@ -6,5 +7,9 @@ export const metadata = {
 };
 
 export default function Page() {
-  return <AdminClient  />;
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}>
+      <AdminClient />
+    </Suspense>
+  );
 }

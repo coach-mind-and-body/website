@@ -21,12 +21,26 @@ import { toast } from "sonner";
 import { BRAND } from "@shared/brand";
 import { getLoginUrl } from "@/lib/const";
 
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
+
 type AdminTab = "overview" | "contacts" | "snackhack" | "fpu" | "fpugroup" | "programbuilder" | "engagement" | "blog" | "deposits" | "settings" | "pageeditor";
 
 export default function Admin() {
   
   const { user, loading, isAuthenticated } = useAuth();
-  const [tab, setTab] = useState<AdminTab>("overview");
+  
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  
+  const tabParam = searchParams.get("tab") as AdminTab | null;
+  const tab = tabParam && ["overview", "contacts", "snackhack", "fpu", "fpugroup", "programbuilder", "engagement", "blog", "deposits", "settings", "pageeditor"].includes(tabParam) ? tabParam : "overview";
+  
+  const setTab = (newTab: AdminTab) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", newTab);
+    router.push(`${pathname}?${params.toString()}`);
+  };
   const [expandedEnrollment, setExpandedEnrollment] = useState<number | null>(null);
   const [sessionNotes, setSessionNotes] = useState<Record<number, string>>({});
   const [blogTab, setBlogTab] = useState<"published" | "scheduled" | "drafts">("published");
