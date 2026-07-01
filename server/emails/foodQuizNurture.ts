@@ -1,7 +1,7 @@
 import { ENV } from "../_core/env";
 
 export const getFoodQuizNurtureEmail1 = (firstName: string) => ({
-  subject: "I didn’t recognize myself anymore",
+  subject: "I didn’t recognize myself anymore... 😔",
   html: `<!doctype html>
 <html lang="en">
   <head>
@@ -91,7 +91,22 @@ export const getFoodQuizNurtureEmail1 = (firstName: string) => ({
                     For now, just know this: There is a calm, sustainable way forward.
                   </p>
 
-                  <p style="margin:18px 0 0; font-size:16px; line-height:1.7;">
+                  
+                  <div style="margin: 32px 0; text-align: center; border-top: 1px solid #eeeeee; padding-top: 32px;">
+                    <p style="margin:0 0 16px; font-size:16px; line-height:1.7; color:#333333;">
+                      <strong>P.S. Ready to find a rhythm that actually works?</strong>
+                    </p>
+                    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 10px;">
+                      <tr>
+                        <td align="center" bgcolor="#c9a96e" style="border-radius:9999px;">
+                          <a href="https://mindandbodyresetcoach.com/ola/services/consultation" style="display:inline-block; padding:14px 36px; font-family:Arial, Helvetica, sans-serif; font-size:16px; color:#ffffff; text-decoration:none; font-weight:700;">
+                            Book Your Free Clarity Call
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+<p style="margin:18px 0 0; font-size:16px; line-height:1.7;">
                     With you,<br>
                     💛 LeeAnne
                   </p>
@@ -124,7 +139,7 @@ Nurture Email 2`
 });
 
 export const getFoodQuizNurtureEmail2 = (firstName: string) => ({
-  subject: "3 small shifts that calm food fear",
+  subject: "3 quick wins to calm food fear today 🌿",
   html: `<!doctype html>
 <html lang="en">
   <head>
@@ -227,7 +242,22 @@ export const getFoodQuizNurtureEmail2 = (firstName: string) => ({
                     For today, pick <strong>one</strong> of these and try it. That’s enough.
                   </p>
 
-                  <p style="margin:18px 0 0; font-size:16px; line-height:1.7;">
+                  
+                  <div style="margin: 32px 0; text-align: center; border-top: 1px solid #eeeeee; padding-top: 32px;">
+                    <p style="margin:0 0 16px; font-size:16px; line-height:1.7; color:#333333;">
+                      <strong>P.S. Ready to find a rhythm that actually works?</strong>
+                    </p>
+                    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 10px;">
+                      <tr>
+                        <td align="center" bgcolor="#c9a96e" style="border-radius:9999px;">
+                          <a href="https://mindandbodyresetcoach.com/ola/services/consultation" style="display:inline-block; padding:14px 36px; font-family:Arial, Helvetica, sans-serif; font-size:16px; color:#ffffff; text-decoration:none; font-weight:700;">
+                            Book Your Free Clarity Call
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+<p style="margin:18px 0 0; font-size:16px; line-height:1.7;">
                     With you,<br>
                     💛 LeeAnne
                   </p>
@@ -260,7 +290,7 @@ Nurture Email 3`
 });
 
 export const getFoodQuizNurtureEmail3 = (firstName: string) => ({
-  subject: "3 lies that keep women stuck with food",
+  subject: "3 lies keeping you stuck with food 🛑",
   html: `<!doctype html>
 <html lang="en">
   <head>
@@ -384,7 +414,7 @@ Nurture Email 4`
 });
 
 export const getFoodQuizNurtureEmail4 = (firstName: string) => ({
-  subject: "The day I felt completely defeated",
+  subject: "The day I almost gave up (and why I didn't) 💛",
   html: `<!doctype html>
 <html lang="en">
   <head>
@@ -473,7 +503,22 @@ export const getFoodQuizNurtureEmail4 = (firstName: string) => ({
                     Tomorrow, I’ll show you what it actually looks like to move forward with support and how we can create a calm, sustainable reset together.
                   </p>
 
-                  <p style="margin:18px 0 0; font-size:16px; line-height:1.7;">
+                  
+                  <div style="margin: 32px 0; text-align: center; border-top: 1px solid #eeeeee; padding-top: 32px;">
+                    <p style="margin:0 0 16px; font-size:16px; line-height:1.7; color:#333333;">
+                      <strong>P.S. Ready to find a rhythm that actually works?</strong>
+                    </p>
+                    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 10px;">
+                      <tr>
+                        <td align="center" bgcolor="#c9a96e" style="border-radius:9999px;">
+                          <a href="https://mindandbodyresetcoach.com/ola/services/consultation" style="display:inline-block; padding:14px 36px; font-family:Arial, Helvetica, sans-serif; font-size:16px; color:#ffffff; text-decoration:none; font-weight:700;">
+                            Book Your Free Clarity Call
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+<p style="margin:18px 0 0; font-size:16px; line-height:1.7;">
                     With you,<br>
                     💛 LeeAnne
                   </p>
@@ -506,7 +551,7 @@ Nurture Email 5`
 });
 
 export const getFoodQuizNurtureEmail5 = (firstName: string) => ({
-  subject: "When I almost gave up (and why I didn’t)",
+  subject: "When I almost gave up (and why I didn’t) 💛",
   html: `<!doctype html>
 <html lang="en">
   <head>
@@ -601,7 +646,22 @@ export const getFoodQuizNurtureEmail5 = (firstName: string) => ({
                     You don’t need more willpower. You need the right support.
                   </p>
 
-                  <p style="margin:18px 0 0; font-size:16px; line-height:1.7;">
+                  
+                  <div style="margin: 32px 0; text-align: center; border-top: 1px solid #eeeeee; padding-top: 32px;">
+                    <p style="margin:0 0 16px; font-size:16px; line-height:1.7; color:#333333;">
+                      <strong>P.S. Ready to find a rhythm that actually works?</strong>
+                    </p>
+                    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 10px;">
+                      <tr>
+                        <td align="center" bgcolor="#c9a96e" style="border-radius:9999px;">
+                          <a href="https://mindandbodyresetcoach.com/ola/services/consultation" style="display:inline-block; padding:14px 36px; font-family:Arial, Helvetica, sans-serif; font-size:16px; color:#ffffff; text-decoration:none; font-weight:700;">
+                            Book Your Free Clarity Call
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+<p style="margin:18px 0 0; font-size:16px; line-height:1.7;">
                     With you,<br>
                     💛 LeeAnne
                   </p>

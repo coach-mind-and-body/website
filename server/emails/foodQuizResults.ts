@@ -49,7 +49,7 @@ export const getFoodQuizRebalancerEmail = (firstName: string) => ({
               <tr>
                 <td style="padding:28px 24px; font-family:Arial, Helvetica, sans-serif; color:#333333;">
                   <p style="margin:0 0 14px; font-size:16px; line-height:1.7;">
-                    Hi there,
+                    Hi ${firstName},
                   </p>
 
                   <p style="margin:0 0 14px; font-size:16px; line-height:1.7;">
@@ -77,7 +77,7 @@ export const getFoodQuizRebalancerEmail = (firstName: string) => ({
                   </div>
 
                   <!-- Keyline -->
-                  <div style="background-color:#eaf0eb; border-radius:10px; padding:16px; margin:18px 0;">
+                  <div style="background-color:#eaf0eb; border-radius:9999px; padding:16px; margin:18px 0;">
                     <div style="font-family:Georgia, 'Times New Roman', serif; font-size:16px; line-height:1.6; color:#3e5446; font-weight:700; text-align:center;">
                       You don’t need more rules. You need more trust.
                     </div>
@@ -91,8 +91,8 @@ export const getFoodQuizRebalancerEmail = (firstName: string) => ({
                   <!-- Button -->
                   <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 10px;">
                     <tr>
-                      <td align="center" bgcolor="#3e5446" style="border-radius:10px;">
-                        <a href="https://mindandbodyresetcoach.com/ola/services/consultation" style="display:inline-block; padding:14px 18px; font-family:Arial, Helvetica, sans-serif; font-size:16px; color:#ffffff; text-decoration:none; font-weight:700;">
+                      <td align="center" bgcolor="#c9a96e" style="border-radius:9999px;">
+                        <a href="https://mindandbodyresetcoach.com/ola/services/consultation" style="display:inline-block; padding:14px 36px; font-family:Arial, Helvetica, sans-serif; font-size:16px; color:#ffffff; text-decoration:none; font-weight:700;">
                           Book Your Free Clarity Call
                         </a>
                       </td>
@@ -181,7 +181,7 @@ export const getFoodQuizDoerEmail = (firstName: string) => ({
             <!-- BODY -->
             <tr>
               <td style="padding:28px 24px; font-family:Arial, sans-serif; color:#333;">
-                <p style="font-size:16px; line-height:1.7;">Hi there,</p>
+                <p style="font-size:16px; line-height:1.7;">Hi ${firstName},</p>
 
                 <p style="font-size:16px; line-height:1.7;">
                   Your results show that you’re a <strong style="color:#3e5446;">Disconnected Doer</strong>.
@@ -201,7 +201,7 @@ export const getFoodQuizDoerEmail = (firstName: string) => ({
                   </ol>
                 </div>
 
-                <div style="background:#eaf0eb; padding:16px; border-radius:10px; text-align:center; font-weight:700; color:#3e5446;">
+                <div style="background:#eaf0eb; padding:16px; border-radius:9999px; text-align:center; font-weight:700; color:#3e5446;">
                   Your body doesn’t need pressure. It needs connection.
                 </div>
 
@@ -212,8 +212,8 @@ export const getFoodQuizDoerEmail = (firstName: string) => ({
                 <!-- CTA -->
                 <table align="center" cellpadding="0" cellspacing="0" style="margin:20px auto;">
                   <tr>
-                    <td bgcolor="#3e5446" style="border-radius:10px;">
-                      <a href="https://mindandbodyresetcoach.com/ola/services/consultation" style="display:block; padding:14px 18px; color:#fff; text-decoration:none; font-weight:700;">
+                    <td bgcolor="#c9a96e" style="border-radius:9999px;">
+                      <a href="https://mindandbodyresetcoach.com/ola/services/consultation" style="display:block; padding:14px 36px; color:#fff; text-decoration:none; font-weight:700;">
                         Book Your Free Clarity Call
                       </a>
                     </td>
@@ -297,7 +297,7 @@ export const getFoodQuizAchieverEmail = (firstName: string) => ({
               <tr>
                 <td style="padding:28px 24px; font-family:Arial, Helvetica, sans-serif; color:#333333;">
 
-                  <p style="margin:0 0 14px; font-size:16px; line-height:1.7;">Hi there,</p>
+                  <p style="margin:0 0 14px; font-size:16px; line-height:1.7;">Hi ${firstName},</p>
 
                   <p style="margin:0 0 14px; font-size:16px; line-height:1.7;">
                     I’m really glad you took the quiz.
@@ -323,7 +323,7 @@ export const getFoodQuizAchieverEmail = (firstName: string) => ({
                     </ol>
                   </div>
 
-                  <div style="background-color:#eaf0eb; border-radius:10px; padding:16px; margin:18px 0;">
+                  <div style="background-color:#eaf0eb; border-radius:9999px; padding:16px; margin:18px 0;">
                     <div style="font-family:Georgia, 'Times New Roman', serif; font-size:16px; line-height:1.6; color:#3e5446; font-weight:700; text-align:center;">
                       You don’t need to push harder. You need balance that lasts.
                     </div>
@@ -337,8 +337,8 @@ export const getFoodQuizAchieverEmail = (firstName: string) => ({
                   <!-- Button -->
                   <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 10px;">
                     <tr>
-                      <td align="center" bgcolor="#3e5446" style="border-radius:10px;">
-                        <a href="https://mindandbodyresetcoach.com/ola/services/consultation" style="display:inline-block; padding:14px 18px; font-family:Arial, Helvetica, sans-serif; font-size:16px; color:#ffffff; text-decoration:none; font-weight:700;">
+                      <td align="center" bgcolor="#c9a96e" style="border-radius:9999px;">
+                        <a href="https://mindandbodyresetcoach.com/ola/services/consultation" style="display:inline-block; padding:14px 36px; font-family:Arial, Helvetica, sans-serif; font-size:16px; color:#ffffff; text-decoration:none; font-weight:700;">
                           Book Your Free Clarity Call
                         </a>
                       </td>
@@ -423,7 +423,7 @@ export const getFoodQuizFeelerEmail = (firstName: string) => ({
               <tr>
                 <td style="padding:28px 24px; font-family:Arial, Helvetica, sans-serif; color:#333333;">
 
-                  <p style="margin:0 0 14px; font-size:16px; line-height:1.7;">Hi there,</p>
+                  <p style="margin:0 0 14px; font-size:16px; line-height:1.7;">Hi ${firstName},</p>
 
                   <p style="margin:0 0 14px; font-size:16px; line-height:1.7;">
                     I’m really glad you took the quiz.
@@ -449,7 +449,7 @@ export const getFoodQuizFeelerEmail = (firstName: string) => ({
                     </ol>
                   </div>
 
-                  <div style="background-color:#eaf0eb; border-radius:10px; padding:16px; margin:18px 0;">
+                  <div style="background-color:#eaf0eb; border-radius:9999px; padding:16px; margin:18px 0;">
                     <div style="font-family:Georgia, 'Times New Roman', serif; font-size:16px; line-height:1.6; color:#3e5446; font-weight:700; text-align:center;">
                       You don’t need willpower. You need compassion.
                     </div>
@@ -463,8 +463,8 @@ export const getFoodQuizFeelerEmail = (firstName: string) => ({
                   <!-- Button -->
                   <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 10px;">
                     <tr>
-                      <td align="center" bgcolor="#3e5446" style="border-radius:10px;">
-                        <a href="https://mindandbodyresetcoach.com/ola/services/consultation" style="display:inline-block; padding:14px 18px; font-family:Arial, Helvetica, sans-serif; font-size:16px; color:#ffffff; text-decoration:none; font-weight:700;">
+                      <td align="center" bgcolor="#c9a96e" style="border-radius:9999px;">
+                        <a href="https://mindandbodyresetcoach.com/ola/services/consultation" style="display:inline-block; padding:14px 36px; font-family:Arial, Helvetica, sans-serif; font-size:16px; color:#ffffff; text-decoration:none; font-weight:700;">
                           Book Your Free Clarity Call
                         </a>
                       </td>
