@@ -31,11 +31,26 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
         <h2 className="font-bold text-2xl" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.20 0.015 50)" }}>Unified Contacts</h2>
-        <div className="flex items-center gap-2 bg-white/5 p-1 rounded-lg">
-          <button onClick={() => setFilter("all")} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${filter === "all" ? "bg-white/10 text-white" : "text-gray-400 hover:text-white"}`}>All</button>
-          <button onClick={() => setFilter("reclaim")} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${filter === "reclaim" ? "bg-white/10 text-white" : "text-gray-400 hover:text-white"}`}>Reclaim Clients</button>
-          <button onClick={() => setFilter("habit")} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${filter === "habit" ? "bg-white/10 text-white" : "text-gray-400 hover:text-white"}`}>Habit Tracker</button>
-          <button onClick={() => setFilter("leads")} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${filter === "leads" ? "bg-white/10 text-white" : "text-gray-400 hover:text-white"}`}>Leads</button>
+        <div className="flex items-center gap-2 p-1 rounded-lg" style={{ background: "oklch(0.96 0.025 50)" }}>
+          {([
+            { id: "all", label: "All" },
+            { id: "reclaim", label: "Reclaim Clients" },
+            { id: "habit", label: "Habit Tracker" },
+            { id: "leads", label: "Leads" }
+          ] as const).map(t => (
+            <button
+              key={t.id}
+              onClick={() => setFilter(t.id)}
+              className="px-3 py-1.5 rounded-md text-xs font-bold transition-all"
+              style={{
+                background: filter === t.id ? "oklch(1 0 0)" : "transparent",
+                color: filter === t.id ? "oklch(0.20 0.015 50)" : "oklch(0.52 0.015 50)",
+                boxShadow: filter === t.id ? "0 1px 2px rgba(0,0,0,0.05)" : "none"
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
       </div>
       <div className="space-y-3">
@@ -60,8 +75,8 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
             </div>
             <div className="flex items-center gap-3">
               <span className="text-xs px-2 py-1 rounded-full font-bold" style={{
-                background: contact.highestStatus === "reclaim" ? "oklch(0.92 0.04 148)" : contact.highestStatus === "discovery" ? "oklch(0.93 0.06 75)" : contact.highestStatus === "habit-only" ? "oklch(0.20 0.015 50)" : "oklch(0.985 0.008 80)",
-                color: contact.highestStatus === "reclaim" ? "oklch(0.38 0.10 148)" : contact.highestStatus === "discovery" ? "oklch(0.45 0.12 65)" : contact.highestStatus === "habit-only" ? "oklch(0.52 0.015 50)" : "oklch(0.42 0.015 50)",
+                background: contact.highestStatus === "reclaim" ? "oklch(0.92 0.04 148)" : contact.highestStatus === "discovery" ? "oklch(0.93 0.06 75)" : contact.highestStatus === "habit-only" ? "oklch(0.96 0.025 50)" : "oklch(0.985 0.008 80)",
+                color: contact.highestStatus === "reclaim" ? "oklch(0.38 0.10 148)" : contact.highestStatus === "discovery" ? "oklch(0.45 0.12 65)" : contact.highestStatus === "habit-only" ? "oklch(0.72 0.12 75)" : "oklch(0.42 0.015 50)",
               }}>
                 {contact.highestStatus === "reclaim" ? "Reclaim Client" : contact.highestStatus === "discovery" ? "Discovery Call" : contact.highestStatus === "fpu" ? "FPU Interest" : contact.highestStatus === "habit-only" ? "Habit Tracker" : "Subscriber"}
               </span>
