@@ -1,11 +1,11 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { fireMetaPixelPurchase } from "@/server/metaCapi";
 import { metaParamsFromStripeMetadata } from "@/server/metaParamBuilder";
 import { ENV } from "@/server/_core/env";
 import { getDb } from "@/server/db";
-import { deposits, fpuOrders, fpuCoachingSessions, enrollments, coachingSessions, users } from "@/drizzle/schema";
-import { eq } from "drizzle-orm";
+import { deposits, fpuOrders, fpuCoachingSessions, enrollments, coachingSessions, users, leads, subscribers, sequenceEnrollments } from "@/drizzle/schema";
+import { eq, and } from "drizzle-orm";
 import { notifyOwner } from "@/server/_core/notification";
 import { sendOwnerEmail, sendReclaimWelcomeEmail, sendFpuWelcomeEmail } from "@/server/notifications";
 import { enrollUserInSequence } from "@/server/sequences";
@@ -353,6 +353,48 @@ export async function POST(req: Request) {
                 // No user account yet â€” enrollment will be created when they sign up
                 // The deposit record is saved with their email so it can be linked later
                 console.log(`[Stripe] Deposit paid by ${clientEmail} â€” no user account yet. Enrollment pending account creation.`);
+              }
+
+              // 4. Automated Funnel Progression
+              try {
+                if (clientEmail) {
+                  // Update CRM leads status to enrolled
+                  await db.update(leads)
+                    .set({ status: "enrolled" })
+                    .where(eq(leads.email, clientEmail));
+                  
+                  // Look up subscriber to cancel snack_hack sequence
+                  const [subscriber] = await db.select({ id: subscribers.id, segments: subscribers.segments })
+                    .from(subscribers)
+                    .where(eq(subscribers.email, clientEmail))
+                    .limit(1);
+                    
+                  if (subscriber) {
+                    await db.update(sequenceEnrollments)
+                      .set({ status: "cancelled" })
+                      .where(
+                        and(
+                          eq(sequenceEnrollments.subscriberId, subscriber.id),
+                          eq(sequenceEnrollments.sequenceId, "snackHackSequence")
+                        )
+                      );
+                      
+                    // Also remove "leadgen_snack_hack" from segments if it's there
+                    if (subscriber.segments) {
+                       try {
+                         const parsed = JSON.parse(subscriber.segments);
+                         if (Array.isArray(parsed) && parsed.includes("leadgen_snack_hack")) {
+                           const newSegments = parsed.filter((s: string) => s !== "leadgen_snack_hack");
+                           await db.update(subscribers)
+                             .set({ segments: JSON.stringify(newSegments) })
+                             .where(eq(subscribers.id, subscriber.id));
+                         }
+                       } catch (e) {}
+                    }
+                  }
+                }
+              } catch (err) {
+                console.error("[Stripe Webhook] Failed automated funnel progression:", err);
               }
 
               // Send welcome email to client
