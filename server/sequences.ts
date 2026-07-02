@@ -49,7 +49,7 @@ function isEnrollmentDue(
   enrollment: typeof sequenceEnrollments.$inferSelect,
   config: SequenceConfig
 ): boolean {
-  const stepIndex = enrollment.currentStep;
+  const stepIndex = enrollment.currentStepId;
   const now = new Date();
 
   if (config.type === "absolute_days") {
@@ -60,8 +60,8 @@ function isEnrollmentDue(
     return now >= dueAt;
   }
 
-  if (!enrollment.lastEmailedAt) return true;
-  const dueAt = new Date(enrollment.lastEmailedAt);
+  if (!enrollment.updatedAt) return true;
+  const dueAt = new Date(enrollment.updatedAt);
   dueAt.setDate(dueAt.getDate() + config.delayDays);
   return now >= dueAt;
 }
@@ -71,7 +71,7 @@ async function sendSequenceStep(
   subscriber: typeof subscribers.$inferSelect,
   config: SequenceConfig
 ): Promise<boolean> {
-  const stepIndex = enrollment.currentStep;
+  const stepIndex = enrollment.currentStepId;
   const getEmailContent = config.emails[stepIndex];
   if (!getEmailContent) return false;
 
@@ -105,7 +105,7 @@ export async function processEmailSequences() {
       subscriber: subscribers,
     })
     .from(sequenceEnrollments)
-    .innerJoin(subscribers, eq(sequenceEnrollments.subscriberId, subscribers.id))
+    .innerJoin(subscribers, eq(sequenceEnrollments.userId, subscribers.id))
     .where(eq(sequenceEnrollments.status, "active"));
 
   for (const { enrollment, subscriber } of activeEnrollments) {
@@ -118,7 +118,7 @@ export async function processEmailSequences() {
     let currentEnrollment = enrollment;
 
     // Catch up on any overdue steps (e.g. backfilled leads who missed Day 3 and Day 7).
-    while (currentEnrollment.currentStep < config.emails.length) {
+    while (currentEnrollment.currentStepId < config.emails.length) {
       if (!isEnrollmentDue(currentEnrollment, config)) break;
 
       const success = await sendSequenceStep(
@@ -129,14 +129,14 @@ export async function processEmailSequences() {
       if (!success) break;
 
       emailsSent++;
-      const nextStep = currentEnrollment.currentStep + 1;
+      const nextStep = currentEnrollment.currentStepId + 1;
       const isComplete = nextStep >= config.emails.length;
 
       await db
         .update(sequenceEnrollments)
         .set({
-          currentStep: nextStep,
-          lastEmailedAt: new Date(),
+          currentStepId: nextStep,
+          updatedAt: new Date(),
           status: isComplete ? "completed" : "active",
           updatedAt: new Date(),
         })
@@ -144,8 +144,8 @@ export async function processEmailSequences() {
 
       currentEnrollment = {
         ...currentEnrollment,
-        currentStep: nextStep,
-        lastEmailedAt: new Date(),
+        currentStepId: nextStep,
+        updatedAt: new Date(),
         status: isComplete ? "completed" : "active",
       };
     }
@@ -164,7 +164,7 @@ export async function enrollUserInSequence(
   const db = await getDb();
   if (!db) return false;
 
-  let subscriberId: number;
+  let userId: number;
   const existingSub = await db
     .select()
     .from(subscribers)
@@ -172,7 +172,7 @@ export async function enrollUserInSequence(
     .limit(1);
 
   if (existingSub.length > 0) {
-    subscriberId = existingSub[0].id;
+    userId = existingSub[0].id;
   } else {
     const [newSub] = await db
       .insert(subscribers)
@@ -182,7 +182,7 @@ export async function enrollUserInSequence(
         segments: JSON.stringify([sequenceId]),
       })
       .$returningId();
-    subscriberId = newSub.id;
+    userId = newSub.id;
   }
 
   const existingEnrollment = await db
@@ -190,7 +190,7 @@ export async function enrollUserInSequence(
     .from(sequenceEnrollments)
     .where(
       and(
-        eq(sequenceEnrollments.subscriberId, subscriberId),
+        eq(sequenceEnrollments.userId, userId),
         eq(sequenceEnrollments.sequenceId, sequenceId)
       )
     )
@@ -198,10 +198,10 @@ export async function enrollUserInSequence(
 
   if (existingEnrollment.length === 0) {
     await db.insert(sequenceEnrollments).values({
-      subscriberId,
+      userId,
       sequenceId,
       status: "active",
-      currentStep: 0,
+      currentStepId: 0,
       ...(opts?.anchorDate ? { createdAt: opts.anchorDate } : {}),
     });
     console.log(`[Sequences] Enrolled ${email} in sequence: ${sequenceId}`);

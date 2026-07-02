@@ -106,6 +106,23 @@ export default function Privacy() {
                 You may request to access, update, or delete your personal information or unsubscribe from emails at any time.
               </p>
             </div>
+
+            {/* Section 5 */}
+            <div>
+              <h2
+                className="font-bold text-xl mb-3 pb-3"
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  color: "oklch(0.22 0.02 160)",
+                  borderBottom: "2px solid rgba(255,255,255,0.7)",
+                }}
+              >
+                5. SMS & Communication
+              </h2>
+              <p className="text-base leading-relaxed" style={{ color: "oklch(0.40 0.02 160)" }}>
+                By providing your phone number, you consent to receive SMS communications from us. We use these for transactional updates, reminders, and coaching support. <strong style={{ color: "oklch(0.22 0.02 160)" }}>Mobile information will not be shared with third parties or affiliates for marketing or promotional purposes.</strong> You can opt-out at any time by replying STOP to any message. Reply HELP for assistance.
+              </p>
+            </div>
           </div>
         </div>
       </main>

@@ -21,6 +21,11 @@ import { habitRouter } from "./routers/habit";
 import { pushRouter } from "./routers/push";
 import { challengesRouter } from "./routers/challenges";
 import { appUpdatesRouter } from "./routers/appUpdates";
+import { messagingRouter } from "./routers/messaging";
+import { crmAutomationsRouter } from "./routers/crmAutomations";
+import { templatesRouter } from "./routers/templates";
+import { aiTrainingRouter } from "./routers/aiTraining";
+import { pushNotificationsRouter } from "./routers/pushNotifications";
 
 export const appRouter = router({
   system: systemRouter,
@@ -50,6 +55,11 @@ export const appRouter = router({
   push: pushRouter,
   challenges: challengesRouter,
   appUpdates: appUpdatesRouter,
+  messaging: messagingRouter,
+  crmAutomations: crmAutomationsRouter,
+  templates: templatesRouter,
+  aiTraining: aiTrainingRouter,
+  pushNotifications: pushNotificationsRouter,
 });
 
 export type AppRouter = typeof appRouter;

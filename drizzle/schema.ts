@@ -17,6 +17,7 @@ export const users = mysqlTable("users", {
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
+  phone: varchar("phone", { length: 50 }),
   // email/password auth
   passwordHash: varchar("passwordHash", { length: 255 }),
   // google oauth (separate from Manus OAuth)
@@ -395,19 +396,7 @@ export const subscribers = mysqlTable("subscribers", {
 export type Subscriber = typeof subscribers.$inferSelect;
 export type InsertSubscriber = typeof subscribers.$inferInsert;
 
-export const sequenceEnrollments = mysqlTable("sequence_enrollments", {
-  id: int("id").autoincrement().primaryKey(),
-  subscriberId: int("subscriberId").notNull(),
-  sequenceId: varchar("sequenceId", { length: 255 }).notNull(), // e.g. "fpu_babystep_1"
-  currentStep: int("currentStep").default(0).notNull(), // 0 = not started
-  lastEmailedAt: timestamp("lastEmailedAt"),
-  status: mysqlEnum("status", ["active", "completed", "cancelled"]).default("active").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
-
-export type SequenceEnrollment = typeof sequenceEnrollments.$inferSelect;
-export type InsertSequenceEnrollment = typeof sequenceEnrollments.$inferInsert;
+// Old email-automation sequenceEnrollments removed — canonical definition is below (CRM sequences)
 
 // ── Habit Tracker ─────────────────────────────────────────────────────────────
 export const habitTemplates = mysqlTable("habit_templates", {
@@ -468,3 +457,172 @@ export const userDailyNotes = mysqlTable("user_daily_notes", {
 
 export type UserDailyNote = typeof userDailyNotes.$inferSelect;
 export type InsertUserDailyNote = typeof userDailyNotes.$inferInsert;
+
+// ─── CRM Conversations (Unified Inbox) ───────────────────────────────────────
+export const conversations = mysqlTable("conversations", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId"), // Linked to users table if they are an enrolled client
+  leadId: int("leadId"), // Linked to leads table if they are a prospect
+  contactPhone: varchar("contactPhone", { length: 64 }), // The primary identifier for SMS
+  contactEmail: varchar("contactEmail", { length: 320 }),
+  platform: mysqlEnum("platform", [
+    "sms",
+    "whatsapp",
+    "apple_business",
+    "webchat",
+    "gmb",
+    "facebook",
+    "instagram",
+  ]).default("sms").notNull(),
+  status: mysqlEnum("status", ["open", "closed", "snoozed"])
+    .default("open")
+    .notNull(),
+  assignedToId: int("assignedToId"), // The admin user ID handling this chat
+  unreadCount: int("unreadCount").default(0).notNull(),
+  botActive: boolean("botActive").default(true).notNull(),
+  lastMessageAt: timestamp("lastMessageAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Conversation = typeof conversations.$inferSelect;
+
+// ─── CRM Messages ────────────────────────────────────────────────────────────
+export const messages = mysqlTable("messages", {
+  id: int("id").autoincrement().primaryKey(),
+  conversationId: int("conversationId").notNull(),
+  direction: mysqlEnum("direction", ["inbound", "outbound", "system"]).notNull(),
+  senderName: varchar("senderName", { length: 255 }), 
+  content: text("content"), // The message body
+  mediaUrl: varchar("mediaUrl", { length: 1000 }), // URL for MMS (images, PDFs, VCFs)
+  twilioSid: varchar("twilioSid", { length: 128 }), // To track delivery status via Twilio API
+  status: mysqlEnum("status", [
+    "queued",
+    "sent",
+    "delivered",
+    "failed",
+    "received",
+  ]).default("received").notNull(),
+  isAutomated: boolean("isAutomated").default(false).notNull(), // Was this sent by Gemini/System?
+  isInternal: boolean("isInternal").default(false).notNull(), // Team whisper
+  scheduledAt: timestamp("scheduledAt"), // Future scheduled message
+  shortLinkId: varchar("shortLinkId", { length: 255 }), // Short.io link ID for click tracking
+  hasClicked: boolean("hasClicked").default(false).notNull(), // Has the user clicked the short link
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Message = typeof messages.$inferSelect;
+
+// ─── CRM Call Logs ───────────────────────────────────────────────────────────
+export const callLogs = mysqlTable("call_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  conversationId: int("conversationId"), // Optionally link to a conversation thread
+  userId: int("userId"), // Link to user if known
+  leadId: int("leadId"), // Link to lead if known
+  direction: mysqlEnum("direction", ["inbound", "outbound"]).notNull(),
+  fromNumber: varchar("fromNumber", { length: 64 }).notNull(),
+  toNumber: varchar("toNumber", { length: 64 }).notNull(),
+  durationSeconds: int("durationSeconds").default(0).notNull(),
+  recordingUrl: varchar("recordingUrl", { length: 1000 }), // Twilio MP3 URL
+  transcript: text("transcript"), // Full AI transcript
+  aiSummary: text("aiSummary"), // Gemini's actionable summary
+  twilioCallSid: varchar("twilioCallSid", { length: 128 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type CallLog = typeof callLogs.$inferSelect;
+
+// ─── Phase 5: CRM Campaigns (One-time blasts) ────────────────────────────────
+export const campaigns = mysqlTable("campaigns", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  targetTagId: int("targetTagId"), // Leaving for compatibility, might map to user segments later
+  messageBody: text("messageBody").notNull(), // The content of the SMS
+  mediaUrl: varchar("mediaUrl", { length: 1000 }), // URL for MMS (images, PDFs, VCFs)
+  status: mysqlEnum("status", ["draft", "scheduled", "sending", "completed", "failed"])
+    .default("draft")
+    .notNull(),
+  scheduledAt: timestamp("scheduledAt"), // When to send (null if immediate/draft)
+  sentCount: int("sentCount").default(0).notNull(),
+  failedCount: int("failedCount").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Campaign = typeof campaigns.$inferSelect;
+
+// ─── Phase 5: CRM Sequences (Drip Automation) ────────────────────────────────
+export const sequences = mysqlTable("sequences", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(), 
+  triggerTagId: int("triggerTagId"), // Optional: Tag that automatically triggers this sequence
+  isActive: boolean("isActive").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Sequence = typeof sequences.$inferSelect;
+
+export const sequenceSteps = mysqlTable("sequence_steps", {
+  id: int("id").autoincrement().primaryKey(),
+  sequenceId: int("sequenceId").notNull(),
+  stepOrder: int("stepOrder").notNull(), // 1, 2, 3...
+  delayHours: int("delayHours").default(0).notNull(), // Wait X hours after the PREVIOUS step (or enrollment if step 1)
+  messageBody: text("messageBody").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SequenceStep = typeof sequenceSteps.$inferSelect;
+
+export const sequenceEnrollments = mysqlTable("sequence_enrollments", {
+  id: int("id").autoincrement().primaryKey(),
+  sequenceId: int("sequenceId").notNull(),
+  userId: int("userId"),
+  leadId: int("leadId"),
+  currentStepId: int("currentStepId"), // Links to sequence_steps.id (null if completed)
+  nextExecutionAt: timestamp("nextExecutionAt"), // When the current step should be sent
+  status: mysqlEnum("status", ["active", "paused", "completed", "cancelled"])
+    .default("active")
+    .notNull(),
+  enrolledAt: timestamp("enrolledAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SequenceEnrollment = typeof sequenceEnrollments.$inferSelect;
+
+// ─── AI Knowledge Base ───────────────────────────────────────────────────────
+export const aiKnowledge = mysqlTable("ai_knowledge", {
+  id: int("id").autoincrement().primaryKey(),
+  category: varchar("category", { length: 128 }).notNull(), // Policy, Pricing, General
+  title: varchar("title", { length: 255 }).notNull(),
+  content: text("content").notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type AiKnowledge = typeof aiKnowledge.$inferSelect;
+export type InsertAiKnowledge = typeof aiKnowledge.$inferInsert;
+
+// ─── PWA Push Subscriptions ─────────────────────────────────────────
+
+export const pushSubscriptions = mysqlTable("push_subscriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  endpoint: varchar("endpoint", { length: 1000 }).notNull(),
+  p256dh: varchar("p256dh", { length: 500 }).notNull(),
+  auth: varchar("auth", { length: 200 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PushSubscription = typeof pushSubscriptions.$inferSelect;
+
+export const messageTemplates = mysqlTable("message_templates", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  text: text("text").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type MessageTemplate = typeof messageTemplates.$inferSelect;

@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import { Users, BookOpen, CreditCard, BarChart3, ChevronDown, ChevronUp, Bell, Link2, Link2Off, Calendar, Video, UserPlus, Layers, Target, Cookie } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -174,11 +175,20 @@ export default function Admin() {
               Admin Portal
             </span>
           </a>
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}>
-              {user?.name?.[0] ?? "A"}
+          <div className="flex items-center gap-4">
+            <Link 
+              href="/admin/inbox" 
+              className="px-4 py-1.5 text-sm font-bold rounded-lg shadow-sm transition-transform hover:scale-105" 
+              style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}
+            >
+              Unified Inbox
+            </Link>
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}>
+                {user?.name?.[0] ?? "A"}
+              </div>
+              <span className="text-xs font-semibold hidden sm:block" style={{ color: "oklch(0.42 0.015 50)" }}>{user?.name}</span>
             </div>
-            <span className="text-xs font-semibold hidden sm:block" style={{ color: "oklch(0.42 0.015 50)" }}>{user?.name}</span>
           </div>
         </div>
       </header>
