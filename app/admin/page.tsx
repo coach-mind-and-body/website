@@ -1,5 +1,8 @@
 import AdminClient from './AdminClient';
 import { Suspense } from 'react';
+import { InboxProvider } from '@/components/admin/messaging/InboxContext';
+import InboxModals from '@/components/admin/messaging/InboxModals';
+import SlideOutChat from '@/components/admin/SlideOutChat';
 
 export const metadata = {
   title: "Admin Dashboard | Mind and Body Reset",
@@ -9,7 +12,11 @@ export const metadata = {
 export default function Page() {
   return (
     <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}>
-      <AdminClient />
+      <InboxProvider>
+        <AdminClient />
+        <InboxModals />
+        <SlideOutChat />
+      </InboxProvider>
     </Suspense>
   );
 }

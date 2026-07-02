@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useRef, Fragment } from "react";
 import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc";
-import { useInbox } from "../InboxContext";
+import { useInbox } from "./InboxContext";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

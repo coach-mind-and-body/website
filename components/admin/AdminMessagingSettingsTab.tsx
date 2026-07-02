@@ -11,10 +11,16 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Plus, Edit2, Trash2, Save, Loader2, MessageSquare, 
-  Bell, CheckCircle2, AlertCircle, RefreshCw 
+  Bell, CheckCircle2, AlertCircle, RefreshCw, Calendar, Link2, Link2Off
 } from "lucide-react";
 
-export default function SettingsClient() {
+export function AdminMessagingSettingsTab({ 
+  gcalStatus, 
+  disconnectGcal 
+}: { 
+  gcalStatus: any; 
+  disconnectGcal: () => void;
+}) {
   // --- Templates State ---
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
@@ -302,6 +308,41 @@ export default function SettingsClient() {
 
         {/* --- Google & Meta Integrations --- */}
         <div className="grid md:grid-cols-2 gap-6">
+          {/* Google Calendar */}
+          <Card className="rounded-xl border border-slate-200 shadow-sm overflow-hidden md:col-span-2">
+            <CardHeader className="p-6 border-b border-slate-100">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-indigo-600" /> Google Calendar
+                </CardTitle>
+                {gcalStatus?.connected ? (
+                  <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200"><CheckCircle2 className="w-3 h-3 mr-1" /> Connected</Badge>
+                ) : (
+                  <Badge variant="secondary" className="bg-slate-100 text-slate-600"><AlertCircle className="w-3 h-3 mr-1" /> Disconnected</Badge>
+                )}
+              </div>
+              <CardDescription className="text-slate-500 text-sm mt-1">
+                Connect your Google Calendar to auto-create sessions with Google Meet links when you schedule client appointments.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-6">
+              {gcalStatus?.connected ? (
+                <div className="space-y-4">
+                  <p className="text-sm text-slate-600">Your Google Calendar is connected and active as {gcalStatus.email}.</p>
+                  <Button variant="outline" size="sm" onClick={disconnectGcal}>
+                    <Link2Off className="w-3.5 h-3.5 mr-2" /> Disconnect
+                  </Button>
+                </div>
+              ) : (
+                <a href="/api/auth/google-calendar/connect">
+                  <Button className="w-full">
+                    <Link2 className="w-4 h-4 mr-2" /> Connect Google Calendar
+                  </Button>
+                </a>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Google Business Profile */}
           <Card className="rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <CardHeader className="p-6 border-b border-slate-100">

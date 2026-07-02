@@ -1,4 +1,4 @@
-﻿import Stripe from "stripe";
+import Stripe from "stripe";
 import { z } from "zod";
 import { publicProcedure, protectedProcedure, adminProcedure, router } from "../_core/trpc";
 import { ENV } from "../_core/env";
@@ -48,6 +48,7 @@ export const fpuRouter = router({
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
+      phone_number_collection: { enabled: true },
       customer_email: ctx.user?.email ?? undefined,
       allow_promotion_codes: true,
       line_items: [
@@ -104,6 +105,7 @@ export const fpuRouter = router({
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
+      phone_number_collection: { enabled: true },
       customer_email: ctx.user?.email ?? undefined,
       allow_promotion_codes: true,
       line_items: [

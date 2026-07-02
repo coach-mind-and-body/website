@@ -1,4 +1,4 @@
-﻿import Stripe from "stripe";
+import Stripe from "stripe";
 import { z } from "zod";
 import { eq, desc } from "drizzle-orm";
 import { ENV } from "../_core/env";
@@ -65,6 +65,7 @@ export const paymentRouter = router({
         mode: "payment",
         payment_method_types: ["card"],
         allow_promotion_codes: true,
+        phone_number_collection: { enabled: true },
         customer_email: loggedInUser?.email ?? undefined,
         client_reference_id: loggedInUser ? loggedInUser.id.toString() : undefined,
         line_items: [
@@ -187,6 +188,7 @@ export const paymentRouter = router({
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
+      phone_number_collection: { enabled: true },
       customer_email: ctx.user!.email ?? undefined,
       line_items: [{
         price_data: {

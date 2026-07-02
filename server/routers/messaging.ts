@@ -233,6 +233,30 @@ export const messagingRouter = router({
         .slice(0, 10);
     }),
 
+  // Get or create conversation by phone
+  getOrCreateConversation: adminProcedure
+    .input(z.object({ phone: z.string() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      
+      const phoneMatchSql = sql`REPLACE(REPLACE(REPLACE(REPLACE(${conversations.contactPhone}, '-', ''), ' ', ''), '(', ''), ')', '') LIKE CONCAT('%', RIGHT(${input.phone}, 10))`;
+      const convRows = await db
+        .select()
+        .from(conversations)
+        .where(phoneMatchSql)
+        .limit(1);
+        
+      if (convRows[0]) return { conversationId: convRows[0].id };
+
+      const [result] = await db.insert(conversations).values({
+        contactPhone: input.phone,
+        status: 'open',
+        platform: 'sms'
+      });
+      return { conversationId: result.insertId };
+    }),
+
   // Fetch a specific conversation's chat history
   getConversation: adminProcedure
     .input(z.object({ id: z.number() }))

@@ -134,7 +134,11 @@ export const enrollmentRouter = router({
       .where(eq(coachingSessions.status, "scheduled"))
       .orderBy(asc(coachingSessions.scheduledAt));
 
-    return upcoming.filter(s => s.scheduledAt !== null);
+    return upcoming.filter(s => {
+      if (!s.scheduledAt) return false;
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      return s.scheduledAt > oneHourAgo;
+    });
   }),
 
   /**
@@ -300,6 +304,7 @@ export const enrollmentRouter = router({
         const checkoutSession = await stripe.checkout.sessions.create({
           mode: "payment",
           payment_method_types: ["card"],
+          phone_number_collection: { enabled: true },
           customer_email: row.clientEmail,
           line_items: [{
             price_data: {

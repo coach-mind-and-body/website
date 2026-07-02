@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Users, Video, Calendar, Bell, ChevronRight, CheckCircle2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { trpc } from "@/lib/trpc";
+import { useInbox } from "./messaging/InboxContext";
 import AdminClientSessions from "../AdminClientSessions";
 import AdminModuleAssignment from "../AdminModuleAssignment";
 import AdminClientHabits from "../AdminClientHabits";
@@ -11,6 +12,20 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
   const { data: contacts, isLoading, refetch } = trpc.leads.unifiedContacts.useQuery();
   const [selectedContact, setSelectedContact] = useState<any>(null);
   const [filter, setFilter] = useState<"all" | "reclaim" | "habit" | "leads">("all");
+  const { setActiveChatMeta, setIsNewChatOpen } = useInbox();
+
+  const getOrCreateConversation = trpc.messaging.getOrCreateConversation.useMutation({
+    onSuccess: (data) => {
+      setActiveChatMeta({
+        conversationId: data.conversationId,
+        userId: selectedContact?.userId ?? null,
+        contactPhone: selectedContact?.phone ?? "",
+        userName: selectedContact?.name ?? "Customer",
+      });
+      setSelectedContact(null);
+    },
+    onError: (e) => toast.error("Failed to start conversation: " + e.message)
+  });
 
   const updateLeadStatus = trpc.leads.updateStatus.useMutation({
     onSuccess: () => { toast.success("Status updated!"); refetch(); },
@@ -87,14 +102,34 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
       </div>
 
       <Dialog open={!!selectedContact} onOpenChange={(open) => !open && setSelectedContact(null)}>
-        <DialogContent className="max-w-5xl w-[90vw] max-h-[85vh] overflow-y-auto" style={{ background: "oklch(0.96 0.025 50)", border: "1px solid oklch(0.90 0.015 80)" }}>
+        <DialogContent aria-describedby={undefined} className="max-w-5xl w-[90vw] max-h-[85vh] overflow-y-auto" style={{ background: "oklch(0.96 0.025 50)", border: "1px solid oklch(0.90 0.015 80)" }}>
           {selectedContact && (
             <>
               <DialogHeader>
-                <DialogTitle style={{ color: "oklch(0.20 0.015 50)", fontSize: "1.5rem", fontFamily: "'Cormorant Garamond', serif" }}>
-                  {selectedContact.name}
-                </DialogTitle>
-                <p className="text-sm" style={{ color: "oklch(0.52 0.015 50)" }}>{selectedContact.email} {selectedContact.phone && `• ${selectedContact.phone}`}</p>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <DialogTitle style={{ color: "oklch(0.20 0.015 50)", fontSize: "1.5rem", fontFamily: "'Cormorant Garamond', serif" }}>
+                      {selectedContact.name}
+                    </DialogTitle>
+                    <p className="text-sm" style={{ color: "oklch(0.52 0.015 50)" }}>{selectedContact.email} {selectedContact.phone && `• ${selectedContact.phone}`}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (!selectedContact.phone) {
+                        // Open new chat modal if no phone
+                        setIsNewChatOpen(true);
+                        setSelectedContact(null);
+                      } else {
+                        getOrCreateConversation.mutate({ phone: selectedContact.phone });
+                      }
+                    }}
+                    disabled={getOrCreateConversation.isPending}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all shadow hover:-translate-y-0.5"
+                    style={{ background: "oklch(0.20 0.015 50)", color: "white" }}
+                  >
+                    {getOrCreateConversation.isPending ? "Opening..." : "Send Message"}
+                  </button>
+                </div>
               </DialogHeader>
 
               <div className="mt-6">

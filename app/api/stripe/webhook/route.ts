@@ -74,6 +74,8 @@ export async function POST(req: Request) {
         const db = await getDb();
         if (db && session.id) {
           const product = session.metadata?.product;
+          const clientPhone = session.customer_details?.phone ?? null;
+          
           try {
             if (product === "fpu" || product === "fpu_coaching") {
               // FPU coaching add-on (or legacy FPU class enrollment)
@@ -297,6 +299,11 @@ export async function POST(req: Request) {
               // Also check metadata for user_id (set when logged-in user checks out)
               if (!userId && session.metadata?.user_id) {
                 userId = parseInt(session.metadata.user_id);
+              }
+
+              // Update user's phone number if provided
+              if (userId && clientPhone) {
+                await db.update(users).set({ phone: clientPhone }).where(eq(users.id, userId));
               }
 
               // 3. Create enrollment record (if we have a userId)

@@ -13,9 +13,10 @@ import AdminPaymentsTab from "@/components/AdminPaymentsTab";
 import { AdminEngagementHub } from "@/components/admin/AdminEngagementHub";
 import PageEditorTab from "@/components/PageEditorTab";
 import ProgramBuilderTab from "@/components/ProgramBuilderTab";
-import AdminClientHabits from "@/components/AdminClientHabits";
 import AdminModuleAssignment from "@/components/AdminModuleAssignment";
 import { AdminContactsTab } from "@/components/admin/AdminContactsTab";
+import { useInbox } from "@/components/admin/messaging/InboxContext";
+import { AdminMessagingSettingsTab } from "@/components/admin/AdminMessagingSettingsTab";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -42,12 +43,14 @@ export default function Admin() {
     params.set("tab", newTab);
     router.push(`${pathname}?${params.toString()}`);
   };
+  const { setActiveChatMeta } = useInbox();
   const [expandedEnrollment, setExpandedEnrollment] = useState<number | null>(null);
   const [sessionNotes, setSessionNotes] = useState<Record<number, string>>({});
   const [blogTab, setBlogTab] = useState<"published" | "scheduled" | "drafts">("published");
 
   const { data: enrollments, refetch: refetchEnrollments } = trpc.enrollment.adminListAllUsers.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
   const { data: leadsData, refetch: refetchLeads } = trpc.leads.list.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
+  const { data: activeConversations } = trpc.messaging.listConversations.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
   const { data: blogPosts } = trpc.blog.adminList.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
   
   const publishedPosts = blogPosts?.filter(p => p.published) ?? [];
@@ -227,7 +230,7 @@ export default function Admin() {
                 </div>
               ))}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {/* Upcoming Meetings */}
               <div>
                 <h3 className="font-bold text-lg mb-4" style={{ color: "oklch(0.20 0.015 50)" }}>Upcoming Meetings</h3>
@@ -279,13 +282,48 @@ export default function Admin() {
                   {!leadsData?.length && <p className="text-sm" style={{ color: "oklch(0.52 0.015 50)" }}>No leads yet.</p>}
                 </div>
               </div>
+
+              {/* Recent Messages */}
+              <div>
+                <h3 className="font-bold text-lg mb-4" style={{ color: "oklch(0.20 0.015 50)" }}>Recent Messages</h3>
+                <div className="space-y-2">
+                  {(activeConversations ?? []).slice(0, 5).map((conv: any) => (
+                    <button 
+                      key={conv.id} 
+                      onClick={() => setActiveChatMeta({
+                        conversationId: conv.id,
+                        userId: conv.userId,
+                        contactPhone: conv.contactPhone,
+                        userName: conv.contactName || conv.contactPhone
+                      })}
+                      className="w-full flex items-center justify-between p-4 rounded-xl shadow-sm text-left hover:-translate-y-0.5 transition-transform" 
+                      style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.015 80)" }}
+                    >
+                      <div className="min-w-0 flex-1 pr-4">
+                        <p className="font-semibold text-sm truncate" style={{ color: "oklch(0.20 0.015 50)" }}>
+                          {conv.contactName || conv.contactPhone}
+                        </p>
+                        <p className="text-xs truncate" style={{ color: "oklch(0.52 0.015 50)" }}>
+                          {conv.preview || "No messages"}
+                        </p>
+                      </div>
+                      {conv.unreadCount > 0 && (
+                        <span className="shrink-0 text-xs px-2 py-1 rounded-full font-bold" style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}>
+                          {conv.unreadCount} new
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                  {!activeConversations?.length && <p className="text-sm" style={{ color: "oklch(0.52 0.015 50)" }}>No recent messages.</p>}
+                </div>
+              </div>
             </div>
           </div>
         )}
 
         {/* Manual Enrollment Modal */}
         <Dialog open={showEnrollModal} onOpenChange={setShowEnrollModal}>
-          <DialogContent style={{ background: "oklch(0.96 0.025 50)", border: "1px solid oklch(0.90 0.015 80)" }}>
+          <DialogContent aria-describedby={undefined} style={{ background: "oklch(0.96 0.025 50)", border: "1px solid oklch(0.90 0.015 80)" }}>
             <DialogHeader>
               <DialogTitle style={{ color: "oklch(0.20 0.015 50)" }}>Manually Enroll a Client</DialogTitle>
             </DialogHeader>
@@ -421,7 +459,7 @@ export default function Admin() {
                           {lead.email}
                         </a>
                         <span className="text-xs" style={{ color: "oklch(0.52 0.015 50)" }}>
-                          {new Date(lead.createdAt).toLocaleString(undefined, {
+                          {new Date(lead.createdAt).toLocaleString("en-US", {
                             dateStyle: "medium",
                             timeStyle: "short",
                           })}
@@ -558,70 +596,10 @@ export default function Admin() {
 
         {/* Settings / Integrations */}
         {tab === "settings" && (
-          <div>
-            <h2 className="font-bold text-2xl mb-6" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.20 0.015 50)" }}>Settings & Integrations</h2>
-            <div className="rounded-2xl p-6" style={{ background: "oklch(1 0 0)" }}>
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: "oklch(0.985 0.008 80)" }}>
-                    <Calendar size={22} style={{ color: "oklch(0.72 0.12 75)" }} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-base mb-1" style={{ color: "oklch(0.20 0.015 50)" }}>Google Calendar</h3>
-                    <p className="text-sm mb-2" style={{ color: "oklch(0.52 0.015 50)" }}>
-                      Connect your Google Calendar to auto-create sessions with Google Meet links when you schedule client appointments.
-                    </p>
-                    {gcalStatus?.connected ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs px-2 py-1 rounded-full font-bold" style={{ background: "oklch(0.92 0.04 148)", color: "oklch(0.38 0.10 148)" }}>
-                          ✓ Connected{gcalStatus.email ? ` as ${gcalStatus.email}` : ""}
-                        </span>
-                      </div>
-                    ) : (
-                      <p className="text-xs" style={{ color: "oklch(0.52 0.015 50)" }}>Not connected</p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex flex-col gap-2">
-                  {gcalStatus?.connected ? (
-                    <button
-                      onClick={disconnectGcal}
-                      className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold"
-                      style={{ background: "oklch(0.35 0.08 20)", color: "oklch(0.90 0.02 20)" }}
-                    >
-                      <Link2Off size={14} /> Disconnect
-                    </button>
-                  ) : (
-                    <a
-                      href="/api/auth/google-calendar/connect"
-                      className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold"
-                      style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}
-                    >
-                      <Link2 size={14} /> Connect Google Calendar
-                    </a>
-                  )}
-                </div>
-              </div>
-              {gcalStatus?.connected && (
-                <div className="mt-5 pt-5 border-t" style={{ borderColor: "oklch(0.90 0.015 80)" }}>
-                  <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "oklch(0.52 0.015 50)" }}>What happens when connected</p>
-                  <ul className="space-y-1.5">
-                    {[
-                      "When you schedule a session, a Google Calendar event is automatically created",
-                      "A Google Meet link is generated and shared with the client",
-                      "Both you and the client receive a calendar invite",
-                      "Join Meet buttons appear in both your admin portal and the client portal",
-                    ].map(item => (
-                      <li key={item} className="flex items-start gap-2 text-xs" style={{ color: "oklch(0.42 0.015 50)" }}>
-                        <Video size={12} className="mt-0.5 flex-shrink-0" style={{ color: "oklch(0.72 0.12 75)" }} />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          </div>
+          <AdminMessagingSettingsTab 
+            gcalStatus={gcalStatus} 
+            disconnectGcal={disconnectGcal} 
+          />
         )}
 
         {/* Deposits/Payments */}

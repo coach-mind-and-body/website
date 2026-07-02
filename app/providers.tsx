@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink, TRPCClientError } from "@trpc/client";
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import superjson from "superjson";
 import { trpc } from "@/lib/trpc";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -41,6 +42,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
     return client;
   });
 
+  const pathname = usePathname();
+  const isAdminRoute = pathname?.startsWith("/admin");
+
   const [trpcClient] = useState(() =>
     trpc.createClient({
       links: [
@@ -66,7 +70,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             <TooltipProvider>
               {children}
               <Toaster />
-              <ChatWidget />
+              {!isAdminRoute && <ChatWidget />}
             </TooltipProvider>
           </ChatProvider>
         </ThemeProvider>
