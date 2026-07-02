@@ -31,6 +31,8 @@ interface InboxContextType {
   setIsProfileOpen: (open: boolean) => void;
   activeChatMeta: ActiveChatMeta | null;
   setActiveChatMeta: (meta: ActiveChatMeta | null) => void;
+  newChatPrefill: { name?: string, phone?: string, userId?: number } | null;
+  setNewChatPrefill: (prefill: { name?: string, phone?: string, userId?: number } | null) => void;
 }
 
 const InboxContext = createContext<InboxContextType | undefined>(undefined);
@@ -47,6 +49,7 @@ export function InboxProvider({ children }: { children: ReactNode }) {
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [activeChatMeta, setActiveChatMeta] = useState<ActiveChatMeta | null>(null);
+  const [newChatPrefill, setNewChatPrefill] = useState<{ name?: string, phone?: string, userId?: number } | null>(null);
 
   return (
     <InboxContext.Provider value={{
@@ -61,6 +64,7 @@ export function InboxProvider({ children }: { children: ReactNode }) {
       isNewChatOpen, setIsNewChatOpen,
       isProfileOpen, setIsProfileOpen,
       activeChatMeta, setActiveChatMeta,
+      newChatPrefill, setNewChatPrefill,
     }}>
       {children}
     </InboxContext.Provider>

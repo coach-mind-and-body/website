@@ -12,7 +12,7 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
   const { data: contacts, isLoading, refetch } = trpc.leads.unifiedContacts.useQuery();
   const [selectedContact, setSelectedContact] = useState<any>(null);
   const [filter, setFilter] = useState<"all" | "reclaim" | "habit" | "leads">("all");
-  const { setActiveChatMeta, setIsNewChatOpen } = useInbox();
+  const { setActiveChatMeta, setIsNewChatOpen, setNewChatPrefill } = useInbox();
 
   const getOrCreateConversation = trpc.messaging.getOrCreateConversation.useMutation({
     onSuccess: (data) => {
@@ -102,7 +102,7 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
       </div>
 
       <Dialog open={!!selectedContact} onOpenChange={(open) => !open && setSelectedContact(null)}>
-        <DialogContent aria-describedby={undefined} className="max-w-5xl w-[90vw] max-h-[85vh] overflow-y-auto" style={{ background: "oklch(0.96 0.025 50)", border: "1px solid oklch(0.90 0.015 80)" }}>
+        <DialogContent aria-describedby={undefined} className="max-w-7xl w-[95vw] md:w-[85vw] max-h-[85vh] overflow-y-auto" style={{ background: "oklch(0.96 0.025 50)", border: "1px solid oklch(0.90 0.015 80)" }}>
           {selectedContact && (
             <>
               <DialogHeader>
@@ -117,6 +117,11 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
                     onClick={() => {
                       if (!selectedContact.phone) {
                         // Open new chat modal if no phone
+                        setNewChatPrefill({ 
+                          name: selectedContact.name, 
+                          phone: selectedContact.phone || undefined, 
+                          userId: selectedContact.userId || undefined 
+                        });
                         setIsNewChatOpen(true);
                         setSelectedContact(null);
                       } else {

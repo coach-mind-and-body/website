@@ -40,7 +40,7 @@ import {
 export default function NewChatComposeModal() {
   const router = useRouter();
   const utils = trpc.useContext();
-  const { isNewChatOpen, setIsNewChatOpen, setPaymentModalOpen, setTemplatesModalOpen } =
+  const { isNewChatOpen, setIsNewChatOpen, setPaymentModalOpen, setTemplatesModalOpen, newChatPrefill, setNewChatPrefill } =
     useInbox();
 
   const [recipientQuery, setRecipientQuery] = useState("");
@@ -59,7 +59,21 @@ export default function NewChatComposeModal() {
     setMessageText("");
     setScheduledDate(null);
     setPendingUploadUrl(null);
+    setNewChatPrefill(null);
   };
+
+  useEffect(() => {
+    if (isNewChatOpen && newChatPrefill) {
+      setRecipientQuery(newChatPrefill.name || newChatPrefill.phone || "");
+      setSelectedContact({
+        id: newChatPrefill.userId || 0,
+        name: newChatPrefill.name || "Unknown",
+        email: null,
+        phone: newChatPrefill.phone || null,
+        role: "client"
+      });
+    }
+  }, [isNewChatOpen, newChatPrefill]);
 
   const resolvedPhone = resolveComposeRecipientPhone(recipientQuery, selectedContact);
 
@@ -130,7 +144,7 @@ export default function NewChatComposeModal() {
 
   return (
     <Dialog open={isNewChatOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-lg p-0 gap-0 overflow-hidden">
+      <DialogContent aria-describedby={undefined} className="sm:max-w-lg p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-5 py-4 border-b">
           <DialogTitle className="text-base font-semibold">New message</DialogTitle>
         </DialogHeader>

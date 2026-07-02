@@ -23,7 +23,7 @@ export default function InboxModals() {
 
       {/* Templates Modal */}
       <Dialog open={templatesModalOpen} onOpenChange={setTemplatesModalOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent aria-describedby={undefined} className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Select Template</DialogTitle>
           </DialogHeader>

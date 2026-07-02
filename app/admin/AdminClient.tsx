@@ -17,6 +17,11 @@ import AdminModuleAssignment from "@/components/AdminModuleAssignment";
 import { AdminContactsTab } from "@/components/admin/AdminContactsTab";
 import { useInbox } from "@/components/admin/messaging/InboxContext";
 import { AdminMessagingSettingsTab } from "@/components/admin/AdminMessagingSettingsTab";
+import ActivityFeed from "@/components/pages/crm/ActivityFeed";
+import CallHistory from "@/components/pages/crm/CallHistory";
+import Campaigns from "@/components/pages/crm/Campaigns";
+import Sequences from "@/components/pages/crm/Sequences";
+import AiTraining from "@/components/pages/crm/AiTraining";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -25,7 +30,7 @@ import { getLoginUrl } from "@/lib/const";
 
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 
-type AdminTab = "overview" | "contacts" | "snackhack" | "fpu" | "fpugroup" | "programbuilder" | "engagement" | "blog" | "deposits" | "settings" | "pageeditor";
+type AdminTab = "overview" | "contacts" | "reminders" | "call-history" | "campaigns" | "sequences" | "ai-training" | "snackhack" | "fpu" | "fpugroup" | "programbuilder" | "engagement" | "blog" | "deposits" | "settings" | "pageeditor";
 
 export default function Admin() {
   
@@ -43,7 +48,7 @@ export default function Admin() {
     params.set("tab", newTab);
     router.push(`${pathname}?${params.toString()}`);
   };
-  const { setActiveChatMeta } = useInbox();
+  const { setActiveChatMeta, setIsNewChatOpen } = useInbox();
   const [expandedEnrollment, setExpandedEnrollment] = useState<number | null>(null);
   const [sessionNotes, setSessionNotes] = useState<Record<number, string>>({});
   const [blogTab, setBlogTab] = useState<"published" | "scheduled" | "drafts">("published");
@@ -134,6 +139,11 @@ export default function Admin() {
   const TABS: { id: AdminTab; label: string; icon: React.ReactNode }[] = [
     { id: "overview", label: "Overview", icon: <BarChart3 size={16} /> },
     { id: "contacts", label: "Contacts", icon: <Users size={16} /> },
+    { id: "reminders", label: "Reminders", icon: <Bell size={16} /> },
+    { id: "call-history", label: "Call History", icon: <Phone size={16} /> },
+    { id: "campaigns", label: "Campaigns", icon: <Megaphone size={16} /> },
+    { id: "sequences", label: "Sequences", icon: <Layers size={16} /> },
+    { id: "ai-training", label: "AI Training", icon: <Brain size={16} /> },
     { id: "snackhack", label: "Snack Hack Leads", icon: <Cookie size={16} /> },
     { id: "fpu", label: "FPU Coaching", icon: <Video size={16} /> },
     { id: "fpugroup", label: "FPU Sign-Ups", icon: <UserPlus size={16} /> },
@@ -179,13 +189,6 @@ export default function Admin() {
             </span>
           </a>
           <div className="flex items-center gap-4">
-            <Link 
-              href="/admin/v2-inbox" 
-              className="px-4 py-1.5 text-sm font-bold rounded-lg shadow-sm transition-transform hover:scale-105" 
-              style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}
-            >
-              Inbox V2
-            </Link>
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}>
                 {user?.name?.[0] ?? "A"}
@@ -285,7 +288,16 @@ export default function Admin() {
 
               {/* Recent Messages */}
               <div>
-                <h3 className="font-bold text-lg mb-4" style={{ color: "oklch(0.20 0.015 50)" }}>Recent Messages</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-bold text-lg" style={{ color: "oklch(0.20 0.015 50)" }}>Recent Messages</h3>
+                  <button 
+                    onClick={() => setIsNewChatOpen(true)}
+                    className="text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm transition-transform hover:-translate-y-0.5 flex items-center gap-1"
+                    style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}
+                  >
+                    <Plus size={14} /> New
+                  </button>
+                </div>
                 <div className="space-y-2">
                   {(activeConversations ?? []).slice(0, 5).map((conv: any) => (
                     <button 
@@ -601,6 +613,13 @@ export default function Admin() {
             disconnectGcal={disconnectGcal} 
           />
         )}
+
+        {/* Missing V2 Tabs Restored */}
+        {tab === "reminders" && <div className="bg-white rounded-xl shadow p-6"><ActivityFeed /></div>}
+        {tab === "call-history" && <div className="bg-white rounded-xl shadow p-6"><CallHistory /></div>}
+        {tab === "campaigns" && <div className="bg-white rounded-xl shadow p-6"><Campaigns /></div>}
+        {tab === "sequences" && <div className="bg-white rounded-xl shadow p-6"><Sequences /></div>}
+        {tab === "ai-training" && <div className="bg-white rounded-xl shadow p-6"><AiTraining /></div>}
 
         {/* Deposits/Payments */}
         {tab === "deposits" && <AdminPaymentsTab />}
