@@ -48,7 +48,7 @@ export async function notifyAdmins(payload: {
     // For each subscription, send the notification
     const message = JSON.stringify({
       ...payload,
-      url: payload.url ?? "/admin/inbox",
+      url: payload.url ?? "/admin/v2-inbox",
     });
     const sends = subs.map((sub) =>
       webpush
@@ -108,7 +108,7 @@ export async function notifyAllAdmins(payload: {
 
     const message = JSON.stringify({
       ...payload,
-      url: payload.url ?? "/admin/inbox",
+      url: payload.url ?? "/admin/v2-inbox",
     });
     const sends = allSubs.map((sub) =>
       webpush
@@ -193,7 +193,7 @@ export const pushRouter = router({
     await notifyAdmins({
       title: "🔔 Notifications Active!",
       body: "Coach Mind & Body push notifications are working correctly.",
-      url: "/admin/inbox",
+      url: "/admin/v2-inbox",
     });
     return { success: true };
   }),

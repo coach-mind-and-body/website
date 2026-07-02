@@ -177,11 +177,11 @@ export default function Admin() {
           </a>
           <div className="flex items-center gap-4">
             <Link 
-              href="/admin/inbox" 
+              href="/admin/v2-inbox" 
               className="px-4 py-1.5 text-sm font-bold rounded-lg shadow-sm transition-transform hover:scale-105" 
               style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}
             >
-              Unified Inbox
+              Inbox V2
             </Link>
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}>
