@@ -69,7 +69,9 @@ export default function NewChatComposeModal() {
         id: String(newChatPrefill.userId || ""),
         name: newChatPrefill.name || "Unknown",
         email: null,
-        phone: newChatPrefill.phone || null
+        phone: newChatPrefill.phone || null,
+        source: "contact",
+        userId: newChatPrefill.userId || null
       });
     }
   }, [isNewChatOpen, newChatPrefill]);
