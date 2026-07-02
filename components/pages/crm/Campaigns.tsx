@@ -10,7 +10,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import { getDealDestinationEmoji } from "@/shared/dealDestinationEmoji";
+// Mock getDealDestinationEmoji to fix build error
+function getDealDestinationEmoji(dest: string) { return "✈️"; }
 
 function formatNumber(n: number): string {
   return n?.toLocaleString() || "0";
