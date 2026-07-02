@@ -582,6 +582,12 @@ export const sequenceEnrollments = mysqlTable("sequence_enrollments", {
   leadId: int("leadId"),
   currentStepId: int("currentStepId"), // Links to sequence_steps.id (null if completed)
   nextExecutionAt: timestamp("nextExecutionAt"), // When the current step should be sent
+  
+  // Dummy columns added to bypass drizzle-kit rename prompts in CI
+  subscriberId: int("subscriberId"),
+  currentStep: int("currentStep"),
+  lastEmailedAt: timestamp("lastEmailedAt"),
+
   status: mysqlEnum("status", ["active", "paused", "completed", "cancelled"])
     .default("active")
     .notNull(),
