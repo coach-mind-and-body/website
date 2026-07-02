@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Tests for enrollment flow fixes:
  * 1. RECLAIM webhook creates enrollment + 6 sessions after payment

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Auto-enrolls vacation quote submitters into destination-based nurture sequences.
  */

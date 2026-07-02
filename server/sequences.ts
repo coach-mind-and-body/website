@@ -136,7 +136,6 @@ export async function processEmailSequences() {
         .update(sequenceEnrollments)
         .set({
           currentStepId: nextStep,
-          updatedAt: new Date(),
           status: isComplete ? "completed" : "active",
           updatedAt: new Date(),
         })
@@ -145,7 +144,6 @@ export async function processEmailSequences() {
       currentEnrollment = {
         ...currentEnrollment,
         currentStepId: nextStep,
-        updatedAt: new Date(),
         status: isComplete ? "completed" : "active",
       };
     }

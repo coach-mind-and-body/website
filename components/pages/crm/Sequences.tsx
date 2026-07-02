@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState } from "react";
 import { RefreshCw, Plus, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";

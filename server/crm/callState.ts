@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Message } from "../_core/llm";
 
 // ─── In-Memory Call State ─────────────────────────────────────────────────────

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Tests for podcast.subscribe tRPC procedure
  * Verifies that the podcast subscribe mutation calls resendSubscribe

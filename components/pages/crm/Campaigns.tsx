@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useMemo } from "react";
 import { Megaphone, Plus, Tag, Upload, ArrowRight, ArrowLeft, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";

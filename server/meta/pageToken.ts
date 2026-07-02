@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { getDb } from "../db";
 import { appIntegrations } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";

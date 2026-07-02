@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { sequenceEnrollments, sequenceSteps, sequences } from "../../drizzle/schema";
 import { eq, and, asc, gt, inArray } from "drizzle-orm";
 

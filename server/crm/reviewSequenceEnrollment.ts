@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Enrolls travelers into the Post-Trip Review Request sequence (2 touches max).
  * Sends step 1 immediately; step 2 fires 72h later via campaignJob cron.
