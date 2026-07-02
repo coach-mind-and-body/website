@@ -605,19 +605,7 @@ export const aiKnowledge = mysqlTable("ai_knowledge", {
 export type AiKnowledge = typeof aiKnowledge.$inferSelect;
 export type InsertAiKnowledge = typeof aiKnowledge.$inferInsert;
 
-// ─── PWA Push Subscriptions ─────────────────────────────────────────
 
-export const pushSubscriptions = mysqlTable("push_subscriptions", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  endpoint: varchar("endpoint", { length: 1000 }).notNull(),
-  p256dh: varchar("p256dh", { length: 500 }).notNull(),
-  auth: varchar("auth", { length: 200 }).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
-
-export type PushSubscription = typeof pushSubscriptions.$inferSelect;
 
 export const messageTemplates = mysqlTable("message_templates", {
   id: int("id").autoincrement().primaryKey(),

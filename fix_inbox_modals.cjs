@@ -1,4 +1,7 @@
-"use client";
+const fs = require('fs');
+
+const file = 'app/admin/inbox/components/InboxModals.tsx';
+const safeContent = `"use client";
 
 import React from "react";
 import { useRouter } from "next/navigation";
@@ -67,3 +70,6 @@ export default function InboxModals() {
     </>
   );
 }
+`;
+
+fs.writeFileSync(file, safeContent, 'utf8');
