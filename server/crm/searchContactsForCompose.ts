@@ -2,10 +2,9 @@
 import { and, desc, eq, like, or, sql, type AnyColumn } from "drizzle-orm";
 import { getDb } from "../db";
 import {
-  clientLeads,
+  leads,
   conversations,
   users,
-  vacationQuotes,
 } from "../../drizzle/schema";
 import { normalizePhoneDigits } from "./contactResolver";
 import type { ComposeContactHit } from "../../lib/composeRecipient";
@@ -83,17 +82,17 @@ export async function searchContactsForCompose(
 
   const leadRows = await db
     .select({
-      id: clientLeads.id,
-      name: clientLeads.name,
-      email: clientLeads.email,
-      phone: clientLeads.phone,
+      id: leads.id,
+      name: leads.name,
+      email: leads.email,
+      phone: leads.phone,
     })
-    .from(clientLeads)
+    .from(leads)
     .where(
       nameEmailPhoneMatch(
-        clientLeads.name,
-        clientLeads.email,
-        clientLeads.phone,
+        leads.name,
+        leads.email,
+        leads.phone,
         qLower,
         phonePattern
       )
@@ -107,36 +106,6 @@ export async function searchContactsForCompose(
       phone: l.phone,
       email: l.email,
       source: "Lead",
-      userId: null,
-    });
-  }
-
-  const quoteRows = await db
-    .select({
-      id: vacationQuotes.id,
-      name: vacationQuotes.name,
-      email: vacationQuotes.email,
-      phone: vacationQuotes.phone,
-    })
-    .from(vacationQuotes)
-    .where(
-      nameEmailPhoneMatch(
-        vacationQuotes.name,
-        vacationQuotes.email,
-        vacationQuotes.phone,
-        qLower,
-        phonePattern
-      )
-    )
-    .limit(MAX_RESULTS);
-
-  for (const qRow of quoteRows) {
-    addHit({
-      id: `quote-${qRow.id}`,
-      name: qRow.name || "Unknown",
-      phone: qRow.phone,
-      email: qRow.email,
-      source: "Quote",
       userId: null,
     });
   }

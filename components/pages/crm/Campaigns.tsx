@@ -1,151 +1,35 @@
 // @ts-nocheck
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Megaphone, Plus, Tag, Upload, ArrowRight, ArrowLeft, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Checkbox } from "@/components/ui/checkbox";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-// Mock getDealDestinationEmoji to fix build error
-function getDealDestinationEmoji(dest: string) { return "✈️"; }
-
-function formatNumber(n: number): string {
-  return n?.toLocaleString() || "0";
-}
-
-function formatDateFriendly(dateStr: string) {
-  if (!dateStr) return "";
-  try {
-    const d = new Date(dateStr + "T00:00:00");
-    return d.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  } catch {
-    return dateStr;
-  }
-}
 
 export default function Campaigns() {
   const utils = trpc.useUtils();
   const { data: campaigns = [], isLoading: loading } = trpc.crmAutomations.listCampaigns.useQuery();
-  const { data: deals = [] } = trpc.adminDeals.all.useQuery();
   
   const [showWizard, setShowWizard] = useState(false);
-  const [step, setStep] = useState<1|2|3>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
 
-  // Wizard State — default to premium subscribers (primary FDF audience)
+  // Wizard State
   const [campaignName, setCampaignName] = useState("");
-  const [selectedMethod, setSelectedMethod] = useState<'csv'|'tag'|'contacts'|'manual'|null>('tag');
+  const [selectedMethod, setSelectedMethod] = useState<'csv' | 'tag' | 'contacts' | 'manual' | null>('tag');
   const [selectedTag, setSelectedTag] = useState<string>("-1");
   const [message, setMessage] = useState("\n\nText STOP to unsubscribe");
   const [mediaUrl, setMediaUrl] = useState("");
   const [closeAfterSend, setCloseAfterSend] = useState(false);
   const [scheduleForLater, setScheduleForLater] = useState(false);
 
-  // Deal Picker State
-  const [showDealPicker, setShowDealPicker] = useState(false);
-  const [dealSearch, setDealSearch] = useState("");
-  const [selectedDeals, setSelectedDeals] = useState<any[]>([]);
-
-  // Filter deals for the picker
-  const filteredDeals = useMemo(() => {
-    if (!dealSearch) return deals.filter((d: any) => d.status === "active");
-    const s = dealSearch.toLowerCase();
-    return deals.filter(
-      (d: any) =>
-        d.status === "active" &&
-        (d.destination?.toLowerCase().includes(s) ||
-          d.origin?.toLowerCase().includes(s) ||
-          d.airlines?.some((a: any) => a.name?.toLowerCase().includes(s)))
-    );
-  }, [deals, dealSearch]);
-
-  const toggleDeal = (deal: any) => {
-    setSelectedDeals(prev => 
-      prev.find(d => d.id === deal.id) 
-        ? prev.filter(d => d.id !== deal.id)
-        : [...prev, deal]
-    );
-  };
-
-  const generateSmsText = () => {
-    if (selectedDeals.length === 0) {
-      toast.error("Please select at least one deal.");
-      return;
-    }
-
-    const byOrigin: Record<string, any[]> = {};
-    selectedDeals.forEach(d => {
-      const origin = d.origin ? d.origin.split(" ")[0].replace(/[()]/g, "") : "SLC";
-      if (!byOrigin[origin]) byOrigin[origin] = [];
-      byOrigin[origin].push(d);
-    });
-
-    let smsText = "((first_name)), it's Flight Deal Friday with Mind and Body!✈️\n";
-
-    Object.keys(byOrigin).forEach(origin => {
-      smsText += `\n${origin}\n`;
-      byOrigin[origin].forEach(d => {
-        const emoji = getDealDestinationEmoji(d.destination);
-        let cleanCity = d.destination.split(",")[0].trim();
-        cleanCity = cleanCity.replace(/^(\p{Extended_Pictographic}+\s*)+/u, "").trim();
-        cleanCity = cleanCity.replace(/[:;]$/, "");
-
-        const price = `$${d.price}`;
-        let dates = "";
-        if (d.main_dates) {
-          dates = d.main_dates;
-        } else if (d.main_start) {
-           const startMonth = formatDateFriendly(d.main_start).split(" ");
-           dates = `${startMonth[0]} ${startMonth[1]?.replace(",","")}`;
-           if (d.main_end) {
-             const endMonth = formatDateFriendly(d.main_end).split(" ");
-             dates += ` – ${endMonth[0]} ${endMonth[1]?.replace(",","")}`;
-           }
-        }
-        
-        let airline = d.airlines?.[0]?.name || "Various";
-        let priceStr = price;
-        if (d.pricingMode === 'miles') {
-           priceStr = `${formatNumber(Number(d.pointsPrice))} Pts`;
-        }
-        
-        const cleanSlug = cleanCity.replace(/[^a-zA-Z0-9]/g, "");
-        const link = `https://utahtravel.pro/${cleanSlug}`;
-        
-        smsText += `${emoji} ${cleanCity}: ${priceStr} ${dates} • ${airline} ${link}\n`;
-      });
-    });
-
-    const footer = message.includes("STOP to unsubscribe")
-      ? ""
-      : "\n\nText STOP to unsubscribe";
-    setMessage(`${smsText.trim()}${footer}`);
-    setShowDealPicker(false);
-    toast.success("Flight Deal Friday template inserted!");
-  };
-
   const audienceTagId = selectedMethod === 'tag' && selectedTag ? parseInt(selectedTag) : -1;
   const { data: audienceCount } = trpc.crmAutomations.getCampaignAudienceCount.useQuery(
     { targetTagId: audienceTagId },
     { enabled: selectedMethod === 'tag' && !!selectedTag }
   );
-
-  const startFlightDealFriday = () => {
-    setShowWizard(true);
-    setStep(1);
-    setCampaignName(`Flight Deal Friday ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`);
-    setSelectedMethod('tag');
-    setSelectedTag('-1');
-    setMessage("\n\nText STOP to unsubscribe");
-    setSelectedDeals([]);
-  };
 
   const createCampaign = trpc.crmAutomations.createCampaign.useMutation({
     onSuccess: () => {
@@ -186,13 +70,10 @@ export default function Campaigns() {
         <div className="p-6 border-b bg-white rounded-t-xl flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Campaigns</h1>
-            <p className="text-muted-foreground text-sm mt-1">Manage bulk SMS and email blasts.</p>
+            <p className="text-muted-foreground text-sm mt-1">Manage bulk SMS blasts.</p>
           </div>
           <div className="flex gap-2">
-            <Button onClick={startFlightDealFriday} className="bg-brand-orange hover:bg-brand-orange/90 text-white">
-              ✈️ Flight Deal Friday
-            </Button>
-            <Button onClick={() => { setShowWizard(true); setSelectedMethod('tag'); setSelectedTag('-1'); }} variant="outline">
+            <Button onClick={() => { setShowWizard(true); setSelectedMethod('tag'); setSelectedTag('-1'); }} className="bg-brand-blue hover:bg-brand-blue/90 text-white">
               <Plus className="w-4 h-4 mr-2" />
               New Campaign
             </Button>
@@ -321,8 +202,8 @@ export default function Campaigns() {
                       <SelectValue placeholder="Select a group..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="-1">All Premium Subscribers (recommended)</SelectItem>
-                      <SelectItem value="-2">Free Flight Deal Subscribers</SelectItem>
+                      <SelectItem value="-1">All Premium Members (recommended)</SelectItem>
+                      <SelectItem value="-2">All Active Clients</SelectItem>
                     </SelectContent>
                   </Select>
                   {audienceCount && (
@@ -330,13 +211,13 @@ export default function Campaigns() {
                       {audienceCount.withPhone} subscribers with phone numbers ready to receive SMS
                     </p>
                   )}
-                  <p className="text-xs text-muted-foreground mt-1">Audience is resolved at send time from live premium status.</p>
+                  <p className="text-xs text-muted-foreground mt-1">Audience is resolved at send time from live database records.</p>
                 </div>
               )}
 
               <div className="space-y-2 max-w-sm mt-6">
                 <label className="text-sm font-semibold text-slate-900">Campaign Name (Internal)</label>
-                <Input value={campaignName} onChange={e => setCampaignName(e.target.value)} placeholder="e.g., Summer Disney Deals 2026" />
+                <Input value={campaignName} onChange={e => setCampaignName(e.target.value)} placeholder="e.g., Summer Reset Blast 2026" />
               </div>
             </div>
           )}
@@ -355,8 +236,6 @@ export default function Campaigns() {
                     <Button variant="outline" size="sm" onClick={() => setMessage(p => p + "((first_name))")} className="text-xs">((first_name))</Button>
                     <Button variant="outline" size="sm" onClick={() => setMessage(p => p + "((last_name))")} className="text-xs">((last_name))</Button>
                     <Button variant="outline" size="sm" onClick={() => setMessage(p => p + "((review_link))")} className="text-xs">((review_link))</Button>
-                    <div className="w-px h-4 bg-slate-300 mx-1"></div>
-                    <Button variant="secondary" size="sm" onClick={() => setShowDealPicker(true)} className="text-xs bg-brand-blue/10 text-brand-blue hover:bg-brand-blue/20">✈️ Flight Deal Friday Template</Button>
                   </div>
                   <Textarea 
                     value={message}
@@ -384,7 +263,7 @@ export default function Campaigns() {
                 <div className="bg-slate-100 rounded-3xl p-4 md:p-8 flex items-center justify-center">
                   <div className="w-[300px] h-[600px] bg-white rounded-[40px] shadow-2xl border-[8px] border-slate-800 overflow-hidden flex flex-col relative">
                     <div className="bg-slate-100 p-4 text-center font-semibold text-sm border-b z-10 shrink-0">
-                      Carter Seitz (Preview)
+                      Preview Contact (Preview)
                     </div>
                     <div className="flex-1 p-4 bg-slate-50 overflow-y-auto flex flex-col justify-end gap-2">
                       {mediaUrl && (
@@ -394,7 +273,7 @@ export default function Campaigns() {
                       )}
                       {message && (
                         <div className="bg-blue-500 text-white p-3 rounded-2xl rounded-br-sm max-w-[85%] self-end text-[15px] leading-snug whitespace-pre-wrap shadow-sm">
-                          {message.replace('((first_name))', 'Carter').replace('((last_name))', 'Seitz').replace('((review_link))', 'https://coachmindandbody.com/review')}
+                          {message.replace('((first_name))', 'Client').replace('((last_name))', '').replace('((review_link))', 'https://coachmindandbody.com/review')}
                         </div>
                       )}
                     </div>
@@ -481,53 +360,6 @@ export default function Campaigns() {
           
         </div>
       </div>
-
-      {/* Deal Picker Modal */}
-      <Dialog open={showDealPicker} onOpenChange={setShowDealPicker}>
-        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 bg-white">
-          <DialogHeader className="p-4 border-b">
-            <DialogTitle>Select Flight Deals</DialogTitle>
-          </DialogHeader>
-          <div className="p-4 border-b">
-            <Input
-              placeholder="Search deals by destination, origin, or airline..."
-              value={dealSearch}
-              onChange={e => setDealSearch(e.target.value)}
-              className="mb-2"
-            />
-            <div className="flex justify-between items-center text-sm text-slate-500">
-              <span>{selectedDeals.length} deals selected</span>
-              {selectedDeals.length > 0 && (
-                <Button variant="ghost" size="sm" onClick={() => setSelectedDeals([])} className="h-auto p-0 text-brand-blue">Clear all</Button>
-              )}
-            </div>
-          </div>
-          <div className="flex-1 overflow-y-auto min-h-0 p-4 space-y-2">
-            {filteredDeals.map((deal: any) => {
-              const isSelected = !!selectedDeals.find(d => d.id === deal.id);
-              return (
-                <div 
-                  key={deal.id} 
-                  className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${isSelected ? 'border-brand-blue bg-blue-50/50' : 'hover:border-slate-300 hover:bg-slate-50'}`}
-                  onClick={() => toggleDeal(deal)}
-                >
-                  <Checkbox checked={isSelected} className="pointer-events-none" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm truncate">{deal.destination}</p>
-                    <p className="text-xs text-slate-500">{deal.origin || "SLC"} • ${deal.price} • {deal.airlines?.[0]?.name || "Various"}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <DialogFooter className="p-4 border-t bg-white z-10 shrink-0 mt-auto">
-            <Button variant="outline" onClick={() => setShowDealPicker(false)}>Cancel</Button>
-            <Button onClick={generateSmsText} className="bg-brand-blue hover:bg-brand-blue/90 text-white">
-              Insert into Message
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

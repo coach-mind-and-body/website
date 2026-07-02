@@ -770,4 +770,76 @@ export const messagingRouter = router({
     .query(async ({ input }) => {
       return searchContactsForCompose(input.query);
     }),
+
+  listFeed: adminProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+
+    // Get recent messages
+    const recentMessages = await db.select({
+      id: messages.id,
+      content: messages.content,
+      direction: messages.direction,
+      createdAt: messages.createdAt,
+      contactPhone: conversations.contactPhone,
+      userId: conversations.userId,
+    })
+      .from(messages)
+      .innerJoin(conversations, eq(messages.conversationId, conversations.id))
+      .orderBy(desc(messages.createdAt))
+      .limit(50);
+
+    // Get recent leads
+    const recentLeads = await db.select({
+      id: leads.id,
+      name: leads.name,
+      phone: leads.phone,
+      createdAt: leads.createdAt,
+      notes: leads.notes
+    })
+      .from(leads)
+      .orderBy(desc(leads.createdAt))
+      .limit(50);
+
+    // Let's resolve contact names for messages in batch
+    const phonesToResolve = recentMessages
+      .map(m => m.contactPhone)
+      .filter((p): p is string => !!p);
+    
+    const { resolveContactsByPhones } = await import("../crm/contactResolver");
+    const contactMap = await resolveContactsByPhones(db, phonesToResolve);
+
+    const activities: any[] = [];
+
+    recentMessages.forEach(m => {
+      const resolved = m.contactPhone ? contactMap.get(m.contactPhone) : null;
+      activities.push({
+        id: `msg-${m.id}`,
+        type: "message",
+        direction: m.direction,
+        date: m.createdAt,
+        name: resolved?.name || m.contactPhone || "Unknown",
+        phone: m.contactPhone || "",
+        content: m.content || ""
+      });
+    });
+
+    recentLeads.forEach(l => {
+      activities.push({
+        id: `lead-${l.id}`,
+        type: "quote", // maps to quote icon/text in ActivityFeed UI
+        direction: "inbound",
+        date: l.createdAt,
+        name: l.name,
+        phone: l.phone || "",
+        content: l.notes || "Discovery call request"
+      });
+    });
+
+    // Sort combined by date descending
+    activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    return activities.slice(0, 50);
+  }),
 });
+

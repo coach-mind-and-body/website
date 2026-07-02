@@ -4,7 +4,7 @@ import { format } from "date-fns";
 import { Loader2, Star, UserPlus, Calendar, ArrowUpRight, ArrowDownLeft } from "lucide-react";
 
 export default function ActivityFeed() {
-  const { data: activities, isLoading } = trpc.activity.listFeed.useQuery();
+  const { data: activities, isLoading } = trpc.messaging.listFeed.useQuery();
 
   if (isLoading) {
     return <div className="flex justify-center p-12 text-brand-blue"><Loader2 className="w-8 h-8 animate-spin" /></div>;

@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { sql, type SQL } from "drizzle-orm";
-import { clientLeads, conversations, users } from "../../drizzle/schema";
+import { leads, conversations, users } from "../../drizzle/schema";
 
 type Db = NonNullable<Awaited<ReturnType<typeof import("../db").getDb>>>;
 
@@ -13,7 +13,7 @@ export function normalizePhoneDigits(phone: string): string {
 export function phoneColumnMatchSql(
   phoneColumn:
     | typeof users.phone
-    | typeof clientLeads.phone
+    | typeof leads.phone
     | typeof conversations.contactPhone,
   targetPhone: string
 ): SQL {
@@ -53,9 +53,9 @@ export async function resolveContactByPhone(
   }
 
   const leadMatches = await db
-    .select({ name: clientLeads.name })
-    .from(clientLeads)
-    .where(phoneColumnMatchSql(clientLeads.phone, phone))
+    .select({ name: leads.name })
+    .from(leads)
+    .where(phoneColumnMatchSql(leads.phone, phone))
     .limit(1);
 
   if (leadMatches[0]?.name) {

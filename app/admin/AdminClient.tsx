@@ -17,11 +17,7 @@ import AdminModuleAssignment from "@/components/AdminModuleAssignment";
 import { AdminContactsTab } from "@/components/admin/AdminContactsTab";
 import { useInbox } from "@/components/admin/messaging/InboxContext";
 import { AdminMessagingSettingsTab } from "@/components/admin/AdminMessagingSettingsTab";
-import ActivityFeed from "@/components/pages/crm/ActivityFeed";
-import CallHistory from "@/components/pages/crm/CallHistory";
-import Campaigns from "@/components/pages/crm/Campaigns";
-import Sequences from "@/components/pages/crm/Sequences";
-import AiTraining from "@/components/pages/crm/AiTraining";
+import AdminCrmAutomationsTab from "@/components/admin/AdminCrmAutomationsTab";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -30,7 +26,7 @@ import { getLoginUrl } from "@/lib/const";
 
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 
-type AdminTab = "overview" | "contacts" | "reminders" | "call-history" | "campaigns" | "sequences" | "ai-training" | "snackhack" | "fpu" | "fpugroup" | "programbuilder" | "engagement" | "blog" | "deposits" | "settings" | "pageeditor";
+type AdminTab = "overview" | "contacts" | "crm-automations" | "snackhack" | "fpu" | "fpugroup" | "programbuilder" | "engagement" | "blog" | "deposits" | "settings" | "pageeditor";
 
 export default function Admin() {
   
@@ -41,7 +37,7 @@ export default function Admin() {
   const pathname = usePathname();
   
   const tabParam = searchParams.get("tab") as AdminTab | null;
-  const tab = tabParam && ["overview", "contacts", "snackhack", "fpu", "fpugroup", "programbuilder", "engagement", "blog", "deposits", "settings", "pageeditor"].includes(tabParam) ? tabParam : "overview";
+  const tab = tabParam && ["overview", "contacts", "crm-automations", "snackhack", "fpu", "fpugroup", "programbuilder", "engagement", "blog", "deposits", "settings", "pageeditor"].includes(tabParam) ? tabParam : "overview";
   
   const setTab = (newTab: AdminTab) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -139,11 +135,7 @@ export default function Admin() {
   const TABS: { id: AdminTab; label: string; icon: React.ReactNode }[] = [
     { id: "overview", label: "Overview", icon: <BarChart3 size={16} /> },
     { id: "contacts", label: "Contacts", icon: <Users size={16} /> },
-    { id: "reminders", label: "Reminders", icon: <Bell size={16} /> },
-    { id: "call-history", label: "Call History", icon: <Phone size={16} /> },
-    { id: "campaigns", label: "Campaigns", icon: <Megaphone size={16} /> },
-    { id: "sequences", label: "Sequences", icon: <Layers size={16} /> },
-    { id: "ai-training", label: "AI Training", icon: <Brain size={16} /> },
+    { id: "crm-automations", label: "CRM & AI", icon: <Megaphone size={16} /> },
     { id: "snackhack", label: "Snack Hack Leads", icon: <Cookie size={16} /> },
     { id: "fpu", label: "FPU Coaching", icon: <Video size={16} /> },
     { id: "fpugroup", label: "FPU Sign-Ups", icon: <UserPlus size={16} /> },
@@ -614,12 +606,8 @@ export default function Admin() {
           />
         )}
 
-        {/* Missing V2 Tabs Restored */}
-        {tab === "reminders" && <div className="bg-white rounded-xl shadow p-6"><ActivityFeed /></div>}
-        {tab === "call-history" && <div className="bg-white rounded-xl shadow p-6"><CallHistory /></div>}
-        {tab === "campaigns" && <div className="bg-white rounded-xl shadow p-6"><Campaigns /></div>}
-        {tab === "sequences" && <div className="bg-white rounded-xl shadow p-6"><Sequences /></div>}
-        {tab === "ai-training" && <div className="bg-white rounded-xl shadow p-6"><AiTraining /></div>}
+        {/* Unified CRM & AI Tab */}
+        {tab === "crm-automations" && <AdminCrmAutomationsTab />}
 
         {/* Deposits/Payments */}
         {tab === "deposits" && <AdminPaymentsTab />}
