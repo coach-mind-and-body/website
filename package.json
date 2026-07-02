@@ -14,7 +14,7 @@
     "check": "tsc --noEmit",
     "format": "prettier --write .",
     "test": "vitest run",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push --force"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.70",
