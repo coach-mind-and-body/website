@@ -228,7 +228,7 @@ export const leadsRouter = router({
       contact.highestStatus = 'reclaim';
     });
 
-    return Array.from(contactsMap.values()).map(c => {
+      return Array.from(contactsMap.values()).map(c => {
       c.timeline.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       return c;
     }).sort((a, b) => {
@@ -237,6 +237,71 @@ export const leadsRouter = router({
       return dateB - dateA;
     });
   }),
+
+  updateContactDetails: protectedProcedure
+    .input(z.object({
+      email: z.string().email(),
+      name: z.string().min(1),
+      phone: z.string().nullable().optional(),
+      notes: z.string().nullable().optional(),
+      leadId: z.number().nullable().optional(),
+      userId: z.number().nullable().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      adminOnly(ctx.user?.role);
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      // 1. If leadId is provided, update that lead.
+      // Else find if any lead matches the email.
+      let targetLeadId = input.leadId;
+      if (!targetLeadId) {
+        const matches = await db.select({ id: leads.id }).from(leads).where(eq(leads.email, input.email)).limit(1);
+        if (matches.length > 0) {
+          targetLeadId = matches[0].id;
+        }
+      }
+
+      if (targetLeadId) {
+        await db.update(leads)
+          .set({
+            name: input.name,
+            phone: input.phone || null,
+            notes: input.notes !== undefined ? input.notes : undefined,
+          })
+          .where(eq(leads.id, targetLeadId));
+      } else if (input.notes) {
+        // If there's notes to save but no lead exists, let's create a lead to persist notes and phone!
+        await db.insert(leads).values({
+          name: input.name,
+          email: input.email,
+          phone: input.phone || null,
+          notes: input.notes,
+          status: "contacted",
+        });
+      }
+
+      // 2. If userId is provided, update that user.
+      // Else find if any user matches the email.
+      let targetUserId = input.userId;
+      if (!targetUserId) {
+        const matches = await db.select({ id: users.id }).from(users).where(eq(users.email, input.email)).limit(1);
+        if (matches.length > 0) {
+          targetUserId = matches[0].id;
+        }
+      }
+
+      if (targetUserId) {
+        await db.update(users)
+          .set({
+            name: input.name,
+            phone: input.phone || null,
+          })
+          .where(eq(users.id, targetUserId));
+      }
+
+      return { success: true };
+    }),
 });
 
 
