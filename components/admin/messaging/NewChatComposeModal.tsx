@@ -66,7 +66,7 @@ export default function NewChatComposeModal() {
     if (isNewChatOpen && newChatPrefill) {
       setRecipientQuery(newChatPrefill.name || newChatPrefill.phone || "");
       setSelectedContact({
-        id: newChatPrefill.userId || 0,
+        id: String(newChatPrefill.userId || ""),
         name: newChatPrefill.name || "Unknown",
         email: null,
         phone: newChatPrefill.phone || null,
