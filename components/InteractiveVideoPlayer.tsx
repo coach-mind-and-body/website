@@ -206,6 +206,7 @@ export default function InteractiveVideoPlayer({ videoUrl, intervalsJson }: Prop
           /* Kill all page scrolling and backgrounds */
           body {
             overflow: hidden !important;
+            background: black !important;
           }
           .ivp-wrapper {
             flex-direction: row;
@@ -220,26 +221,43 @@ export default function InteractiveVideoPlayer({ videoUrl, intervalsJson }: Prop
             bottom: 0;
             z-index: 9999;
             margin: 0;
+            /* Extend behind the notch/camera cutout */
+            padding-left: env(safe-area-inset-left, 0px);
+            padding-right: env(safe-area-inset-right, 0px);
+            background: black;
           }
           .ivp-video {
-            width: 66.666%;
+            width: 80%;
             aspect-ratio: unset;
             height: 100%;
+            background: black;
           }
           .ivp-video iframe {
             width: 100% !important;
             height: 100% !important;
           }
           .ivp-timer {
-            width: 33.333%;
-            padding: 1rem;
+            width: 20%;
+            padding: 0.75rem;
             min-height: unset;
           }
+          .ivp-timer h4 {
+            font-size: 0.6rem !important;
+            margin-bottom: 0.25rem !important;
+          }
           .ivp-timer h2 {
-            font-size: 1.5rem !important;
+            font-size: 1.25rem !important;
+            margin-bottom: 0.25rem !important;
           }
           .ivp-timer .ivp-countdown {
-            font-size: 3rem !important;
+            font-size: 2.5rem !important;
+            margin-top: 0.25rem !important;
+            margin-bottom: 0.25rem !important;
+          }
+          .ivp-timer .ivp-next {
+            font-size: 0.65rem !important;
+            padding: 0.25rem 0.5rem !important;
+            margin-top: 0.5rem !important;
           }
         }
       `}</style>
@@ -262,7 +280,7 @@ export default function InteractiveVideoPlayer({ videoUrl, intervalsJson }: Prop
                 </div>
                 
                 {nextInterval && (
-                  <div className="mt-4 px-4 py-2 rounded-full bg-white/10 text-sm font-bold text-white">
+                  <div className="ivp-next mt-4 px-4 py-2 rounded-full bg-white/10 text-sm font-bold text-white">
                     Next: {nextInterval.title}
                   </div>
                 )}
