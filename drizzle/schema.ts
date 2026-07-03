@@ -622,6 +622,57 @@ export const messageTemplates = mysqlTable("message_templates", {
 export type MessageTemplate = typeof messageTemplates.$inferSelect;
 
 
+// ── Calories & Fitness Tracking ───────────────────────────────────────────────
+export const calorieLogs = mysqlTable("calorie_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  dateStr: varchar("dateStr", { length: 10 }).notNull(), // YYYY-MM-DD
+  mealType: mysqlEnum("mealType", ["breakfast", "lunch", "dinner", "snack"]).default("snack").notNull(),
+  foodName: varchar("foodName", { length: 500 }).notNull(),
+  calories: int("calories").default(0).notNull(),
+  protein: int("protein").default(0).notNull(),
+  carbs: int("carbs").default(0).notNull(),
+  fat: int("fat").default(0).notNull(),
+  fiber: int("fiber").default(0).notNull(),
+  imageUrl: varchar("imageUrl", { length: 1000 }), // If they snapped a photo
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CalorieLog = typeof calorieLogs.$inferSelect;
+export type InsertCalorieLog = typeof calorieLogs.$inferInsert;
+
+export const fitnessLogs = mysqlTable("fitness_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  dateStr: varchar("dateStr", { length: 10 }).notNull(), // YYYY-MM-DD
+  exerciseName: varchar("exerciseName", { length: 500 }).notNull(),
+  sets: int("sets").default(1).notNull(),
+  reps: int("reps").default(0).notNull(),
+  weight: int("weight").default(0).notNull(), // in lbs or kg
+  durationMinutes: int("durationMinutes").default(0).notNull(),
+  caloriesBurned: int("caloriesBurned"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type FitnessLog = typeof fitnessLogs.$inferSelect;
+export type InsertFitnessLog = typeof fitnessLogs.$inferInsert;
+
+export const workoutVideos = mysqlTable("workout_videos", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 500 }).notNull(),
+  description: text("description"),
+  videoUrl: varchar("videoUrl", { length: 1000 }).notNull(), // YouTube/Vimeo
+  category: varchar("category", { length: 100 }).notNull(), // e.g. "Upper Body", "Cardio"
+  order: int("order").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type WorkoutVideo = typeof workoutVideos.$inferSelect;
+export type InsertWorkoutVideo = typeof workoutVideos.$inferInsert;
+
 // --- DUMMY EXPORTS TO BYPASS STATIC WEBPACK ERRORS FOR LEGACY CRM CODE ---
 export const vacationQuotes = mysqlTable("dummy_vq", { id: int("id") });
 export const flightDeals = mysqlTable("dummy_fd", { id: int("id") });
@@ -634,3 +685,4 @@ export const userTags = mysqlTable("dummy_ut", { id: int("id") });
 export const reviews = mysqlTable("dummy_reviews", { id: int("id") });
 export const reviewInvites = mysqlTable("dummy_ri", { id: int("id") });
 export const clientLeads = mysqlTable("dummy_cl", { id: int("id") });
+

@@ -26,6 +26,8 @@ import { crmAutomationsRouter } from "./routers/crmAutomations";
 import { templatesRouter } from "./routers/templates";
 import { aiTrainingRouter } from "./routers/aiTraining";
 import { pushNotificationsRouter } from "./routers/pushNotifications";
+import { caloriesRouter } from "./routers/calories";
+import { fitnessRouter } from "./routers/fitness";
 
 export const appRouter = router({
   system: systemRouter,
@@ -60,6 +62,8 @@ export const appRouter = router({
   templates: templatesRouter,
   aiTraining: aiTrainingRouter,
   pushNotifications: pushNotificationsRouter,
+  calories: caloriesRouter,
+  fitness: fitnessRouter,
 });
 
 export type AppRouter = typeof appRouter;
