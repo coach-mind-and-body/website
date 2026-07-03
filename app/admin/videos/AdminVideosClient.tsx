@@ -63,6 +63,7 @@ export default function AdminVideosClient() {
   const [intervals, setIntervals] = useState<Interval[]>([]);
   const [showImport, setShowImport] = useState(false);
   const [rawTimestamps, setRawTimestamps] = useState("");
+  const [isCustomCategory, setIsCustomCategory] = useState(false);
 
   const DEFAULT_CATEGORIES = ["7 Minute Workout", "Upper Body", "Core", "Stretching"];
   const uniqueCategories = Array.from(new Set([...DEFAULT_CATEGORIES, ...(videos?.map(v => v.category) || [])]));
@@ -76,6 +77,7 @@ export default function AdminVideosClient() {
     setIntervals([]);
     setShowImport(false);
     setRawTimestamps("");
+    setIsCustomCategory(false);
   };
 
   const handleEdit = (video: any) => {
@@ -84,6 +86,9 @@ export default function AdminVideosClient() {
     setDescription(video.description || "");
     setVideoUrl(video.videoUrl);
     setCategory(video.category);
+    // Check if this category is in the defaults
+    const isDefault = [...DEFAULT_CATEGORIES, ...(videos?.map(v => v.category) || [])].includes(video.category);
+    setIsCustomCategory(!isDefault);
     try {
       if (video.intervalsJson) {
         setIntervals(JSON.parse(video.intervalsJson));
@@ -212,12 +217,43 @@ export default function AdminVideosClient() {
               </div>
               <div>
                 <label className="text-xs font-bold text-gray-500 uppercase">Category *</label>
-                <input type="text" list="video-categories" value={category} onChange={e => setCategory(e.target.value)} placeholder="e.g. Upper Body, Yoga" className="w-full p-3 rounded-lg border mt-1" />
-                <datalist id="video-categories">
-                  {uniqueCategories.map(cat => (
-                    <option key={cat} value={cat} />
-                  ))}
-                </datalist>
+                {!isCustomCategory ? (
+                  <select
+                    value={category}
+                    onChange={e => {
+                      if (e.target.value === "__custom__") {
+                        setIsCustomCategory(true);
+                        setCategory("");
+                      } else {
+                        setCategory(e.target.value);
+                      }
+                    }}
+                    className="w-full p-3 rounded-lg border mt-1 bg-white"
+                  >
+                    <option value="">Select a category...</option>
+                    {uniqueCategories.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                    <option value="__custom__">+ Add New Category</option>
+                  </select>
+                ) : (
+                  <div className="flex gap-2 mt-1">
+                    <input
+                      type="text"
+                      value={category}
+                      onChange={e => setCategory(e.target.value)}
+                      placeholder="Type new category..."
+                      className="flex-1 p-3 rounded-lg border"
+                      autoFocus
+                    />
+                    <button
+                      onClick={() => { setIsCustomCategory(false); setCategory(""); }}
+                      className="px-3 text-sm text-gray-500 hover:text-gray-700 border rounded-lg"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
               </div>
               <div className="md:col-span-2">
                 <label className="text-xs font-bold text-gray-500 uppercase">YouTube/Vimeo URL *</label>
