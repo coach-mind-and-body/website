@@ -301,8 +301,6 @@ export default function AdminVideosClient() {
             </tbody>
           </table>
         </div>
-
       </div>
-    </div>
   );
 }

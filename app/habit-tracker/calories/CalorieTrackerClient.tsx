@@ -20,6 +20,7 @@ export default function CalorieTrackerClient() {
   const { isAuthenticated } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const dateStr = format(currentDate, "yyyy-MM-dd");
+  const utils = trpc.useUtils();
 
   const { data: logs, refetch } = trpc.calories.getLogs.useQuery(
     { dateStr },
@@ -30,6 +31,7 @@ export default function CalorieTrackerClient() {
     onSuccess: () => {
       toast.success("Meal logged!");
       refetch();
+      utils.habit.getUserHabits.invalidate();
       setIsAdding(false);
       resetForm();
     },
@@ -40,6 +42,7 @@ export default function CalorieTrackerClient() {
     onSuccess: () => {
       toast.success("Log deleted!");
       refetch();
+      utils.habit.getUserHabits.invalidate();
     },
     onError: (e) => toast.error(e.message)
   });
