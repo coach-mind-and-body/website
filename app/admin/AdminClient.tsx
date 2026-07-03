@@ -140,7 +140,7 @@ export default function Admin() {
     { id: "fpu", label: "FPU Coaching", icon: <Video size={16} /> },
     { id: "fpugroup", label: "FPU Sign-Ups", icon: <UserPlus size={16} /> },
     { id: "programbuilder", label: "Program Builder", icon: <Layers size={16} /> },
-    { id: "engagement", label: "Engagement Hub", icon: <Target size={16} /> },
+    { id: "engagement", label: "Habit Tracker", icon: <Target size={16} /> },
     { id: "pageeditor", label: "Edit Financial Peace", icon: <BookOpen size={16} /> },
     { id: "blog", label: "Blog", icon: <BookOpen size={16} /> },
     { id: "deposits", label: "Payments", icon: <CreditCard size={16} /> },
