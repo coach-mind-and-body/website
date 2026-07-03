@@ -203,16 +203,23 @@ export default function InteractiveVideoPlayer({ videoUrl, intervalsJson }: Prop
           min-height: 140px;
         }
         @media (orientation: landscape) and (max-height: 600px) {
+          /* Kill all page scrolling and backgrounds */
+          body {
+            overflow: hidden !important;
+          }
           .ivp-wrapper {
             flex-direction: row;
             border-radius: 0;
+            border: none;
             height: 100vh;
+            width: 100vw;
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            z-index: 50;
+            z-index: 9999;
+            margin: 0;
           }
           .ivp-video {
             width: 66.666%;

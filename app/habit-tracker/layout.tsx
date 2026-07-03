@@ -33,14 +33,28 @@ export default function HabitTrackerLayout({
   ];
 
   return (
-    <div className="min-h-screen bg-[#faf5f5]">
+    <>
+      <style jsx global>{`
+        @media (orientation: landscape) and (max-height: 600px) {
+          .habit-tracker-nav {
+            display: none !important;
+          }
+          .habit-tracker-content {
+            padding-bottom: 0 !important;
+          }
+          .habit-tracker-root {
+            min-height: unset !important;
+          }
+        }
+      `}</style>
+      <div className="habit-tracker-root min-h-screen bg-[#faf5f5]">
       {/* Main Content */}
-      <div className="pb-24">
+      <div className="habit-tracker-content pb-24">
         {children}
       </div>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#f0e8e4] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-50 px-6 py-3 safe-area-pb">
+      <nav className="habit-tracker-nav fixed bottom-0 left-0 right-0 bg-white border-t border-[#f0e8e4] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-50 px-6 py-3 safe-area-pb">
         <div className="max-w-md mx-auto flex items-center justify-between">
           {navItems.map((item) => {
             const isActive = item.exact 
@@ -77,5 +91,6 @@ export default function HabitTrackerLayout({
         </div>
       </nav>
     </div>
+    </>
   );
 }
