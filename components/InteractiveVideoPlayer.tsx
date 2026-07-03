@@ -174,39 +174,102 @@ export default function InteractiveVideoPlayer({ videoUrl, intervalsJson }: Prop
   }
 
   return (
-    <div className="flex flex-col h-full rounded-3xl overflow-hidden border border-gray-100 bg-white">
-      {/* Video Container */}
-      <div className="relative w-full aspect-video bg-black">
-        <div ref={containerRef} className="absolute top-0 left-0 w-full h-full"></div>
-      </div>
-      
-      {/* Interactive Timer UI */}
-      {intervals.length > 0 && (
-        <div className="p-5 flex-1 flex flex-col items-center justify-center text-center" style={{ background: activeInterval ? "#2d3b2d" : "#fcfaf9" }}>
-          {activeInterval ? (
-            <>
-              <h4 className="text-sm font-bold uppercase tracking-widest text-[#c9a96e] mb-1">Current Exercise</h4>
-              <h2 className="text-3xl font-bold text-white mb-2">{activeInterval.title}</h2>
-              
-              <div className="text-5xl font-bold text-white tracking-tighter my-2 drop-shadow-md">
-                00:{timeRemaining.toString().padStart(2, '0')}
-              </div>
-              
-              {nextInterval && (
-                <div className="mt-4 px-4 py-2 rounded-full bg-white/10 text-sm font-bold text-white">
-                  Next: {nextInterval.title}
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="py-6">
-              <PlayCircle size={40} className="mx-auto mb-2 text-gray-300" />
-              <p className="font-bold text-gray-500 text-sm uppercase tracking-wider">Ready to begin</p>
-              <p className="text-xs text-gray-400 mt-1">Play the video to start the timer.</p>
-            </div>
-          )}
+    <>
+      <style jsx>{`
+        .ivp-wrapper {
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+          border-radius: 1.5rem;
+          overflow: hidden;
+          border: 1px solid #f3f4f6;
+          background: white;
+        }
+        .ivp-video {
+          position: relative;
+          width: 100%;
+          aspect-ratio: 16 / 9;
+          background: black;
+          flex-shrink: 0;
+        }
+        .ivp-timer {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          padding: 1.25rem;
+          min-height: 140px;
+        }
+        @media (orientation: landscape) and (max-height: 600px) {
+          .ivp-wrapper {
+            flex-direction: row;
+            border-radius: 0;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 50;
+          }
+          .ivp-video {
+            width: 66.666%;
+            aspect-ratio: unset;
+            height: 100%;
+          }
+          .ivp-video iframe {
+            width: 100% !important;
+            height: 100% !important;
+          }
+          .ivp-timer {
+            width: 33.333%;
+            padding: 1rem;
+            min-height: unset;
+          }
+          .ivp-timer h2 {
+            font-size: 1.5rem !important;
+          }
+          .ivp-timer .ivp-countdown {
+            font-size: 3rem !important;
+          }
+        }
+      `}</style>
+      <div className="ivp-wrapper">
+        {/* Video Container */}
+        <div className="ivp-video">
+          <div ref={containerRef} className="absolute top-0 left-0 w-full h-full"></div>
         </div>
-      )}
-    </div>
+        
+        {/* Interactive Timer UI */}
+        {intervals.length > 0 && (
+          <div className="ivp-timer" style={{ background: activeInterval ? "#2d3b2d" : "#fcfaf9" }}>
+            {activeInterval ? (
+              <>
+                <h4 className="text-sm font-bold uppercase tracking-widest text-[#c9a96e] mb-1">Current Exercise</h4>
+                <h2 className="text-3xl font-bold text-white mb-2">{activeInterval.title}</h2>
+                
+                <div className="ivp-countdown text-5xl font-bold text-white tracking-tighter my-2 drop-shadow-md">
+                  00:{timeRemaining.toString().padStart(2, '0')}
+                </div>
+                
+                {nextInterval && (
+                  <div className="mt-4 px-4 py-2 rounded-full bg-white/10 text-sm font-bold text-white">
+                    Next: {nextInterval.title}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="py-6">
+                <PlayCircle size={40} className="mx-auto mb-2 text-gray-300" />
+                <p className="font-bold text-gray-500 text-sm uppercase tracking-wider">Ready to begin</p>
+                <p className="text-xs text-gray-400 mt-1">Play the video to start the timer.</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </>
   );
 }
