@@ -221,9 +221,6 @@ export default function InteractiveVideoPlayer({ videoUrl, intervalsJson }: Prop
             bottom: 0;
             z-index: 9999;
             margin: 0;
-            /* Extend behind the notch/camera cutout */
-            padding-left: env(safe-area-inset-left, 0px);
-            padding-right: env(safe-area-inset-right, 0px);
             background: black;
           }
           .ivp-video {
