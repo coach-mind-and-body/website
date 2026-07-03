@@ -261,7 +261,9 @@ export const habitRouter = router({
       const habits = await db.select().from(userHabits).where(eq(userHabits.userId, input.userId)).orderBy(userHabits.order);
       const logs = await db.select().from(userHabitLogs).where(eq(userHabitLogs.userId, input.userId));
       const notes = await db.select().from(userDailyNotes).where(eq(userDailyNotes.userId, input.userId));
+      const cLogs = await db.select().from(require("../../drizzle/schema").calorieLogs).where(eq(require("../../drizzle/schema").calorieLogs.userId, input.userId));
+      const fLogs = await db.select().from(require("../../drizzle/schema").fitnessLogs).where(eq(require("../../drizzle/schema").fitnessLogs.userId, input.userId));
       
-      return { habits, logs, notes };
+      return { habits, logs, notes, calorieLogs: cLogs, fitnessLogs: fLogs };
     }),
 });

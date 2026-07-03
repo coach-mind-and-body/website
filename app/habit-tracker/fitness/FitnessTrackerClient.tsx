@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import InteractiveVideoPlayer from "@/components/InteractiveVideoPlayer";
 
 // Inside FitnessTrackerClient...
