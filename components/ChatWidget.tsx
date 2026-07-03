@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { MessageCircle, X, Send, Loader2, Sparkles } from "lucide-react";
 import { useChatContext } from "@/contexts/ChatContext";
+import { usePathname } from "next/navigation";
 
 const SITE_ORIGIN = typeof window !== "undefined" ? window.location.origin : "";
 const INTERNAL_HOSTS = typeof window !== "undefined" ? ["mindandbodyresetcoach.com", "www.mindandbodyresetcoach.com", window.location.hostname] : [];
@@ -146,6 +147,7 @@ export default function ChatWidget() {
   const [inputValue, setInputValue] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const pathname = usePathname();
 
   // useChat manages streaming; we sync its messages into context after each response
   const { messages: chatMessages, sendMessage, setMessages: setChatMessages, status } = useChat({
@@ -252,6 +254,11 @@ export default function ChatWidget() {
         .map((p) => (p as { type: "text"; text: string }).text)
         .join("") ?? "",
   }));
+
+  // Hide the chat widget entirely on the habit-tracker app
+  if (pathname?.startsWith("/habit-tracker")) {
+    return null;
+  }
 
   return (
     <>

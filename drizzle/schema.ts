@@ -627,7 +627,7 @@ export const calorieLogs = mysqlTable("calorie_logs", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
   dateStr: varchar("dateStr", { length: 10 }).notNull(), // YYYY-MM-DD
-  mealType: mysqlEnum("mealType", ["breakfast", "lunch", "dinner", "snack"]).default("snack").notNull(),
+  mealType: mysqlEnum("mealType", ["breakfast", "lunch", "dinner", "snack", "drink"]).default("snack").notNull(),
   foodName: varchar("foodName", { length: 500 }).notNull(),
   calories: int("calories").default(0).notNull(),
   protein: int("protein").default(0).notNull(),

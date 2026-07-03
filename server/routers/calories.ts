@@ -74,7 +74,7 @@ export const caloriesRouter = router({
   addLog: protectedProcedure
     .input(z.object({
       dateStr: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-      mealType: z.enum(["breakfast", "lunch", "dinner", "snack"]),
+      mealType: z.enum(["breakfast", "lunch", "dinner", "snack", "drink"]),
       foodName: z.string().min(1),
       calories: z.number().min(0),
       protein: z.number().min(0),

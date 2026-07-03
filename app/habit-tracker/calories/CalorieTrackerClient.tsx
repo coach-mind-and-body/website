@@ -58,7 +58,7 @@ export default function CalorieTrackerClient() {
   });
 
   const [isAdding, setIsAdding] = useState(false);
-  const [mealType, setMealType] = useState<"breakfast" | "lunch" | "dinner" | "snack">("snack");
+  const [mealType, setMealType] = useState<"breakfast" | "lunch" | "dinner" | "snack" | "drink">("snack");
   const [foodName, setFoodName] = useState("");
   const [calories, setCalories] = useState("");
   const [protein, setProtein] = useState("");
@@ -183,7 +183,7 @@ export default function CalorieTrackerClient() {
             className="w-full rounded-2xl py-6 text-lg font-bold shadow-md hover:shadow-lg transition-all"
             style={{ background: "#c9a96e", color: "white" }}
           >
-            <Plus size={24} className="mr-2" /> Log Food
+            <Plus size={24} className="mr-2" /> Log Food/Drink
           </Button>
         )}
 
@@ -198,7 +198,7 @@ export default function CalorieTrackerClient() {
               style={{ borderColor: "#f0e8e4" }}
             >
               <div className="flex justify-between items-center mb-6">
-                <h3 className="font-bold text-xl" style={{ color: "#2d3b2d" }}>Log Food</h3>
+                <h3 className="font-bold text-xl" style={{ color: "#2d3b2d" }}>Log Food/Drink</h3>
                 <button onClick={() => setIsAdding(false)} className="text-gray-400 hover:text-gray-600">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
@@ -229,12 +229,12 @@ export default function CalorieTrackerClient() {
 
               {/* Manual Form */}
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-2 mb-2">
-                  {(["breakfast", "lunch", "dinner", "snack"] as const).map(type => (
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {(["breakfast", "lunch", "dinner", "snack", "drink"] as const).map(type => (
                     <button
                       key={type}
                       onClick={() => setMealType(type)}
-                      className={`py-2 rounded-xl text-sm font-bold capitalize transition-colors ${mealType === type ? 'text-white' : 'bg-gray-100 text-gray-500'}`}
+                      className={`py-2 px-3 rounded-xl text-sm font-bold capitalize transition-colors flex-1 min-w-[30%] ${mealType === type ? 'text-white' : 'bg-gray-100 text-gray-500'}`}
                       style={{ background: mealType === type ? "#c9a96e" : undefined }}
                     >
                       {type}
@@ -243,7 +243,7 @@ export default function CalorieTrackerClient() {
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Food Name</label>
+                  <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Food/Drink Name</label>
                   <input type="text" value={foodName} onChange={e => setFoodName(e.target.value)} className="w-full p-3 rounded-xl border focus:outline-none focus:ring-1 focus:ring-[#c9a96e]" placeholder="e.g. Grilled Chicken Salad" />
                 </div>
 
@@ -276,7 +276,7 @@ export default function CalorieTrackerClient() {
                   className="w-full rounded-2xl py-6 text-lg font-bold mt-4 shadow-md"
                   style={{ background: "#2d3b2d", color: "white" }}
                 >
-                  {addLogMutation.isPending ? "Saving..." : "Save Food"}
+                  {addLogMutation.isPending ? "Saving..." : "Save Food/Drink"}
                 </Button>
               </div>
             </motion.div>

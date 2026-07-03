@@ -19,7 +19,7 @@ export default function HabitTrackerLayout({
       exact: true,
     },
     {
-      name: "Food Tracker",
+      name: "Macros",
       href: "/habit-tracker/calories",
       icon: Utensils,
       exact: false,
