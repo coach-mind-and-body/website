@@ -9,7 +9,13 @@ export default function AdminClientHabits({ userId }: { userId: number }) {
   if (error) return <div className="text-xs" style={{ color: "oklch(0.52 0.015 50)" }}>Client has not shared habit progress.</div>;
   if (!data) return null;
 
-  const { habits, logs, notes, calorieLogs, fitnessLogs } = data as any;
+  const { habits, logs, notes, calorieLogs, fitnessLogs } = data as {
+    habits: any[];
+    logs: any[];
+    notes: any[];
+    calorieLogs: any[];
+    fitnessLogs: any[];
+  };
 
   return (
     <div className="space-y-4">
