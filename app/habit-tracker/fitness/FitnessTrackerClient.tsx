@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import InteractiveVideoPlayer from "@/components/InteractiveVideoPlayer";
+
+// Inside FitnessTrackerClient...
+// (Wait, I can just replace the specific section. Let's look at the target file lines).
 import { motion, AnimatePresence } from "framer-motion";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/use-auth";
@@ -257,21 +260,7 @@ export default function FitnessTrackerClient() {
                     const ytId = extractYouTubeId(video.videoUrl);
                     return (
                       <div key={video.id} className="bg-white rounded-3xl overflow-hidden shadow-md border" style={{ borderColor: "#f0e8e4" }}>
-                        {ytId ? (
-                           <div className="relative w-full bg-black" style={{ paddingTop: '56.25%' }}>
-                             <iframe 
-                               src={`https://www.youtube.com/embed/${ytId}?modestbranding=1&rel=0&showinfo=0`} 
-                               className="absolute top-0 left-0 w-full h-full"
-                               frameBorder="0" 
-                               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                               allowFullScreen
-                             ></iframe>
-                           </div>
-                        ) : (
-                          <div className="p-4 bg-gray-100 flex items-center justify-center text-sm text-gray-500 aspect-video">
-                            Non-YouTube Video (Link: <a href={video.videoUrl} target="_blank" rel="noreferrer" className="underline ml-1">Open</a>)
-                          </div>
-                        )}
+                        <InteractiveVideoPlayer videoUrl={video.videoUrl} intervalsJson={video.intervalsJson} />
                         <div className="p-5">
                           <h4 className="font-bold text-lg mb-2 text-[#2d3b2d]">{video.title}</h4>
                           {video.description && (

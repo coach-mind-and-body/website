@@ -258,7 +258,7 @@ export default function ChatWidget() {
       {/* Chat panel */}
       {isOpen && (
         <div
-          className="fixed bottom-24 right-5 z-50 flex flex-col rounded-2xl overflow-hidden shadow-2xl"
+          className="fixed top-[160px] right-5 z-50 flex flex-col rounded-2xl overflow-hidden shadow-2xl"
           style={{
             width: "360px",
             maxWidth: "calc(100vw - 40px)",
@@ -431,7 +431,7 @@ export default function ChatWidget() {
       )}
 
       {/* Floating toggle button */}
-      <div className="fixed bottom-5 right-5 z-50">
+      <div className="fixed top-24 right-5 z-50">
         <button
           onClick={handleToggle}
           className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-105 active:scale-95"

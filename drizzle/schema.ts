@@ -665,6 +665,7 @@ export const workoutVideos = mysqlTable("workout_videos", {
   description: text("description"),
   videoUrl: varchar("videoUrl", { length: 1000 }).notNull(), // YouTube/Vimeo
   category: varchar("category", { length: 100 }).notNull(), // e.g. "Upper Body", "Cardio"
+  intervalsJson: text("intervalsJson"), // JSON string of [{ startTime, endTime, title, description }]
   order: int("order").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

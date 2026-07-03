@@ -78,6 +78,7 @@ export const fitnessRouter = router({
       description: z.string().optional(),
       videoUrl: z.string().url(),
       category: z.string().min(1),
+      intervalsJson: z.string().optional(),
       order: z.number().default(0),
     }))
     .mutation(async ({ ctx, input }) => {
@@ -88,7 +89,36 @@ export const fitnessRouter = router({
       await db.insert(workoutVideos).values({
         ...input,
         description: input.description || null,
+        intervalsJson: input.intervalsJson || null,
       });
+      return { success: true };
+    }),
+
+  adminEditVideo: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      title: z.string().min(1),
+      description: z.string().optional(),
+      videoUrl: z.string().url(),
+      category: z.string().min(1),
+      intervalsJson: z.string().optional(),
+      order: z.number().default(0),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") throw new Error("Unauthorized");
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      
+      await db.update(workoutVideos)
+        .set({
+          title: input.title,
+          description: input.description || null,
+          videoUrl: input.videoUrl,
+          category: input.category,
+          intervalsJson: input.intervalsJson || null,
+          order: input.order,
+        })
+        .where(eq(workoutVideos.id, input.id));
       return { success: true };
     }),
 
