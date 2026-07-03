@@ -64,7 +64,8 @@ export default function AdminVideosClient() {
   const [showImport, setShowImport] = useState(false);
   const [rawTimestamps, setRawTimestamps] = useState("");
 
-  const uniqueCategories = Array.from(new Set(videos?.map(v => v.category) || []));
+  const DEFAULT_CATEGORIES = ["7 Minute Workout", "Upper Body", "Core", "Stretching"];
+  const uniqueCategories = Array.from(new Set([...DEFAULT_CATEGORIES, ...(videos?.map(v => v.category) || [])]));
 
   const resetForm = () => {
     setEditingId(null);
