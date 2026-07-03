@@ -61,6 +61,10 @@ export default function AdminVideosClient() {
   const [videoUrl, setVideoUrl] = useState("");
   const [category, setCategory] = useState("");
   const [intervals, setIntervals] = useState<Interval[]>([]);
+  const [showImport, setShowImport] = useState(false);
+  const [rawTimestamps, setRawTimestamps] = useState("");
+
+  const uniqueCategories = Array.from(new Set(videos?.map(v => v.category) || []));
 
   const resetForm = () => {
     setEditingId(null);
@@ -69,6 +73,8 @@ export default function AdminVideosClient() {
     setVideoUrl("");
     setCategory("");
     setIntervals([]);
+    setShowImport(false);
+    setRawTimestamps("");
   };
 
   const handleEdit = (video: any) => {
@@ -143,6 +149,41 @@ export default function AdminVideosClient() {
     setIntervals(newIntervals);
   };
 
+  const parseTimestamps = () => {
+    const lines = rawTimestamps.split('\n');
+    const newIntervals: Interval[] = [];
+    
+    for (let i = 0; i < lines.length; i++) {
+      const match = lines[i].trim().match(/^(\d{1,2}:\d{2}(?::\d{2})?)\s+(.+)$/);
+      if (match) {
+        newIntervals.push({
+          startTime: parseMMSStoSeconds(match[1]),
+          endTime: 0,
+          title: match[2].trim(),
+          description: ""
+        });
+      }
+    }
+    
+    for (let i = 0; i < newIntervals.length; i++) {
+      if (i < newIntervals.length - 1) {
+        newIntervals[i].endTime = newIntervals[i + 1].startTime;
+      } else {
+        newIntervals[i].endTime = newIntervals[i].startTime + 60; // Default 1 min for the last chapter
+      }
+    }
+    
+    if (newIntervals.length > 0) {
+      setIntervals([...intervals, ...newIntervals]);
+      toast.success(`Imported ${newIntervals.length} timestamps!`);
+    } else {
+      toast.error("No valid timestamps found. Format: MM:SS Chapter Title");
+    }
+    
+    setRawTimestamps("");
+    setShowImport(false);
+  };
+
   const removeInterval = (index: number) => {
     setIntervals(intervals.filter((_, i) => i !== index));
   };
@@ -170,7 +211,12 @@ export default function AdminVideosClient() {
               </div>
               <div>
                 <label className="text-xs font-bold text-gray-500 uppercase">Category *</label>
-                <input type="text" value={category} onChange={e => setCategory(e.target.value)} placeholder="e.g. Upper Body, Yoga" className="w-full p-3 rounded-lg border mt-1" />
+                <input type="text" list="video-categories" value={category} onChange={e => setCategory(e.target.value)} placeholder="e.g. Upper Body, Yoga" className="w-full p-3 rounded-lg border mt-1" />
+                <datalist id="video-categories">
+                  {uniqueCategories.map(cat => (
+                    <option key={cat} value={cat} />
+                  ))}
+                </datalist>
               </div>
               <div className="md:col-span-2">
                 <label className="text-xs font-bold text-gray-500 uppercase">YouTube/Vimeo URL *</label>
@@ -189,10 +235,31 @@ export default function AdminVideosClient() {
                   <h4 className="font-bold text-md text-gray-900">Interactive Timer Intervals (Optional)</h4>
                   <p className="text-xs text-gray-500">Define exercises with start/end times so the app can show a synchronized timer.</p>
                 </div>
-                <Button variant="outline" size="sm" onClick={addInterval}>
-                  <Plus size={14} className="mr-2" /> Add Interval
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setShowImport(!showImport)}>
+                    Import Timestamps
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={addInterval}>
+                    <Plus size={14} className="mr-2" /> Add Interval
+                  </Button>
+                </div>
               </div>
+
+              {showImport && (
+                <div className="mb-4 p-4 border rounded-lg bg-gray-50">
+                  <label className="text-xs font-bold text-gray-700 block mb-2">Paste Descript/YouTube Timestamps (e.g. "00:00 Warmup")</label>
+                  <textarea 
+                    value={rawTimestamps} 
+                    onChange={e => setRawTimestamps(e.target.value)} 
+                    className="w-full h-32 p-3 border rounded-lg mb-2 text-sm font-mono"
+                    placeholder="00:00 Intro&#10;01:30 Jumping Jacks&#10;02:15 Squats"
+                  />
+                  <div className="flex justify-end gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => setShowImport(false)}>Cancel</Button>
+                    <Button size="sm" onClick={parseTimestamps} className="bg-blue-600 text-white hover:bg-blue-700">Parse</Button>
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-2">
                 {intervals.map((interval, i) => (

@@ -2,14 +2,11 @@
 
 import { useState } from "react";
 import InteractiveVideoPlayer from "@/components/InteractiveVideoPlayer";
-
-// Inside FitnessTrackerClient...
-// (Wait, I can just replace the specific section. Let's look at the target file lines).
 import { motion, AnimatePresence } from "framer-motion";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { Calendar as CalendarIcon, Plus, Trash2, Dumbbell, PlayCircle, Info } from "lucide-react";
+import { Calendar as CalendarIcon, Plus, Trash2, Dumbbell, PlayCircle, Info, ArrowLeft, CheckCircle, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format, subDays, addDays, isSameDay } from "date-fns";
 import { usePageTitle } from "@/hooks/usePageTitle";
@@ -22,10 +19,13 @@ export default function FitnessTrackerClient() {
   });
 
   const { isAuthenticated } = useAuth();
+  const utils = trpc.useUtils();
   const [currentDate, setCurrentDate] = useState(new Date());
   const dateStr = format(currentDate, "yyyy-MM-dd");
 
   const [activeTab, setActiveTab] = useState<"log" | "videos">("log");
+  const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  const [selectedVideo, setSelectedVideo] = useState<any>(null);
 
   const { data: logs, refetch: refetchLogs } = trpc.fitness.getLogs.useQuery(
     { dateStr },
@@ -33,13 +33,15 @@ export default function FitnessTrackerClient() {
   );
 
   const { data: videos } = trpc.fitness.getVideos.useQuery(undefined, {
-    enabled: activeTab === "videos",
+    enabled: activeTab === "videos" || !!selectedVideo,
   });
 
   const addLogMutation = trpc.fitness.addLog.useMutation({
     onSuccess: () => {
       toast.success("Workout logged!");
       refetchLogs();
+      utils.habit.getUserHabits.invalidate();
+      utils.challenges.getUserChallenges.invalidate();
       setIsAdding(false);
       resetForm();
     },
@@ -50,6 +52,8 @@ export default function FitnessTrackerClient() {
     onSuccess: () => {
       toast.success("Log deleted!");
       refetchLogs();
+      utils.habit.getUserHabits.invalidate();
+      utils.challenges.getUserChallenges.invalidate();
     },
     onError: (e) => toast.error(e.message)
   });
@@ -81,17 +85,98 @@ export default function FitnessTrackerClient() {
     });
   };
 
+  const handleMarkWorkoutComplete = (video: any) => {
+    if (!isAuthenticated) {
+      toast.error("Please sign in to log workouts.");
+      return;
+    }
+    const todayStr = format(new Date(), "yyyy-MM-dd");
+    // Estimate duration from intervals if available
+    let estimatedDuration = 0;
+    try {
+      if (video.intervalsJson) {
+        const intervals = JSON.parse(video.intervalsJson);
+        if (intervals.length > 0) {
+          const lastInterval = intervals[intervals.length - 1];
+          estimatedDuration = Math.ceil(lastInterval.endTime / 60);
+        }
+      }
+    } catch {}
+
+    addLogMutation.mutate({
+      dateStr: todayStr,
+      exerciseName: `${video.title} (${video.category})`,
+      sets: 1,
+      reps: 0,
+      weight: 0,
+      durationMinutes: estimatedDuration || 30,
+    });
+    toast.success("Workout marked as complete & logged!");
+    setSelectedVideo(null);
+    setActiveTab("log");
+  };
+
   const extractYouTubeId = (url: string) => {
     const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
     return match ? match[1] : null;
   };
 
-  // Group videos by category
-  const videosByCategory = videos?.reduce((acc, video) => {
-    if (!acc[video.category]) acc[video.category] = [];
-    acc[video.category].push(video);
-    return acc;
-  }, {} as Record<string, typeof videos>) || {};
+  // Get unique categories for filter
+  const categories = Array.from(new Set(videos?.map(v => v.category) || []));
+
+  // Filter videos by selected category
+  const filteredVideos = selectedCategory === "All"
+    ? videos || []
+    : (videos || []).filter(v => v.category === selectedCategory);
+
+  // --- Detailed Video Workout View ---
+  if (selectedVideo) {
+    return (
+      <div className="min-h-screen text-gray-900 pb-20" style={{ background: "#faf5f5" }}>
+        <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 space-y-6">
+          {/* Back Button */}
+          <button
+            onClick={() => setSelectedVideo(null)}
+            className="flex items-center gap-2 text-sm font-bold hover:opacity-70 transition-opacity"
+            style={{ color: "#c9a96e" }}
+          >
+            <ArrowLeft size={18} /> Back to Video Library
+          </button>
+
+          {/* Video Player */}
+          <div className="bg-white rounded-3xl overflow-hidden shadow-lg border" style={{ borderColor: "#f0e8e4" }}>
+            <InteractiveVideoPlayer videoUrl={selectedVideo.videoUrl} intervalsJson={selectedVideo.intervalsJson} />
+          </div>
+
+          {/* Video Info */}
+          <div className="bg-white rounded-3xl p-6 shadow-sm border" style={{ borderColor: "#f0e8e4" }}>
+            <span className="inline-block px-3 py-1 rounded-full text-xs font-bold mb-3" style={{ background: "#f0e8e4", color: "#2d3b2d" }}>
+              {selectedVideo.category}
+            </span>
+            <h2 className="text-2xl font-bold mb-2" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
+              {selectedVideo.title}
+            </h2>
+            {selectedVideo.description && (
+              <p className="text-gray-600 leading-relaxed">{selectedVideo.description}</p>
+            )}
+          </div>
+
+          {/* Mark Complete Button */}
+          {isAuthenticated && (
+            <Button
+              onClick={() => handleMarkWorkoutComplete(selectedVideo)}
+              disabled={addLogMutation.isPending}
+              className="w-full rounded-2xl py-6 text-lg font-bold shadow-lg hover:shadow-xl transition-all"
+              style={{ background: "#2d3b2d", color: "white" }}
+            >
+              <CheckCircle size={24} className="mr-3" />
+              {addLogMutation.isPending ? "Logging..." : "Mark Workout as Complete"}
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen text-gray-900 pb-20" style={{ background: "#faf5f5" }}>
@@ -229,7 +314,7 @@ export default function FitnessTrackerClient() {
                       </div>
                     </div>
                     <button 
-                      onClick={() => deleteLogMutation.mutate({ id: log.id })}
+                      onClick={() => deleteLogMutation.mutate({ id: log.id, dateStr })}
                       className="p-2 text-gray-300 hover:text-red-500 transition-colors flex-shrink-0 ml-2"
                     >
                       <Trash2 size={20} />
@@ -248,37 +333,101 @@ export default function FitnessTrackerClient() {
           </motion.div>
         )}
 
-        {/* VIDEOS TAB */}
+        {/* VIDEOS TAB - Browsable Category List */}
         {activeTab === "videos" && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
-            {Object.entries(videosByCategory).map(([category, catVideos]) => (
-              <div key={category} className="space-y-4">
-                <h3 className="font-bold text-2xl" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
-                  {category}
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {catVideos.map(video => {
-                    const ytId = extractYouTubeId(video.videoUrl);
-                    return (
-                      <div key={video.id} className="bg-white rounded-3xl overflow-hidden shadow-md border" style={{ borderColor: "#f0e8e4" }}>
-                        <InteractiveVideoPlayer videoUrl={video.videoUrl} intervalsJson={video.intervalsJson} />
-                        <div className="p-5">
-                          <h4 className="font-bold text-lg mb-2 text-[#2d3b2d]">{video.title}</h4>
-                          {video.description && (
-                            <p className="text-sm text-gray-600 line-clamp-3">{video.description}</p>
-                          )}
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+            
+            {/* Category Filter */}
+            {categories.length > 0 && (
+              <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-1 px-1 no-scrollbar">
+                <Filter size={16} className="text-gray-400 flex-shrink-0" />
+                <button
+                  onClick={() => setSelectedCategory("All")}
+                  className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-bold transition-all ${
+                    selectedCategory === "All" ? "shadow-md" : "bg-white border hover:bg-gray-50"
+                  }`}
+                  style={selectedCategory === "All" ? { background: "#2d3b2d", color: "white" } : { borderColor: "#f0e8e4" }}
+                >
+                  All
+                </button>
+                {categories.map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-bold transition-all ${
+                      selectedCategory === cat ? "shadow-md" : "bg-white border hover:bg-gray-50"
+                    }`}
+                    style={selectedCategory === cat ? { background: "#2d3b2d", color: "white" } : { borderColor: "#f0e8e4" }}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Video Cards - Browsable List */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredVideos.map(video => {
+                const ytId = extractYouTubeId(video.videoUrl);
+                const thumbnail = ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : null;
+                let intervalCount = 0;
+                try {
+                  if (video.intervalsJson) intervalCount = JSON.parse(video.intervalsJson).length;
+                } catch {}
+
+                return (
+                  <button
+                    key={video.id}
+                    onClick={() => setSelectedVideo(video)}
+                    className="bg-white rounded-3xl overflow-hidden shadow-sm border text-left hover:shadow-md transition-all group"
+                    style={{ borderColor: "#f0e8e4" }}
+                  >
+                    {/* Thumbnail */}
+                    <div className="relative aspect-video bg-gray-100 overflow-hidden">
+                      {thumbnail ? (
+                        <img src={thumbnail} alt={video.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <PlayCircle size={48} className="text-gray-300" />
+                        </div>
+                      )}
+                      {/* Play Overlay */}
+                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+                          <PlayCircle size={32} style={{ color: "#2d3b2d" }} />
                         </div>
                       </div>
-                    )
-                  })}
-                </div>
-              </div>
-            ))}
+                      {/* Category Badge */}
+                      <span className="absolute top-3 left-3 px-3 py-1 rounded-full text-[11px] font-bold bg-white/90 shadow-sm" style={{ color: "#2d3b2d" }}>
+                        {video.category}
+                      </span>
+                      {/* Intervals Badge */}
+                      {intervalCount > 0 && (
+                        <span className="absolute top-3 right-3 px-2 py-1 rounded-full text-[11px] font-bold" style={{ background: "#c9a96e", color: "white" }}>
+                          {intervalCount} exercises
+                        </span>
+                      )}
+                    </div>
+                    {/* Info */}
+                    <div className="p-4">
+                      <h4 className="font-bold text-[#2d3b2d] mb-1 line-clamp-1">{video.title}</h4>
+                      {video.description && (
+                        <p className="text-sm text-gray-500 line-clamp-2">{video.description}</p>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
 
-            {(!videos || videos.length === 0) && (
+            {filteredVideos.length === 0 && (
               <div className="text-center py-12">
                 <PlayCircle size={48} className="mx-auto text-gray-300 mb-4" />
-                <p className="text-gray-500">No workout videos available right now. Check back soon!</p>
+                <p className="text-gray-500">
+                  {selectedCategory !== "All" 
+                    ? `No videos in "${selectedCategory}" yet.` 
+                    : "No workout videos available right now. Check back soon!"}
+                </p>
               </div>
             )}
           </motion.div>

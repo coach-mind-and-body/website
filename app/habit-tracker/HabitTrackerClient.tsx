@@ -42,6 +42,8 @@ export default function HabitTrackerClient() {
   const [localLogs, setLocalLogs] = useState<LocalLog[]>([]);
   const [localNotes, setLocalNotes] = useState<LocalNote[]>([]);
   
+  const [isMounted, setIsMounted] = useState(false);
+
   const [currentDate, setCurrentDate] = useState(new Date()); // For week navigation
   const [selectedDate, setSelectedDate] = useState(new Date()); // For mobile view & notes
   const [isNotesExpanded, setIsNotesExpanded] = useState(false); // For expanding/collapsing daily notes
@@ -55,14 +57,7 @@ export default function HabitTrackerClient() {
   const { data: userChallengesData, refetch: refetchUserChallenges } = trpc.challenges.getUserChallenges.useQuery({ deviceId: getDeviceId() });
   const { data: updatesData } = trpc.appUpdates.getUpdates.useQuery();
   
-  const [dismissedUpdates, setDismissedUpdates] = useState<number[]>(() => {
-    if (typeof window === 'undefined') return [];
-    try {
-      const saved = localStorage.getItem('dismissedUpdates');
-      const parsed = saved ? JSON.parse(saved) : [];
-      return Array.isArray(parsed) ? parsed : [];
-    } catch { return []; }
-  });
+  const [dismissedUpdates, setDismissedUpdates] = useState<number[]>([]);
 
   const handleDismissUpdate = (id: number) => {
     const next = [...dismissedUpdates, id];
@@ -104,8 +99,19 @@ export default function HabitTrackerClient() {
     onError: (e) => toast.error(e.message)
   });
   
-  // Initialize Local Storage if not authenticated
+  // Initialize Local Storage and Mount
   useEffect(() => {
+    setIsMounted(true);
+    
+    // Load dismissed updates
+    try {
+      const saved = localStorage.getItem('dismissedUpdates');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) setDismissedUpdates(parsed);
+      }
+    } catch {}
+
     if (!isAuthenticated) {
       const storedHabits = localStorage.getItem("mbr_habits");
       const storedLogs = localStorage.getItem("mbr_habit_logs");
@@ -263,6 +269,8 @@ export default function HabitTrackerClient() {
     const logs = userChallengesData?.logs?.filter(l => l.userChallengeId === uc.id) || [];
     return logs.length;
   };
+
+  if (!isMounted) return null;
 
   return (
     <div className="min-h-screen text-gray-900 pb-20" style={{ background: "#faf5f5" }}>
