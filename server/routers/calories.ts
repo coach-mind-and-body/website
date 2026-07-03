@@ -21,8 +21,8 @@ async function syncMacrosToHabits(db: any, userId: number, dateStr: string) {
 
   // 2. Find matching user habits
   const habits = await db.select().from(userHabits).where(eq(userHabits.userId, userId));
-  const proteinHabit = habits.find(h => h.title.toLowerCase().includes("protein") && h.type === "numeric");
-  const fiberHabit = habits.find(h => h.title.toLowerCase().includes("fiber") && h.type === "numeric");
+  const proteinHabit = habits.find((h: any) => h.title.toLowerCase().includes("protein") && h.type === "numeric");
+  const fiberHabit = habits.find((h: any) => h.title.toLowerCase().includes("fiber") && h.type === "numeric");
 
   // 3. Update or insert habit logs
   const updateHabitLog = async (habitId: number, value: number) => {
