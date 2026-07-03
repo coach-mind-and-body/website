@@ -110,6 +110,7 @@ export default function CalorieTrackerClient() {
   const totalProtein = logs?.reduce((acc, log) => acc + log.protein, 0) || 0;
   const totalCarbs = logs?.reduce((acc, log) => acc + log.carbs, 0) || 0;
   const totalFat = logs?.reduce((acc, log) => acc + log.fat, 0) || 0;
+  const totalFiber = logs?.reduce((acc, log) => acc + log.fiber, 0) || 0;
 
   return (
     <div className="min-h-screen text-gray-900 pb-20" style={{ background: "#faf5f5" }}>
@@ -155,18 +156,22 @@ export default function CalorieTrackerClient() {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div className="bg-blue-50 p-3 rounded-2xl">
-              <div className="text-xl font-bold text-blue-700">{totalProtein}g</div>
-              <div className="text-xs font-bold text-blue-400 uppercase">Protein</div>
+          <div className="grid grid-cols-4 gap-2 text-center">
+            <div className="bg-blue-50 p-2 md:p-3 rounded-2xl">
+              <div className="text-lg md:text-xl font-bold text-blue-700">{totalProtein}g</div>
+              <div className="text-[10px] md:text-xs font-bold text-blue-400 uppercase">Protein</div>
             </div>
-            <div className="bg-orange-50 p-3 rounded-2xl">
-              <div className="text-xl font-bold text-orange-700">{totalCarbs}g</div>
-              <div className="text-xs font-bold text-orange-400 uppercase">Carbs</div>
+            <div className="bg-orange-50 p-2 md:p-3 rounded-2xl">
+              <div className="text-lg md:text-xl font-bold text-orange-700">{totalCarbs}g</div>
+              <div className="text-[10px] md:text-xs font-bold text-orange-400 uppercase">Carbs</div>
             </div>
-            <div className="bg-yellow-50 p-3 rounded-2xl">
-              <div className="text-xl font-bold text-yellow-700">{totalFat}g</div>
-              <div className="text-xs font-bold text-yellow-500 uppercase">Fat</div>
+            <div className="bg-yellow-50 p-2 md:p-3 rounded-2xl">
+              <div className="text-lg md:text-xl font-bold text-yellow-700">{totalFat}g</div>
+              <div className="text-[10px] md:text-xs font-bold text-yellow-500 uppercase">Fat</div>
+            </div>
+            <div className="bg-green-50 p-2 md:p-3 rounded-2xl">
+              <div className="text-lg md:text-xl font-bold text-green-700">{totalFiber}g</div>
+              <div className="text-[10px] md:text-xs font-bold text-green-500 uppercase">Fiber</div>
             </div>
           </div>
         </div>
@@ -259,6 +264,10 @@ export default function CalorieTrackerClient() {
                     <label className="text-xs font-bold text-yellow-500 uppercase mb-1 block">Fat (g)</label>
                     <input type="number" value={fat} onChange={e => setFat(e.target.value)} className="w-full p-3 rounded-xl border focus:outline-none focus:ring-1 focus:ring-yellow-500" placeholder="0" />
                   </div>
+                  <div>
+                    <label className="text-xs font-bold text-green-500 uppercase mb-1 block">Fiber (g)</label>
+                    <input type="number" value={fiber} onChange={e => setFiber(e.target.value)} className="w-full p-3 rounded-xl border focus:outline-none focus:ring-1 focus:ring-green-500" placeholder="0" />
+                  </div>
                 </div>
 
                 <Button 
@@ -278,7 +287,7 @@ export default function CalorieTrackerClient() {
         {logs && logs.length > 0 && (
           <div className="space-y-4">
             <h3 className="font-bold text-xl mb-4" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
-              Today's Meals
+              Today's Food/Drink
             </h3>
             
             {logs.map(log => (
@@ -286,15 +295,16 @@ export default function CalorieTrackerClient() {
                 <div>
                   <div className="text-xs font-bold uppercase mb-1" style={{ color: "#c9a96e" }}>{log.mealType}</div>
                   <h4 className="font-bold text-[#2d3b2d]">{log.foodName}</h4>
-                  <div className="text-sm text-gray-500 mt-1 flex gap-3">
+                  <div className="text-sm text-gray-500 mt-1 flex flex-wrap gap-3">
                     <span>{log.calories} kcal</span>
                     <span className="text-blue-500">{log.protein}p</span>
                     <span className="text-orange-500">{log.carbs}c</span>
                     <span className="text-yellow-600">{log.fat}f</span>
+                    <span className="text-green-600">{log.fiber}fb</span>
                   </div>
                 </div>
                 <button 
-                  onClick={() => deleteLogMutation.mutate({ id: log.id })}
+                  onClick={() => deleteLogMutation.mutate({ id: log.id, dateStr })}
                   className="p-2 text-gray-300 hover:text-red-500 transition-colors"
                 >
                   <Trash2 size={20} />

@@ -1,10 +1,56 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { calorieLogs } from "../../drizzle/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { calorieLogs, userHabits, userHabitLogs } from "../../drizzle/schema";
+import { eq, and, desc, like } from "drizzle-orm";
 import { generateObject } from "ai";
 import { google } from "@ai-sdk/google";
+
+// Helper function to sync daily protein and fiber to the habit tracker
+async function syncMacrosToHabits(db: any, userId: number, dateStr: string) {
+  // 1. Calculate totals for the day
+  const logs = await db.select().from(calorieLogs)
+    .where(and(eq(calorieLogs.userId, userId), eq(calorieLogs.dateStr, dateStr)));
+  
+  let totalProtein = 0;
+  let totalFiber = 0;
+  for (const log of logs) {
+    totalProtein += log.protein || 0;
+    totalFiber += log.fiber || 0;
+  }
+
+  // 2. Find matching user habits
+  const habits = await db.select().from(userHabits).where(eq(userHabits.userId, userId));
+  const proteinHabit = habits.find(h => h.title.toLowerCase().includes("protein") && h.type === "numeric");
+  const fiberHabit = habits.find(h => h.title.toLowerCase().includes("fiber") && h.type === "numeric");
+
+  // 3. Update or insert habit logs
+  const updateHabitLog = async (habitId: number, value: number) => {
+    const existing = await db.select().from(userHabitLogs)
+      .where(and(
+        eq(userHabitLogs.userId, userId),
+        eq(userHabitLogs.userHabitId, habitId),
+        eq(userHabitLogs.dateStr, dateStr)
+      )).limit(1);
+
+    if (existing.length > 0) {
+      await db.update(userHabitLogs)
+        .set({ numericValue: value, completed: true })
+        .where(eq(userHabitLogs.id, existing[0].id));
+    } else {
+      await db.insert(userHabitLogs).values({
+        userId,
+        userHabitId: habitId,
+        dateStr,
+        numericValue: value,
+        completed: true,
+      });
+    }
+  };
+
+  if (proteinHabit) await updateHabitLog(proteinHabit.id, totalProtein);
+  if (fiberHabit) await updateHabitLog(fiberHabit.id, totalFiber);
+}
 
 export const caloriesRouter = router({
   getLogs: protectedProcedure
@@ -46,12 +92,15 @@ export const caloriesRouter = router({
         ...input,
       });
       
+      await syncMacrosToHabits(db, ctx.user.id, input.dateStr);
+
       return { success: true };
     }),
 
   deleteLog: protectedProcedure
     .input(z.object({
       id: z.number(),
+      dateStr: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), // Added dateStr to easily re-sync
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -63,6 +112,9 @@ export const caloriesRouter = router({
           eq(calorieLogs.userId, ctx.user.id)
         )
       );
+      
+      await syncMacrosToHabits(db, ctx.user.id, input.dateStr);
+
       return { success: true };
     }),
 
