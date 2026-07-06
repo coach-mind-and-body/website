@@ -12,10 +12,11 @@ import SiteFooter from "@/components/SiteFooter";
 import { BRAND } from "@shared/brand";
 import { trpc } from "@/lib/trpc";
 import { NewsletterInline, NewsletterPopup } from "@/components/NewsletterSignup";
+import { sanitizeHtml } from "@/lib/sanitizeHtml";
 
 
 // ── Share Buttons component ──────────────────────────────────────────────────
-const SITE_URL = "https://mindbodyreset-aofowmqj.manus.space";
+const SITE_URL = "https://www.mindandbodyresetcoach.com";
 
 function ShareButtons({ title, slug }: { title: string; slug: string }) {
   const [copied, setCopied] = useState(false);
@@ -511,7 +512,7 @@ export default function BlogPost() {
         <div className="container max-w-3xl mx-auto blog-prose">
           {/* Detect HTML content (from DB editor) vs markdown (static posts) */}
           {post.content.trimStart().startsWith('<') ? (
-            <div dangerouslySetInnerHTML={{ __html: post.content }} />
+            <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.content) }} />
           ) : (
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}

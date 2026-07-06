@@ -28,22 +28,43 @@ export default function Enroll() {
 
   // Check for Stripe success redirect
   useEffect(() => {
-    if (searchParams?.get("success") === "1") {
-      setPaymentDone(true);
-      setStep("schedule");
-      
-      // We don't have the exact plan from URL, but we know they bought Reclaim
-      ga.trackPurchase({
-        transaction_id: "reclaim_" + Date.now(), // Generate a unique ID to prevent duplicate tracking
-        value: 597, // Approximate or full value
+    if (searchParams?.get("success") !== "1") return;
+
+    setPaymentDone(true);
+    setStep("schedule");
+
+    const sessionId = searchParams?.get("session_id");
+    if (!sessionId) return;
+
+    const storageKey = `ga_purchase_${sessionId}`;
+    if (typeof window !== "undefined" && sessionStorage.getItem(storageKey)) return;
+    if (typeof window !== "undefined") sessionStorage.setItem(storageKey, "1");
+
+    const storedPlan =
+      typeof window !== "undefined" ? sessionStorage.getItem("enroll_checkout_plan") : null;
+    const effectivePlan =
+      planParam === "deposit"
+        ? "deposit"
+        : planParam === "full"
+          ? "full"
+          : storedPlan === "deposit"
+            ? "deposit"
+            : "full";
+    const value = effectivePlan === "deposit" ? 200 : 597;
+
+    ga.trackPurchase({
+      transaction_id: sessionId,
+      value,
+      currency: "USD",
+      items: [{
+        item_name:
+          effectivePlan === "deposit"
+            ? "R.E.C.L.A.I.M. Program - Deposit"
+            : "R.E.C.L.A.I.M. Program - Full Payment",
+        price: value,
         currency: "USD",
-        items: [{
-          item_name: "R.E.C.L.A.I.M. Program Checkout Success",
-          price: 597,
-          currency: "USD"
-        }]
-      });
-    }
+      }],
+    });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -51,7 +72,7 @@ export default function Enroll() {
     onSuccess: (data) => {
       if (data.url) {
         toast.info("Redirecting to secure checkout...");
-        window.open(data.url, "_blank");
+        window.location.href = data.url;
       }
     },
     onError: (err) => toast.error(err.message || "Could not start checkout. Please try again."),
@@ -74,6 +95,9 @@ export default function Enroll() {
       value: plan === "full" ? 597 : 200,
       currency: "USD"
     });
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("enroll_checkout_plan", plan);
+    }
     const eventId = generateMetaEventId();
     const meta = getMetaParams();
     createCheckout.mutate({ plan, ...meta, eventId });
@@ -131,27 +155,36 @@ export default function Enroll() {
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Full payment */}
-                <div className="rounded-2xl p-8 text-center relative overflow-hidden cursor-pointer hover:shadow-xl transition-all hover:-translate-y-1" style={{ background: "oklch(0.22 0.02 160)", border: "2px solid oklch(0.72 0.12 75)" }} onClick={() => selectPlan("full")}>
+                <button
+                  type="button"
+                  onClick={() => selectPlan("full")}
+                  className="rounded-2xl p-8 text-center relative overflow-hidden cursor-pointer hover:shadow-xl transition-all hover:-translate-y-1 w-full"
+                  style={{ background: "oklch(0.22 0.02 160)", border: "2px solid oklch(0.72 0.12 75)" }}
+                >
                   <div className="absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-bold" style={{ background: "oklch(0.72 0.12 75)", color: "oklch(0.22 0.02 160)" }}>BEST VALUE</div>
                   <h3 className="font-bold text-xl mb-2" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.97 0.008 10)" }}>Pay in Full</h3>
                   <div className="text-5xl font-bold mb-1" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.72 0.12 75)" }}>${PROGRAM.fullPrice}</div>
                   <div className="text-sm line-through mb-4" style={{ color: "oklch(0.55 0.02 160)" }}>${PROGRAM.originalPrice}</div>
                   <p className="text-sm mb-6" style={{ color: "oklch(0.65 0.02 160)" }}>One payment. Full access. Immediate enrollment.</p>
-                  <button className="w-full py-3 rounded-full font-bold text-sm transition-all hover:shadow-lg" style={{ background: "oklch(0.72 0.12 75)", color: "oklch(0.22 0.02 160)" }}>
+                  <span className="inline-flex items-center justify-center w-full py-3 rounded-full font-bold text-sm transition-all hover:shadow-lg" style={{ background: "oklch(0.72 0.12 75)", color: "oklch(0.22 0.02 160)" }}>
                     Select — Pay in Full <ArrowRight size={14} className="inline ml-1" />
-                  </button>
-                </div>
+                  </span>
+                </button>
                 {/* Deposit */}
-                <div className="rounded-2xl p-8 text-center cursor-pointer hover:shadow-xl transition-all hover:-translate-y-1 card-brand" onClick={() => selectPlan("deposit")}>
+                <button
+                  type="button"
+                  onClick={() => selectPlan("deposit")}
+                  className="rounded-2xl p-8 text-center cursor-pointer hover:shadow-xl transition-all hover:-translate-y-1 card-brand w-full"
+                >
                   <h3 className="font-bold text-xl mb-2" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.22 0.02 160)" }}>Deposit Option</h3>
                   <div className="text-5xl font-bold mb-1" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.45 0.12 65)" }}>${PROGRAM.depositPrice}</div>
                   <div className="text-sm mb-1" style={{ color: "oklch(0.55 0.02 160)" }}>today, then ${PROGRAM.balancePrice} before Session 1</div>
                   <div className="text-xs mb-4 px-3 py-1 rounded-full inline-block" style={{ background: "oklch(0.93 0.03 10)", color: "oklch(0.45 0.09 10)" }}>Non-refundable deposit</div>
                   <p className="text-sm mb-6" style={{ color: "oklch(0.45 0.02 160)" }}>Secure your spot now, pay balance before your first session.</p>
-                  <button className="w-full py-3 rounded-full font-bold text-sm border-2 transition-all hover:shadow-md" style={{ borderColor: "oklch(0.45 0.12 65)", color: "oklch(0.45 0.12 65)", background: "transparent" }}>
+                  <span className="inline-flex items-center justify-center w-full py-3 rounded-full font-bold text-sm border-2 transition-all hover:shadow-md" style={{ borderColor: "oklch(0.45 0.12 65)", color: "oklch(0.45 0.12 65)", background: "transparent" }}>
                     Select — ${PROGRAM.depositPrice} Deposit <ArrowRight size={14} className="inline ml-1" />
-                  </button>
-                </div>
+                  </span>
+                </button>
               </div>
               <p className="text-center text-xs mt-4" style={{ color: "oklch(0.55 0.02 160)" }}>
                 Not ready? <Link href="/book" className="underline font-semibold">Book a free discovery call first</Link>.
@@ -163,7 +196,7 @@ export default function Enroll() {
           {step === "pay" && !paymentDone && (
             <div className="max-w-lg mx-auto">
               <button onClick={() => setStep("choose")} className="inline-flex items-center gap-1 text-xs font-bold mb-6" style={{ color: "oklch(0.38 0.10 148)" }}>
-                â† Change Plan
+                ← Change Plan
               </button>
               <div className="card-brand rounded-2xl p-8">
                 <div className="flex items-center gap-2 mb-6">

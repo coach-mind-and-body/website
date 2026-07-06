@@ -1,8 +1,9 @@
 import { z } from "zod";
-import { adminProcedure, publicProcedure, router } from "../_core/trpc";
+import { adminProcedure, protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { challenges, userChallenges, userChallengeLogs } from "../../drizzle/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
 import { format } from "date-fns";
 
 export const challengesRouter = router({
@@ -71,10 +72,33 @@ export const challengesRouter = router({
     }),
 
   toggleChallengeLog: publicProcedure
-    .input(z.object({ userChallengeId: z.number(), dateStr: z.string(), completed: z.boolean() }))
-    .mutation(async ({ input }) => {
+    .input(z.object({
+      userChallengeId: z.number(),
+      dateStr: z.string(),
+      completed: z.boolean(),
+      deviceId: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("DB Error");
+
+      const [userChallenge] = await db
+        .select()
+        .from(userChallenges)
+        .where(eq(userChallenges.id, input.userChallengeId))
+        .limit(1);
+
+      if (!userChallenge) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Challenge enrollment not found" });
+      }
+
+      const owned =
+        (ctx.user?.id != null && userChallenge.userId === ctx.user.id) ||
+        (input.deviceId != null && userChallenge.deviceId === input.deviceId);
+
+      if (!owned) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized to modify this challenge log" });
+      }
 
       if (input.completed) {
         const existing = await db.select().from(userChallengeLogs).where(
@@ -92,6 +116,22 @@ export const challengesRouter = router({
           and(eq(userChallengeLogs.userChallengeId, input.userChallengeId), eq(userChallengeLogs.dateStr, input.dateStr))
         );
       }
+      return { success: true };
+    }),
+
+  mergeGuestData: protectedProcedure
+    .input(z.object({ deviceId: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("DB Error");
+
+      await db
+        .update(userChallenges)
+        .set({ userId: ctx.user.id, deviceId: null })
+        .where(
+          and(eq(userChallenges.deviceId, input.deviceId), isNull(userChallenges.userId))
+        );
+
       return { success: true };
     }),
 

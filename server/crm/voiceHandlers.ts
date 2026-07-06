@@ -278,7 +278,7 @@ export async function handleVoiceInbound(formData: Record<string, string>) {
       await notifyAllAdmins({
         title: `📞 Incoming Call: ${callerDisplayName}`,
         body: `Tap to open Inbox`,
-        url: `/admin/v2-inbox`,
+        url: `/admin?tab=contacts`,
       });
     } catch (err) {
       console.warn("[Push] Failed to send call pop push notification:", err);

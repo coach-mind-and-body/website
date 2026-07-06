@@ -3,6 +3,8 @@
   "short_name": "MBR Habits",
   "description": "Habit Tracker by Mind and Body Reset",
   "start_url": "/habit-tracker",
+  "scope": "/",
+  "id": "/habit-tracker",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ffb6c1",

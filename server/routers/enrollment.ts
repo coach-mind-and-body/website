@@ -183,7 +183,7 @@ export const enrollmentRouter = router({
           name: email.split("@")[0], // Default name
           email: email,
           loginMethod: "email",
-          emailVerified: true,
+          emailVerified: false,
           role: "user",
           passwordResetToken: resetToken,
           passwordResetExpiry: expiry,

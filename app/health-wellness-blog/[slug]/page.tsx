@@ -58,7 +58,11 @@ export default async function Page({ params }: Props) {
         "@type": "BlogPosting",
         "headline": post.title,
         "description": post.excerpt || "",
-        "image": post.coverImage ? `https://www.mindandbodyresetcoach.com${post.coverImage}` : undefined,
+        "image": post.coverImage
+          ? (post.coverImage.startsWith("http")
+              ? post.coverImage
+              : `https://www.mindandbodyresetcoach.com${post.coverImage}`)
+          : undefined,
         "author": {
           "@type": "Person",
           "name": "Lee Anne Chapman"

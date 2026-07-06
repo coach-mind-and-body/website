@@ -7,6 +7,7 @@ import { blogPosts } from "../../drizzle/schema";
 import { storagePut } from "../storage";
 import { TRPCError } from "@trpc/server";
 import { resendSubscribe } from "../resendSubscribe";
+import { sanitizeHtml } from "@/lib/sanitizeHtml";
 
 function adminOnly(role: string | undefined) {
   if (role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Admins only" });
@@ -122,8 +123,19 @@ export const blogRouter = router({
       const { publishedAt: publishedAtStr, ...insertRest } = rest;
       const customPublishedAt = publishedAtStr ? new Date(publishedAtStr) : undefined;
 
+      const existingSlug = await db
+        .select({ id: blogPosts.id })
+        .from(blogPosts)
+        .where(eq(blogPosts.slug, input.slug))
+        .limit(1);
+
+      if (existingSlug.length > 0) {
+        throw new TRPCError({ code: "CONFLICT", message: "A post with this slug already exists" });
+      }
+
       await db.insert(blogPosts).values({
         ...insertRest,
+        content: sanitizeHtml(insertRest.content),
         published: isScheduled ? false : insertRest.published,
         authorId: ctx.user!.id,
         publishedAt: insertRest.published && !isScheduled ? (customPublishedAt || new Date()) : undefined,
@@ -160,6 +172,9 @@ export const blogRouter = router({
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       const { id, scheduledAt: scheduledAtStr, publishedAt: publishedAtStr, ...rest } = input;
       const updateData: Record<string, unknown> = { ...rest };
+      if (typeof rest.content === "string") {
+        updateData.content = sanitizeHtml(rest.content);
+      }
 
       // Handle scheduling
       if (scheduledAtStr !== undefined) {

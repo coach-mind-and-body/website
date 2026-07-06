@@ -45,6 +45,13 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "MBR Habits",
+  },
+  themeColor: "#ffb6c1",
 };
 
 export const viewport: Viewport = {
@@ -135,6 +142,12 @@ export default function RootLayout({
                   navigator.serviceWorker.register('/sw.js').then(
                     function(registration) {
                       console.log('ServiceWorker registration successful');
+                      window.addEventListener('focus', function() {
+                        registration.update();
+                      });
+                      document.addEventListener('visibilitychange', function() {
+                        if (!document.hidden) registration.update();
+                      });
                     },
                     function(err) {
                       console.log('ServiceWorker registration failed: ', err);

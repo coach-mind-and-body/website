@@ -54,7 +54,7 @@ export default function ResetPasswordClient() {
       await utils.auth.me.invalidate();
       setDone(true);
       toast.success("Password reset! You're now signed in.");
-      setTimeout(() => router.push("/"), 1500);
+      setTimeout(() => router.push("/portal"), 1500);
     } catch (err: any) {
       toast.error(err.message || "Password reset failed");
     } finally {

@@ -1,4 +1,3 @@
-// @ts-nocheck
 "use client";
 
 import React, { useState, useEffect, useRef, Fragment } from "react";
@@ -14,6 +13,12 @@ import { Phone, ArrowLeft, Plane, Loader2, MessageSquare, CreditCard, Star, Pape
 import { useInboxPollInterval } from "@/lib/useInboxPollInterval";
 import { toast } from "sonner";
 import { isToday, isYesterday, format } from "date-fns";
+import type { AppRouter } from "@/server/routers";
+import type { inferRouterOutputs } from "@trpc/server";
+
+type RouterOutputs = inferRouterOutputs<AppRouter>;
+type ConversationData = RouterOutputs["messaging"]["getConversation"];
+type ChatMessage = ConversationData["messages"][number];
 
 function renderMarkdown(text: string) {
   return text.split('\n').map((line, i) => {
@@ -37,7 +42,7 @@ function formatDateSeparator(dateString: string | Date | null | undefined) {
 
 export default function ActiveChatThread({ chatId }: { chatId: number }) {
   const router = useRouter();
-  const utils = trpc.useContext();
+  const utils = trpc.useUtils();
   const { setDialerPrefill, setDialerOpen, setPaymentModalOpen, setTemplatesModalOpen, setFullscreenImage, setIsProfileOpen, setActiveChatMeta } = useInbox();
 
   const [messageText, setMessageText] = useState("");
@@ -87,11 +92,11 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
   }, [activeChat?.conversation, chatId, setActiveChatMeta]);
 
   useEffect(() => {
-    const handleInsertTemplate = (e: any) => {
-      injectTextTemplate(e.detail);
+    const handleInsertTemplate = (e: Event) => {
+      injectTextTemplate((e as CustomEvent<string>).detail);
     };
-    const handleInjectPaymentLink = (e: any) => {
-      const url = e.detail as string;
+    const handleInjectPaymentLink = (e: Event) => {
+      const url = (e as CustomEvent<string>).detail;
       if (url) {
         setMessageText(prev => prev + (prev ? " " : "") + url);
       }
@@ -154,7 +159,7 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
   const closeChat = trpc.messaging.closeConversation.useMutation({
     onSuccess: () => {
       toast.success("Chat closed");
-      router.push("/admin/v2-inbox");
+      setActiveChatMeta(null);
     }
   });
 
@@ -167,7 +172,12 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
     }
   });
 
-  const sendReviewInvite = { isPending: false, mutate: (...args: any[]) => alert("Not implemented") };
+  const sendReviewInvite = {
+    isPending: false,
+    mutate: (_args: { phone: string; name?: string; userId?: number }) => {
+      alert("Not implemented");
+    },
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -184,8 +194,8 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
       
       setPendingUploadUrl(data.url);
       toast.success("File attached! Type a message or just click send.");
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -208,7 +218,7 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
     <div className="flex-1 flex flex-col min-w-0 bg-slate-50/50 overflow-hidden">
       <div className="h-[65px] shrink-0 z-10 relative border-b flex items-center px-2 sm:px-6 bg-white shadow-sm">
         <div className="flex-1 flex justify-start">
-          <Button variant="ghost" size="icon" className="md:hidden h-10 w-10 rounded-full border border-slate-200 bg-white hover:bg-slate-50 shrink-0 shadow-sm" onClick={() => router.push("/admin/v2-inbox")}>
+          <Button variant="ghost" size="icon" className="md:hidden h-10 w-10 rounded-full border border-slate-200 bg-white hover:bg-slate-50 shrink-0 shadow-sm" onClick={() => setActiveChatMeta(null)}>
             <ArrowLeft className="h-4 w-4 text-slate-700" />
           </Button>
           <div className="hidden sm:block">
@@ -225,7 +235,7 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
           >
             <p className="font-bold text-[15px] text-slate-900 leading-tight truncate px-1 flex items-center justify-center gap-1.5">
               {activeName}
-              {activeChat?.conversation?.isPremium && <Plane className="h-4 w-4 text-amber-500 fill-amber-500 shrink-0" />}
+              {Boolean(activeChat?.conversation?.isPremium) && <Plane className="h-4 w-4 text-amber-500 fill-amber-500 shrink-0" />}
               <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors -ml-1" />
             </p>
             <p className="text-[11px] text-slate-500 font-medium truncate px-1 mt-0.5 tracking-wide">{activePhone !== "Unknown" ? (activeChat?.conversation?.platform === 'facebook' || activeChat?.conversation?.platform === 'instagram' ? (activeChat?.conversation?.platform === 'instagram' ? 'Instagram Chat' : 'Facebook Messenger') : activePhone) : "No phone number"}</p>
@@ -296,7 +306,7 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
                     </div>
                       <span suppressHydrationWarning className={`text-[10px] mt-1 px-1 ${msg.direction === "outbound" ? "text-slate-400" : "text-slate-400"}`}>
                         {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        {msg.direction === "outbound" && (msg as any).isAutomated && " • AI"}
+                        {msg.direction === "outbound" && msg.type === "call" && msg.isAutomated && " • AI"}
                       </span>
                     {msg.content && (
                       <Accordion type="single" collapsible className="w-[80%] mt-2">

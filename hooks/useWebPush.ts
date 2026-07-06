@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -19,15 +18,25 @@ function urlBase64ToUint8Array(base64String: string) {
   return outputArray;
 }
 
+function arrayBufferToBase64(buffer: ArrayBuffer | null): string {
+  if (!buffer) return "";
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
 export function useWebPush() {
   const [isSupported, setIsSupported] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isSubscribing, setIsSubscribing] = useState(false);
-  const [permission, setPermission] = useState(() => {
+  const [permission, setPermission] = useState<NotificationPermission>(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
       return Notification.permission;
     }
-    return 'default' as NotificationPermission;
+    return 'default';
   });
   
   const subscribeMutation = trpc.push.subscribe.useMutation();
@@ -57,7 +66,6 @@ export function useWebPush() {
       let sub = await reg.pushManager.getSubscription();
 
       if (!sub) {
-        // Replace with the public key generated earlier
         const publicVapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
         if (!publicVapidKey) {
           throw new Error("Missing VAPID public key");
@@ -75,9 +83,8 @@ export function useWebPush() {
         });
       }
 
-      // Send to server
-      const p256dh = sub.getKey('p256dh') ? btoa(String.fromCharCode.apply(null, new Uint8Array(sub.getKey('p256dh')!) as any)) : "";
-      const auth = sub.getKey('auth') ? btoa(String.fromCharCode.apply(null, new Uint8Array(sub.getKey('auth')!) as any)) : "";
+      const p256dh = arrayBufferToBase64(sub.getKey('p256dh'));
+      const auth = arrayBufferToBase64(sub.getKey('auth'));
       
       await subscribeMutation.mutateAsync({
         endpoint: sub.endpoint,
@@ -88,9 +95,10 @@ export function useWebPush() {
 
       setIsSubscribed(true);
       toast.success("Notifications enabled! \uD83D\uDD25");
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e);
-      toast.error(e.message || "Failed to enable notifications");
+      const message = e instanceof Error ? e.message : "Failed to enable notifications";
+      toast.error(message);
     } finally {
       setIsSubscribing(false);
     }

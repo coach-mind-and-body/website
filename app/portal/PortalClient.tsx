@@ -408,7 +408,7 @@ export default function Portal() {
                     <div>
                       <p className="text-sm font-semibold" style={{ color: "#2d3b2d" }}>{file.fileName}</p>
                       <p className="text-xs" style={{ color: "#8a9a8a" }}>
-                        {file.uploadedByRole === "admin" ? "From your coach" : "Uploaded by you"} Â· {new Date(file.createdAt).toLocaleDateString()}
+                        {file.uploadedByRole === "admin" ? "From your coach" : "Uploaded by you"} · {new Date(file.createdAt).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
@@ -471,7 +471,7 @@ function FpuCoachingSection({ order, sessions }: { order: any; sessions: any[] }
             FPU 1:1 Accountability Coaching
           </h2>
           <p className="text-xs" style={{ color: "#8a9a8a" }}>
-            3 private 50-minute sessions Â· {order.status === "paid" ? "Paid ✓" : "Pending payment"}
+            3 private 50-minute sessions · {order.status === "paid" ? "Paid ✓" : "Pending payment"}
           </p>
         </div>
       </div>

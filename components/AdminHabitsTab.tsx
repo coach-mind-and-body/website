@@ -7,6 +7,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
+type EditingTemplate = {
+  id?: number;
+  title: string;
+  description: string | null;
+  type: "boolean" | "numeric";
+  targetValue: number | null;
+  unit: string | null;
+  order: number;
+  isActive: boolean;
+};
+
 export default function AdminHabitsTab() {
   const { data: templates, refetch } = trpc.habit.adminGetTemplates.useQuery();
   const createMutation = trpc.habit.adminCreateTemplate.useMutation({
@@ -22,14 +33,24 @@ export default function AdminHabitsTab() {
     onError: (e) => toast.error(e.message),
   });
 
-  const [editing, setEditing] = useState<{ id?: number; title: string; description: string | null; order: number; isActive: boolean } | null>(null);
+  const [editing, setEditing] = useState<EditingTemplate | null>(null);
+
+  const buildPayload = (item: EditingTemplate) => ({
+    title: item.title,
+    description: item.description ?? undefined,
+    type: item.type,
+    targetValue: item.type === "numeric" ? item.targetValue : null,
+    unit: item.type === "numeric" ? (item.unit ?? undefined) : null,
+    order: item.order,
+    isActive: item.isActive,
+  });
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h2 className="font-bold text-2xl" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.20 0.015 50)" }}>Habit Templates</h2>
         <Button 
-          onClick={() => setEditing({ title: "", description: "", order: (templates?.length || 0) + 1, isActive: true })}
+          onClick={() => setEditing({ title: "", description: "", type: "boolean", targetValue: null, unit: null, order: (templates?.length || 0) + 1, isActive: true })}
           className="rounded-full font-bold"
           style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}
         >
@@ -59,6 +80,43 @@ export default function AdminHabitsTab() {
                 style={{ background: "oklch(0.985 0.008 80)", borderColor: "oklch(0.90 0.015 80)" }}
               />
             </div>
+            <div>
+              <Label>Type</Label>
+              <select
+                value={editing.type}
+                onChange={e => setEditing({ ...editing, type: e.target.value as "boolean" | "numeric" })}
+                className="w-full h-10 rounded-md border px-3 text-sm"
+                style={{ background: "oklch(0.985 0.008 80)", borderColor: "oklch(0.90 0.015 80)" }}
+              >
+                <option value="boolean">Boolean (check off)</option>
+                <option value="numeric">Numeric (target value)</option>
+              </select>
+            </div>
+            {editing.type === "numeric" && (
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <Label>Target Value</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={editing.targetValue ?? ""}
+                    onChange={e => setEditing({ ...editing, targetValue: e.target.value ? parseInt(e.target.value) : null })}
+                    className="border"
+                    style={{ background: "oklch(0.985 0.008 80)", borderColor: "oklch(0.90 0.015 80)" }}
+                  />
+                </div>
+                <div className="flex-1">
+                  <Label>Unit</Label>
+                  <Input
+                    value={editing.unit || ""}
+                    onChange={e => setEditing({ ...editing, unit: e.target.value || null })}
+                    placeholder="e.g. g, oz, min"
+                    className="border"
+                    style={{ background: "oklch(0.985 0.008 80)", borderColor: "oklch(0.90 0.015 80)" }}
+                  />
+                </div>
+              </div>
+            )}
             <div className="flex gap-4">
               <div className="flex-1">
                 <Label>Order</Label>
@@ -84,10 +142,11 @@ export default function AdminHabitsTab() {
             <div className="flex justify-end gap-2 mt-4">
               <Button variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
               <Button onClick={() => {
+                const payload = buildPayload(editing);
                 if (editing.id) {
-                  updateMutation.mutate({ id: editing.id, title: editing.title, description: editing.description ?? undefined, order: editing.order, isActive: editing.isActive });
+                  updateMutation.mutate({ id: editing.id, ...payload });
                 } else {
-                  createMutation.mutate({ title: editing.title, description: editing.description ?? undefined, order: editing.order, isActive: editing.isActive });
+                  createMutation.mutate(payload);
                 }
               }} disabled={!editing.title || createMutation.isPending || updateMutation.isPending}
               className="bg-[oklch(0.72_0.12_75)] hover:bg-[oklch(0.68_0.12_75)] text-white">
@@ -102,11 +161,27 @@ export default function AdminHabitsTab() {
         {(templates || []).map(t => (
           <div key={t.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl" style={{ background: "oklch(1 0 0)" }}>
             <div>
-              <p className="font-bold text-lg" style={{ color: "oklch(0.20 0.015 50)" }}>{t.title} {!t.isActive && "(Inactive)"}</p>
+              <p className="font-bold text-lg" style={{ color: "oklch(0.20 0.015 50)" }}>
+                {t.title} {!t.isActive && "(Inactive)"}
+                {t.type === "numeric" && (
+                  <span className="text-sm font-normal ml-2" style={{ color: "oklch(0.52 0.015 50)" }}>
+                    — target: {t.targetValue ?? "?"} {t.unit || ""}
+                  </span>
+                )}
+              </p>
               {t.description && <p className="text-sm" style={{ color: "oklch(0.52 0.015 50)" }}>{t.description}</p>}
             </div>
             <div className="flex gap-2 mt-3 sm:mt-0">
-              <Button variant="ghost" size="sm" onClick={() => setEditing({ id: t.id, title: t.title, description: t.description, order: t.order, isActive: t.isActive })} style={{ color: "oklch(0.42 0.015 50)" }}><Edit2 size={16} /></Button>
+              <Button variant="ghost" size="sm" onClick={() => setEditing({
+                id: t.id,
+                title: t.title,
+                description: t.description,
+                type: t.type as "boolean" | "numeric",
+                targetValue: t.targetValue,
+                unit: t.unit,
+                order: t.order,
+                isActive: t.isActive,
+              })} style={{ color: "oklch(0.42 0.015 50)" }}><Edit2 size={16} /></Button>
               <Button variant="ghost" size="sm" onClick={() => { if (confirm("Delete this habit template?")) deleteMutation.mutate({ id: t.id }); }}><Trash2 size={16} className="text-red-500 hover:text-red-700" /></Button>
             </div>
           </div>

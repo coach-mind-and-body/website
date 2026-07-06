@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/use-auth";
@@ -48,6 +48,10 @@ export default function HabitTrackerClient() {
   const [selectedDate, setSelectedDate] = useState(new Date()); // For mobile view & notes
   const [isNotesExpanded, setIsNotesExpanded] = useState(false); // For expanding/collapsing daily notes
   const [isSettingsExpanded, setIsSettingsExpanded] = useState(false);
+  const [optimisticLogs, setOptimisticLogs] = useState<LocalLog[]>([]);
+  const numericDebounceRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const [showImportPrompt, setShowImportPrompt] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   // TRPC
   const { data: templates } = trpc.habit.getTemplates.useQuery(undefined, { enabled: !isAuthenticated });
@@ -73,6 +77,10 @@ export default function HabitTrackerClient() {
     }
   });
 
+  const mergeGuestDataMutation = trpc.challenges.mergeGuestData.useMutation({
+    onSuccess: () => refetchUserChallenges(),
+  });
+
   const toggleChallengeLogMutation = trpc.challenges.toggleChallengeLog.useMutation({
     onSuccess: () => refetchUserChallenges(),
     onError: (e) => toast.error(e.message)
@@ -80,8 +88,11 @@ export default function HabitTrackerClient() {
 
   const toggleLogMutation = trpc.habit.toggleLog.useMutation({
     onSuccess: () => refetchUserSync(),
-    onError: (e) => toast.error(e.message)
+    onError: (e) => toast.error(e.message),
+    onSettled: () => setOptimisticLogs([]),
   });
+
+  const syncHabitMutation = trpc.habit.syncHabit.useMutation();
 
   const saveNoteMutation = trpc.habit.saveDailyNote.useMutation({
     onSuccess: () => {
@@ -135,7 +146,86 @@ export default function HabitTrackerClient() {
     }
   }, [isAuthenticated, templates]);
 
-  const activeHabits = isAuthenticated ? (userSyncData?.habits || []) : localHabits;
+  // Merge guest challenge progress when user signs in
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    mergeGuestDataMutation.mutate({ deviceId: getDeviceId() });
+  }, [isAuthenticated]);
+
+  // Offer to import local data after login
+  useEffect(() => {
+    if (!isAuthenticated || !userSyncData) return;
+    const hasLocalHabits = !!localStorage.getItem("mbr_habits");
+    const hasLocalLogs = !!localStorage.getItem("mbr_habit_logs");
+    const dismissed = localStorage.getItem("mbr_import_dismissed");
+    if ((hasLocalHabits || hasLocalLogs) && !dismissed) {
+      setShowImportPrompt(true);
+    }
+  }, [isAuthenticated, userSyncData]);
+
+  const handleImportLocalData = async () => {
+    if (!userSyncData) return;
+    setIsImporting(true);
+    try {
+      const storedHabits: LocalHabit[] = JSON.parse(localStorage.getItem("mbr_habits") || "[]");
+      const storedLogs: LocalLog[] = JSON.parse(localStorage.getItem("mbr_habit_logs") || "[]");
+
+      const titleToServerId = new Map<string, number>();
+      for (const habit of userSyncData.habits) {
+        titleToServerId.set(habit.title.trim().toLowerCase(), habit.id);
+      }
+
+      for (const localHabit of storedHabits) {
+        const key = localHabit.title.trim().toLowerCase();
+        if (!titleToServerId.has(key)) {
+          const result = await syncHabitMutation.mutateAsync({
+            title: localHabit.title,
+            description: localHabit.description ?? undefined,
+            type: localHabit.type,
+            targetValue: localHabit.targetValue,
+            unit: localHabit.unit,
+            order: storedHabits.indexOf(localHabit) + 1,
+            isActive: localHabit.isActive !== false,
+          });
+          titleToServerId.set(key, result.id);
+        }
+      }
+
+      const refreshed = await refetchUserSync();
+      const serverHabits = refreshed.data?.habits || userSyncData.habits;
+      const localIdToServerId = new Map<number, number>();
+      for (const localHabit of storedHabits) {
+        const match = serverHabits.find(h => h.title.trim().toLowerCase() === localHabit.title.trim().toLowerCase());
+        if (match) localIdToServerId.set(localHabit.id, match.id);
+      }
+
+      for (const log of storedLogs) {
+        const serverHabitId = localIdToServerId.get(log.userHabitId);
+        if (!serverHabitId) continue;
+        await toggleLogMutation.mutateAsync({
+          userHabitId: serverHabitId,
+          dateStr: log.dateStr,
+          completed: log.completed,
+          numericValue: log.numericValue ?? undefined,
+        });
+      }
+
+      localStorage.removeItem("mbr_habits");
+      localStorage.removeItem("mbr_habit_logs");
+      localStorage.setItem("mbr_import_dismissed", "1");
+      setShowImportPrompt(false);
+      toast.success("Local habits imported successfully!");
+      refetchUserSync();
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Import failed";
+      toast.error(message);
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const activeHabits = (isAuthenticated ? (userSyncData?.habits || []) : localHabits)
+    .filter(h => h.isActive !== false);
   const logs = isAuthenticated ? (userSyncData?.logs || []) : localLogs;
   const notes = isAuthenticated ? (userSyncData?.notes || []) : localNotes;
 
@@ -166,12 +256,9 @@ export default function HabitTrackerClient() {
     }
   };
 
-  const [optimisticLogs, setOptimisticLogs] = useState<LocalLog[]>([]);
-
-  const logNumericHabit = (habitId: number, dateStr: string, value: number, target: number) => {
+  const applyNumericLog = useCallback((habitId: number, dateStr: string, value: number, target: number) => {
     const isCompleted = value >= target;
-    
-    // Optimistic Update
+
     setOptimisticLogs(prev => {
       const existing = prev.find(l => l.userHabitId === habitId && l.dateStr === dateStr);
       if (existing) {
@@ -183,17 +270,39 @@ export default function HabitTrackerClient() {
     if (isAuthenticated) {
       toggleLogMutation.mutate({ userHabitId: habitId, dateStr, completed: isCompleted, numericValue: value });
     } else {
-      let newLogs = [...localLogs];
-      const existingIdx = newLogs.findIndex(l => l.userHabitId === habitId && l.dateStr === dateStr);
-      if (existingIdx >= 0) {
-        newLogs[existingIdx].completed = isCompleted;
-        newLogs[existingIdx].numericValue = value;
-      } else {
-        newLogs.push({ userHabitId: habitId, dateStr, completed: isCompleted, numericValue: value });
-      }
-      setLocalLogs(newLogs);
-      localStorage.setItem("mbr_habit_logs", JSON.stringify(newLogs));
+      setLocalLogs(prev => {
+        const newLogs = [...prev];
+        const existingIdx = newLogs.findIndex(l => l.userHabitId === habitId && l.dateStr === dateStr);
+        if (existingIdx >= 0) {
+          newLogs[existingIdx].completed = isCompleted;
+          newLogs[existingIdx].numericValue = value;
+        } else {
+          newLogs.push({ userHabitId: habitId, dateStr, completed: isCompleted, numericValue: value });
+        }
+        localStorage.setItem("mbr_habit_logs", JSON.stringify(newLogs));
+        return newLogs;
+      });
     }
+  }, [isAuthenticated, toggleLogMutation]);
+
+  const logNumericHabit = (habitId: number, dateStr: string, value: number, target: number) => {
+    const isCompleted = value >= target;
+    setOptimisticLogs(prev => {
+      const existing = prev.find(l => l.userHabitId === habitId && l.dateStr === dateStr);
+      if (existing) {
+        return prev.map(l => l === existing ? { ...l, completed: isCompleted, numericValue: value } : l);
+      }
+      return [...prev, { userHabitId: habitId, dateStr, completed: isCompleted, numericValue: value }];
+    });
+
+    const key = `${habitId}-${dateStr}`;
+    if (numericDebounceRef.current[key]) {
+      clearTimeout(numericDebounceRef.current[key]);
+    }
+    numericDebounceRef.current[key] = setTimeout(() => {
+      applyNumericLog(habitId, dateStr, value, target);
+      delete numericDebounceRef.current[key];
+    }, 300);
   };
 
   const toggleLog = (habitId: number, dateStr: string) => {
@@ -273,7 +382,36 @@ export default function HabitTrackerClient() {
   if (!isMounted) return null;
 
   return (
-    <div className="min-h-screen text-gray-900 pb-20" style={{ background: "#faf5f5" }}>
+    <div className="min-h-screen text-gray-900" style={{ background: "#faf5f5" }}>
+      {/* Import local data prompt */}
+      {showImportPrompt && isAuthenticated && (
+        <div className="py-3 px-4 text-center text-sm flex flex-col sm:flex-row items-center justify-center gap-3" style={{ background: "#2d3b2d", color: "white" }}>
+          <span>We found habits saved on this device. Import them to your account?</span>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              disabled={isImporting}
+              onClick={handleImportLocalData}
+              className="rounded-full"
+              style={{ background: "#c9a96e", color: "white" }}
+            >
+              {isImporting ? "Importing..." : "Import"}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                localStorage.setItem("mbr_import_dismissed", "1");
+                setShowImportPrompt(false);
+              }}
+              className="rounded-full border-white/40 text-white hover:bg-white/10"
+            >
+              Dismiss
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Banner */}
       {!isAuthenticated && (
         <div className="py-2 px-4 text-center text-sm flex items-center justify-center gap-2 relative" style={{ background: "#c9a96e", color: "white" }}>
@@ -460,7 +598,8 @@ export default function HabitTrackerClient() {
                           onClick={() => toggleChallengeLogMutation.mutate({
                             userChallengeId: uc.id,
                             dateStr: todayStr,
-                            completed: !isCompletedToday
+                            completed: !isCompletedToday,
+                            deviceId: getDeviceId(),
                           })}
                         >
                           {isCompletedToday ? "Completed for Today!" : "Complete for Today"}
@@ -539,6 +678,27 @@ export default function HabitTrackerClient() {
                       const dateStr = format(day, "yyyy-MM-dd");
                       const completed = isLogCompleted(habit.id, dateStr);
                       const isSelected = isSelectedDate(day);
+
+                      if (habit.type === "numeric") {
+                        const val = getNumericValue(habit.id, dateStr) || 0;
+                        const target = habit.targetValue || 100;
+                        return (
+                          <div key={dateStr} className={`flex flex-col items-center justify-center rounded-xl py-1 gap-1 ${isSelected ? 'bg-white/50 shadow-sm' : ''}`}>
+                            <input
+                              type="number"
+                              min={0}
+                              value={val || ""}
+                              onChange={(e) => logNumericHabit(habit.id, dateStr, parseInt(e.target.value) || 0, target)}
+                              className="w-12 h-8 text-center text-xs rounded-lg border focus:outline-none focus:ring-1 bg-white text-black"
+                              style={{ borderColor: "#e8e8e8" }}
+                            />
+                            <span className={`text-[9px] font-bold ${completed ? 'text-[#c9a96e]' : 'text-gray-400'}`}>
+                              {habit.unit || ""}
+                            </span>
+                          </div>
+                        );
+                      }
+
                       return (
                         <div key={dateStr} className={`flex justify-center rounded-xl py-1 ${isSelected ? 'bg-white/50 shadow-sm' : ''}`}>
                           <button

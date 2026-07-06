@@ -5,6 +5,8 @@ Allow: /
 Disallow: /admin
 Disallow: /admin/
 Disallow: /portal
+Disallow: /login
+Disallow: /reset-password
 Disallow: /my-program
 Disallow: /join-thank-you
 Disallow: /food-quiz-thank-you

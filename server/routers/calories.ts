@@ -25,31 +25,33 @@ async function syncMacrosToHabits(db: any, userId: number, dateStr: string) {
   const fiberHabit = habits.find((h: any) => h.title.toLowerCase().includes("fiber") && h.type === "numeric");
 
   // 3. Update or insert habit logs
-  const updateHabitLog = async (habitId: number, value: number) => {
+  const updateHabitLog = async (habit: { id: number; targetValue: number | null }, value: number) => {
+    const target = habit.targetValue ?? 0;
+    const completed = value >= target;
     const existing = await db.select().from(userHabitLogs)
       .where(and(
         eq(userHabitLogs.userId, userId),
-        eq(userHabitLogs.userHabitId, habitId),
+        eq(userHabitLogs.userHabitId, habit.id),
         eq(userHabitLogs.dateStr, dateStr)
       )).limit(1);
 
     if (existing.length > 0) {
       await db.update(userHabitLogs)
-        .set({ numericValue: value, completed: true })
+        .set({ numericValue: value, completed })
         .where(eq(userHabitLogs.id, existing[0].id));
     } else {
       await db.insert(userHabitLogs).values({
         userId,
-        userHabitId: habitId,
+        userHabitId: habit.id,
         dateStr,
         numericValue: value,
-        completed: true,
+        completed,
       });
     }
   };
 
-  if (proteinHabit) await updateHabitLog(proteinHabit.id, totalProtein);
-  if (fiberHabit) await updateHabitLog(fiberHabit.id, totalFiber);
+  if (proteinHabit) await updateHabitLog(proteinHabit, totalProtein);
+  if (fiberHabit) await updateHabitLog(fiberHabit, totalFiber);
 }
 
 export const caloriesRouter = router({

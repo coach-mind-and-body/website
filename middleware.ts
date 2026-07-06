@@ -3,9 +3,13 @@ import type { NextRequest } from "next/server";
 
 
 export function middleware(request: NextRequest) {
-  const cookiesToSet: { name: string; value: string; maxAge: number; domain: string }[] = [];
+  const cookiesToSet: { name: string; value: string; maxAge: number; domain?: string }[] = [];
   const now = Date.now();
-  const domain = "mindandbodyresetcoach.com";
+  const host = request.headers.get("host") ?? "";
+  const domain =
+    process.env.NODE_ENV === "production" && host.includes("mindandbodyresetcoach.com")
+      ? "mindandbodyresetcoach.com"
+      : undefined;
   const maxAge = 60 * 60 * 24 * 90; // 90 days
 
   // Handle _fbp (Facebook Browser ID)

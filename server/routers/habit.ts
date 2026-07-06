@@ -2,7 +2,7 @@ import { z } from "zod";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { habitTemplates, userHabits, userHabitLogs, userDailyNotes, users } from "../../drizzle/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, gte } from "drizzle-orm";
 
 export const habitRouter = router({
   // --- Public: Get default templates for unauthenticated tracking ---
@@ -13,11 +13,17 @@ export const habitRouter = router({
   }),
 
   // --- Protected: User Syncing ---
-  getUserHabits: protectedProcedure.query(async ({ ctx }) => {
+  getUserHabits: protectedProcedure
+    .input(z.object({
+      fromDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    }).optional())
+    .query(async ({ ctx, input }) => {
     const db = await getDb();
     if (!db) return { habits: [], logs: [] };
 
-    let habits = await db.select().from(userHabits).where(eq(userHabits.userId, ctx.user.id)).orderBy(userHabits.order);
+    let habits = await db.select().from(userHabits)
+      .where(and(eq(userHabits.userId, ctx.user.id), eq(userHabits.isActive, true)))
+      .orderBy(userHabits.order);
     
     // Auto-initialize from templates if user has no habits
     if (habits.length === 0) {
@@ -34,11 +40,21 @@ export const habitRouter = router({
           isActive: true,
         }));
         await db.insert(userHabits).values(newHabits);
-        habits = await db.select().from(userHabits).where(eq(userHabits.userId, ctx.user.id)).orderBy(userHabits.order);
+        habits = await db.select().from(userHabits)
+          .where(and(eq(userHabits.userId, ctx.user.id), eq(userHabits.isActive, true)))
+          .orderBy(userHabits.order);
       }
     }
 
-    const logs = await db.select().from(userHabitLogs).where(eq(userHabitLogs.userId, ctx.user.id));
+    const defaultFrom = new Date();
+    defaultFrom.setDate(defaultFrom.getDate() - 30);
+    const fromDateStr = input?.fromDate ?? defaultFrom.toISOString().split("T")[0];
+
+    const logs = await db.select().from(userHabitLogs)
+      .where(and(
+        eq(userHabitLogs.userId, ctx.user.id),
+        gte(userHabitLogs.dateStr, fromDateStr)
+      ));
     const notes = await db.select().from(userDailyNotes).where(eq(userDailyNotes.userId, ctx.user.id));
     const userRecord = await db.select().from(users).where(eq(users.id, ctx.user.id)).limit(1);
     

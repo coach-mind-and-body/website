@@ -7,6 +7,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
 import { getLoginUrl } from "@/lib/const";
+import { mountainToUtc, utcToMountain, nowMountain } from "@/lib/mountainTime";
 import { RichTextEditor, type RichTextEditorHandle } from "@/components/RichTextEditor";
 import { SeoAnalysisPanel } from "@/components/SeoAnalysisPanel";
 import { usePageTitle } from "@/hooks/usePageTitle";
@@ -29,56 +30,6 @@ function slugify(text: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
-}
-
-// Convert a Mountain Time local datetime string to UTC ISO string
-function mountainToUtc(localDatetime: string): string {
-  // localDatetime is "YYYY-MM-DDTHH:MM" from the input
-  // We create a date string with the Mountain timezone offset
-  const dt = new Date(localDatetime + ":00");
-  // Use Intl to figure out the offset for America/Denver
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/Denver",
-    year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit", second: "2-digit",
-    hour12: false,
-  });
-  // Parse the local time as if it's Mountain Time
-  // Create a date in Mountain Time by finding the UTC equivalent
-  const parts = localDatetime.split("T");
-  const [year, month, day] = parts[0].split("-").map(Number);
-  const [hour, minute] = parts[1].split(":").map(Number);
-
-  // Use a trick: format current time in Mountain to find offset
-  const now = new Date();
-  const utcStr = now.toISOString();
-  const mtStr = now.toLocaleString("en-US", { timeZone: "America/Denver" });
-  const mtDate = new Date(mtStr);
-  const offsetMs = now.getTime() - mtDate.getTime();
-
-  // Build the target date as if in Mountain Time, then add offset to get UTC
-  const targetLocal = new Date(year, month - 1, day, hour, minute, 0, 0);
-  const targetUtc = new Date(targetLocal.getTime() + offsetMs);
-  return targetUtc.toISOString();
-}
-
-// Convert a UTC ISO string to Mountain Time local datetime string for the input
-function utcToMountain(utcIso: string): string {
-  const date = new Date(utcIso);
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Denver",
-    year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit",
-    hour12: false,
-  }).formatToParts(date);
-
-  const get = (type: string) => parts.find(p => p.type === type)?.value ?? "00";
-  return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
-}
-
-// Get current Mountain Time as datetime-local string
-function nowMountain(): string {
-  return utcToMountain(new Date().toISOString());
 }
 
 export default function BlogEditorClient() {

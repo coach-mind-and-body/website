@@ -9,12 +9,22 @@ import { BRAND } from "@shared/brand";
 import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
 
 
-const ZAPIER_WEBHOOK = "https://hooks.zapier.com/hooks/catch/22551341/uw0om13/";
 const WELLNESS_IMG =
   "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=1000&auto=format&fit=crop";
 
 export default function JoinLanding() {
-  const submitJoinLead = trpc.leadgen.submitJoin.useMutation();
+  const submitJoinLead = trpc.leadgen.submitJoin.useMutation({
+    onSuccess: (_data, variables) => {
+      setLoading(false);
+      trackLead({ content_name: "Join the Community - Email Sign-Up", content_category: "Lead Magnet" }, variables.eventId);
+      ga.trackLead({ category: "Lead Magnet", label: "Join the Community — Email Sign-Up" });
+      router.push("/join-thank-you");
+    },
+    onError: (err) => {
+      setError(err.message || "Something went wrong. Please try again.");
+      setLoading(false);
+    },
+  });
   
   const router = useRouter();
   const [firstName, setFirstName] = useState("");
@@ -46,20 +56,6 @@ export default function JoinLanding() {
     setError("");
     setLoading(true);
 
-    try {
-      await fetch(ZAPIER_WEBHOOK, {
-        method: "POST",
-        mode: "no-cors",
-        body: JSON.stringify({
-          first_name: firstName,
-          email,
-          source_tag: "landing-page-sign-up",
-        }),
-      });
-    } catch {
-      // no-cors mode — errors are expected, proceed regardless
-    }
-
     const eventId = generateMetaEventId();
     const meta = getMetaParams();
     try {
@@ -71,12 +67,9 @@ export default function JoinLanding() {
         ...meta,
         eventId,
       });
-    } catch (_) {}
-
-    trackLead({ content_name: "Join the Community - Email Sign-Up", content_category: "Lead Magnet" }, eventId);
-    ga.trackLead({ category: "Lead Magnet", label: "Join the Community — Email Sign-Up" });
-
-    router.push("/join-thank-you");
+    } catch {
+      // Error handled in onError
+    }
   };
 
   return (
@@ -120,6 +113,7 @@ export default function JoinLanding() {
             <input
               type="text"
               placeholder="First Name"
+              aria-label="First name"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               className="w-full text-center text-base rounded-xl px-5 py-5 outline-none"
@@ -133,6 +127,7 @@ export default function JoinLanding() {
             <input
               type="email"
               placeholder="Email Address"
+              aria-label="Email address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}

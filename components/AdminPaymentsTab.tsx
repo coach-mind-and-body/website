@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/hooks/use-auth";
 import {
   CreditCard, DollarSign, Clock, AlertCircle, CheckCircle2,
   ExternalLink, Loader2, Filter,
@@ -12,11 +13,14 @@ const STATUS_CONFIG = {
 } as const;
 
 export default function AdminPaymentsTab() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const [statusFilter, setStatusFilter] = useState<"all" | "paid" | "pending" | "failed">("all");
 
-  const { data: stats, isLoading: loadingStats } = trpc.payment.adminStats.useQuery();
+  const { data: stats, isLoading: loadingStats } = trpc.payment.adminStats.useQuery(undefined, { enabled: isAdmin });
   const { data: payments, isLoading: loadingPayments } = trpc.payment.adminList.useQuery(
-    statusFilter === "all" ? undefined : { status: statusFilter }
+    statusFilter === "all" ? undefined : { status: statusFilter },
+    { enabled: isAdmin }
   );
 
   return (

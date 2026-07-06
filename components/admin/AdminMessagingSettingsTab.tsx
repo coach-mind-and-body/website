@@ -1,4 +1,3 @@
-// @ts-nocheck
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -14,11 +13,16 @@ import {
   Bell, CheckCircle2, AlertCircle, RefreshCw, Calendar, Link2, Link2Off
 } from "lucide-react";
 
+type GoogleCalendarStatus = {
+  connected: boolean;
+  email?: string;
+};
+
 export function AdminMessagingSettingsTab({ 
   gcalStatus, 
   disconnectGcal 
 }: { 
-  gcalStatus: any; 
+  gcalStatus: GoogleCalendarStatus | undefined; 
   disconnectGcal: () => void;
 }) {
   // --- Templates State ---
@@ -27,7 +31,7 @@ export function AdminMessagingSettingsTab({
   const [editText, setEditText] = useState("");
 
   const { data: templates = [], isLoading: isTemplatesLoading } = trpc.templates.list.useQuery();
-  const utils = trpc.useContext();
+  const utils = trpc.useUtils();
 
   const createMutation = trpc.templates.create.useMutation({
     onSuccess: () => {
@@ -122,7 +126,10 @@ export function AdminMessagingSettingsTab({
         applicationServerKey: urlBase64ToUint8Array(publicKey),
       });
 
-      const subJson = sub.toJSON() as any;
+      const subJson = sub.toJSON();
+      if (!subJson.endpoint || !subJson.keys?.p256dh || !subJson.keys?.auth) {
+        throw new Error("Invalid push subscription payload");
+      }
       await subscribeMutation.mutateAsync({
         endpoint: subJson.endpoint,
         p256dh: subJson.keys.p256dh,
@@ -131,10 +138,10 @@ export function AdminMessagingSettingsTab({
 
       setNotifStatus("subscribed");
       toast.success("Push notifications enabled! 🔔");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
       setNotifStatus("idle");
-      toast.error(`Failed to enable notifications: ${err.message}`);
+      toast.error(`Failed to enable notifications: ${err instanceof Error ? err.message : "Unknown error"}`);
     }
   };
 

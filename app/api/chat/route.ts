@@ -1,8 +1,21 @@
 import { streamText, stepCountIs, convertToModelMessages } from "ai";
 import { google } from "@ai-sdk/google";
+import { rateLimit, getClientIp } from "@/lib/rateLimit";
+
+const CHAT_RATE_LIMIT = 20;
+const CHAT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
 export async function POST(req: Request) {
   try {
+    const ip = getClientIp(req);
+    const { allowed, resetAt } = rateLimit(`chat:${ip}`, CHAT_RATE_LIMIT, CHAT_WINDOW_MS);
+    if (!allowed) {
+      return new Response("Too many requests. Please try again later.", {
+        status: 429,
+        headers: { "Retry-After": String(Math.ceil((resetAt - Date.now()) / 1000)) },
+      });
+    }
+
     const { messages } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {

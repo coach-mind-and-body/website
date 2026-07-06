@@ -82,7 +82,7 @@ export const paymentRouter = router({
           },
         ],
         metadata,
-        success_url: `${origin}/enroll?success=1`,
+        success_url: `${origin}/enroll?success=1&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${origin}/enroll`,
       });
 

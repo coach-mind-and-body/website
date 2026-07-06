@@ -181,7 +181,7 @@ export async function handleInboundSms(formData: Record<string, string>) {
     notifyAllAdmins({
       title: senderName,
       body: formatSmsPushBody(Body),
-      url: `/admin/v2-inbox/chat/${conv!.id}`,
+      url: `/admin?tab=contacts`,
     }).catch(err => console.error("Push failed:", err));
 
     // 5.5 Keyword Responders
@@ -297,7 +297,7 @@ Customer: ${Body}`;
           notifyAllAdmins({
             title: "AI Agent Handoff",
             body: `${senderName} has requested human assistance.`,
-            url: `/admin/v2-inbox/chat/${conv.id}`,
+            url: `/admin?tab=contacts`,
           });
         } else if (text) {
           // Send response via twilio

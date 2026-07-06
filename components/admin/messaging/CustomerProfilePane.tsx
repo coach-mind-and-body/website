@@ -1,4 +1,3 @@
-// @ts-nocheck
 "use client";
 
 import React, { useState } from "react";
@@ -13,9 +12,20 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import Link from "next/link";
-import { Plane, Check, Edit2, Phone, Mail, Users, Tag, Plus, Loader2, Workflow, FileText, Clock, CreditCard } from "lucide-react";
+import { Plane, Check, Edit2, Phone, Mail, Users, Tag, Plus, Loader2, Workflow, Clock, CreditCard } from "lucide-react";
 import { useInboxPollInterval } from "@/lib/useInboxPollInterval";
 import { toast } from "sonner";
+import type { Lead } from "@/drizzle/schema";
+import type { AppRouter } from "@/server/routers";
+import type { inferRouterOutputs } from "@trpc/server";
+
+type RouterOutputs = inferRouterOutputs<AppRouter>;
+type ConversationData = RouterOutputs["messaging"]["getConversation"];
+type ChatMessage = ConversationData["messages"][number];
+
+const LEAD_STATUSES = ["new", "contacted", "enrolled", "not_a_fit"] as const;
+
+type CrmTag = { id: number; name: string; color?: string };
 
 export default function CustomerProfilePane({ chatId }: { chatId: number }) {
   if (chatId === -1) {
@@ -30,7 +40,7 @@ export default function CustomerProfilePane({ chatId }: { chatId: number }) {
 }
 
 function CustomerProfilePaneContent({ chatId }: { chatId: number }) {
-  const utils = trpc.useContext();
+  const utils = trpc.useUtils();
   const { setDialerPrefill, setDialerOpen, setFullscreenImage, isProfileOpen, setIsProfileOpen } = useInbox();
 
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -41,12 +51,6 @@ function CustomerProfilePaneContent({ chatId }: { chatId: number }) {
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesText, setNotesText] = useState("");
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
-  const [editingRevenue, setEditingRevenue] = useState(false);
-  const [revenueText, setRevenueText] = useState("");
-  const [editingDates, setEditingDates] = useState(false);
-  const [startDateStr, setStartDateStr] = useState("");
-  const [endDateStr, setEndDateStr] = useState("");
-
   const pollInterval = useInboxPollInterval(5000, 15000);
   const { data: activeChat } = trpc.messaging.getConversation.useQuery({ id: chatId }, {
     refetchInterval: pollInterval
@@ -55,18 +59,20 @@ function CustomerProfilePaneContent({ chatId }: { chatId: number }) {
   const activeName = activeChat?.conversation?.userName || activeChat?.conversation?.contactPhone || "Unknown Customer";
   const activePhone = activeChat?.conversation?.contactPhone || "Unknown";
 
-  const allLeads: any[] = [{id:1, name:"Mock"}];
-  const activeLead = allLeads.find(q => 
-    (q.phone && activePhone !== "Unknown" && q.phone === activePhone) || 
-    (q.email && activeChat?.conversation?.contactEmail && q.email === activeChat.conversation.contactEmail)
+  const { data: allLeads = [] } = trpc.leads.list.useQuery(undefined, { enabled: chatId > 0 });
+  const activeLead = allLeads.find((lead: Lead) =>
+    (lead.phone && activePhone !== "Unknown" && lead.phone === activePhone) ||
+    (lead.email && activeChat?.conversation?.contactEmail && lead.email === activeChat.conversation.contactEmail)
   );
 
-  const { data: userTags = [] } = trpc.crmAutomations.getUserTags.useQuery(
+  const { data: userTagsData } = trpc.crmAutomations.getUserTags.useQuery(
     { userId: activeChat?.conversation?.userId || 0 }, 
     { enabled: !!activeChat?.conversation?.userId }
   );
+  const userTags: CrmTag[] = userTagsData ?? [];
   
-  const { data: allTags = [] } = trpc.crmAutomations.listTags.useQuery();
+  const { data: allTagsData } = trpc.crmAutomations.listTags.useQuery();
+  const allTags: CrmTag[] = allTagsData ?? [];
   const { data: admins = [] } = trpc.messaging.listAdmins.useQuery();
   const { data: scheduledMessages = [] } = trpc.messaging.listScheduledForConversation.useQuery(
     { conversationId: chatId },
@@ -140,15 +146,31 @@ function CustomerProfilePaneContent({ chatId }: { chatId: number }) {
     }
   });
 
-  const updateStatus = { mutate: (args: any) => {} };
+  const updateStatus = trpc.leads.updateStatus.useMutation({
+    onSuccess: () => {
+      utils.leads.list.invalidate();
+      toast.success("Lead status updated!");
+    },
+    onError: (err) => toast.error(err.message),
+  });
 
-  const createPipelineLead = { mutate: (args: any) => {} };
+  const createPipelineLead = trpc.messaging.updateContact.useMutation({
+    onSuccess: () => {
+      utils.leads.list.invalidate();
+      utils.messaging.getConversation.invalidate({ id: chatId });
+      toast.success("Added to pipeline!");
+    },
+    onError: (err) => toast.error(err.message),
+  });
 
-  const updateNotes = { mutate: (args: any) => {} };
-
-  const updateTripDates = { mutate: (args: any) => {} };
-
-  const updateRevenue = { mutate: (args: any) => {} };
+  const updateNotes = trpc.leads.updateStatus.useMutation({
+    onSuccess: () => {
+      utils.leads.list.invalidate();
+      setEditingNotes(false);
+      toast.success("Notes saved!");
+    },
+    onError: (err) => toast.error(err.message),
+  });
 
   const renderContent = () => (
     <div className="flex-col bg-background shrink-0 flex overflow-hidden h-full">
@@ -166,9 +188,9 @@ function CustomerProfilePaneContent({ chatId }: { chatId: number }) {
             <div className="flex flex-col gap-1">
               <h2 className="text-xl font-bold text-slate-800 truncate pr-2 flex items-center gap-2">
                 {activeName}
-                {activeChat?.conversation?.isPremium && <Plane className="h-5 w-5 text-amber-500 fill-amber-500 shrink-0" />}
+                {Boolean(activeChat?.conversation?.isPremium) && <Plane className="h-5 w-5 text-amber-500 fill-amber-500 shrink-0" />}
               </h2>
-              {activeChat?.conversation?.isPremium && (
+              {Boolean(activeChat?.conversation?.isPremium) && (
                 <Badge variant="default" className="bg-amber-500 hover:bg-amber-600 w-fit text-[10px] uppercase tracking-wide">
                   Premium Subscriber
                 </Badge>
@@ -319,36 +341,22 @@ function CustomerProfilePaneContent({ chatId }: { chatId: number }) {
                 <div className="space-y-2">
                   <p className="text-xs text-muted-foreground mb-2">Change current pipeline stage:</p>
                   <div className="grid grid-cols-2 gap-2">
-                    {["new", "contacted", "quoted", "booked", "completed"].map((status) => (
+                    {LEAD_STATUSES.map((status) => (
                       <Button 
                         key={status}
                         variant={activeLead.status === status ? "default" : "outline"}
                         size="sm"
                         className="capitalize text-xs justify-start"
                         disabled={updateStatus.isPending}
-                        onClick={() => updateStatus.mutate({ id: activeLead.id, status: status as any })}
+                        onClick={() => updateStatus.mutate({ id: activeLead.id, status })}
                       >
-                        {status}
+                        {status.replace(/_/g, " ")}
                       </Button>
                     ))}
                   </div>
-                  <Button 
-                    variant="outline"
-                    className="w-full justify-start mt-2 border-slate-300 text-slate-700 bg-white"
-                    onClick={() => {
-                      window.open(`/admin/itineraries?quoteId=${activeLead.id}`, "_blank");
-                    }}
-                  >
-                    <Plane className="w-4 h-4 mr-2" /> Edit Itinerary
-                  </Button>
                   <Button variant="outline" className="w-full justify-start mt-2 border-brand-blue/30 text-brand-blue bg-brand-blue/5" asChild>
-                    <Link href={`/admin/v2-inbox/pipeline?leadId=${activeLead.id}`}>
-                      <Workflow className="w-4 h-4 mr-2" /> Open in Pipeline
-                    </Link>
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start mt-2 border-brand-orange/30 text-brand-orange bg-brand-orange/5" asChild>
-                    <Link href={`/admin/v2-inbox/pipeline?leadId=${activeLead.id}`}>
-                      <FileText className="w-4 h-4 mr-2" /> Build Proposal
+                    <Link href={`/admin?tab=contacts`}>
+                      <Workflow className="w-4 h-4 mr-2" /> View in Contacts
                     </Link>
                   </Button>
                 </div>
@@ -360,10 +368,15 @@ function CustomerProfilePaneContent({ chatId }: { chatId: number }) {
                     className="w-full justify-start text-brand-blue border-brand-blue/30 bg-brand-blue/5 hover:bg-brand-blue/10"
                     disabled={createPipelineLead.isPending}
                     onClick={() => {
+                      if (activePhone === "Unknown") {
+                        toast.error("Phone number is required to add to pipeline");
+                        return;
+                      }
                       createPipelineLead.mutate({
+                        conversationId: chatId,
                         name: activeName,
-                        phone: activePhone !== "Unknown" ? activePhone : undefined,
-                        notes: "Created from Inbox via text/call.",
+                        phone: activePhone,
+                        email: activeChat?.conversation?.contactEmail || undefined,
                       });
                     }}
                   >
@@ -452,7 +465,7 @@ function CustomerProfilePaneContent({ chatId }: { chatId: number }) {
                           size="sm" 
                           className="flex-1 text-xs"
                           disabled={updateNotes.isPending}
-                          onClick={() => updateNotes.mutate({ id: activeLead.id, notes: notesText })}
+                          onClick={() => updateNotes.mutate({ id: activeLead.id, status: activeLead.status, notes: notesText })}
                         >
                           {updateNotes.isPending ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : "Save"}
                         </Button>
@@ -476,196 +489,6 @@ function CustomerProfilePaneContent({ chatId }: { chatId: number }) {
             </AccordionContent>
           </AccordionItem>
           <Separator />
-
-          {activeLead && (
-            <>
-              <AccordionItem value="trip-details" className="border-b-0 px-4">
-                <AccordionTrigger className="hover:no-underline text-sm font-semibold py-4">
-                  Trip Details
-                </AccordionTrigger>
-                <AccordionContent className="pb-4">
-                  <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100 mb-3 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-blue-900 uppercase tracking-wider">Scheduled Trip</span>
-                      {!editingDates && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-6 px-2 text-blue-700 hover:bg-blue-100"
-                          onClick={() => {
-                            setEditingDates(true);
-                            const start = (activeLead as any).tripStartDate;
-                            const end = (activeLead as any).tripEndDate;
-                            setStartDateStr(start ? new Date(start).toISOString().split('T')[0] : "");
-                            setEndDateStr(end ? new Date(end).toISOString().split('T')[0] : "");
-                          }}
-                        >
-                          <Edit2 className="w-3 h-3 mr-1" /> Edit
-                        </Button>
-                      )}
-                    </div>
-                    
-                    {editingDates ? (
-                      <div className="space-y-2">
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <span className="text-[10px] text-blue-700 block mb-1">Start Date</span>
-                            <Input 
-                              type="date" 
-                              value={startDateStr}
-                              onChange={e => setStartDateStr(e.target.value)}
-                              className="h-8 text-xs border-blue-200"
-                            />
-                          </div>
-                          <div>
-                            <span className="text-[10px] text-blue-700 block mb-1">End Date</span>
-                            <Input 
-                              type="date" 
-                              value={endDateStr}
-                              onChange={e => setEndDateStr(e.target.value)}
-                              className="h-8 text-xs border-blue-200"
-                            />
-                          </div>
-                        </div>
-                        <div className="flex gap-2 pt-1">
-                          <Button 
-                            size="sm" 
-                            className="flex-1 text-xs bg-blue-600 hover:bg-blue-700 text-white h-7"
-                            disabled={updateTripDates.isPending}
-                            onClick={() => {
-                              const start = startDateStr ? new Date(startDateStr) : null;
-                              const end = endDateStr ? new Date(endDateStr) : null;
-                              updateTripDates.mutate({ 
-                                id: activeLead.id, 
-                                tripStartDate: start, 
-                                tripEndDate: end 
-                              });
-                            }}
-                          >
-                            {updateTripDates.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save Dates"}
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="ghost" 
-                            className="flex-1 text-xs text-blue-700 hover:bg-blue-100 h-7"
-                            onClick={() => setEditingDates(false)}
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 bg-white p-2 border rounded text-center">
-                          <span className="text-[10px] text-slate-500 block uppercase mb-0.5">Depart</span>
-                          <span className="text-sm font-semibold text-slate-800">
-                            {(activeLead as any).tripStartDate ? new Date((activeLead as any).tripStartDate).toLocaleDateString() : "TBD"}
-                          </span>
-                        </div>
-                        <div className="text-slate-300">-</div>
-                        <div className="flex-1 bg-white p-2 border rounded text-center">
-                          <span className="text-[10px] text-slate-500 block uppercase mb-0.5">Return</span>
-                          <span className="text-sm font-semibold text-slate-800">
-                            {(activeLead as any).tripEndDate ? new Date((activeLead as any).tripEndDate).toLocaleDateString() : "TBD"}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-xs">
-                    <div>
-                      <span className="text-slate-500 block mb-1">Destination</span>
-                      <div className="font-medium text-slate-900">{activeLead.destination || <span className="text-slate-400">—</span>}</div>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block mb-1">Vacation Type</span>
-                      <div className="font-medium text-slate-900">{activeLead.vacationType || <span className="text-slate-400">—</span>}</div>
-                    </div>
-                    <div className="col-span-2">
-                      <span className="text-slate-500 block mb-1">Requested Dates (Form)</span>
-                      <div className="font-medium text-slate-900">{activeLead.travelDates || <span className="text-slate-400">—</span>}</div>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block mb-1">Party Size</span>
-                      <div className="font-medium text-slate-900">{activeLead.partySize || <span className="text-slate-400">—</span>}</div>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block mb-1">Budget</span>
-                      <div className="font-medium text-slate-900">{activeLead.budget || <span className="text-slate-400">—</span>}</div>
-                    </div>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-              <Separator />
-
-              <AccordionItem value="revenue" className="border-b-0 px-4">
-                <AccordionTrigger className="hover:no-underline text-sm font-semibold py-4 text-green-700">
-                  Booking Value
-                </AccordionTrigger>
-                <AccordionContent className="pb-4">
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-3">
-                    {editingRevenue ? (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-green-700">$</span>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={revenueText}
-                            onChange={e => setRevenueText(e.target.value)}
-                            className="h-8 text-sm"
-                            placeholder="0.00"
-                          />
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            className="flex-1 text-xs bg-green-600 hover:bg-green-700 text-white"
-                            onClick={() => updateRevenue.mutate({ id: activeLead.id, totalRevenue: parseFloat(revenueText) || 0 })}
-                            disabled={updateRevenue.isPending}
-                          >
-                            {updateRevenue.isPending ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : "Save"}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="flex-1 text-xs text-green-700 hover:bg-green-100"
-                            onClick={() => setEditingRevenue(false)}
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-between">
-                        <div className="text-xl font-bold text-green-700">
-                          {activeLead && (activeLead as any).totalRevenue && parseFloat((activeLead as any).totalRevenue) > 0 ? (
-                            `$${parseFloat((activeLead as any).totalRevenue).toLocaleString("en-US", { minimumFractionDigits: 2 })}`
-                          ) : (
-                            <span className="text-sm text-green-600/70 italic">No revenue recorded</span>
-                          )}
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-6 px-2 text-green-700 hover:bg-green-100"
-                          onClick={() => {
-                            setEditingRevenue(true);
-                            setRevenueText(((activeLead as any).totalRevenue || "").toString());
-                          }}
-                        >
-                          <Edit2 className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-              <Separator />
-            </>
-          )}
 
           <AccordionItem value="scheduled" className="border-b-0 px-4">
             <AccordionTrigger className="hover:no-underline text-sm font-semibold py-4">
@@ -818,7 +641,7 @@ function CustomerProfilePaneContent({ chatId }: { chatId: number }) {
             </AccordionTrigger>
             <AccordionContent>
               <div className="grid grid-cols-3 gap-2">
-                {activeChat?.messages?.filter(m => m.type === "message" && m.mediaUrl).map((msg: any, idx) => (
+                {activeChat?.messages?.filter((m): m is ChatMessage & { type: "message"; mediaUrl: string } => m.type === "message" && !!m.mediaUrl).map((msg, idx) => (
                   <div 
                     key={idx} 
                     className="aspect-square bg-muted rounded-md overflow-hidden cursor-zoom-in relative group"

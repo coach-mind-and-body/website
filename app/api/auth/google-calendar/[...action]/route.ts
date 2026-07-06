@@ -4,6 +4,26 @@ import { googleTokens } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
 import { ENV } from "@/server/_core/env";
 import { sdk } from "@/server/_core/sdk";
+import { SignJWT, jwtVerify } from "jose";
+
+const oauthStateSecret = () => new TextEncoder().encode(ENV.cookieSecret || "gcal-oauth-fallback");
+
+async function createOAuthState(userId: number) {
+  return new SignJWT({ userId })
+    .setProtectedHeader({ alg: "HS256" })
+    .setExpirationTime("10m")
+    .sign(oauthStateSecret());
+}
+
+async function verifyOAuthState(state: string): Promise<number | null> {
+  try {
+    const { payload } = await jwtVerify(state, oauthStateSecret());
+    const userId = payload.userId;
+    return typeof userId === "number" ? userId : null;
+  } catch {
+    return null;
+  }
+}
 
 const SCOPES = [
   "https://www.googleapis.com/auth/calendar",
@@ -38,7 +58,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ action: 
         scope: SCOPES,
         access_type: "offline",
         prompt: "consent",
-        state: String(user.id),
+        state: await createOAuthState(user.id),
       });
       return NextResponse.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${searchParams}`);
     } catch {
@@ -81,7 +101,18 @@ export async function GET(req: Request, { params }: { params: Promise<{ action: 
       });
       const profile = await profileRes.json();
 
-      const userId = parseInt(state);
+      const userId = await verifyOAuthState(state);
+      if (!userId) return NextResponse.redirect(adminUrl + "?gcal=error");
+
+      try {
+        const sessionUser = await sdk.authenticateNextRequest(req);
+        if (sessionUser && sessionUser.id !== userId) {
+          return NextResponse.redirect(adminUrl + "?gcal=error");
+        }
+      } catch {
+        // OAuth callback may arrive before session cookie is set
+      }
+
       const expiresAt = Date.now() + tokenData.expires_in * 1000;
 
       const db = await getDb();

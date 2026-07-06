@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { fitnessLogs, workoutVideos, userHabits, userHabitLogs, userChallenges, userChallengeLogs, challenges } from "../../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
@@ -153,7 +153,7 @@ export const fitnessRouter = router({
     }),
 
   // --- Workout Videos ---
-  getVideos: protectedProcedure
+  getVideos: publicProcedure
     .query(async () => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");

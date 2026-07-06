@@ -20,11 +20,9 @@ export default function AdminVideosClient() {
   const { user } = useAuth();
   const router = useRouter();
 
-  if (user?.role !== "admin") {
-    return <div className="p-8 text-center text-red-500">Unauthorized</div>;
-  }
-
-  const { data: videos, refetch } = trpc.fitness.getVideos.useQuery();
+  const { data: videos, refetch } = trpc.fitness.getVideos.useQuery(undefined, {
+    enabled: user?.role === "admin",
+  });
 
   const addVideoMutation = trpc.fitness.adminAddVideo.useMutation({
     onSuccess: () => {
@@ -193,6 +191,10 @@ export default function AdminVideosClient() {
   const removeInterval = (index: number) => {
     setIntervals(intervals.filter((_, i) => i !== index));
   };
+
+  if (user?.role !== "admin") {
+    return <div className="p-8 text-center text-red-500">Unauthorized</div>;
+  }
 
   return (
     <div className="space-y-8">

@@ -11,8 +11,6 @@ import { trpc } from "@/lib/trpc";
 import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
 
 
-const ZAPIER_URL = "https://hooks.zapier.com/hooks/catch/22551341/uw0om13/";
-
 const questions = [
   {
     question: "How do you usually feel after starting over with food?",
@@ -64,7 +62,19 @@ const questions = [
 type Screen = "start" | "quiz" | "email" | "submitting";
 
 export default function FoodQuiz() {
-  const submitFoodQuizLead = trpc.leadgen.submitFoodQuiz.useMutation();
+  const submitFoodQuizLead = trpc.leadgen.submitFoodQuiz.useMutation({
+    onSuccess: (_data, variables) => {
+      trackLead({ content_name: "Food Quiz", content_category: "Quiz" }, variables.eventId);
+      ga.trackLead({ category: "Lead Generation", label: "Food Quiz Completion" });
+      setTimeout(() => {
+        router.push("/food-quiz-thank-you");
+      }, 1500);
+    },
+    onError: (err) => {
+      setEmailError(err.message || "Something went wrong. Please try again.");
+      setScreen("email");
+    },
+  });
   
   const { trackLead } = useMetaPixel();
   const ga = useGoogleAnalytics();
@@ -116,16 +126,6 @@ export default function FoodQuiz() {
     const tied = Object.keys(counts).filter((k) => counts[k] === maxCount);
     const priorityOrder = ["A", "D", "B", "C"];
     const top = tied.length === 1 ? tied[0] : priorityOrder.find((p) => tied.includes(p))!;
-    const zapierTags: Record<string, string> = {
-      A: "Quiz-Rebalancer",
-      B: "Quiz-Doer",
-      C: "Quiz-Achiever",
-      D: "Quiz-Feeler",
-    };
-
-    // Zapier call removed. The backend now natively handles sending the result email
-    // and enrolling the user into the nurture sequence.
-
     const eventId = generateMetaEventId();
     const meta = getMetaParams();
     try {
@@ -137,14 +137,9 @@ export default function FoodQuiz() {
         ...meta,
         eventId,
       });
-    } catch (_) {}
-
-    trackLead({ content_name: "Food Quiz", content_category: "Quiz" }, eventId);
-    ga.trackLead({ category: "Lead Generation", label: "Food Quiz Completion" });
-    
-    setTimeout(() => {
-      router.push("/food-quiz-thank-you");
-    }, 1500);
+    } catch {
+      // Error handled in onError
+    }
   }
 
   const q = questions[currentIdx];
@@ -262,6 +257,7 @@ export default function FoodQuiz() {
                     onChange={(e) => setEmail(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
                     placeholder="Your email address"
+                    aria-label="Email address"
                     className="w-full px-5 py-4 rounded-xl text-base text-center outline-none transition-all"
                     style={{
                       border: `2px solid ${emailError ? "oklch(0.55 0.15 25)" : "oklch(0.88 0.02 148)"}`,

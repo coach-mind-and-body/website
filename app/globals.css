@@ -875,3 +875,8 @@
   font-weight: 700;
   color: oklch(0.20 0.015 50);
 }
+
+/* Safe area padding for notched devices / PWA bottom nav */
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}

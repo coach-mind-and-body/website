@@ -22,7 +22,9 @@ export default function Book() {
   const [submitted, setSubmitted] = useState(false);
 
   const submitLead = trpc.leads.submit.useMutation({
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
+      trackLead({ content_name: "Discovery Call Booking", content_category: "Book a Call" }, variables.eventId);
+      ga.trackLead({ category: "Book a Call", label: "Discovery Call Booking" });
       setSubmitted(true);
     },
     onError: (err) => toast.error(err.message || "Something went wrong. Please try again."),
@@ -36,8 +38,6 @@ export default function Book() {
     }
     const eventId = generateMetaEventId();
     const meta = getMetaParams();
-    trackLead({ content_name: "Discovery Call Booking", content_category: "Book a Call" }, eventId);
-    ga.trackLead({ category: "Book a Call", label: "Discovery Call Booking" });
     submitLead.mutate({ name: name.trim(), email: email.trim(), phone: phone.trim() || undefined, ...meta, eventId });
   };
 
@@ -48,7 +48,7 @@ export default function Book() {
       {/* Hero */}
       <section className="py-16 text-center" style={{ background: "linear-gradient(135deg, oklch(0.93 0.06 75) 0%, oklch(0.97 0.008 10) 60%)" }}>
         <div className="container max-w-2xl mx-auto">
-          <span className="badge-gold mb-4 inline-block">Free Â· 30 Minutes Â· No Commitment</span>
+          <span className="badge-gold mb-4 inline-block">Free · 30 Minutes · No Commitment</span>
           <h1 className="font-bold mb-4" style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(2.2rem, 4.5vw, 3.4rem)", color: "oklch(0.22 0.02 160)" }}>
             Book Your Free Discovery Call
           </h1>

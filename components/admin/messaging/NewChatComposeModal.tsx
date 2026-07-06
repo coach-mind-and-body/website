@@ -40,7 +40,7 @@ import {
 export default function NewChatComposeModal() {
   const router = useRouter();
   const utils = trpc.useContext();
-  const { isNewChatOpen, setIsNewChatOpen, setPaymentModalOpen, setTemplatesModalOpen, newChatPrefill, setNewChatPrefill } =
+  const { isNewChatOpen, setIsNewChatOpen, setActiveChatMeta, setPaymentModalOpen, setTemplatesModalOpen, newChatPrefill, setNewChatPrefill } =
     useInbox();
 
   const [recipientQuery, setRecipientQuery] = useState("");
@@ -103,12 +103,20 @@ export default function NewChatComposeModal() {
 
   const sendSms = trpc.messaging.sendNewMessage.useMutation({
     onSuccess: data => {
+      const contact = selectedContact;
+      const phone = contact?.phone ?? recipientQuery;
+      const name = contact?.name ?? recipientQuery;
       resetForm();
       setIsNewChatOpen(false);
       utils.messaging.listConversations.invalidate();
       toast.success("Message sent successfully!");
       if (data.conversationId) {
-        router.push(`/admin/v2-inbox/chat/${data.conversationId}`);
+        setActiveChatMeta({
+          conversationId: data.conversationId,
+          userId: contact?.userId ?? null,
+          contactPhone: phone,
+          userName: name,
+        });
       }
     },
     onError: err => {

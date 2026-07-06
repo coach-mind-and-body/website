@@ -5,7 +5,7 @@ import { ENV } from "../_core/env";
 import { getDb } from "../db";
 import { fpuOrders, fpuCoachingSessions, fpuLeads } from "../../drizzle/schema";
 import { sendOwnerFpuGroupSignUpEmail, sendFpuGroupSignUpConfirmationEmail } from "../notifications";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, inArray } from "drizzle-orm";
 import { metaTrackingInputSchema } from "@shared/metaTracking";
 import { extractMetaParamsFromRequest, metaParamsToStripeMetadata } from "../metaParamBuilder";
 import { fireMetaPixelLead } from "../metaCapi";
@@ -216,17 +216,27 @@ export const fpuRouter = router({
         )
       )
       .orderBy(fpuOrders.createdAt);
-    const result = await Promise.all(
-      orders.map(async (order) => {
-        const sessions = await db
-          .select()
-          .from(fpuCoachingSessions)
-          .where(eq(fpuCoachingSessions.fpuOrderId, order.id))
-          .orderBy(fpuCoachingSessions.sessionNumber);
-        return { order, sessions };
-      })
-    );
-    return result;
+    const orderIds = orders.map((o) => o.id);
+    const allSessions =
+      orderIds.length > 0
+        ? await db
+            .select()
+            .from(fpuCoachingSessions)
+            .where(inArray(fpuCoachingSessions.fpuOrderId, orderIds))
+            .orderBy(fpuCoachingSessions.sessionNumber)
+        : [];
+
+    const sessionsByOrder = new Map<number, typeof allSessions>();
+    for (const session of allSessions) {
+      const list = sessionsByOrder.get(session.fpuOrderId) ?? [];
+      list.push(session);
+      sessionsByOrder.set(session.fpuOrderId, list);
+    }
+
+    return orders.map((order) => ({
+      order,
+      sessions: sessionsByOrder.get(order.id) ?? [],
+    }));
   }),
 
   /**

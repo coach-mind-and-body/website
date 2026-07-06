@@ -6,10 +6,10 @@ import { desc, eq } from "drizzle-orm";
 import webpush from "web-push";
 
 // Make sure VAPID details are set if we're broadcasting
-const vapidPublic = process.env.VITE_VAPID_PUBLIC_KEY;
-const vapidPrivate = process.env.VAPID_PRIVATE_KEY;
-if (vapidPublic && vapidPrivate) {
-  webpush.setVapidDetails("mailto:leeanne@mindandbodyresetcoach.com", vapidPublic, vapidPrivate);
+const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "";
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
+if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
+  webpush.setVapidDetails("mailto:leeanne@mindandbodyresetcoach.com", VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 }
 
 export const appUpdatesRouter = router({

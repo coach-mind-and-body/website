@@ -117,12 +117,12 @@ export default function Home() {
               <p className="text-lg leading-relaxed mb-8" style={{ color: "oklch(0.35 0.015 50)", maxWidth: "420px" }}>
                 Take this <strong style={{ color: "oklch(0.20 0.015 50)" }}>60 second quiz</strong> to understand where you're stuck with food and what to do about it!
               </p>
-              <a
+              <Link
                 href="/food-quiz"
                 className="btn-gold inline-flex items-center gap-2"
               >
                 Take Quiz Now
-              </a>
+              </Link>
               <div className="flex flex-wrap gap-5 mt-8 justify-center">
                 {["Certified Life Coach", "Certified Health Coach", "Women 40+"].map((tag) => (
                   <div key={tag} className="flex items-center gap-1.5">
@@ -148,7 +148,6 @@ export default function Home() {
                 width={640}
                 height={352}
                 sizes="(max-width: 1024px) 100vw, 640px"
-                priority
               />
             </div>
           </div>
@@ -249,7 +248,6 @@ export default function Home() {
                   width={682}
                   height={1024}
                   sizes="(max-width: 1024px) 100vw, 682px"
-                  priority
                 />
               </div>
             </div>

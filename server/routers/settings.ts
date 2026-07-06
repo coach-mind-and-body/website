@@ -15,7 +15,13 @@ export const settingsRouter = router({
    */
   get: publicProcedure
     .input(z.object({ key: z.string() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
+      const isSensitive =
+        input.key.startsWith("private_") || input.key.toLowerCase().includes("secret");
+      if (isSensitive && ctx.user?.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admins only" });
+      }
+
       const db = await getDb();
       if (!db) return null;
       const rows = await db.select().from(siteSettings).where(eq(siteSettings.key, input.key)).limit(1);

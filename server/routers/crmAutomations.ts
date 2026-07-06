@@ -6,6 +6,7 @@ import { eq, desc, and, isNotNull, ne, or, isNull, asc, gte } from "drizzle-orm"
 import { TRPCError } from "@trpc/server";
 import { resolveContactsByPhones } from "../crm/contactResolver";
 import { enrollUserInSequence } from "../crm/sequenceEnrollment";
+import { processScheduledCampaigns } from "../crm/campaignJob";
 import twilio from "twilio";
 
 export const crmAutomationsRouter = router({
@@ -135,8 +136,7 @@ export const crmAutomationsRouter = router({
         // We do this asynchronously to avoid blocking the request
         setTimeout(async () => {
           try {
-            // campaignJob module not yet ported — immediate send is a no-op for now
-            console.log("[CRM] Immediate campaign send skipped — campaignJob not available");
+            await processScheduledCampaigns();
           } catch (e) {
             console.error("Immediate campaign send failed:", e);
           }

@@ -8,10 +8,19 @@ import AdminModuleAssignment from "../AdminModuleAssignment";
 import AdminClientHabits from "../AdminClientHabits";
 import { toast } from "sonner";
 
+const PAGE_SIZE = 25;
+
 export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) {
-  const { data: contacts, isLoading, refetch } = trpc.leads.unifiedContacts.useQuery();
-  const [selectedContact, setSelectedContact] = useState<any>(null);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [filter, setFilter] = useState<"all" | "reclaim" | "habit" | "leads">("all");
+  const { data: contactsPage, isLoading, refetch } = trpc.leads.unifiedContacts.useQuery({
+    search: search.trim() || undefined,
+    page,
+    pageSize: PAGE_SIZE,
+    filter,
+  });
+  const [selectedContact, setSelectedContact] = useState<any>(null);
   const { setActiveChatMeta, setIsNewChatOpen, setNewChatPrefill } = useInbox();
 
   // Edit details state
@@ -62,20 +71,30 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
     onError: (e) => toast.error(e.message),
   });
 
-  if (isLoading) return <div className="text-sm" style={{ color: "oklch(0.52 0.015 50)" }}>Loading unified CRM contacts...</div>;
+  const contacts = contactsPage?.items ?? [];
+  const total = contactsPage?.total ?? 0;
+  const totalPages = contactsPage?.totalPages ?? 1;
+  const currentPage = contactsPage?.page ?? page;
+  const rangeStart = total === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const rangeEnd = Math.min(currentPage * PAGE_SIZE, total);
 
-  const filteredContacts = (contacts ?? []).filter((c: any) => {
-    if (filter === "all") return true;
-    if (filter === "reclaim") return c.highestStatus === "reclaim";
-    if (filter === "habit") return c.highestStatus === "habit-only";
-    if (filter === "leads") return ["discovery", "fpu", "subscriber"].includes(c.highestStatus);
-    return true;
-  });
+  if (isLoading) return <div className="text-sm" style={{ color: "oklch(0.52 0.015 50)" }}>Loading unified CRM contacts...</div>;
 
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
         <h2 className="font-bold text-2xl" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.20 0.015 50)" }}>Unified Contacts</h2>
+        <input
+          type="search"
+          placeholder="Search by name, email, or phone..."
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+          className="w-full sm:w-64 px-4 py-2 rounded-full text-sm border"
+          style={{ background: "oklch(1 0 0)", borderColor: "oklch(0.90 0.015 80)", color: "oklch(0.20 0.015 50)" }}
+        />
         <div className="flex items-center gap-2 p-1 rounded-full" style={{ background: "oklch(0.96 0.025 50)" }}>
           {([
             { id: "all", label: "All" },
@@ -85,7 +104,10 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
           ] as const).map(t => (
             <button
               key={t.id}
-              onClick={() => setFilter(t.id)}
+              onClick={() => {
+                setFilter(t.id);
+                setPage(1);
+              }}
               className="px-4 py-1.5 rounded-full text-xs font-bold transition-all"
               style={{
                 background: filter === t.id ? "oklch(1 0 0)" : "transparent",
@@ -98,8 +120,34 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
           ))}
         </div>
       </div>
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-sm" style={{ color: "oklch(0.52 0.015 50)" }}>
+          {total === 0 ? "0 of 0 contacts" : `${rangeStart}–${rangeEnd} of ${total} contacts`}
+        </p>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage <= 1}
+            className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-40"
+            style={{ background: "oklch(0.96 0.025 50)", color: "oklch(0.42 0.015 50)" }}
+          >
+            Previous
+          </button>
+          <span className="text-xs font-semibold" style={{ color: "oklch(0.52 0.015 50)" }}>
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={currentPage >= totalPages}
+            className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-40"
+            style={{ background: "oklch(0.96 0.025 50)", color: "oklch(0.42 0.015 50)" }}
+          >
+            Next
+          </button>
+        </div>
+      </div>
       <div className="space-y-3">
-        {filteredContacts.map((contact: any) => (
+        {contacts.map((contact: any) => (
           <button
             key={contact.email}
             onClick={() => setSelectedContact(contact)}
@@ -108,7 +156,7 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
           >
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm" style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}>
-                {contact.name.charAt(0).toUpperCase()}
+                {(contact.name?.[0] ?? "?").toUpperCase()}
               </div>
               <div>
                 <p className="font-bold text-base mb-1" style={{ color: "oklch(0.20 0.015 50)" }}>{contact.name}</p>
