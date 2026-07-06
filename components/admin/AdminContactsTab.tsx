@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
-import { Users, Video, Calendar, Bell, ChevronRight, CheckCircle2 } from "lucide-react";
+import { keepPreviousData } from "@tanstack/react-query";
+import { ChevronRight, CheckCircle2, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { trpc } from "@/lib/trpc";
+import { formatPhoneDisplay, formatPhoneE164 } from "@/lib/phone";
 import { useInbox } from "./messaging/InboxContext";
 import AdminClientSessions from "../AdminClientSessions";
 import AdminModuleAssignment from "../AdminModuleAssignment";
@@ -12,14 +14,28 @@ const PAGE_SIZE = 25;
 
 export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) {
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
   const [filter, setFilter] = useState<"all" | "reclaim" | "habit" | "leads">("all");
-  const { data: contactsPage, isLoading, refetch } = trpc.leads.unifiedContacts.useQuery({
-    search: search.trim() || undefined,
-    page,
-    pageSize: PAGE_SIZE,
-    filter,
-  });
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, filter]);
+
+  const { data: contactsPage, isLoading, isFetching, refetch } = trpc.leads.unifiedContacts.useQuery(
+    {
+      search: debouncedSearch || undefined,
+      page,
+      pageSize: PAGE_SIZE,
+      filter,
+    },
+    { placeholderData: keepPreviousData }
+  );
   const [selectedContact, setSelectedContact] = useState<any>(null);
   const { setActiveChatMeta, setIsNewChatOpen, setNewChatPrefill } = useInbox();
 
@@ -46,7 +62,7 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
       setSelectedContact((prev: any) => ({
         ...prev,
         name: editName,
-        phone: editPhone || null,
+        phone: formatPhoneE164(editPhone) || editPhone || null,
         notes: editNotes || null,
       }));
     },
@@ -78,23 +94,36 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
   const rangeStart = total === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
   const rangeEnd = Math.min(currentPage * PAGE_SIZE, total);
 
-  if (isLoading) return <div className="text-sm" style={{ color: "oklch(0.52 0.015 50)" }}>Loading unified CRM contacts...</div>;
+  const isInitialLoad = isLoading && !contactsPage;
+
+  if (isInitialLoad) {
+    return (
+      <div className="text-sm" style={{ color: "oklch(0.52 0.015 50)" }}>
+        Loading unified CRM contacts...
+      </div>
+    );
+  }
 
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
         <h2 className="font-bold text-2xl" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.20 0.015 50)" }}>Unified Contacts</h2>
-        <input
-          type="search"
-          placeholder="Search by name, email, or phone..."
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-          className="w-full sm:w-64 px-4 py-2 rounded-full text-sm border"
-          style={{ background: "oklch(1 0 0)", borderColor: "oklch(0.90 0.015 80)", color: "oklch(0.20 0.015 50)" }}
-        />
+        <div className="relative w-full sm:w-72">
+          <input
+            type="search"
+            placeholder="Search by name, email, or phone..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full px-4 py-2 pr-9 rounded-full text-sm border"
+            style={{ background: "oklch(1 0 0)", borderColor: "oklch(0.90 0.015 80)", color: "oklch(0.20 0.015 50)" }}
+          />
+          {isFetching && !isInitialLoad && (
+            <Loader2
+              className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin"
+              style={{ color: "oklch(0.52 0.015 50)" }}
+            />
+          )}
+        </div>
         <div className="flex items-center gap-2 p-1 rounded-full" style={{ background: "oklch(0.96 0.025 50)" }}>
           {([
             { id: "all", label: "All" },
@@ -104,10 +133,7 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
           ] as const).map(t => (
             <button
               key={t.id}
-              onClick={() => {
-                setFilter(t.id);
-                setPage(1);
-              }}
+              onClick={() => setFilter(t.id)}
               className="px-4 py-1.5 rounded-full text-xs font-bold transition-all"
               style={{
                 background: filter === t.id ? "oklch(1 0 0)" : "transparent",
@@ -276,13 +302,21 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
                         <div className="space-y-1">
                           <label className="text-xs font-bold uppercase tracking-wider" style={{ color: "oklch(0.52 0.015 50)" }}>Phone</label>
                           <input
-                            type="text"
+                            type="tel"
                             value={editPhone}
                             onChange={(e) => setEditPhone(e.target.value)}
-                            placeholder="e.g. +14358285621"
+                            onBlur={() => {
+                              if (!editPhone.trim()) return;
+                              const e164 = formatPhoneE164(editPhone);
+                              if (e164) setEditPhone(formatPhoneDisplay(e164));
+                            }}
+                            placeholder="e.g. (435) 828-5621"
                             className="w-full px-3 py-2 text-sm rounded-lg border bg-white focus:outline-none focus:ring-1 focus:ring-brand-blue"
                             style={{ borderColor: "oklch(0.90 0.015 80)" }}
                           />
+                          <p className="text-[11px] mt-1" style={{ color: "oklch(0.52 0.015 50)" }}>
+                            Saved as E.164 (+1…) for SMS — any common US format works.
+                          </p>
                         </div>
                         <div className="space-y-1">
                           <label className="text-xs font-bold uppercase tracking-wider" style={{ color: "oklch(0.52 0.015 50)" }}>Notes</label>

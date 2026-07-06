@@ -10,6 +10,7 @@ import { fireMetaPixelLead, fireMetaCrmEvent } from "../metaCapi";
 import { metaTrackingInputSchema } from "@shared/metaTracking";
 import { escapeHtml } from "../../lib/htmlEscape";
 import { getUnifiedContactsPage } from "../crm/unifiedContacts";
+import { formatPhoneE164 } from "../../lib/phone";
 
 function adminOnly(role: string | undefined) {
   if (role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Admins only" });
@@ -166,6 +167,17 @@ export const leadsRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
+      let normalizedPhone: string | null = null;
+      if (input.phone?.trim()) {
+        normalizedPhone = formatPhoneE164(input.phone);
+        if (!normalizedPhone) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Please enter a valid 10-digit US phone number",
+          });
+        }
+      }
+
       // 1. If leadId is provided, update that lead.
       // Else find if any lead matches the email.
       let targetLeadId = input.leadId;
@@ -180,7 +192,7 @@ export const leadsRouter = router({
         await db.update(leads)
           .set({
             name: input.name,
-            phone: input.phone || null,
+            phone: normalizedPhone,
             notes: input.notes !== undefined ? input.notes : undefined,
           })
           .where(eq(leads.id, targetLeadId));
@@ -189,7 +201,7 @@ export const leadsRouter = router({
         await db.insert(leads).values({
           name: input.name,
           email: input.email,
-          phone: input.phone || null,
+          phone: normalizedPhone,
           notes: input.notes,
           status: "contacted",
         });
@@ -209,7 +221,7 @@ export const leadsRouter = router({
         await db.update(users)
           .set({
             name: input.name,
-            phone: input.phone || null,
+            phone: normalizedPhone,
           })
           .where(eq(users.id, targetUserId));
       }

@@ -16,6 +16,7 @@ import {
   type CrmDesignation,
 } from "../crm/contactDesignation";
 import { getMetaPageAccessToken } from "../meta/pageToken";
+import { formatPhoneE164 } from "../../lib/phone";
 
 const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID || "AC_placeholder", process.env.TWILIO_AUTH_TOKEN || "auth_placeholder");
 
@@ -275,8 +276,13 @@ export const messagingRouter = router({
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
+
+      const normalizedPhone = formatPhoneE164(input.phone);
+      if (!normalizedPhone) {
+        throw new Error("Please enter a valid 10-digit US phone number");
+      }
       
-      const phoneMatchSql = sql`REPLACE(REPLACE(REPLACE(REPLACE(${conversations.contactPhone}, '-', ''), ' ', ''), '(', ''), ')', '') LIKE CONCAT('%', RIGHT(${input.phone}, 10))`;
+      const phoneMatchSql = sql`REPLACE(REPLACE(REPLACE(REPLACE(${conversations.contactPhone}, '-', ''), ' ', ''), '(', ''), ')', '') LIKE CONCAT('%', RIGHT(${normalizedPhone}, 10))`;
       const convRows = await db
         .select()
         .from(conversations)
@@ -286,7 +292,7 @@ export const messagingRouter = router({
       if (convRows[0]) return { conversationId: convRows[0].id };
 
       const [result] = await db.insert(conversations).values({
-        contactPhone: input.phone,
+        contactPhone: normalizedPhone,
         status: 'open',
         platform: 'sms'
       });

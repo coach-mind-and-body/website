@@ -50,11 +50,14 @@ function matchesFilter(contact: UnifiedContact, filter: UnifiedContactFilter): b
 }
 
 function matchesSearch(contact: UnifiedContact, search: string): boolean {
-  const q = search.toLowerCase();
+  const q = search.toLowerCase().trim();
+  const qDigits = q.replace(/\D/g, "");
+  const phoneDigits = contact.phone?.replace(/\D/g, "") ?? "";
   return (
     contact.email.toLowerCase().includes(q) ||
     contact.name.toLowerCase().includes(q) ||
-    (contact.phone?.toLowerCase().includes(q) ?? false)
+    (contact.phone?.toLowerCase().includes(q) ?? false) ||
+    (qDigits.length >= 3 && phoneDigits.includes(qDigits))
   );
 }
 

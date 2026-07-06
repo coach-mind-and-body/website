@@ -1,13 +1,11 @@
 // @ts-nocheck
 import { sql, type SQL } from "drizzle-orm";
 import { leads, conversations, users } from "../../drizzle/schema";
+import { formatPhoneE164, normalizePhoneDigits } from "../../lib/phone";
+
+export { formatPhoneE164, normalizePhoneDigits };
 
 type Db = NonNullable<Awaited<ReturnType<typeof import("../db").getDb>>>;
-
-/** Strip formatting and leading country code; returns digits only (no leading 1). */
-export function normalizePhoneDigits(phone: string): string {
-  return phone.replace(/\D/g, "").replace(/^1/, "");
-}
 
 /** SQL fragment matching a phone column against the last 10 digits of `targetPhone`. */
 export function phoneColumnMatchSql(
