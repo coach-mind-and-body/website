@@ -180,16 +180,23 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
       </div>
 
       <Dialog open={!!selectedContact} onOpenChange={(open) => !open && setSelectedContact(null)}>
-        <DialogContent aria-describedby={undefined} className="max-w-7xl w-[95vw] md:w-[85vw] max-h-[85vh] overflow-y-auto" style={{ background: "oklch(0.96 0.025 50)", border: "1px solid oklch(0.90 0.015 80)" }}>
+        <DialogContent
+          aria-describedby={undefined}
+          className="w-[96vw] sm:max-w-[min(96vw,1600px)] max-h-[90vh] overflow-y-auto p-6 md:p-8"
+          style={{ background: "oklch(0.96 0.025 50)", border: "1px solid oklch(0.90 0.015 80)" }}
+        >
           {selectedContact && (
             <>
-              <DialogHeader>
-                <div className="flex justify-between items-start">
-                  <div>
+              <DialogHeader className="w-full text-left pr-10">
+                <div className="flex flex-wrap items-center justify-between gap-4 w-full">
+                  <div className="min-w-0 flex-1">
                     <DialogTitle style={{ color: "oklch(0.20 0.015 50)", fontSize: "1.5rem", fontFamily: "'Cormorant Garamond', serif" }}>
                       {selectedContact.name}
                     </DialogTitle>
-                    <p className="text-sm" style={{ color: "oklch(0.52 0.015 50)" }}>{selectedContact.email} {selectedContact.phone && `• ${selectedContact.phone}`}</p>
+                    <p className="text-sm mt-1 flex flex-wrap items-center gap-x-3 gap-y-1" style={{ color: "oklch(0.52 0.015 50)" }}>
+                      <span className="break-all">{selectedContact.email}</span>
+                      {selectedContact.phone && <span className="shrink-0">• {selectedContact.phone}</span>}
+                    </p>
                   </div>
                   <button
                     onClick={() => {
@@ -206,7 +213,7 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
                       }
                     }}
                     disabled={getOrCreateConversation.isPending}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all shadow hover:-translate-y-0.5"
+                    className="shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow hover:-translate-y-0.5 whitespace-nowrap"
                     style={{ background: "oklch(0.20 0.015 50)", color: "white" }}
                   >
                     {getOrCreateConversation.isPending ? "Opening..." : "Send Message"}
@@ -214,9 +221,9 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
                 </div>
               </DialogHeader>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-6">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 mt-6">
                 {/* Left column: Contact Info Details and Editing Form */}
-                <div className="lg:col-span-1 space-y-6">
+                <div className="md:col-span-4 space-y-6">
                   <div className="bg-white rounded-xl shadow p-5 border border-slate-100 space-y-4">
                     <div className="flex justify-between items-center border-b pb-3 mb-2">
                       <h3 className="font-bold text-lg" style={{ color: "oklch(0.20 0.015 50)", fontFamily: "'Cormorant Garamond', serif" }}>
@@ -325,7 +332,7 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
                 </div>
 
                 {/* Right column: Timeline & Sessions */}
-                <div className="lg:col-span-2 space-y-8">
+                <div className="md:col-span-8 space-y-8 min-w-0">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: "oklch(0.52 0.015 50)" }}>Journey Timeline</p>
                     <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-[oklch(0.90_0.015_80)] before:to-transparent">
@@ -348,21 +355,19 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
                   {selectedContact.leadId && selectedContact.leadStatus !== 'enrolled' && (
                     <div className="p-5 rounded-xl border" style={{ borderColor: "oklch(0.90 0.015 80)", background: "oklch(0.96 0.025 50)" }}>
                       <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "oklch(0.52 0.015 50)" }}>Discovery Call Management</p>
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
                         <span className="text-sm" style={{ color: "oklch(0.20 0.015 50)" }}>Current Status: <strong className="capitalize">{selectedContact.leadStatus}</strong></span>
-                        <div className="flex gap-2">
-                          <button 
-                            onClick={() => {
-                              updateLeadStatus.mutate({ id: selectedContact.leadId, status: "enrolled" });
-                              setSelectedContact({ ...selectedContact, leadStatus: "enrolled", highestStatus: "reclaim" });
-                            }}
-                            disabled={updateLeadStatus.isPending}
-                            className="px-4 py-2 text-xs font-bold rounded-lg transition-all"
-                            style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}
-                          >
-                            {updateLeadStatus.isPending ? "Updating..." : "Mark as Enrolled"}
-                          </button>
-                        </div>
+                        <button 
+                          onClick={() => {
+                            updateLeadStatus.mutate({ id: selectedContact.leadId, status: "enrolled" });
+                            setSelectedContact({ ...selectedContact, leadStatus: "enrolled", highestStatus: "reclaim" });
+                          }}
+                          disabled={updateLeadStatus.isPending}
+                          className="shrink-0 px-4 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap"
+                          style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}
+                        >
+                          {updateLeadStatus.isPending ? "Updating..." : "Mark as Enrolled"}
+                        </button>
                       </div>
                     </div>
                   )}
