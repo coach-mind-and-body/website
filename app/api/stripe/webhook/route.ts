@@ -395,7 +395,7 @@ async function processStripeEvent(event: Stripe.Event) {
                   .where(
                     and(
                       eq(sequenceEnrollments.subscriberId, subscriber.id),
-                      eq(sequenceEnrollments.sequenceId, "snackHackSequence")
+                      eq(sequenceEnrollments.sequenceId, "snack_hack_nurture")
                     )
                   );
                   
