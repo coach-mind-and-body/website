@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { and, desc, eq, like, or, sql, type AnyColumn } from "drizzle-orm";
 import { getDb } from "../db";
 import {
@@ -63,7 +62,7 @@ export async function searchContactsForCompose(
       name: users.name,
       email: users.email,
       phone: users.phone,
-      isPremium: users.isPremium,
+      role: users.role,
     })
     .from(users)
     .where(nameEmailPhoneMatch(users.name, users.email, users.phone, qLower, phonePattern))
@@ -75,7 +74,7 @@ export async function searchContactsForCompose(
       name: u.name || "Unknown",
       phone: u.phone,
       email: u.email,
-      source: u.isPremium ? "Premium" : "Customer",
+      source: u.role === "admin" ? "Admin" : "Customer",
       userId: u.id,
     });
   }
@@ -117,6 +116,13 @@ export async function searchContactsForCompose(
     convConditions.push(like(conversations.contactPhone, phonePattern));
   }
 
+  const platformFilter = or(
+    eq(conversations.platform, "sms"),
+    eq(conversations.platform, "whatsapp")
+  );
+  const contactFilter =
+    convConditions.length === 1 ? convConditions[0]! : or(...convConditions);
+
   const convRows = await db
     .select({
       convId: conversations.id,
@@ -126,12 +132,7 @@ export async function searchContactsForCompose(
     })
     .from(conversations)
     .leftJoin(users, eq(conversations.userId, users.id))
-    .where(
-      and(
-        or(eq(conversations.platform, "sms"), eq(conversations.platform, "whatsapp")),
-        or(...convConditions)
-      )
-    )
+    .where(and(platformFilter, contactFilter))
     .orderBy(desc(conversations.lastMessageAt))
     .limit(MAX_RESULTS);
 
