@@ -6,6 +6,12 @@ import {
   users,
 } from "../../drizzle/schema";
 import { normalizePhoneDigits } from "./contactResolver";
+import {
+  designationLabel,
+  loadDesignationContext,
+  resolveDesignation,
+  type CrmDesignation,
+} from "./contactDesignation";
 import type { ComposeContactHit } from "../../lib/composeRecipient";
 
 export type { ComposeContactHit };
@@ -31,6 +37,17 @@ function nameEmailPhoneMatch(
   return or(...conditions);
 }
 
+function hitFromDesignation(
+  designation: CrmDesignation,
+  base: Omit<ComposeContactHit, "source" | "designation">
+): ComposeContactHit {
+  return {
+    ...base,
+    designation,
+    source: designationLabel(designation),
+  };
+}
+
 export async function searchContactsForCompose(
   query: string
 ): Promise<ComposeContactHit[]> {
@@ -43,6 +60,7 @@ export async function searchContactsForCompose(
   const qLower = `%${q.toLowerCase()}%`;
   const digits = q.replace(/\D/g, "");
   const phonePattern = digits.length >= 3 ? `%${digits}%` : null;
+  const { reclaimUserIds, fpuEmails } = await loadDesignationContext(db);
 
   const hits: ComposeContactHit[] = [];
   const seenKeys = new Set<string>();
@@ -69,14 +87,22 @@ export async function searchContactsForCompose(
     .limit(MAX_RESULTS);
 
   for (const u of userRows) {
-    addHit({
-      id: `user-${u.id}`,
-      name: u.name || "Unknown",
-      phone: u.phone,
-      email: u.email,
-      source: u.role === "admin" ? "Admin" : "Customer",
+    const designation = resolveDesignation({
       userId: u.id,
+      email: u.email,
+      role: u.role,
+      reclaimUserIds,
+      fpuEmails,
     });
+    addHit(
+      hitFromDesignation(designation, {
+        id: `user-${u.id}`,
+        name: u.name || "Unknown",
+        phone: u.phone,
+        email: u.email,
+        userId: u.id,
+      })
+    );
   }
 
   const leadRows = await db
@@ -85,6 +111,7 @@ export async function searchContactsForCompose(
       name: leads.name,
       email: leads.email,
       phone: leads.phone,
+      status: leads.status,
     })
     .from(leads)
     .where(
@@ -99,14 +126,21 @@ export async function searchContactsForCompose(
     .limit(MAX_RESULTS);
 
   for (const l of leadRows) {
-    addHit({
-      id: `lead-${l.id}`,
-      name: l.name || "Unknown",
-      phone: l.phone,
+    const designation = resolveDesignation({
       email: l.email,
-      source: "Lead",
-      userId: null,
+      leadStatus: l.status,
+      reclaimUserIds,
+      fpuEmails,
     });
+    addHit(
+      hitFromDesignation(designation, {
+        id: `lead-${l.id}`,
+        name: l.name || "Unknown",
+        phone: l.phone,
+        email: l.email,
+        userId: null,
+      })
+    );
   }
 
   const convConditions = [
@@ -128,6 +162,9 @@ export async function searchContactsForCompose(
       convId: conversations.id,
       contactPhone: conversations.contactPhone,
       userName: users.name,
+      userId: users.id,
+      userEmail: users.email,
+      userRole: users.role,
       platform: conversations.platform,
     })
     .from(conversations)
@@ -137,13 +174,26 @@ export async function searchContactsForCompose(
     .limit(MAX_RESULTS);
 
   for (const c of convRows) {
+    const designation = resolveDesignation({
+      userId: c.userId,
+      email: c.userEmail,
+      role: c.userRole,
+      reclaimUserIds,
+      fpuEmails,
+    });
+    const platformLabel = c.platform === "whatsapp" ? "WhatsApp" : "Recent chat";
+    const source =
+      designation === "customer" || designation === "lead"
+        ? platformLabel
+        : designationLabel(designation);
     addHit({
       id: `conv-${c.convId}`,
       name: c.userName || c.contactPhone || "Unknown",
       phone: c.contactPhone,
-      email: null,
-      source: c.platform === "whatsapp" ? "WhatsApp" : "Recent chat",
-      userId: null,
+      email: c.userEmail,
+      designation,
+      source,
+      userId: c.userId,
     });
   }
 

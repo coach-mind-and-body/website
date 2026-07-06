@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Phone, ArrowLeft, Plane, Loader2, MessageSquare, CreditCard, Star, Paperclip, Workflow, Link2, Video, Send, Clock, FileText, ChevronRight, RotateCcw } from "lucide-react";
+import { Phone, ArrowLeft, Loader2, MessageSquare, CreditCard, Star, Paperclip, Workflow, Link2, Video, Send, Clock, FileText, ChevronRight, RotateCcw } from "lucide-react";
 import { useInboxPollInterval } from "@/lib/useInboxPollInterval";
 import { toast } from "sonner";
 import { isToday, isYesterday, format } from "date-fns";
@@ -235,7 +235,11 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
           >
             <p className="font-bold text-[15px] text-slate-900 leading-tight truncate px-1 flex items-center justify-center gap-1.5">
               {activeName}
-              {Boolean(activeChat?.conversation?.isPremium) && <Plane className="h-4 w-4 text-amber-500 fill-amber-500 shrink-0" />}
+              {activeChat?.conversation?.designation === "reclaim" && (
+                <Badge className="bg-emerald-600 hover:bg-emerald-600 text-[9px] uppercase tracking-wide px-1.5 py-0 h-4 shrink-0">
+                  Reclaim
+                </Badge>
+              )}
               <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors -ml-1" />
             </p>
             <p className="text-[11px] text-slate-500 font-medium truncate px-1 mt-0.5 tracking-wide">{activePhone !== "Unknown" ? (activeChat?.conversation?.platform === 'facebook' || activeChat?.conversation?.platform === 'instagram' ? (activeChat?.conversation?.platform === 'instagram' ? 'Instagram Chat' : 'Facebook Messenger') : activePhone) : "No phone number"}</p>

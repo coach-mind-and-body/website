@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import Link from "next/link";
-import { Plane, Check, Edit2, Phone, Mail, Users, Tag, Plus, Loader2, Workflow, Clock, CreditCard } from "lucide-react";
+import { Check, Edit2, Phone, Mail, Users, Tag, Plus, Loader2, Workflow, Clock, CreditCard } from "lucide-react";
 import { useInboxPollInterval } from "@/lib/useInboxPollInterval";
 import { toast } from "sonner";
 import type { Lead } from "@/drizzle/schema";
@@ -188,11 +188,18 @@ function CustomerProfilePaneContent({ chatId }: { chatId: number }) {
             <div className="flex flex-col gap-1">
               <h2 className="text-xl font-bold text-slate-800 truncate pr-2 flex items-center gap-2">
                 {activeName}
-                {Boolean(activeChat?.conversation?.isPremium) && <Plane className="h-5 w-5 text-amber-500 fill-amber-500 shrink-0" />}
               </h2>
-              {Boolean(activeChat?.conversation?.isPremium) && (
-                <Badge variant="default" className="bg-amber-500 hover:bg-amber-600 w-fit text-[10px] uppercase tracking-wide">
-                  Premium Subscriber
+              {activeChat?.conversation?.designationLabel &&
+                activeChat.conversation.designation !== "customer" && (
+                <Badge
+                  variant="default"
+                  className={
+                    activeChat.conversation.designation === "reclaim"
+                      ? "bg-emerald-600 hover:bg-emerald-600 w-fit text-[10px] uppercase tracking-wide"
+                      : "bg-slate-600 hover:bg-slate-600 w-fit text-[10px] uppercase tracking-wide"
+                  }
+                >
+                  {activeChat.conversation.designationLabel}
                 </Badge>
               )}
             </div>

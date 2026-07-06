@@ -14,6 +14,21 @@ type Props = {
   onSelect: (contact: ComposeContactHit | null) => void;
 };
 
+function designationBadgeClass(designation?: string): string {
+  switch (designation) {
+    case "reclaim":
+      return "bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-emerald-200";
+    case "fpu":
+      return "bg-blue-100 text-blue-800 hover:bg-blue-100 border-blue-200";
+    case "admin":
+      return "bg-purple-100 text-purple-800 hover:bg-purple-100 border-purple-200";
+    case "discovery":
+      return "bg-amber-100 text-amber-800 hover:bg-amber-100 border-amber-200";
+    default:
+      return "";
+  }
+}
+
 function formatPhoneDisplay(phone: string): string {
   const digits = phone.replace(/\D/g, "").replace(/^1/, "");
   if (digits.length === 10) {
@@ -127,7 +142,10 @@ export default function ContactRecipientPicker({
                   <span className="text-sm font-medium text-slate-900 truncate">
                     {contact.name}
                   </span>
-                  <Badge variant="secondary" className="text-[10px] shrink-0">
+                  <Badge
+                    variant="secondary"
+                    className={`text-[10px] shrink-0 ${designationBadgeClass(contact.designation)}`}
+                  >
                     {contact.source}
                   </Badge>
                 </div>

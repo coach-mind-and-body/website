@@ -4,6 +4,7 @@ export type ComposeContactHit = {
   phone: string | null;
   email: string | null;
   source: string;
+  designation?: string;
   userId: number | null;
 };
 

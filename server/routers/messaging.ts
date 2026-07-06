@@ -8,9 +8,27 @@ import twilio from "twilio";
 import { shortenLink } from "../crm/automations";
 import { resolveContactByPhone } from "../crm/contactResolver";
 import { searchContactsForCompose } from "../crm/searchContactsForCompose";
+import {
+  designationLabel,
+  loadDesignationContext,
+  mergeDesignations,
+  resolveDesignation,
+  type CrmDesignation,
+} from "../crm/contactDesignation";
 import { getMetaPageAccessToken } from "../meta/pageToken";
 
 const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID || "AC_placeholder", process.env.TWILIO_AUTH_TOKEN || "auth_placeholder");
+
+type ConversationRow = typeof conversations.$inferSelect;
+
+type InboxConversationRow = ConversationRow & {
+  userId: number | null;
+  contactEmail?: string | null;
+  userName?: string | null;
+  designation: CrmDesignation;
+  designationLabel: string;
+  lastMessagePreview?: string | null;
+};
 
 export const messagingRouter = router({
   // Fetch all conversations for the inbox sidebar
@@ -21,13 +39,16 @@ export const messagingRouter = router({
     const phoneMatchSql = sql`REPLACE(REPLACE(REPLACE(REPLACE(${leads.phone}, '-', ''), ' ', ''), '(', ''), ')', '') LIKE CONCAT('%', RIGHT(${conversations.contactPhone}, 10))`;
     const userPhoneMatchSql = sql`REPLACE(REPLACE(REPLACE(REPLACE(${users.phone}, '-', ''), ' ', ''), '(', ''), ')', '') LIKE CONCAT('%', RIGHT(${conversations.contactPhone}, 10))`;
 
+    const { reclaimUserIds, fpuEmails } = await loadDesignationContext(db);
+
     const raw = await db.select({
       conv: conversations,
       matchedUserId: users.id,
       userName: users.name,
       userEmail: users.email,
-      isPremium: sql`false`,
-      leadName: leads.name
+      userRole: users.role,
+      leadName: leads.name,
+      leadStatus: leads.status,
     })
       .from(conversations)
       .leftJoin(users, or(eq(conversations.userId, users.id), userPhoneMatchSql))
@@ -35,7 +56,7 @@ export const messagingRouter = router({
       .orderBy(desc(conversations.lastMessageAt));
     
     // De-duplicate if a phone number matches multiple leads, just group them
-    const uniqueMap = new Map();
+    const uniqueMap = new Map<string, InboxConversationRow>();
     raw.forEach(r => {
       let key = `id_${r.conv.id}`;
       if (r.conv.contactPhone && (r.conv.platform === "sms" || r.conv.platform === "whatsapp")) {
@@ -46,25 +67,36 @@ export const messagingRouter = router({
       }
 
       const resolvedUserId = r.conv.userId ?? r.matchedUserId ?? null;
+      const designation = resolveDesignation({
+        userId: resolvedUserId,
+        email: r.conv.contactEmail || r.userEmail,
+        role: r.userRole,
+        leadStatus: r.leadStatus,
+        reclaimUserIds,
+        fpuEmails,
+      });
 
       if (!uniqueMap.has(key)) {
         uniqueMap.set(key, { 
           ...r.conv,
           userId: resolvedUserId,
           contactEmail: r.conv.contactEmail || r.userEmail,
-          userName: r.userName || r.leadName, 
-          isPremium: r.isPremium 
+          userName: r.userName || r.leadName,
+          designation,
+          designationLabel: designationLabel(designation),
         });
       } else {
-        const existing = uniqueMap.get(key);
+        const existing = uniqueMap.get(key)!;
         const combinedUnread = (existing.unreadCount || 0) + (r.conv.unreadCount || 0);
+        const mergedDesignation = mergeDesignations(existing.designation, designation);
         if (new Date(r.conv.lastMessageAt || 0).getTime() > new Date(existing.lastMessageAt || 0).getTime()) {
            uniqueMap.set(key, { 
             ...r.conv,
             userId: resolvedUserId ?? existing.userId,
             contactEmail: r.conv.contactEmail || r.userEmail || existing.contactEmail,
-            userName: r.userName || r.leadName || existing.userName, 
-            isPremium: r.isPremium || existing.isPremium,
+            userName: r.userName || r.leadName || existing.userName,
+            designation: mergedDesignation,
+            designationLabel: designationLabel(mergedDesignation),
             unreadCount: combinedUnread
           });
         } else {
@@ -72,7 +104,8 @@ export const messagingRouter = router({
            if (!existing.userId && resolvedUserId) existing.userId = resolvedUserId;
            if (!existing.contactEmail) existing.contactEmail = r.conv.contactEmail || r.userEmail;
            if (!existing.userName) existing.userName = r.userName || r.leadName;
-           if (!existing.isPremium) existing.isPremium = r.isPremium;
+           existing.designation = mergeDesignations(existing.designation, designation);
+           existing.designationLabel = designationLabel(existing.designation);
         }
       }
     });
@@ -167,23 +200,26 @@ export const messagingRouter = router({
       }
 
       if (input.userId) {
-        const [user] = await db
-          .select({
-            subscriptionExpiresAt: users.createdAt,
-            isPremium: sql`false`,
-          })
-          .from(users)
-          .where(eq(users.id, input.userId))
-          .limit(1);
+        const { reclaimUserIds } = await loadDesignationContext(db);
+        if (reclaimUserIds.has(input.userId)) {
+          const [enrollment] = await db
+            .select({ enrolledAt: enrollments.enrolledAt })
+            .from(enrollments)
+            .where(
+              and(
+                eq(enrollments.userId, input.userId),
+                eq(enrollments.program, "reclaim"),
+                inArray(enrollments.status, ["pending", "active"])
+              )
+            )
+            .orderBy(desc(enrollments.enrolledAt))
+            .limit(1);
 
-        if (user?.isPremium && user.subscriptionExpiresAt) {
-          const exp = new Date(user.subscriptionExpiresAt);
-          const daysUntil = (exp.getTime() - Date.now()) / 86400000;
-          if (daysUntil > 0 && daysUntil <= 30) {
+          if (enrollment?.enrolledAt) {
             reminders.push({
-              label: "Premium subscription renews",
-              date: exp,
-              type: "renewal",
+              label: "Reclaim client — active enrollment",
+              date: enrollment.enrolledAt,
+              type: "reclaim",
             });
           }
         }
@@ -263,13 +299,16 @@ export const messagingRouter = router({
     .query(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
+      const { reclaimUserIds, fpuEmails } = await loadDesignationContext(db);
+
       const convoRaw = await db.select({
         conv: conversations,
         matchedUserId: users.id,
         userName: users.name,
         userEmail: users.email,
-        isPremium: sql`false`,
-        leadName: leads.name
+        userRole: users.role,
+        leadName: leads.name,
+        leadStatus: leads.status,
       }).from(conversations)
       .leftJoin(users, or(eq(conversations.userId, users.id), sql`REPLACE(REPLACE(REPLACE(REPLACE(${users.phone}, '-', ''), ' ', ''), '(', ''), ')', '') LIKE CONCAT('%', RIGHT(${conversations.contactPhone}, 10))`))
       .leftJoin(leads, sql`REPLACE(REPLACE(REPLACE(REPLACE(${leads.phone}, '-', ''), ' ', ''), '(', ''), ')', '') LIKE CONCAT('%', RIGHT(${conversations.contactPhone}, 10))`)
@@ -338,13 +377,23 @@ export const messagingRouter = router({
         }))
       ].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
+      const designation = resolveDesignation({
+        userId: resolvedUserId,
+        email: convo.conv.contactEmail || convo.userEmail,
+        role: convo.userRole,
+        leadStatus: convo.leadStatus,
+        reclaimUserIds,
+        fpuEmails,
+      });
+
       return {
         conversation: {
           ...convo.conv,
           userId: resolvedUserId,
           contactEmail: convo.conv.contactEmail || convo.userEmail,
           userName: convo.userName || convo.leadName,
-          isPremium: convo.isPremium,
+          designation,
+          designationLabel: designationLabel(designation),
         },
         messages: combined,
       };
