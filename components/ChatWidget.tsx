@@ -255,8 +255,8 @@ export default function ChatWidget() {
         .join("") ?? "",
   }));
 
-  // Hide the chat widget entirely on the habit-tracker app
-  if (pathname?.startsWith("/habit-tracker")) {
+  // Hide on focused conversion flows and the habit-tracker app
+  if (pathname?.startsWith("/habit-tracker") || pathname?.startsWith("/snack-hack")) {
     return null;
   }
 
