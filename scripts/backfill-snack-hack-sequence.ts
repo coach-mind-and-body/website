@@ -34,7 +34,7 @@ async function main() {
       .from(sequenceEnrollments)
       .where(
         and(
-          eq(sequenceEnrollments.subscriberId, lead.id),
+          eq(sequenceEnrollments.userId, lead.id),
           eq(sequenceEnrollments.sequenceId, SNACK_HACK_SEQUENCE_ID)
         )
       )
@@ -54,8 +54,7 @@ async function main() {
         .update(sequenceEnrollments)
         .set({
           createdAt: lead.createdAt,
-          currentStep: 0,
-          lastEmailedAt: null,
+          currentStepId: 0,
           status: "active",
         })
         .where(eq(sequenceEnrollments.id, existing[0].id));

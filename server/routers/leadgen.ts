@@ -98,11 +98,17 @@ export const leadgenRouter = router({
         clientName: input.firstName || "Friend",
       });
 
-      await enrollUserInSequence(
+      const enrolled = await enrollUserInSequence(
         input.email,
         input.firstName ?? null,
         SNACK_HACK_SEQUENCE_ID
       );
+      if (!enrolled) {
+        console.error(
+          "[LeadGen] Failed to enroll snack-hack lead in nurture sequence:",
+          input.email
+        );
+      }
 
       return { success: true };
     }),
