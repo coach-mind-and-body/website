@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,8 +31,17 @@ const formSchema = z.object({
 export default function SnackHackLeadGen() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const subscribeMutation = trpc.leadgen.subscribeSnackHack.useMutation();
-  const { trackLead } = useMetaPixel();
+  const { trackViewContent, trackLead } = useMetaPixel();
   const ga = useGoogleAnalytics();
+
+  useEffect(() => {
+    trackViewContent({
+      content_name: "Snack Hack Download",
+      content_category: "Lead Generation",
+      content_type: "product",
+    });
+    ga.trackViewContent({ item_name: "Snack Hack Download", item_category: "Lead Generation" });
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
