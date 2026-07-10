@@ -1,12 +1,21 @@
 // Mind & Body Reset — Brand Constants
 // Single source of truth for all brand config, URLs, and copy
 
+/** Canonical production origin (apex, no www). Use everywhere for SEO. */
+export const SITE_URL = "https://mindandbodyresetcoach.com";
+
+export function absoluteUrl(path = "/"): string {
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  const p = path.startsWith("/") ? path : `/${path}`;
+  return `${SITE_URL}${p}`;
+}
+
 export const BRAND = {
   name: "Mind & Body Reset",
   tagline: "Reclaim Your Body. Rewire Your Mind. Reset Your Life.",
   coachName: "Lee Anne",
-  coachFullName: "Lee Anne",
-  website: "https://mindandbodyresetcoach.com",
+  coachFullName: "Lee Anne Chapman",
+  website: SITE_URL,
   logoUrl: "/logo-new.jpg",
   logoWideUrl: "/logo-wide.jpg",
 } as const;

@@ -3,26 +3,41 @@ import "./globals.css";
 import { Providers } from "./providers";
 import Script from "next/script";
 import MetaParamBuilder from "@/components/MetaParamBuilder";
+import { SITE_URL, absoluteUrl, BRAND } from "@shared/brand";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://www.mindandbodyresetcoach.com"),
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: "Mind & Body Reset | Health & Life Coaching for Women 40+",
+    default: "Health Coach for Women Over 40 | Mind & Body Reset",
     template: "%s | Mind and Body Reset",
   },
-  description: "Stop 'starting over' and reclaim your health. Lee Anne Chapman helps women 40+ balance hormones, fix insulin resistance, and build lasting habits.",
-  keywords: ["health coach", "life coach", "women over 40", "hormone balance", "insulin resistance", "weight loss", "midlife health", "Utah health coach"],
+  description:
+    "Lee Anne Chapman helps women 40+ balance hormones, reverse insulin resistance, quiet food noise, and build lasting habits — without another diet. Book a free discovery call.",
+  keywords: [
+    "health coach for women over 40",
+    "midlife health coach",
+    "insulin resistance coach",
+    "perimenopause weight loss",
+    "hormone balance women 40",
+    "food freedom coaching",
+    "life coach Utah",
+    "Lee Anne Chapman",
+    "Mind and Body Reset",
+  ],
+  authors: [{ name: "Lee Anne Chapman", url: absoluteUrl("/about") }],
+  creator: "Lee Anne Chapman",
   openGraph: {
-    title: "Mind & Body Reset",
-    description: "Reclaim your health, balance hormones, and reverse insulin resistance with Lee Anne Chapman.",
-    url: "https://www.mindandbodyresetcoach.com",
+    title: "Health Coach for Women Over 40 | Mind & Body Reset",
+    description:
+      "Reclaim your health, balance hormones, and reverse insulin resistance with certified coach Lee Anne Chapman.",
+    url: SITE_URL,
     siteName: "Mind and Body Reset",
     images: [
       {
         url: "/logo-new.jpg",
         width: 800,
         height: 800,
-        alt: "Mind and Body Reset Logo",
+        alt: "Mind and Body Reset — Health coaching for women 40+",
       },
     ],
     locale: "en_US",
@@ -30,9 +45,16 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Mind & Body Reset",
-    description: "Reclaim your health, balance hormones, and reverse insulin resistance.",
+    title: "Health Coach for Women Over 40 | Mind & Body Reset",
+    description:
+      "Reclaim your health, balance hormones, and reverse insulin resistance with Lee Anne Chapman.",
     images: ["/logo-new.jpg"],
+  },
+  alternates: {
+    canonical: SITE_URL,
+    types: {
+      "application/rss+xml": absoluteUrl("/feed.xml"),
+    },
   },
   robots: {
     index: true,
@@ -62,31 +84,69 @@ export const viewport: Viewport = {
 
 const jsonLd = {
   "@context": "https://schema.org",
-  "@type": "HealthAndBeautyBusiness",
-  "name": "Mind and Body Reset",
-  "image": "https://www.mindandbodyresetcoach.com/logo-new.jpg",
-  "@id": "https://www.mindandbodyresetcoach.com/",
-  "url": "https://www.mindandbodyresetcoach.com/",
-  "priceRange": "$$",
-  "address": {
-    "@type": "PostalAddress",
-    "addressLocality": "Wasatch Front",
-    "addressRegion": "UT",
-    "addressCountry": "US"
-  },
-  "geo": {
-    "@type": "GeoCoordinates",
-    "latitude": 40.7608,
-    "longitude": -111.8910
-  },
-  "sameAs": [
-    "https://www.instagram.com/mindandbodyresetcoach/"
+  "@graph": [
+    {
+      "@type": "HealthAndBeautyBusiness",
+      "@id": `${SITE_URL}/#business`,
+      name: "Mind and Body Reset",
+      image: absoluteUrl("/logo-new.jpg"),
+      url: SITE_URL,
+      priceRange: "$$",
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: "Wasatch Front",
+        addressRegion: "UT",
+        addressCountry: "US",
+      },
+      geo: {
+        "@type": "GeoCoordinates",
+        latitude: 40.7608,
+        longitude: -111.891,
+      },
+      sameAs: ["https://www.instagram.com/mindandbodyresetcoach/"],
+      description:
+        "Mind and Body Reset helps women over 40 reclaim their health, balance hormones, and reverse insulin resistance through coaching with Lee Anne Chapman.",
+      founder: { "@id": `${SITE_URL}/#person` },
+      areaServed: {
+        "@type": "Country",
+        name: "United States",
+      },
+    },
+    {
+      "@type": "Person",
+      "@id": `${SITE_URL}/#person`,
+      name: "Lee Anne Chapman",
+      jobTitle: "Certified Life Coach and Certified Health Coach",
+      description:
+        "Certified life and health coach helping women 40+ with midlife health, hormonal changes, food freedom, and sustainable habits.",
+      url: absoluteUrl("/about"),
+      image: absoluteUrl("/logo-new.jpg"),
+      worksFor: { "@id": `${SITE_URL}/#business` },
+      knowsAbout: [
+        "midlife health",
+        "insulin resistance",
+        "hormone balance",
+        "perimenopause",
+        "food freedom",
+        "habit coaching",
+      ],
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: "Wasatch Front",
+        addressRegion: "UT",
+        addressCountry: "US",
+      },
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#website`,
+      url: SITE_URL,
+      name: BRAND.name,
+      description: BRAND.tagline,
+      publisher: { "@id": `${SITE_URL}/#business` },
+      inLanguage: "en-US",
+    },
   ],
-  "description": "Mind and Body Reset helps women over 40 reclaim their health, balance hormones, and reverse insulin resistance.",
-  "founder": {
-    "@type": "Person",
-    "name": "Lee Anne Chapman"
-  }
 };
 
 export default function RootLayout({

@@ -2,7 +2,8 @@ import FinancialPeaceThankYouClient from './FinancialPeaceThankYouClient';
 
 export const metadata = {
   title: "FPU Registration Confirmed | Mind and Body Reset",
-  description: "Your Financial Peace University registration is confirmed. Get ready to take control of your finances with Lee Anne Chapman."
+  description: "Your Financial Peace University registration is confirmed.",
+  robots: { index: false, follow: false },
 };
 
 export default function Page() {

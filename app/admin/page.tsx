@@ -6,7 +6,8 @@ import SlideOutChat from '@/components/admin/SlideOutChat';
 
 export const metadata = {
   title: "Admin Dashboard | Mind and Body Reset",
-  description: "Mind & Body Reset administration dashboard for managing content, users, and site settings."
+  description: "Mind & Body Reset administration dashboard for managing content, users, and site settings.",
+  robots: { index: false, follow: false },
 };
 
 export default function Page() {

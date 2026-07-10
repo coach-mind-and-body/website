@@ -9,14 +9,13 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
-import { BRAND } from "@shared/brand";
+import { BRAND, SITE_URL } from "@shared/brand";
 import { trpc } from "@/lib/trpc";
 import { NewsletterInline, NewsletterPopup } from "@/components/NewsletterSignup";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
 
 
 // ── Share Buttons component ──────────────────────────────────────────────────
-const SITE_URL = "https://www.mindandbodyresetcoach.com";
 
 function ShareButtons({ title, slug }: { title: string; slug: string }) {
   const [copied, setCopied] = useState(false);
@@ -113,8 +112,11 @@ function ShareButtons({ title, slug }: { title: string; slug: string }) {
 // ── Related Posts component ───────────────────────────────────────────────────
 const STATIC_RELATED_COVERS: Record<string, string> = {
   "midlife-body-image": "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/midlife-body-image_60942928.jpg",
+  "midlife-body-image-your-body-is-not-a-before-picture": "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/midlife-body-image_60942928.jpg",
   "embrace-reflection": "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/reflection_bd3fd046.jpg",
+  "embrace-reflection-shifting-from-fault-finding-to-self-awareness": "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/reflection_bd3fd046.jpg",
   "calming-food-noise": "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/food-noise_ce014448.jpg",
+  "calming-food-noise-drop-the-food-courtroom": "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/food-noise_ce014448.jpg",
 };
 
 function RelatedPosts({ slug, category }: { slug: string; category?: string }) {
@@ -297,7 +299,7 @@ export default function BlogPost() {
       // Update canonical
       let canonical = document.querySelector('link[rel="canonical"]');
       if (!canonical) { canonical = document.createElement('link'); (canonical as HTMLLinkElement).setAttribute('rel', 'canonical'); document.head.appendChild(canonical); }
-      (canonical as HTMLLinkElement).setAttribute('href', `https://mindandbodyresetcoach.com/health-wellness-blog/${post.slug}`);
+      (canonical as HTMLLinkElement).setAttribute('href', `${SITE_URL}/health-wellness-blog/${post.slug}`);
 
       // Inject JSON-LD schema markup
       const existingSchemas = document.querySelectorAll('script[data-schema="blog-post"]');
@@ -306,7 +308,7 @@ export default function BlogPost() {
       // Cast to any to access schema fields (union with static posts type)
       const p = post as any;
       const schemaTypes = (p.schemaTypes ?? 'Article').split(',').map((s: string) => s.trim()).filter(Boolean);
-      const postUrl = `https://mindandbodyresetcoach.com/health-wellness-blog/${post.slug}`;
+      const postUrl = `${SITE_URL}/health-wellness-blog/${post.slug}`;
       const publishDate = p.publishedAt ? new Date(p.publishedAt).toISOString() : new Date(p.createdAt).toISOString();
       const modifiedDate = new Date(p.updatedAt).toISOString();
 
@@ -322,8 +324,8 @@ export default function BlogPost() {
           url: postUrl,
           datePublished: publishDate,
           dateModified: modifiedDate,
-          author: { '@type': 'Person', name: 'Lee Anne Chapman', url: 'https://mindandbodyresetcoach.com/about' },
-          publisher: { '@type': 'Organization', name: 'Mind and Body Reset', url: 'https://mindandbodyresetcoach.com', logo: { '@type': 'ImageObject', url: 'https://mindandbodyresetcoach.com/logo.png' } },
+          author: { '@type': 'Person', name: 'Lee Anne Chapman', url: `${SITE_URL}/about` },
+          publisher: { '@type': 'Organization', name: 'Mind and Body Reset', url: SITE_URL, logo: { '@type': 'ImageObject', url: `${SITE_URL}/logo-new.jpg` } },
           ...(post.coverImage ? { image: { '@type': 'ImageObject', url: post.coverImage } } : {}),
           mainEntityOfPage: { '@type': 'WebPage', '@id': postUrl },
         });

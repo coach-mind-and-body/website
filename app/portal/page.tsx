@@ -1,10 +1,12 @@
-import PortalClient from './PortalClient';
+import PortalClient from "./PortalClient";
 
 export const metadata = {
   title: "Client Portal | Mind and Body Reset",
-  description: "Your personal coaching portal — access program materials, schedule sessions, and track your wellness journey with Mind & Body Reset."
+  description:
+    "Your personal coaching portal — access program materials, schedule sessions, and track your wellness journey with Mind & Body Reset.",
+  robots: { index: false, follow: false },
 };
 
 export default function Page() {
-  return <PortalClient  />;
+  return <PortalClient />;
 }

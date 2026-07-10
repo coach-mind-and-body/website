@@ -13,6 +13,61 @@ const nextConfig = {
       { protocol: 'https', hostname: 'img.youtube.com' },
     ],
   },
+  async redirects() {
+    return [
+      // ── Legacy site URLs still ranking in Google Search Console ──
+      { source: '/about-us', destination: '/about', permanent: true },
+      { source: '/about-us/', destination: '/about', permanent: true },
+      { source: '/privacy-policy', destination: '/privacy', permanent: true },
+      { source: '/privacy-policy/', destination: '/privacy', permanent: true },
+      { source: '/mini-reset-plan-quiz', destination: '/food-quiz', permanent: true },
+      { source: '/mini-reset-plan-quiz/', destination: '/food-quiz', permanent: true },
+      { source: '/terms-of-service', destination: '/terms', permanent: true },
+      { source: '/terms-of-service/', destination: '/terms', permanent: true },
+      { source: '/terms-and-conditions', destination: '/terms', permanent: true },
+      { source: '/contact', destination: '/book', permanent: true },
+      { source: '/contact-us', destination: '/book', permanent: true },
+      { source: '/contact-us/', destination: '/book', permanent: true },
+      { source: '/coaching', destination: '/reclaim', permanent: true },
+      { source: '/coaching/', destination: '/reclaim', permanent: true },
+      { source: '/services', destination: '/reclaim', permanent: true },
+      { source: '/blog', destination: '/health-wellness-blog', permanent: true },
+      { source: '/blog/', destination: '/health-wellness-blog', permanent: true },
+      { source: '/blog/:slug', destination: '/health-wellness-blog/:slug', permanent: true },
+
+      // ── Duplicate product page: canonicalize to /unicity ──
+      { source: '/feel-great-system', destination: '/unicity', permanent: true },
+      { source: '/feel-great-system/', destination: '/unicity', permanent: true },
+
+      // ── Dated FPU event landing (May 12 cohort) → evergreen FPU page ──
+      { source: '/fpu-may-12', destination: '/financial-peace', permanent: true },
+      { source: '/fpu-may-12/', destination: '/financial-peace', permanent: true },
+
+      // ── Blog slug aliases (static short slugs → full published slugs) ──
+      {
+        source: '/health-wellness-blog/calming-food-noise',
+        destination: '/health-wellness-blog/calming-food-noise-drop-the-food-courtroom',
+        permanent: true,
+      },
+      {
+        source: '/health-wellness-blog/midlife-body-image',
+        destination: '/health-wellness-blog/midlife-body-image-your-body-is-not-a-before-picture',
+        permanent: true,
+      },
+      {
+        source: '/health-wellness-blog/embrace-reflection',
+        destination: '/health-wellness-blog/embrace-reflection-shifting-from-fault-finding-to-self-awareness',
+        permanent: true,
+      },
+
+      // ── Trailing-slash normalization for key marketing URLs ──
+      { source: '/about/', destination: '/about', permanent: true },
+      { source: '/reclaim/', destination: '/reclaim', permanent: true },
+      { source: '/unicity/', destination: '/unicity', permanent: true },
+      { source: '/food-quiz/', destination: '/food-quiz', permanent: true },
+      { source: '/book/', destination: '/book', permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;

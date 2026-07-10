@@ -1,11 +1,14 @@
 import HabitTrackerClient from './HabitTrackerClient';
 
 export const metadata = {
-  title: "Habit Tracker | Mind & Body Reset",
-  description: "Track your daily habits and reclaim your wellness journey. Access anywhere with an account, or track locally on your device.",
+  title: "Free Habit Tracker for Midlife Wellness",
+  description:
+    "Track your daily habits and reclaim your wellness journey. Free habit tracker for women building sustainable midlife health — use with an account or locally on your device.",
+  alternates: { canonical: "/habit-tracker" },
   openGraph: {
-    title: "Habit Tracker | Mind & Body Reset",
-    description: "Build momentum with the Mind & Body Reset Habit Tracker. Track your daily wins, stay accountable, and transform your health.",
+    title: "Free Habit Tracker for Midlife Wellness",
+    description:
+      "Build momentum with the Mind & Body Reset Habit Tracker. Track daily wins and stay accountable.",
     url: "/habit-tracker",
     images: [
       {
@@ -19,10 +22,11 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Habit Tracker | Mind & Body Reset",
-    description: "Build momentum with the Mind & Body Reset Habit Tracker. Track your daily wins, stay accountable, and transform your health.",
+    title: "Free Habit Tracker for Midlife Wellness",
+    description:
+      "Build momentum with the Mind & Body Reset Habit Tracker. Track daily wins and stay accountable.",
     images: ["/og-habit-tracker.jpg"],
-  }
+  },
 };
 
 export default function Page() {

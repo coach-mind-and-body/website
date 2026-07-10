@@ -1,19 +1,29 @@
 import HomeClient from './HomeClient';
 
 export const metadata = {
-  title: "Health and Wellness Coach | Mind and Body Reset",
-  description: "Certified life and health coach Lee Anne Chapman helps women 40+ reclaim their body, rewire their mind, and reset their life through holistic wellness coaching.",
+  // absolute avoids root layout template ("%s | Mind and Body Reset") doubling the brand
+  title: {
+    absolute: "Health Coach for Women Over 40 | Mind and Body Reset",
+  },
+  description:
+    "Lee Anne Chapman helps women 40+ balance hormones, reverse insulin resistance, quiet food noise, and build lasting habits — without another diet. Book a free discovery call.",
   openGraph: {
-    title: "Health and Wellness Coach | Mind and Body Reset",
-    description: "Certified life and health coach Lee Anne Chapman helps women 40+ reclaim their body, rewire their mind, and reset their life through holistic wellness coaching.",
+    title: "Health Coach for Women Over 40 | Mind and Body Reset",
+    description:
+      "Lee Anne Chapman helps women 40+ balance hormones, reverse insulin resistance, quiet food noise, and build lasting habits — without another diet. Book a free discovery call.",
     url: "/",
   },
   twitter: {
-    title: "Health and Wellness Coach | Mind and Body Reset",
-    description: "Certified life and health coach Lee Anne Chapman helps women 40+ reclaim their body, rewire their mind, and reset their life through holistic wellness coaching.",
-  }
+    card: "summary_large_image",
+    title: "Health Coach for Women Over 40 | Mind and Body Reset",
+    description:
+      "Lee Anne Chapman helps women 40+ balance hormones, reverse insulin resistance, quiet food noise, and build lasting habits — without another diet. Book a free discovery call.",
+  },
+  alternates: {
+    canonical: "/",
+  },
 };
 
 export default function Page() {
-  return <HomeClient  />;
+  return <HomeClient />;
 }

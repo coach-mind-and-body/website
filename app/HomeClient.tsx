@@ -58,9 +58,9 @@ const TESTIMONIALS = [
 ];
 
 const STATIC_POSTS = [
-  { slug: "midlife-body-image", category: "Body Image", date: "March 2, 2026", title: "Midlife Body Image: Your Body is Not a Before Picture", excerpt: "Rebuilding body confidence after 40 — why your internal commentary is a habit, not a truth.", coverImage: "https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&q=80&w=800" },
-  { slug: "embrace-reflection", category: "Mindset & Self-Compassion", date: "February 13, 2026", title: "Embrace Reflection: Shifting from Fault-Finding to Self-Awareness", excerpt: "How to stop negative self-talk in the mirror and break the fault-finding cycle.", coverImage: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=800" },
-  { slug: "calming-food-noise", category: "Mindful Eating & Nutrition", date: "February 6, 2026", title: "Calming Food Noise: Drop the Mental Food Fight", excerpt: "Practical strategies to quiet the constant mental chatter about food.", coverImage: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&q=80&w=800" },
+  { slug: "midlife-body-image-your-body-is-not-a-before-picture", category: "Body Image", date: "March 2, 2026", title: "Midlife Body Image: Your Body is Not a Before Picture", excerpt: "Rebuilding body confidence after 40 — why your internal commentary is a habit, not a truth.", coverImage: "https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&q=80&w=800" },
+  { slug: "embrace-reflection-shifting-from-fault-finding-to-self-awareness", category: "Mindset & Self-Compassion", date: "February 13, 2026", title: "Embrace Reflection: Shifting from Fault-Finding to Self-Awareness", excerpt: "How to stop negative self-talk in the mirror and break the fault-finding cycle.", coverImage: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=800" },
+  { slug: "calming-food-noise-drop-the-food-courtroom", category: "Mindful Eating & Nutrition", date: "February 6, 2026", title: "Calming Food Noise: Drop the Mental Food Fight", excerpt: "Practical strategies to quiet the constant mental chatter about food.", coverImage: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&q=80&w=800" },
 ];
 
 export default function Home() {

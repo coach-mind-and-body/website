@@ -2,6 +2,11 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { sdk } from "@/server/_core/sdk";
 
+export const metadata = {
+  robots: { index: false, follow: false },
+  title: "Admin | Mind and Body Reset",
+};
+
 export default async function AdminLayout({
   children,
 }: {

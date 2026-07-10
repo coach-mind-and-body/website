@@ -5,11 +5,16 @@ Allow: /
 Disallow: /admin
 Disallow: /admin/
 Disallow: /portal
+Disallow: /portal/
 Disallow: /login
 Disallow: /reset-password
 Disallow: /my-program
 Disallow: /join-thank-you
 Disallow: /food-quiz-thank-you
+Disallow: /financial-peace/thank-you
 Disallow: /api/
+
+# Prefer apex host (www redirects in production)
+Host: https://mindandbodyresetcoach.com
 
 Sitemap: https://mindandbodyresetcoach.com/sitemap.xml
