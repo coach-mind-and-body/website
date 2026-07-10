@@ -147,6 +147,7 @@ export default function Home() {
                 className="w-full max-w-lg lg:max-w-2xl object-contain drop-shadow-xl"
                 width={640}
                 height={352}
+                unoptimized
                 sizes="(max-width: 1024px) 100vw, 640px"
               />
             </div>
@@ -248,6 +249,7 @@ export default function Home() {
                   width={682}
                   height={1024}
                   sizes="(max-width: 1024px) 100vw, 682px"
+                  unoptimized
                 />
               </div>
             </div>
@@ -267,9 +269,12 @@ export default function Home() {
                 Our Certifications
               </h3>
               <div className="flex gap-8 flex-wrap items-center">
-                <Image src="https://img1.wsimg.com/isteam/ip/a5a9c59b-2adc-48fc-995e-909cdea8df57/Gemini_Generated_Image_crrbqocrrbqocrrb.png/:/rs=w:100,h:100,cg:true,m/cr=w:100,h:100" alt="Certified Coach" className="h-24 w-auto hover:scale-105 transition-transform" width={100} height={100} />
-                <Image src="https://img1.wsimg.com/isteam/ip/a5a9c59b-2adc-48fc-995e-909cdea8df57/FLAG_CERTIFIED_MARK%20(1).jpg/:/rs=w:102,h:100,cg:true,m/cr=w:102,h:100" alt="Fast Like A Girl Certified" className="h-24 w-auto hover:scale-105 transition-transform" width={102} height={100} />
-                <Image src="https://img1.wsimg.com/isteam/ip/a5a9c59b-2adc-48fc-995e-909cdea8df57/BTH%20Certified%20Coach%20Badge.png/:/rs=w:100,h:100,cg:true,m/cr=w:100,h:100" alt="Better Than Happy Certified" className="h-24 w-auto hover:scale-105 transition-transform" width={100} height={100} />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="https://img1.wsimg.com/isteam/ip/a5a9c59b-2adc-48fc-995e-909cdea8df57/Gemini_Generated_Image_crrbqocrrbqocrrb.png/:/rs=w:100,h:100,cg:true,m/cr=w:100,h:100" alt="Certified Coach" className="h-24 w-auto hover:scale-105 transition-transform" width={100} height={100} />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="https://img1.wsimg.com/isteam/ip/a5a9c59b-2adc-48fc-995e-909cdea8df57/FLAG_CERTIFIED_MARK%20(1).jpg/:/rs=w:102,h:100,cg:true,m/cr=w:102,h:100" alt="Fast Like A Girl Certified" className="h-24 w-auto hover:scale-105 transition-transform" width={102} height={100} />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="https://img1.wsimg.com/isteam/ip/a5a9c59b-2adc-48fc-995e-909cdea8df57/BTH%20Certified%20Coach%20Badge.png/:/rs=w:100,h:100,cg:true,m/cr=w:100,h:100" alt="Better Than Happy Certified" className="h-24 w-auto hover:scale-105 transition-transform" width={100} height={100} />
               </div>
             </div>
 
@@ -432,12 +437,14 @@ All Posts <ChevronRight size={16} />
               <Link key={post.slug} href={`/health-wellness-blog/${post.slug}`} className="group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-[#e8ddd0] flex flex-col h-full fade-up">
                 <div className="h-44 relative overflow-hidden" style={{ background: "oklch(0.93 0.06 78)" }}>
                   {post.coverImage && (
-                    <Image
+                    // Use plain <img> for R2/CDN covers — next/image optimizer was returning 400
+                    // ("url parameter is not allowed") for remote hosts on production.
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
                       src={post.coverImage}
                       alt={post.title}
-                      className="object-cover transition-transform duration-500 group-hover:scale-105"
-                      fill
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 33vw"
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      loading="lazy"
                     />
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />

@@ -2,17 +2,19 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
+    // Allow Cloudflare R2 + other CDNs through next/image (pathname required in Next 15+)
     remotePatterns: [
-      { protocol: 'https', hostname: 'images.unsplash.com' },
-      { protocol: 'https', hostname: 'www.mindandbodyresetcoach.com' },
-      { protocol: 'https', hostname: 'mindandbodyresetcoach.com' },
-      { protocol: 'https', hostname: 'pub-c6f7a165acb046c283b129a93cb2c8ec.r2.dev' },
-      { protocol: 'https', hostname: 'cdn.shopify.com' },
-      { protocol: 'https', hostname: '**.wsimg.com' },
-      { protocol: 'https', hostname: 'i.ytimg.com' },
-      { protocol: 'https', hostname: 'img.youtube.com' },
-      { protocol: 'https', hostname: 'd2xsxph8kpxj0f.cloudfront.net' },
-      { protocol: 'https', hostname: 'cdn.mindandbodyresetcoach.com' },
+      { protocol: 'https', hostname: 'cdn.mindandbodyresetcoach.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'pub-c6f7a165acb046c283b129a93cb2c8ec.r2.dev', pathname: '/**' },
+      { protocol: 'https', hostname: 'd2xsxph8kpxj0f.cloudfront.net', pathname: '/**' },
+      { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'www.mindandbodyresetcoach.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'mindandbodyresetcoach.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'cdn.shopify.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'img1.wsimg.com', pathname: '/**' },
+      { protocol: 'https', hostname: '**.wsimg.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'i.ytimg.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'img.youtube.com', pathname: '/**' },
     ],
   },
   async redirects() {
