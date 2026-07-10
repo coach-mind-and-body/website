@@ -39,6 +39,13 @@ const nextConfig = {
       { source: '/blog/', destination: '/health-wellness-blog', permanent: true },
       // Intentionally NO /blog/:slug catch-all — it hijacked image URLs like /blog/foo.png
 
+      // Old show-notes slug (wrong video binding) → correct Tiny Movements episode
+      {
+        source: '/midlife-health-podcast/exercise-snacks-2-minute-movement-habit',
+        destination: '/midlife-health-podcast/could-tiny-movements-transform-your-energy-levels',
+        permanent: true,
+      },
+
       // ── Duplicate product page: canonicalize to /unicity ──
       { source: '/feel-great-system', destination: '/unicity', permanent: true },
       { source: '/feel-great-system/', destination: '/unicity', permanent: true },
