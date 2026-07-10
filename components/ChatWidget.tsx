@@ -1,5 +1,6 @@
 /**
- * ChatWidget — floating AI chat button that appears on every page.
+ * ChatWidget — floating AI chat button (bottom-left) on public marketing pages.
+ * Hidden on /admin, /habit-tracker (PWA), and /snack-hack.
  *
  * Features:
  * - Persists across route changes via ChatContext
@@ -262,15 +263,17 @@ export default function ChatWidget() {
 
   return (
     <>
-      {/* Chat panel */}
+      {/* Chat panel — bottom-left, opens upward above the FAB */}
       {isOpen && (
         <div
-          className="fixed top-[160px] right-5 z-50 flex flex-col rounded-2xl overflow-hidden shadow-2xl"
+          className="fixed z-50 flex flex-col rounded-2xl overflow-hidden shadow-2xl"
           style={{
+            left: "max(1.25rem, env(safe-area-inset-left, 0px))",
+            bottom: "calc(5.5rem + env(safe-area-inset-bottom, 0px))",
             width: "360px",
             maxWidth: "calc(100vw - 40px)",
             height: "520px",
-            maxHeight: "calc(100vh - 120px)",
+            maxHeight: "calc(100vh - 8rem - env(safe-area-inset-bottom, 0px))",
             background: "#ffffff",
             border: "1px solid oklch(0.88 0.02 75)",
           }}
@@ -437,8 +440,14 @@ export default function ChatWidget() {
         </div>
       )}
 
-      {/* Floating toggle button */}
-      <div className="fixed top-24 right-5 z-50">
+      {/* Floating toggle button — bottom-left (away from habit-tracker chrome) */}
+      <div
+        className="fixed z-50"
+        style={{
+          left: "max(1.25rem, env(safe-area-inset-left, 0px))",
+          bottom: "max(1.25rem, env(safe-area-inset-bottom, 0px))",
+        }}
+      >
         <button
           onClick={handleToggle}
           className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-105 active:scale-95"

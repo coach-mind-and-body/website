@@ -44,6 +44,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   const pathname = usePathname();
   const isAdminRoute = pathname?.startsWith("/admin");
+  // Habit tracker PWA: no site chatbot (FAB / nav conflict)
+  const isHabitTrackerRoute = pathname?.startsWith("/habit-tracker");
 
   const [trpcClient] = useState(() =>
     trpc.createClient({
@@ -70,7 +72,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             <TooltipProvider>
               {children}
               <Toaster />
-              {!isAdminRoute && <ChatWidget />}
+              {!isAdminRoute && !isHabitTrackerRoute && <ChatWidget />}
             </TooltipProvider>
           </ChatProvider>
         </ThemeProvider>
