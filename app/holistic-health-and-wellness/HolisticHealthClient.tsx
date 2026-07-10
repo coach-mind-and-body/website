@@ -48,7 +48,7 @@ export default function HolisticHealth() {
               </div>
               <div className="relative h-[400px] md:h-[500px] rounded-2xl overflow-hidden shadow-2xl">
                 <img 
-                  src="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=2120&auto=format&fit=crop" 
+                  src="https://cdn.mindandbodyresetcoach.com/blog-images/the-midlife-sleep-crisis.jpg" 
                   alt="Woman practicing mindful yoga and wellness"
                   className="w-full h-full object-cover"
                 />
@@ -145,7 +145,7 @@ export default function HolisticHealth() {
               <div className="relative">
                 <div className="absolute -inset-4 bg-[oklch(0.97_0.01_160)] rounded-[2.5rem] transform -rotate-3 z-0"></div>
                 <img 
-                  src="https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=2070&auto=format&fit=crop" 
+                  src="https://cdn.mindandbodyresetcoach.com/blog-images/fuel-system-reset-switching-from-sugar-to-fat-burning.jpg" 
                   alt="Healthy fresh food bowls" 
                   className="relative z-10 rounded-2xl shadow-xl w-full object-cover h-[450px]"
                 />
