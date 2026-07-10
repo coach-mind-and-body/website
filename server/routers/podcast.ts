@@ -1,47 +1,44 @@
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { eq, desc } from "drizzle-orm";
+import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { resendSubscribe } from "../resendSubscribe";
+import { getDb } from "../db";
+import { podcastEpisodes } from "../../drizzle/schema";
+import { TRPCError } from "@trpc/server";
 
 const PLAYLIST_ID = "PL7rk7dm4oyzKumv4UU53xInS8sNof9q7H";
-const CHANNEL_ID = "UCMindandBodyResetCoach"; // fallback
 
-interface Episode {
+export interface Episode {
   id: string;
   title: string;
   description: string;
   publishedAt: string;
   thumbnail: string;
   videoId: string;
+  slug?: string | null;
+  hasShowNotes?: boolean;
 }
 
-function parseYouTubeRSS(xml: string): Episode[] {
+export function parseYouTubeRSS(xml: string): Episode[] {
   const episodes: Episode[] = [];
-
-  // Extract all <entry> blocks
   const entryRegex = /<entry>([\s\S]*?)<\/entry>/g;
   let match;
 
   while ((match = entryRegex.exec(xml)) !== null) {
     const entry = match[1];
-
-    // Extract video ID from <yt:videoId>
     const videoIdMatch = entry.match(/<yt:videoId>([^<]+)<\/yt:videoId>/);
     const videoId = videoIdMatch ? videoIdMatch[1].trim() : "";
     if (!videoId) continue;
 
-    // Extract title
     const titleMatch = entry.match(/<title>([^<]+)<\/title>/);
     const title = titleMatch ? titleMatch[1].trim() : "Untitled Episode";
 
-    // Extract published date
     const publishedMatch = entry.match(/<published>([^<]+)<\/published>/);
     const publishedAt = publishedMatch ? publishedMatch[1].trim() : "";
 
-    // Extract description from media:description
     const descMatch = entry.match(/<media:description>([^<]*)<\/media:description>/);
     const description = descMatch ? descMatch[1].trim() : "";
 
-    // Build thumbnail URL from video ID
     const thumbnail = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
 
     episodes.push({
@@ -57,30 +54,45 @@ function parseYouTubeRSS(xml: string): Episode[] {
   return episodes;
 }
 
+export async function fetchPlaylistEpisodes(): Promise<Episode[]> {
+  const feedUrl = `https://www.youtube.com/feeds/videos.xml?playlist_id=${PLAYLIST_ID}`;
+  const response = await fetch(feedUrl, {
+    headers: { "User-Agent": "Mozilla/5.0 (compatible; MindBodyReset/1.0)" },
+  });
+  if (!response.ok) throw new Error(`RSS fetch failed: ${response.status}`);
+  const xml = await response.text();
+  return parseYouTubeRSS(xml);
+}
+
+function adminOnly(role: string | undefined) {
+  if (role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Admins only" });
+}
+
 export const podcastRouter = router({
-  // Public: subscribe to podcast email list (tagged 'podcast')
   subscribe: publicProcedure
-    .input(z.object({
-      email: z.string().email("Please enter a valid email address"),
-      firstName: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        email: z.string().email("Please enter a valid email address"),
+        firstName: z.string().optional(),
+      })
+    )
     .mutation(async ({ input }) => {
-      // 0. Save natively to Database for native broadcasting!
       try {
-        const { getDb } = await import("../db");
         const { podcastSubscribers } = await import("../../drizzle/schema");
         const db = await getDb();
         if (db) {
-          await db.insert(podcastSubscribers).values({
-            email: input.email,
-            firstName: input.firstName,
-          }).onDuplicateKeyUpdate({ set: { firstName: input.firstName } });
+          await db
+            .insert(podcastSubscribers)
+            .values({
+              email: input.email,
+              firstName: input.firstName,
+            })
+            .onDuplicateKeyUpdate({ set: { firstName: input.firstName } });
         }
       } catch (e) {
         console.error("[Podcast Subscribe] Failed to save subscriber natively:", e);
       }
 
-      // 1. Subscribe to Audience
       const result = await resendSubscribe({
         email: input.email,
         firstName: input.firstName,
@@ -90,27 +102,25 @@ export const podcastRouter = router({
         console.error("[Podcast Subscribe] Resend error:", result.error);
       }
 
-      // 2. Fetch latest YouTube videos for Welcome Email
       let episodesHTML = "";
       try {
-        const feedUrl = `https://www.youtube.com/feeds/videos.xml?playlist_id=${PLAYLIST_ID}`;
-        const response = await fetch(feedUrl);
-        const xml = await response.text();
-        const episodes = parseYouTubeRSS(xml).slice(0, 3);
-        
-        episodesHTML = episodes.map(ep => `
+        const episodes = (await fetchPlaylistEpisodes()).slice(0, 3);
+        episodesHTML = episodes
+          .map(
+            (ep) => `
           <div style="margin-bottom: 24px;">
             <a href="https://www.youtube.com/watch?v=${ep.videoId}">
               <img src="${ep.thumbnail}" alt="${ep.title}" style="max-width: 100%; border-radius: 8px;" />
             </a>
             <h3 style="margin-top: 12px; margin-bottom: 4px;"><a href="https://www.youtube.com/watch?v=${ep.videoId}" style="color: #2d3b2d; text-decoration: none; font-size: 18px;">${ep.title}</a></h3>
           </div>
-        `).join("");
+        `
+          )
+          .join("");
       } catch (e) {
         console.error("[Podcast Subscribe] Failed to fetch latest YouTube videos:", e);
       }
 
-      // 3. Send Welcome Email
       try {
         const { Resend } = await import("resend");
         const { ENV } = await import("../_core/env");
@@ -144,23 +154,117 @@ export const podcastRouter = router({
 
   getEpisodes: publicProcedure.query(async () => {
     try {
-      const feedUrl = `https://www.youtube.com/feeds/videos.xml?playlist_id=${PLAYLIST_ID}`;
-      const response = await fetch(feedUrl, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (compatible; MindBodyReset/1.0)",
-        },
-      });
+      const episodes = await fetchPlaylistEpisodes();
+      const db = await getDb();
+      if (db && episodes.length > 0) {
+        const notes = await db
+          .select({
+            videoId: podcastEpisodes.videoId,
+            slug: podcastEpisodes.slug,
+            status: podcastEpisodes.status,
+          })
+          .from(podcastEpisodes);
 
-      if (!response.ok) {
-        throw new Error(`RSS fetch failed: ${response.status}`);
+        const byVideo = new Map(notes.map((n) => [n.videoId, n]));
+        for (const ep of episodes) {
+          const n = byVideo.get(ep.videoId);
+          if (n?.status === "published") {
+            ep.slug = n.slug;
+            ep.hasShowNotes = true;
+          }
+        }
       }
-
-      const xml = await response.text();
-      const episodes = parseYouTubeRSS(xml);
       return { episodes };
     } catch (err) {
       console.error("[Podcast RSS] Failed to fetch episodes:", err);
-      return { episodes: [] };
+      return { episodes: [] as Episode[] };
     }
   }),
+
+  getBySlug: publicProcedure
+    .input(z.object({ slug: z.string().min(1) }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return null;
+      const [row] = await db
+        .select()
+        .from(podcastEpisodes)
+        .where(eq(podcastEpisodes.slug, input.slug))
+        .limit(1);
+      if (!row || row.status !== "published") return null;
+      return row;
+    }),
+
+  listPublishedNotes: publicProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return [];
+    return db
+      .select({
+        slug: podcastEpisodes.slug,
+        title: podcastEpisodes.title,
+        videoId: podcastEpisodes.videoId,
+        thumbnail: podcastEpisodes.thumbnail,
+        publishedAt: podcastEpisodes.publishedAt,
+        seoDescription: podcastEpisodes.seoDescription,
+      })
+      .from(podcastEpisodes)
+      .where(eq(podcastEpisodes.status, "published"))
+      .orderBy(desc(podcastEpisodes.publishedAt));
+  }),
+
+  adminList: protectedProcedure.query(async ({ ctx }) => {
+    adminOnly(ctx.user?.role);
+    const db = await getDb();
+    if (!db) return [];
+    return db.select().from(podcastEpisodes).orderBy(desc(podcastEpisodes.publishedAt));
+  }),
+
+  adminUpsert: protectedProcedure
+    .input(
+      z.object({
+        videoId: z.string().min(1),
+        slug: z.string().min(1),
+        title: z.string().min(1),
+        thumbnail: z.string().optional(),
+        publishedAt: z.string().optional(),
+        youtubeDescription: z.string().optional(),
+        showNotesHtml: z.string().optional(),
+        seoTitle: z.string().optional(),
+        seoDescription: z.string().optional(),
+        transcript: z.string().optional(),
+        status: z.enum(["draft", "published"]).default("draft"),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      adminOnly(ctx.user?.role);
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const [existing] = await db
+        .select({ id: podcastEpisodes.id })
+        .from(podcastEpisodes)
+        .where(eq(podcastEpisodes.videoId, input.videoId))
+        .limit(1);
+
+      const values = {
+        videoId: input.videoId,
+        slug: input.slug,
+        title: input.title,
+        thumbnail: input.thumbnail,
+        publishedAt: input.publishedAt ? new Date(input.publishedAt) : null,
+        youtubeDescription: input.youtubeDescription,
+        showNotesHtml: input.showNotesHtml,
+        seoTitle: input.seoTitle,
+        seoDescription: input.seoDescription,
+        transcript: input.transcript,
+        status: input.status,
+      };
+
+      if (existing) {
+        await db.update(podcastEpisodes).set(values).where(eq(podcastEpisodes.id, existing.id));
+        return { id: existing.id, updated: true };
+      }
+      const result = await db.insert(podcastEpisodes).values(values);
+      return { id: Number(result[0].insertId), updated: false };
+    }),
 });

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -23,6 +24,8 @@ interface Episode {
   thumbnail: string;
   publishedAt: string;
   videoId: string;
+  slug?: string | null;
+  hasShowNotes?: boolean;
 }
 
 function formatDate(iso: string) {
@@ -346,6 +349,16 @@ export default function Podcast() {
                       <p className="text-xs mb-1.5" style={{ color: "oklch(0.60 0.03 55)" }}>
                         {formatDate(ep.publishedAt)}
                       </p>
+                      {ep.hasShowNotes && ep.slug && (
+                        <Link
+                          href={`/midlife-health-podcast/${ep.slug}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-block text-xs font-bold mb-2 transition-opacity hover:opacity-70"
+                          style={{ color: "oklch(0.38 0.10 148)" }}
+                        >
+                          Full show notes →
+                        </Link>
+                      )}
                       <h3
                         className="font-bold text-sm leading-snug mb-2 line-clamp-2"
                         style={{ color: "oklch(0.18 0.025 50)" }}

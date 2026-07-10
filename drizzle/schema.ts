@@ -302,6 +302,27 @@ export const broadcastedEpisodes = mysqlTable("broadcasted_episodes", {
 export type BroadcastedEpisode = typeof broadcastedEpisodes.$inferSelect;
 export type InsertBroadcastedEpisode = typeof broadcastedEpisodes.$inferInsert;
 
+// ── Podcast show notes (per-episode SEO pages) ────────────────────────────────
+export const podcastEpisodes = mysqlTable("podcast_episodes", {
+  id: int("id").autoincrement().primaryKey(),
+  videoId: varchar("videoId", { length: 64 }).notNull().unique(),
+  slug: varchar("slug", { length: 255 }).notNull().unique(),
+  title: varchar("title", { length: 500 }).notNull(),
+  thumbnail: varchar("thumbnail", { length: 1000 }),
+  publishedAt: timestamp("publishedAt"),
+  youtubeDescription: text("youtubeDescription"),
+  showNotesHtml: text("showNotesHtml"),
+  seoTitle: varchar("seoTitle", { length: 500 }),
+  seoDescription: text("seoDescription"),
+  transcript: text("transcript"),
+  status: mysqlEnum("status", ["draft", "published"]).default("draft").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PodcastEpisode = typeof podcastEpisodes.$inferSelect;
+export type InsertPodcastEpisode = typeof podcastEpisodes.$inferInsert;
+
 // ── FPU Group Sign-Ups (name+email collected on /financial-peace) ───────────────────────
 export const fpuLeads = mysqlTable("fpu_leads", {
   id: int("id").autoincrement().primaryKey(),

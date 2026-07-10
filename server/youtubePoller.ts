@@ -161,6 +161,36 @@ async function checkAndBroadcastEpisodes() {
       console.log(`[YouTube Poller] No podcast subscribers found to broadcast to.`);
     }
 
+    // Create draft show-notes row for admin to fill (ignore if already exists)
+    try {
+      const { podcastEpisodes } = await import("../drizzle/schema");
+      const slugBase = episode.title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "")
+        .slice(0, 80) || episode.videoId;
+      await db
+        .insert(podcastEpisodes)
+        .values({
+          videoId: episode.videoId,
+          slug: slugBase,
+          title: episode.title,
+          thumbnail: episode.thumbnail,
+          publishedAt: episode.publishedAt ? new Date(episode.publishedAt) : new Date(),
+          youtubeDescription: episode.description?.slice(0, 5000),
+          status: "draft",
+        })
+        .onDuplicateKeyUpdate({
+          set: {
+            title: episode.title,
+            thumbnail: episode.thumbnail,
+            youtubeDescription: episode.description?.slice(0, 5000),
+          },
+        });
+    } catch (e) {
+      console.error("[YouTube Poller] Draft show-notes upsert failed:", e);
+    }
+
     // Mark as broadcasted so we never send it again
     await db.insert(broadcastedEpisodes).values({
       videoId: episode.videoId,

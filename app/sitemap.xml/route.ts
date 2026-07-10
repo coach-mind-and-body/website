@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/server/db";
-import { blogPosts } from "@/drizzle/schema";
+import { blogPosts, podcastEpisodes } from "@/drizzle/schema";
 import { eq, desc } from "drizzle-orm";
 import { SITE_URL } from "@shared/brand";
 
@@ -30,6 +30,7 @@ const STATIC_PAGES: Array<{
   { path: "/snack-hack", changefreq: "monthly", priority: "0.8" },
   { path: "/holistic-health-and-wellness", changefreq: "monthly", priority: "0.8" },
   { path: "/life-after-glp-1", changefreq: "monthly", priority: "0.85" },
+  { path: "/insulin-resistance-after-40", changefreq: "monthly", priority: "0.9" },
   { path: "/financial-peace", changefreq: "monthly", priority: "0.75" },
   { path: "/unicity", changefreq: "monthly", priority: "0.75" },
   { path: "/habit-tracker", changefreq: "monthly", priority: "0.6" },
@@ -87,10 +88,40 @@ export async function GET() {
         .join("");
     }
 
+    let episodeUrls = "";
+    if (db) {
+      const episodes = await db
+        .select({
+          slug: podcastEpisodes.slug,
+          publishedAt: podcastEpisodes.publishedAt,
+          updatedAt: podcastEpisodes.updatedAt,
+        })
+        .from(podcastEpisodes)
+        .where(eq(podcastEpisodes.status, "published"));
+
+      episodeUrls = episodes
+        .map((ep) => {
+          const lastmod = ep.updatedAt
+            ? new Date(ep.updatedAt).toISOString().split("T")[0]
+            : ep.publishedAt
+              ? new Date(ep.publishedAt).toISOString().split("T")[0]
+              : today;
+          return `
+  <url>
+    <loc>${SITE_URL}/midlife-health-podcast/${escapeXml(ep.slug)}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+  </url>`;
+        })
+        .join("");
+    }
+
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   ${staticUrls}
   ${blogUrls}
+  ${episodeUrls}
 </urlset>`;
 
     return new NextResponse(xml, {
