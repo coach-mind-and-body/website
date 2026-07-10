@@ -23,12 +23,21 @@ export const metadata: Metadata = {
       "Prevent rebound weight gain and rebuild habits after GLP-1 medications — midlife coaching perspective.",
     url: "/life-after-glp-1",
     type: "website",
+    images: [
+      {
+        url: "/healing_balance_hormones_1780339100250.png",
+        width: 1200,
+        height: 630,
+        alt: "Life after GLP-1 — midlife health coaching",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Life After GLP-1: Maintain Weight Loss Naturally",
     description:
       "Metabolism, food noise, and lasting habits after Ozempic, Wegovy, and other GLP-1s.",
+    images: ["/healing_balance_hormones_1780339100250.png"],
   },
 };
 

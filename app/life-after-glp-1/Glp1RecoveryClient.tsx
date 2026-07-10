@@ -49,10 +49,24 @@ export default function Glp1Recovery() {
 
       <main>
         {/* Hero */}
-        <section className="relative pt-24 pb-20 md:pt-32 md:pb-28 overflow-hidden bg-[oklch(0.97_0.01_160)]">
+        <section className="relative pt-24 pb-20 md:pt-32 md:pb-28 overflow-hidden">
+          <div className="absolute inset-0">
+            <img
+              src="/healing_balance_hormones_1780339100250.png"
+              alt="Life after GLP-1 medications — midlife health"
+              className="w-full h-full object-cover"
+            />
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  "linear-gradient(160deg, oklch(0.97 0.01 160 / 0.94) 0%, oklch(0.94 0.03 148 / 0.88) 100%)",
+              }}
+            />
+          </div>
           <div className="container relative z-10 px-4 md:px-6">
             <div className="max-w-3xl mx-auto text-center space-y-8">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/60 border border-[oklch(0.90_0.01_160)] text-sm font-medium text-[oklch(0.40_0.02_160)] mb-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 border border-[oklch(0.90_0.01_160)] text-sm font-medium text-[oklch(0.40_0.02_160)] mb-4">
                 <Leaf className="w-4 h-4" /> Life After GLP-1
               </div>
               <h1

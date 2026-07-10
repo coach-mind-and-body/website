@@ -8,10 +8,11 @@ import Link from 'next/link';
 ;
 
 
-// Sara = yellow top (Lee Anne's old image), Lee Anne = with son (Brittany's old image), Brittany = field photo (Sara's old image)
-const SARA_IMG = "https://private-us-east-1.manuscdn.com/user_upload_by_module/session_file/310519663371864914/mIoumKvefBkVDOeo.webp?Expires=1804048976&Signature=Ur7EyRiDwiebQKUVgB~rgLVIrYU-G69vczvupZijRb3H2H6x~CAqXhLL6QEAWgVjz0N4-AsqZhFQ~s~PbzULeTEa0hZoM0a~umunwMpTdD661yZdKEGcP2tGlRm50zyG3VwhINk111678g6zG3ItAQRvZL1GYtAW5P1suCn4ZZvoHua9XfF2vAnV1DH-aE-DgxOV3NUz5fsmkVsMWH7KRSxLAZUQcJwbWon8dgu--0XHLves2NwPiuz7CyAyahKFgfDSk68vlzNEJsgEYluTF5mwik-kYRf6~PABGTTGdUX9zFn6IjjP4ghXalq3BqoDlIlXQjB~rkQL5mCHkrxD8w__&Key-Pair-Id=K2HSFNDJXOU9YS";
-const LEEANNE_IMG = "https://private-us-east-1.manuscdn.com/user_upload_by_module/session_file/310519663371864914/oHIsGBRqlBQjiqUf.webp?Expires=1804048976&Signature=lJm~ydq1okL3OIDanoaq~gJLu273c8xMcTkf15wwVEJX~Ibg6kjrH50xQAuHB~rmCIzUqYzqBsYcprjh8RcovB7guJ~3mvpvGxdHWudbzPWh-Xe~XhcIu-a8XHBmmw9ljIwd4c00-bebr2bJMSsXljBSBMYZZpHOTZ614EIHPTJgKDYyDr1f7tMQ~v0sVhByWm6RJ2FpC2tsRtpHv2AlvioYs5qZcpBJdMvFineoZELQgiIJtgV39-wI2HRr3tkopwpctXLQK8JYNF52MTBAV1nzJTCBaW1NRD9MbYRipGtbmX-qkurkFG4yLQqnp3i4e1YCF1sv8YmeLQyz586XiQ__&Key-Pair-Id=K2HSFNDJXOU9YS";
-const BRITTANY_IMG = "https://private-us-east-1.manuscdn.com/user_upload_by_module/session_file/310519663371864914/MLIsAzjYHcQfuSAw.webp?Expires=1804048976&Signature=etbBfj0oKieqSN8Ks4OnAXnmtUKfzBw0jszmqFwRzJvFNfSsXh8QqLWHoAgfcwJrHAdIXz6jhZI0bD6cAPtnePM8-gxXRU-lLP079bPxXR2g0WPr9QJt75P8jiknYs7b1cF2pJTrgfJIhBkisxt2C8JBk9avl4Rb5sdm7wLxmEF~~fnOcKjUO99B1kvepsOA2e0e2mxJUFh8ZcngOxr5lPShsNjp7iPkqkWEPDWM3004cXlsRFft7gKNiuRMnPgTkpAkuTEZd~6qQfh~WV~PYTpdgAET3QoL3jnHynnrOCNh5NPBkDbIK8lJtZL81Bgoqirohcy8uU2bHjcNLRbfWQ__&Key-Pair-Id=K2HSFNDJXOU9YS";
+// Stable CloudFront portraits (Manus signed URLs expire / 403)
+const CF = "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG";
+const SARA_IMG = `${CF}/4Z7A6652_f211af63.webp`;
+const LEEANNE_IMG = `${CF}/3542web-rigeljackson(2)_83b0d4af.webp`;
+const BRITTANY_IMG = `${CF}/4Z7A6598_af959cd9.webp`;
 
 interface CoachCardProps {
   name: string;

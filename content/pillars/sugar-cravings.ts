@@ -8,7 +8,7 @@ export const SUGAR_CRAVINGS_PILLAR = {
   seoTitle: "How to Stop Sugar Cravings at Night (Midlife Strategy)",
   seoDescription:
     "Stop nighttime sugar cravings after 40 with a midlife strategy that addresses hormones, blood sugar, habits, and food noise — not more willpower. Free tools inside.",
-  coverImage: "/blog/how-to-stop-sugar-cravings-at-night-a-midlife-strategy-that-actually-works_1780341585867.png",
+  coverImage: "/how-to-stop-sugar-cravings-at-night-a-midlife-strategy-that-actually-works_1780341585867.png",
   coverImageAlt: "Woman in midlife considering nighttime sugar cravings with calm strategy",
   schemaTypes: "Article,FAQ,HowTo",
   schemaFaqJson: JSON.stringify([

@@ -71,11 +71,25 @@ export default function InsulinHubClient() {
       <SiteNav />
 
       <main>
-        <section className="py-20 md:py-28" style={{ background: "linear-gradient(135deg, oklch(0.93 0.04 148) 0%, oklch(0.97 0.01 80) 55%)" }}>
-          <div className="container max-w-3xl mx-auto px-4 text-center">
+        <section className="relative overflow-hidden">
+          <div className="absolute inset-0">
+            <img
+              src="/metabolism_after_40_1780339113905.png"
+              alt="Midlife metabolic health and insulin resistance"
+              className="w-full h-full object-cover"
+            />
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  "linear-gradient(135deg, oklch(0.22 0.02 160 / 0.88) 0%, oklch(0.30 0.06 148 / 0.82) 100%)",
+              }}
+            />
+          </div>
+          <div className="container relative z-10 max-w-3xl mx-auto px-4 text-center py-20 md:py-28">
             <span
               className="inline-block text-xs font-bold uppercase tracking-widest mb-4 px-3 py-1 rounded-full"
-              style={{ background: "oklch(0.92 0.04 148)", color: "oklch(0.32 0.08 148)" }}
+              style={{ background: "oklch(1 0 0 / 0.15)", color: "oklch(0.95 0.03 80)" }}
             >
               Midlife metabolic health
             </span>
@@ -84,24 +98,24 @@ export default function InsulinHubClient() {
               style={{
                 fontFamily: "'Cormorant Garamond', serif",
                 fontSize: "clamp(2rem, 5vw, 3.25rem)",
-                color: "oklch(0.22 0.02 160)",
+                color: "oklch(0.98 0.01 80)",
               }}
             >
               Insulin Resistance After 40: Why You Feel Stuck — and What Helps
             </h1>
-            <p className="text-lg mb-8 leading-relaxed" style={{ color: "oklch(0.40 0.02 160)" }}>
+            <p className="text-lg mb-8 leading-relaxed" style={{ color: "oklch(0.92 0.02 80)" }}>
               If your energy, cravings, and weight feel different than they did a decade ago, you are not
               imagining it. This hub explains midlife insulin resistance in plain language — and connects you
               to practical next steps. Coaching education only; not a diagnosis.
             </p>
             <div className="flex flex-wrap gap-3 justify-center">
               <Link href="/book">
-                <Button className="rounded-full h-12 px-8 bg-[oklch(0.38_0.10_148)] hover:bg-[oklch(0.32_0.10_148)] text-white">
+                <Button className="rounded-full h-12 px-8 bg-[oklch(0.72_0.12_75)] hover:opacity-90 text-[oklch(0.22_0.02_160)] font-bold">
                   Book a free call <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
               </Link>
               <Link href="/food-quiz">
-                <Button variant="outline" className="rounded-full h-12 px-8 border-[oklch(0.38_0.10_148)] text-[oklch(0.38_0.10_148)]">
+                <Button variant="outline" className="rounded-full h-12 px-8 border-white text-white hover:bg-white/10">
                   Take the free quiz
                 </Button>
               </Link>

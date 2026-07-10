@@ -11,6 +11,8 @@ const nextConfig = {
       { protocol: 'https', hostname: '**.wsimg.com' },
       { protocol: 'https', hostname: 'i.ytimg.com' },
       { protocol: 'https', hostname: 'img.youtube.com' },
+      { protocol: 'https', hostname: 'd2xsxph8kpxj0f.cloudfront.net' },
+      { protocol: 'https', hostname: 'cdn.mindandbodyresetcoach.com' },
     ],
   },
   async redirects() {
@@ -31,9 +33,15 @@ const nextConfig = {
       { source: '/coaching', destination: '/reclaim', permanent: true },
       { source: '/coaching/', destination: '/reclaim', permanent: true },
       { source: '/services', destination: '/reclaim', permanent: true },
+      // Legacy blog index only — do NOT redirect /blog/* static assets (png/jpg/webp in public/blog/)
       { source: '/blog', destination: '/health-wellness-blog', permanent: true },
       { source: '/blog/', destination: '/health-wellness-blog', permanent: true },
-      { source: '/blog/:slug', destination: '/health-wellness-blog/:slug', permanent: true },
+      // Article paths only (no file extension). Prevents hijacking /blog/*.png covers.
+      {
+        source: '/blog/:slug([^/.]+)',
+        destination: '/health-wellness-blog/:slug',
+        permanent: true,
+      },
 
       // ── Duplicate product page: canonicalize to /unicity ──
       { source: '/feel-great-system', destination: '/unicity', permanent: true },

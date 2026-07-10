@@ -22,12 +22,21 @@ export const metadata: Metadata = {
       "Why weight and energy feel stuck after 40 — and what actually helps when insulin resistance is part of the story.",
     url: "/insulin-resistance-after-40",
     type: "website",
+    images: [
+      {
+        url: "/metabolism_after_40_1780339113905.png",
+        width: 1200,
+        height: 630,
+        alt: "Insulin resistance after 40 — midlife metabolic health",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Insulin Resistance After 40: A Midlife Guide",
     description:
       "Midlife insulin resistance explained with practical next steps — coaching education for women 40+.",
+    images: ["/metabolism_after_40_1780339113905.png"],
   },
 };
 
