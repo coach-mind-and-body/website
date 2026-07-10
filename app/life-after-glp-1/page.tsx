@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/healing_balance_hormones_1780339100250.png",
+        url: "https://cdn.mindandbodyresetcoach.com/blog-images/when-your-body-stops-responding-finding-the-balance.png",
         width: 1200,
         height: 630,
         alt: "Life after GLP-1 — midlife health coaching",
@@ -37,7 +37,9 @@ export const metadata: Metadata = {
     title: "Life After GLP-1: Maintain Weight Loss Naturally",
     description:
       "Metabolism, food noise, and lasting habits after Ozempic, Wegovy, and other GLP-1s.",
-    images: ["/healing_balance_hormones_1780339100250.png"],
+    images: [
+      "https://cdn.mindandbodyresetcoach.com/blog-images/when-your-body-stops-responding-finding-the-balance.png",
+    ],
   },
 };
 

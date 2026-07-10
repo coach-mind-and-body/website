@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/metabolism_after_40_1780339113905.png",
+        url: "https://cdn.mindandbodyresetcoach.com/blog-images/mastering-insulin-fueling-fat-burning-and-energy-after-40.png",
         width: 1200,
         height: 630,
         alt: "Insulin resistance after 40 — midlife metabolic health",
@@ -36,7 +36,9 @@ export const metadata: Metadata = {
     title: "Insulin Resistance After 40: A Midlife Guide",
     description:
       "Midlife insulin resistance explained with practical next steps — coaching education for women 40+.",
-    images: ["/metabolism_after_40_1780339113905.png"],
+    images: [
+      "https://cdn.mindandbodyresetcoach.com/blog-images/mastering-insulin-fueling-fat-burning-and-energy-after-40.png",
+    ],
   },
 };
 
