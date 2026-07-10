@@ -33,15 +33,11 @@ const nextConfig = {
       { source: '/coaching', destination: '/reclaim', permanent: true },
       { source: '/coaching/', destination: '/reclaim', permanent: true },
       { source: '/services', destination: '/reclaim', permanent: true },
-      // Legacy blog index only — do NOT redirect /blog/* static assets (png/jpg/webp in public/blog/)
+      // Legacy blog index ONLY. Never redirect /blog/* files — static assets live under public/blog/
+      // and covers also live on Cloudflare R2 (cdn.mindandbodyresetcoach.com).
       { source: '/blog', destination: '/health-wellness-blog', permanent: true },
       { source: '/blog/', destination: '/health-wellness-blog', permanent: true },
-      // Article paths only (no file extension). Prevents hijacking /blog/*.png covers.
-      {
-        source: '/blog/:slug([^/.]+)',
-        destination: '/health-wellness-blog/:slug',
-        permanent: true,
-      },
+      // Intentionally NO /blog/:slug catch-all — it hijacked image URLs like /blog/foo.png
 
       // ── Duplicate product page: canonicalize to /unicity ──
       { source: '/feel-great-system', destination: '/unicity', permanent: true },

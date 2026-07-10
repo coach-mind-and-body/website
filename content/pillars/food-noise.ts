@@ -9,7 +9,7 @@ export const FOOD_NOISE_PILLAR = {
   seoDescription:
     "Learn how to calm food noise after 40: what it is, why restriction makes it louder, and practical strategies to quiet the mental food fight — without another diet.",
   coverImage:
-    "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/food-noise_ce014448.jpg",
+    "https://cdn.mindandbodyresetcoach.com/blog-images/calming-food-noise-drop-the-food-courtroom.jpg",
   coverImageAlt: "Calm midlife woman stepping out of mental food noise",
   schemaTypes: "Article,FAQ",
   schemaFaqJson: JSON.stringify([
