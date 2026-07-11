@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "R.E.C.L.A.I.M. · 6-Week Private Coaching",
     description:
-      "From free guide to real change. Intro $597 (usually $999). Free discovery call or enroll.",
+      "6 weeks of private midlife coaching. Intro $597 (usually $999). Enroll or book a free fit call.",
     url: "/reclaim-invite",
     type: "website",
   },

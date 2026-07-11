@@ -47,13 +47,13 @@ const OUTCOMES = [
 const FOR_YOU_IF = [
   "You're done with diets and \"just try harder\"",
   "Night cravings or food noise still run the evenings",
-  "You're 40+ and ready for private coaching, not just more reading",
-  "You're ready for real accountability for 6 weeks",
+  "You're 40+ and want real support, not another solo restart",
+  "You're ready for accountability for 6 weeks with a coach",
 ];
 
 const NOT_FOR_YOU = [
   "You want a meal plan, macros, or someone to police your plate",
-  "You're looking for a free tip — not a private coaching commitment",
+  "You're only browsing and not open to a coaching commitment",
   "You're not willing to show up for yourself between sessions",
 ];
 
@@ -328,19 +328,21 @@ export default function ReclaimInviteClient() {
                 <span className="text-[#c9a96e] italic">Get a coach in your corner.</span>
               </h1>
 
-              {/* Emotional arc: pain → hope → next step (honor the free guide) */}
+              {/* Pain → hope → offer (works with or without the free guide) */}
               <p className="text-base sm:text-lg text-gray-700 mb-3 leading-relaxed">
                 You already know the loop: good intentions by day, food noise by night, shame by
                 morning — then another Monday promise.
               </p>
               <p className="text-base sm:text-lg text-gray-700 mb-3 leading-relaxed">
                 It&apos;s not a character flaw. In midlife, hormones, stress, and old thought patterns
-                team up. That free guide was a real first step — tools you can use tonight.
+                team up. Understanding that is powerful — and our free Midlife Snack Hack guide is a
+                great way to start, with tools you can use right away.
               </p>
               <p className="text-base sm:text-lg text-gray-700 mb-6 leading-relaxed">
-                <strong>R.E.C.L.A.I.M.</strong> is the next step: 6 weeks of private coaching with{" "}
-                {BRAND.coachFullName}, so those tools become a lasting way of being with food and
-                your body — with someone in your corner the whole way.
+                <strong>R.E.C.L.A.I.M.</strong> is where lasting change happens: 6 weeks of private
+                coaching with {BRAND.coachFullName}. You get a clear system, personalized support, and
+                someone in your corner so peace with food and your body becomes how you live — not
+                just something you know about.
               </p>
 
               <div className="grid grid-cols-2 gap-2.5 sm:gap-3 mb-3 max-w-md mx-auto md:mx-0">
@@ -507,8 +509,8 @@ export default function ReclaimInviteClient() {
                   a: "No. R.E.C.L.A.I.M. is a coaching system — mindset, midlife patterns, and habits. No menus. No calorie counting. No food police.",
                 },
                 {
-                  q: "I only got the free guide. Is this for me?",
-                  a: "Yes — if you liked having a starting point and want support to make it stick. The guide is a great first step; coaching walks with you for 6 weeks so the change becomes real life.",
+                  q: "Do I need the free guide first?",
+                  a: "No. The free Snack Hack guide is a great way to start if you want tools tonight — but it's not required. R.E.C.L.A.I.M. is for women ready for private coaching and real change over 6 weeks.",
                 },
                 {
                   q: "What if I'm not sure?",
