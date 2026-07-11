@@ -47,7 +47,7 @@ const OUTCOMES = [
 const FOR_YOU_IF = [
   "You're done with diets and \"just try harder\"",
   "Night cravings or food noise still run the evenings",
-  "You're 40+ and want a coach — not another free PDF",
+  "You're 40+ and ready for private coaching, not just more reading",
   "You're ready for real accountability for 6 weeks",
 ];
 
@@ -328,19 +328,19 @@ export default function ReclaimInviteClient() {
                 <span className="text-[#c9a96e] italic">Get a coach in your corner.</span>
               </h1>
 
-              {/* 7. Emotional arc: pain → agitate → hope */}
+              {/* Emotional arc: pain → hope → next step (honor the free guide) */}
               <p className="text-base sm:text-lg text-gray-700 mb-3 leading-relaxed">
                 You already know the loop: good intentions by day, food noise by night, shame by
                 morning — then another Monday promise.
               </p>
               <p className="text-base sm:text-lg text-gray-700 mb-3 leading-relaxed">
                 It&apos;s not a character flaw. In midlife, hormones, stress, and old thought patterns
-                team up. Another free PDF can interrupt one evening. It can&apos;t rewire the pattern.
+                team up. That free guide was a real first step — tools you can use tonight.
               </p>
               <p className="text-base sm:text-lg text-gray-700 mb-6 leading-relaxed">
-                <strong>R.E.C.L.A.I.M.</strong> is 6 weeks of private coaching with{" "}
-                {BRAND.coachFullName} — so you stop white-knuckling willpower and build a way of
-                being with food and your body that actually lasts.
+                <strong>R.E.C.L.A.I.M.</strong> is the next step: 6 weeks of private coaching with{" "}
+                {BRAND.coachFullName}, so those tools become a lasting way of being with food and
+                your body — with someone in your corner the whole way.
               </p>
 
               <div className="grid grid-cols-2 gap-2.5 sm:gap-3 mb-3 max-w-md mx-auto md:mx-0">
@@ -508,7 +508,7 @@ export default function ReclaimInviteClient() {
                 },
                 {
                   q: "I only got the free guide. Is this for me?",
-                  a: "If the guide helped a little but nights still feel hard, yes. The guide is a spark. Private coaching is what keeps the change going for 6 weeks.",
+                  a: "Yes — if you liked having a starting point and want support to make it stick. The guide is a great first step; coaching walks with you for 6 weeks so the change becomes real life.",
                 },
                 {
                   q: "What if I'm not sure?",
