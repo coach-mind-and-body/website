@@ -156,6 +156,25 @@ export default function Portal() {
   const totalSessions = 6;
   const progressPct = Math.round((completedCount / totalSessions) * 100);
 
+  // Only show completed, scheduled, and the next session to book — hide locked future rows
+  const visibleSessionNums = Array.from({ length: totalSessions }, (_, i) => i + 1).filter(
+    (sessionNum) => {
+      const session = sessions.find((s: { sessionNumber: number }) => s.sessionNumber === sessionNum);
+      const status = session?.status ?? "not_scheduled";
+      if (status === "completed" || status === "scheduled") return true;
+      return sessionNum === completedCount + 1;
+    }
+  );
+
+  const nextScheduled = sessions
+    .filter((s: { status: string; scheduledAt?: Date | string | null }) => s.status === "scheduled" && s.scheduledAt)
+    .sort(
+      (a: { scheduledAt: Date | string }, b: { scheduledAt: Date | string }) =>
+        new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
+    )[0] as
+    | { sessionNumber: number; scheduledAt: Date | string; googleMeetLink?: string | null }
+    | undefined;
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !activeUploadEnrollmentId) return;
@@ -189,55 +208,137 @@ export default function Portal() {
                 Mind & Body Reset
               </span>
           </Link>
-          <div className="flex items-center gap-4">
-            <Link href="/habit-tracker" className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm" style={{ background: "#fbeee9", color: "#c9a96e" }}>
-              <CheckCircle2 size={14} /> My Daily Reset
+          <div className="flex items-center gap-2 sm:gap-3">
+            {enrollment && (
+              <Link
+                href="/portal/hub"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm"
+                style={{ background: "#c9a96e", color: "white" }}
+              >
+                <BookOpen size={14} />
+                <span className="hidden sm:inline">Modules</span>
+              </Link>
+            )}
+            <Link
+              href="/habit-tracker"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm"
+              style={{ background: "#fbeee9", color: "#c9a96e" }}
+            >
+              <CheckCircle2 size={14} />
+              <span className="hidden xs:inline sm:inline">Tracker</span>
             </Link>
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm" style={{ background: "#fbeee9", color: "#c9a96e" }}>
+            <div className="flex items-center gap-2">
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm"
+                style={{ background: "#fbeee9", color: "#c9a96e" }}
+              >
                 {user?.name?.[0] ?? "C"}
               </div>
-              <span className="text-sm font-semibold hidden sm:block" style={{ color: "#2d3b2d" }}>{user?.name}</span>
+              <span className="text-sm font-semibold hidden md:block" style={{ color: "#2d3b2d" }}>
+                {user?.name}
+              </span>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-6 py-10">
-        {/* Welcome banner */}
-        <div className="rounded-2xl p-8 mb-8" style={{ background: "linear-gradient(135deg, #fbeee9 0%, #faf5f5 100%)", border: "1px solid #f0e8e4" }}>
-          <h1 className="text-3xl font-bold mb-2" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
-            Welcome back, {user?.name?.split(" ")[0] ?? "there"} 👋
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+        {/* Welcome + primary actions */}
+        <div
+          className="rounded-2xl p-6 sm:p-8 mb-6"
+          style={{
+            background: "linear-gradient(135deg, #fbeee9 0%, #faf5f5 100%)",
+            border: "1px solid #f0e8e4",
+          }}
+        >
+          <h1
+            className="text-2xl sm:text-3xl font-bold mb-1"
+            style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}
+          >
+            Hi, {user?.name?.split(" ")[0] ?? "there"}
           </h1>
           {enrollment ? (
             <>
-              <p className="text-base mb-6" style={{ color: "#5a6b5a" }}>
-                Your R.E.C.L.A.I.M. journey is underway. Here's where you stand.
+              <p className="text-sm sm:text-base mb-4" style={{ color: "#5a6b5a" }}>
+                Your coaching home — next session, modules, and files in one place.
               </p>
-              {/* Progress bar */}
-              <div className="flex items-center gap-4">
-                <div className="flex-1 h-3 rounded-full overflow-hidden" style={{ background: "#f0e8e4" }}>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="flex-1 h-2.5 rounded-full overflow-hidden" style={{ background: "#f0e8e4" }}>
                   <div
                     className="h-full rounded-full transition-all duration-700"
-                    style={{ width: `${progressPct}%`, background: "linear-gradient(90deg, #c9a96e, #e8c99a)" }}
+                    style={{
+                      width: `${progressPct}%`,
+                      background: "linear-gradient(90deg, #c9a96e, #e8c99a)",
+                    }}
                   />
                 </div>
-                <span className="text-sm font-bold whitespace-nowrap" style={{ color: "#c9a96e" }}>
-                  {completedCount} / {totalSessions} sessions
+                <span className="text-xs sm:text-sm font-bold whitespace-nowrap" style={{ color: "#c9a96e" }}>
+                  {completedCount}/{totalSessions} done
                 </span>
               </div>
-              <p className="text-xs mt-2" style={{ color: "#8a9a8a" }}>
-                {enrollment.paymentType === "full" ? "Paid in Full ✓" : "Deposit Paid — Balance Due Before Session 3"}
+              <p className="text-xs mb-5" style={{ color: "#8a9a8a" }}>
+                {enrollment.paymentType === "full"
+                  ? "Program paid in full"
+                  : "Deposit paid — balance due before your later sessions"}
               </p>
-              <div className="mt-6">
-                <Link href="/portal/hub" className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm transition-transform hover:scale-105 shadow-sm" style={{ background: "#c9a96e", color: "white" }}>
-                  <BookOpen size={16} /> Enter Reclaim Hub
+
+              {/* One clear “do this next” card */}
+              {nextScheduled ? (
+                <div
+                  className="rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4"
+                  style={{ background: "white", border: "1px solid #f0e8e4" }}
+                >
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "#c9a96e" }}>
+                      Up next
+                    </p>
+                    <p className="font-bold text-sm" style={{ color: "#2d3b2d" }}>
+                      Session {nextScheduled.sessionNumber}
+                      {SESSION_LABELS[nextScheduled.sessionNumber - 1]
+                        ? `: ${SESSION_LABELS[nextScheduled.sessionNumber - 1]}`
+                        : ""}
+                    </p>
+                    <p className="text-xs mt-0.5" style={{ color: "#8a9a8a" }}>
+                      {new Date(nextScheduled.scheduledAt).toLocaleString("en-US", {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })}
+                    </p>
+                  </div>
+                  {nextScheduled.googleMeetLink && (
+                    <a
+                      href={nextScheduled.googleMeetLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold"
+                      style={{ background: "#1a73e8", color: "white" }}
+                    >
+                      <Video size={16} /> Join Meet
+                    </a>
+                  )}
+                </div>
+              ) : null}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Link
+                  href="/portal/hub"
+                  className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full font-bold text-sm shadow-sm"
+                  style={{ background: "#c9a96e", color: "white" }}
+                >
+                  <BookOpen size={16} /> Open modules
+                </Link>
+                <Link
+                  href="/habit-tracker"
+                  className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full font-bold text-sm border"
+                  style={{ borderColor: "#c9a96e", color: "#5a4a30", background: "white" }}
+                >
+                  <CheckCircle2 size={16} /> Habit tracker
                 </Link>
               </div>
             </>
           ) : (
             <p className="text-base" style={{ color: "#5a6b5a" }}>
-              Your coaching portal — manage sessions, files, and more.
+              Your coaching portal — sessions, files, and more.
             </p>
           )}
         </div>
@@ -281,33 +382,31 @@ export default function Portal() {
           </div>
         )}
 
-        {/* RECLAIM Sessions — only shown for enrolled clients */}
+        {/* RECLAIM Sessions — only current + scheduled + completed (no wall of locked sessions) */}
         {enrollment && <>
-        <h2 className="text-xl font-bold mb-4" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
-          Your R.E.C.L.A.I.M. Sessions
+        <h2 className="text-lg sm:text-xl font-bold mb-3" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
+          Your sessions
         </h2>
-        <div className="space-y-3 mb-10">
-          {Array.from({ length: totalSessions }, (_, i) => {
-            const sessionNum = i + 1;
-            const session = sessions.find(s => s.sessionNumber === sessionNum);
+        <div className="space-y-3 mb-8">
+          {visibleSessionNums.map((sessionNum) => {
+            const session = sessions.find((s: { sessionNumber: number }) => s.sessionNumber === sessionNum);
             const status = session?.status ?? "not_scheduled";
             const isCompleted = status === "completed";
             const isScheduled = status === "scheduled";
-            const isLocked = !isCompleted && !isScheduled && sessionNum > (completedCount + 1);
             const isExpanded = expandedSession === sessionNum;
+            const label = SESSION_LABELS[sessionNum - 1] ?? `Session ${sessionNum}`;
 
             return (
               <div
                 key={sessionNum}
                 className="rounded-xl overflow-hidden"
-                style={{ background: "white", border: "1px solid #f0e8e4", opacity: isLocked ? 0.6 : 1 }}
+                style={{ background: "white", border: "1px solid #f0e8e4" }}
               >
                 <button
-                  className="w-full flex items-center justify-between p-5 text-left"
-                  onClick={() => !isLocked && setExpandedSession(isExpanded ? null : sessionNum)}
-                  disabled={isLocked}
+                  className="w-full flex items-center justify-between p-4 sm:p-5 text-left"
+                  onClick={() => setExpandedSession(isExpanded ? null : sessionNum)}
                 >
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                     <div
                       className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
                       style={{
@@ -315,59 +414,72 @@ export default function Portal() {
                         color: isCompleted ? "#4caf50" : isScheduled ? "#c9a96e" : "#aaa",
                       }}
                     >
-                      {isCompleted ? <CheckCircle2 size={20} /> : isScheduled ? <Clock size={20} /> : isLocked ? <Lock size={18} /> : <Calendar size={18} />}
+                      {isCompleted ? (
+                        <CheckCircle2 size={20} />
+                      ) : isScheduled ? (
+                        <Clock size={20} />
+                      ) : (
+                        <Calendar size={18} />
+                      )}
                     </div>
-                    <div>
-                      <p className="font-bold text-sm" style={{ color: "#2d3b2d" }}>
-                        Session {sessionNum}: {SESSION_LABELS[i]}
+                    <div className="min-w-0">
+                      <p className="font-bold text-sm truncate" style={{ color: "#2d3b2d" }}>
+                        Session {sessionNum}: {label}
                       </p>
                       <p className="text-xs mt-0.5" style={{ color: "#8a9a8a" }}>
                         {isCompleted
                           ? `Completed ${session?.completedAt ? new Date(session.completedAt).toLocaleDateString() : ""}`
                           : isScheduled && session?.scheduledAt
-                          ? `Scheduled: ${new Date(session.scheduledAt).toLocaleString()}`
-                          : isLocked
-                          ? "Complete previous sessions to unlock"
-                          : "Not yet scheduled"}
+                            ? `Scheduled: ${new Date(session.scheduledAt).toLocaleString()}`
+                            : "Ready to book"}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0">
                     {isScheduled && session?.googleMeetLink && (
                       <a
                         href={session.googleMeetLink}
                         target="_blank"
                         rel="noopener noreferrer"
-                        onClick={e => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold"
                         style={{ background: "#1a73e8", color: "white" }}
                       >
-                        <Video size={12} /> Join Meet
+                        <Video size={12} /> Join
                       </a>
                     )}
-                    {!isLocked && (isExpanded ? <ChevronUp size={16} style={{ color: "#8a9a8a" }} /> : <ChevronDown size={16} style={{ color: "#8a9a8a" }} />)}
+                    {isExpanded ? (
+                      <ChevronUp size={16} style={{ color: "#8a9a8a" }} />
+                    ) : (
+                      <ChevronDown size={16} style={{ color: "#8a9a8a" }} />
+                    )}
                   </div>
                 </button>
 
-                {isExpanded && !isLocked && (
-                  <div className="px-5 pb-5 border-t" style={{ borderColor: "#f0e8e4" }}>
-                    {/* Schedule button for not_scheduled sessions */}
+                {isExpanded && (
+                  <div className="px-4 sm:px-5 pb-5 border-t" style={{ borderColor: "#f0e8e4" }}>
                     {status === "not_scheduled" && (
                       <div className="mt-4">
                         <p className="text-sm mb-3" style={{ color: "#5a6b5a" }}>
-                          Ready to book Session {sessionNum}? Use the button below to pick a time that works for you.
+                          Pick a time for Session {sessionNum} with Lee Anne.
                         </p>
                         <GoogleCalendarBookingButton sessionNumber={sessionNum} />
                       </div>
                     )}
                     {session?.adminNotes && (
                       <div className="mt-4 p-4 rounded-xl" style={{ background: "#faf5f5" }}>
-                        <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "#8a9a8a" }}>Coach Notes</p>
-                        <p className="text-sm" style={{ color: "#2d3b2d" }}>{session.adminNotes}</p>
+                        <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "#8a9a8a" }}>
+                          Coach notes
+                        </p>
+                        <p className="text-sm" style={{ color: "#2d3b2d" }}>
+                          {session.adminNotes}
+                        </p>
                       </div>
                     )}
                     {!session?.adminNotes && status !== "not_scheduled" && (
-                      <p className="mt-4 text-sm" style={{ color: "#8a9a8a" }}>No notes for this session yet.</p>
+                      <p className="mt-4 text-sm" style={{ color: "#8a9a8a" }}>
+                        No notes for this session yet.
+                      </p>
                     )}
                   </div>
                 )}
@@ -449,16 +561,17 @@ export default function Portal() {
         {/* Payment History */}
         <PaymentHistorySection data={paymentData} isLoading={loadingPayments} />
 
-        {/* Book a call CTA */}
-        <div className="mt-8 rounded-2xl p-6 text-center" style={{ background: "linear-gradient(135deg, #2d3b2d, #3d4f3d)" }}>
-          <h3 className="text-xl font-bold mb-2 text-white" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-            Need support between sessions?
-          </h3>
-          <p className="text-sm mb-4" style={{ color: "#a0b8a0" }}>
-            Reach out anytime — we're here to support your reset journey.
+        {/* Light support CTA */}
+        <div className="mt-6 text-center pb-4">
+          <p className="text-xs mb-2" style={{ color: "#8a9a8a" }}>
+            Questions between sessions?
           </p>
-          <Link href="/book" className="inline-block px-6 py-3 rounded-full font-bold text-sm" style={{ background: "#c9a96e", color: "white" }}>
-              Book a Support Call
+          <Link
+            href="/book"
+            className="text-sm font-semibold underline underline-offset-2"
+            style={{ color: "#c9a96e" }}
+          >
+            Book a support call
           </Link>
         </div>
       </div>

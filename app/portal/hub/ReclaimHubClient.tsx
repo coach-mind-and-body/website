@@ -58,7 +58,7 @@ export default function ReclaimHub() {
 
   const markModuleComplete = trpc.reclaimHub.markModuleComplete.useMutation({
     onSuccess: () => {
-      toast.success("Module marked as complete! Next module is now unlocked.");
+      toast.success("Module marked complete. Great work!");
       refetch();
     },
     onError: (e) => toast.error(e.message),
@@ -212,24 +212,41 @@ export default function ReclaimHub() {
   return (
     <div className="min-h-screen font-sans" style={{ background: "#faf5f5" }}>
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b" style={{ borderColor: "#f0e8e4" }}>
-        <div className="container max-w-5xl mx-auto px-6 h-20 flex items-center justify-between">
-          <Link href="/portal" className="flex items-center gap-3 group">
-            <img src={BRAND.logoUrl} alt={BRAND.name} className="w-10 h-10 rounded-full object-cover shadow-sm group-hover:scale-105 transition-transform" />
-            <div>
-              <span className="block font-bold text-lg leading-tight" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
-                Reclaim Hub
+      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b" style={{ borderColor: "#f0e8e4" }}>
+        <div className="container max-w-5xl mx-auto px-4 sm:px-6 h-16 sm:h-18 flex items-center justify-between gap-2">
+          <Link href="/portal" className="flex items-center gap-2 sm:gap-3 group min-w-0">
+            <img
+              src={BRAND.logoUrl}
+              alt={BRAND.name}
+              className="w-9 h-9 rounded-full object-cover shadow-sm group-hover:scale-105 transition-transform shrink-0"
+            />
+            <div className="min-w-0">
+              <span
+                className="block font-bold text-base sm:text-lg leading-tight truncate"
+                style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}
+              >
+                Modules
               </span>
-              <span className="block text-xs" style={{ color: "#8a9a8a" }}>Client Portal</span>
+              <span className="block text-[10px] sm:text-xs" style={{ color: "#8a9a8a" }}>
+                ← Back to portal home
+              </span>
             </div>
           </Link>
-          <div className="flex items-center gap-4">
-            <Link href="/habit-tracker" className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold shadow-sm" style={{ background: "#fbeee9", color: "#c9a96e" }}>
-              <CheckCircle size={16} /> My Daily Reset
+          <div className="flex items-center gap-2 shrink-0">
+            <Link
+              href="/portal"
+              className="px-3 py-1.5 rounded-full text-xs font-bold"
+              style={{ background: "#f5f5f5", color: "#5a6b5a" }}
+            >
+              Home
             </Link>
-            <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-sm" style={{ background: "#c9a96e", color: "white" }}>
-              {user?.name?.[0]?.toUpperCase() ?? "C"}
-            </div>
+            <Link
+              href="/habit-tracker"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm"
+              style={{ background: "#fbeee9", color: "#c9a96e" }}
+            >
+              <CheckCircle size={14} /> Tracker
+            </Link>
           </div>
         </div>
       </header>
