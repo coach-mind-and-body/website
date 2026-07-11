@@ -183,7 +183,7 @@ export default function FitnessTrackerClient() {
       {!isAuthenticated && activeTab === "log" && (
         <div className="py-2 px-4 text-center text-sm flex items-center justify-center gap-2 relative" style={{ background: "#c9a96e", color: "white" }}>
           <Info size={16} />
-          <span>You must <Link href="/login" className="underline font-bold">Sign in</Link> to log workouts.</span>
+          <span>You must <Link href="/login?returnTo=/habit-tracker/fitness" className="underline font-bold">Sign in</Link> to log workouts.</span>
         </div>
       )}
 

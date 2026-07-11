@@ -247,7 +247,20 @@ export async function GET(req: Request, { params }: { params: Promise<{ action: 
   if (actionPath === 'google') {
     const origin = getPublicOrigin(req);
     const redirectUri = `${origin}/api/auth/google/callback`;
-    const state = Buffer.from(JSON.stringify({ redirectUri })).toString("base64url");
+    // Optional post-login path (e.g. /habit-tracker) — same-site relative only
+    const rawReturn =
+      url.searchParams.get("returnTo") || url.searchParams.get("redirect") || "";
+    let postLoginRedirect: string | undefined;
+    if (
+      rawReturn.startsWith("/") &&
+      !rawReturn.startsWith("//") &&
+      !rawReturn.includes("://")
+    ) {
+      postLoginRedirect = rawReturn;
+    }
+    const state = Buffer.from(
+      JSON.stringify({ redirectUri, postLoginRedirect })
+    ).toString("base64url");
 
     const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
     authUrl.searchParams.set("client_id", ENV.googleClientId || '');
@@ -310,9 +323,15 @@ export async function GET(req: Request, { params }: { params: Promise<{ action: 
         emailVerified: googleUser.email_verified ?? true,
       });
 
-      const postLoginRedirect = statePostLoginRedirect || (user.role === "admin" ? "/admin" : "/portal");
+      let postLoginRedirect =
+        (typeof statePostLoginRedirect === "string" &&
+        statePostLoginRedirect.startsWith("/") &&
+        !statePostLoginRedirect.startsWith("//")
+          ? statePostLoginRedirect
+          : null) || (user.role === "admin" ? "/admin" : "/portal");
+      if (user.role === "admin") postLoginRedirect = "/admin";
       await issueSession(user.openId, user.name || googleUser.name || "");
-      
+
       const resUrl = new URL(postLoginRedirect, origin);
       return NextResponse.redirect(resUrl);
     } catch (err) {

@@ -416,7 +416,7 @@ export default function HabitTrackerClient() {
       {!isAuthenticated && (
         <div className="py-2 px-4 text-center text-sm flex items-center justify-center gap-2 relative" style={{ background: "#c9a96e", color: "white" }}>
           <Info size={16} />
-          <span>You are tracking on this device only. <Link href="/login" className="underline font-bold">Sign in</Link> to sync across all devices!</span>
+          <span>You are tracking on this device only. <Link href="/login?returnTo=/habit-tracker" className="underline font-bold">Sign in</Link> to sync across all devices!</span>
         </div>
       )}
 
@@ -962,7 +962,7 @@ export default function HabitTrackerClient() {
                           <LogOut size={16} className="mr-1" /> Sign Out
                         </Button>
                       ) : (
-                        <Link href="/login">
+                        <Link href="/login?returnTo=/habit-tracker">
                           <Button size="sm" className="rounded-full" style={{ background: "#2d3b2d", color: "white" }}>Sign In</Button>
                         </Link>
                       )}

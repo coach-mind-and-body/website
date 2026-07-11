@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { Loader2, Eye, EyeOff } from "lucide-react";
+import { safeReturnTo } from "@/lib/const";
 
 
 // Google "G" icon SVG
@@ -27,9 +28,14 @@ function GoogleIcon() {
 type Mode = "login" | "signup" | "forgot";
 
 export default function Login() {
-  
   const router = useRouter();
+  const searchParams = useSearchParams();
   const utils = trpc.useUtils();
+
+  const returnTo = safeReturnTo(
+    searchParams?.get("returnTo") || searchParams?.get("redirect"),
+    "/portal"
+  );
 
   const [mode, setMode] = useState<Mode>("login");
   const [name, setName] = useState("");
@@ -40,7 +46,9 @@ export default function Login() {
   const [forgotSent, setForgotSent] = useState(false);
 
   const handleGoogleLogin = () => {
-    window.location.href = "/api/auth/google";
+    // Pass return path through Google OAuth state → land on habit tracker (etc.)
+    const q = new URLSearchParams({ returnTo });
+    window.location.href = `/api/auth/google?${q.toString()}`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -82,8 +90,11 @@ export default function Login() {
         toast.success(`Welcome back, ${data.user?.name || email}!`);
       }
 
-      // Redirect admins to /admin, regular users to /portal
-      const destination = data.user?.role === "admin" ? "/admin" : "/portal";
+      // Admins always go to admin; everyone else honors returnTo (e.g. /habit-tracker)
+      const destination =
+        data.user?.role === "admin"
+          ? "/admin"
+          : safeReturnTo(returnTo, "/portal");
       router.push(destination);
     } catch (err: any) {
       toast.error(err.message || "Something went wrong");

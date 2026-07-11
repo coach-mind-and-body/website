@@ -119,17 +119,20 @@ export default function Portal() {
             <Lock size={28} style={{ color: "#c9a96e" }} />
           </div>
           <h1 className="text-2xl font-bold mb-3" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
-            No Active Program
+            No coaching program yet
           </h1>
           <p className="text-base mb-6" style={{ color: "#5a6b5a" }}>
-            You don't have an active program yet. Enroll in R.E.C.L.A.I.M. or add FPU coaching to access your client portal.
+            This portal is for R.E.C.L.A.I.M. and FPU coaching clients. If you signed in for the free habit tracker, you can open it below — no enrollment required.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/enroll" className="inline-block px-6 py-3 rounded-full font-bold text-white" style={{ background: "#c9a96e" }}>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center flex-wrap">
+            <Link href="/habit-tracker" className="inline-block px-6 py-3 rounded-full font-bold text-white" style={{ background: "#c9a96e" }}>
+                Open Habit Tracker
+            </Link>
+            <Link href="/enroll" className="inline-block px-6 py-3 rounded-full font-bold border" style={{ borderColor: "#c9a96e", color: "#c9a96e" }}>
                 Enroll in R.E.C.L.A.I.M.
             </Link>
-            <Link href="/financial-peace" className="inline-block px-6 py-3 rounded-full font-bold border" style={{ borderColor: "#c9a96e", color: "#c9a96e" }}>
-                Add FPU Coaching
+            <Link href="/financial-peace" className="inline-block px-6 py-3 rounded-full font-bold border" style={{ borderColor: "#8a9a8a", color: "#5a6b5a" }}>
+                FPU Coaching
             </Link>
           </div>
         </div>

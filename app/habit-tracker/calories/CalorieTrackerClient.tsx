@@ -120,7 +120,7 @@ export default function CalorieTrackerClient() {
       {!isAuthenticated && (
         <div className="py-2 px-4 text-center text-sm flex items-center justify-center gap-2 relative" style={{ background: "#c9a96e", color: "white" }}>
           <Info size={16} />
-          <span>You must <Link href="/login" className="underline font-bold">Sign in</Link> to use the Calorie Tracker.</span>
+          <span>You must <Link href="/login?returnTo=/habit-tracker/calories" className="underline font-bold">Sign in</Link> to use the Calorie Tracker.</span>
         </div>
       )}
 
