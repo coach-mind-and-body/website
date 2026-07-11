@@ -45,10 +45,15 @@ export function AdminSnackHackTab() {
             {snackHackLeads?.length ?? 0}
           </div>
           <div className="text-xs mt-1" style={{ color: "oklch(0.52 0.015 50)" }}>
-            Total sign-ups
+            Unique emails in DB
           </div>
         </div>
       </div>
+      <p className="text-xs mb-4 rounded-lg px-3 py-2" style={{ background: "oklch(0.97 0.02 80)", color: "oklch(0.40 0.02 50)" }}>
+        This count is <strong>unique emails saved in our database</strong>. Meta Ads Lead events can be higher
+        (duplicate downloads, browser + CAPI double-counting without full dedupe, test events, or leads that
+        fired the pixel before the DB write succeeded).
+      </p>
 
       {snackHackLeads && snackHackLeads.length > 0 ? (
         <div className="space-y-3">

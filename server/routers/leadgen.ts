@@ -23,30 +23,43 @@ const leadInputSchema = z.object({
 }).merge(metaTrackingInputSchema);
 
 async function addSubscriberSegment(email: string, firstName: string | undefined, segment: string) {
-  try {
-    const { getDb } = await import("../db");
-    const { subscribers } = await import("../../drizzle/schema");
-    const { eq } = await import("drizzle-orm");
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database unavailable — lead not saved");
+  }
 
-    const db = await getDb();
-    if (!db) return;
+  const normalizedEmail = email.toLowerCase().trim();
+  const existingSub = await db
+    .select()
+    .from(subscribers)
+    .where(eq(subscribers.email, normalizedEmail))
+    .limit(1);
 
-    const existingSub = await db.select().from(subscribers).where(eq(subscribers.email, email)).limit(1);
-    if (existingSub.length > 0) {
-      const currentSegments = existingSub[0].segments ? JSON.parse(existingSub[0].segments) : [];
-      if (!currentSegments.includes(segment)) {
-        currentSegments.push(segment);
-        await db.update(subscribers).set({ segments: JSON.stringify(currentSegments) }).where(eq(subscribers.id, existingSub[0].id));
-      }
-    } else {
-      await db.insert(subscribers).values({
-        email,
-        firstName,
-        segments: JSON.stringify([segment]),
-      });
+  if (existingSub.length > 0) {
+    let currentSegments: string[] = [];
+    try {
+      currentSegments = existingSub[0].segments ? JSON.parse(existingSub[0].segments) : [];
+      if (!Array.isArray(currentSegments)) currentSegments = [];
+    } catch {
+      currentSegments = [];
     }
-  } catch (e) {
-    console.error(`[LeadGen] Failed to add subscriber segment ${segment}:`, e);
+    if (!currentSegments.includes(segment)) {
+      currentSegments.push(segment);
+      await db
+        .update(subscribers)
+        .set({
+          segments: JSON.stringify(currentSegments),
+          // Keep newest first name if provided
+          firstName: firstName?.trim() || existingSub[0].firstName,
+        })
+        .where(eq(subscribers.id, existingSub[0].id));
+    }
+  } else {
+    await db.insert(subscribers).values({
+      email: normalizedEmail,
+      firstName: firstName?.trim() || null,
+      segments: JSON.stringify([segment]),
+    });
   }
 }
 
@@ -57,6 +70,16 @@ export const leadgenRouter = router({
       firstName: z.string().optional(),
     }).merge(metaTrackingInputSchema))
     .mutation(async ({ input, ctx }) => {
+      // 1) Persist lead FIRST so admin always has the contact even if Meta/email fail.
+      //    (Previously Meta CAPI ran before DB — pixel could count a Lead with no row.)
+      try {
+        await addSubscriberSegment(input.email, input.firstName, "leadgen_snack_hack");
+      } catch (e) {
+        console.error("[LeadGen] CRITICAL: failed to save snack-hack subscriber:", e);
+        throw new Error("We couldn't save your download. Please try again.");
+      }
+
+      // 2) Email / list providers (non-fatal)
       const result = await resendSubscribe({
         email: input.email,
         firstName: input.firstName,
@@ -65,17 +88,6 @@ export const leadgenRouter = router({
       if (!result.success) {
         console.error("[LeadGen] Resend subscribe error:", result.error);
       }
-
-      await fireMetaPixelLead({
-        customerEmail: input.email,
-        customerName: input.firstName,
-        contentName: "Snack Hack Download",
-        eventSourceUrl: "https://mindandbodyresetcoach.com/snack-hack",
-        eventId: input.eventId,
-        req: ctx.req,
-        fbc: input.fbc,
-        fbp: input.fbp,
-      });
 
       try {
         const { ENV } = await import("../_core/env");
@@ -90,8 +102,6 @@ export const leadgenRouter = router({
       } catch (e) {
         console.error("[LeadGen] Failed to fire resend event:", e);
       }
-
-      await addSubscriberSegment(input.email, input.firstName, "leadgen_snack_hack");
 
       await sendSnackHackEmail({
         clientEmail: input.email,
@@ -110,6 +120,18 @@ export const leadgenRouter = router({
         );
       }
 
+      // 3) Meta CAPI last (browser pixel also fires after success client-side with same eventId)
+      await fireMetaPixelLead({
+        customerEmail: input.email,
+        customerName: input.firstName,
+        contentName: "Snack Hack Download",
+        eventSourceUrl: "https://mindandbodyresetcoach.com/snack-hack",
+        eventId: input.eventId,
+        req: ctx.req,
+        fbc: input.fbc,
+        fbp: input.fbp,
+      });
+
       return { success: true };
     }),
 
@@ -118,6 +140,13 @@ export const leadgenRouter = router({
       resultLetter: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
+      try {
+        await addSubscriberSegment(input.email, input.firstName, "leadgen_food_quiz");
+      } catch (e) {
+        console.error("[LeadGen] CRITICAL: failed to save food-quiz subscriber:", e);
+        throw new Error("We couldn't save your quiz. Please try again.");
+      }
+
       await fireMetaPixelLead({
         customerEmail: input.email,
         customerName: input.firstName,
@@ -128,8 +157,6 @@ export const leadgenRouter = router({
         fbc: input.fbc,
         fbp: input.fbp,
       });
-
-      await addSubscriberSegment(input.email, input.firstName, "leadgen_food_quiz");
 
       // Send initial Result Email
       let emailTemplate;
@@ -162,6 +189,13 @@ export const leadgenRouter = router({
   submitJoin: publicProcedure
     .input(leadInputSchema)
     .mutation(async ({ input, ctx }) => {
+      try {
+        await addSubscriberSegment(input.email, input.firstName, "leadgen_join");
+      } catch (e) {
+        console.error("[LeadGen] CRITICAL: failed to save join subscriber:", e);
+        throw new Error("We couldn't save your signup. Please try again.");
+      }
+
       await fireMetaPixelLead({
         customerEmail: input.email,
         customerName: input.firstName,
@@ -173,7 +207,6 @@ export const leadgenRouter = router({
         fbp: input.fbp,
       });
 
-      await addSubscriberSegment(input.email, input.firstName, "leadgen_join");
       return { success: true };
     }),
 
