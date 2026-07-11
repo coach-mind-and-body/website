@@ -6,6 +6,7 @@ import {
   BookOpen,
   Cookie,
   CreditCard,
+  FolderOpen,
   Layers,
   Link2,
   Megaphone,
@@ -26,6 +27,7 @@ export type AdminTab =
   | "engagement"
   | "blog"
   | "deposits"
+  | "filelibrary"
   | "settings"
   | "pageeditor";
 
@@ -40,6 +42,7 @@ export const ADMIN_TAB_IDS: AdminTab[] = [
   "engagement",
   "blog",
   "deposits",
+  "filelibrary",
   "settings",
   "pageeditor",
 ];
@@ -56,5 +59,6 @@ export const TABS: { id: AdminTab; label: string; icon: LucideIcon }[] = [
   { id: "pageeditor", label: "Edit Financial Peace", icon: BookOpen },
   { id: "blog", label: "Blog", icon: BookOpen },
   { id: "deposits", label: "Payments", icon: CreditCard },
+  { id: "filelibrary", label: "File library", icon: FolderOpen },
   { id: "settings", label: "Settings", icon: Link2 },
 ];

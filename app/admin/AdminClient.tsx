@@ -14,6 +14,7 @@ import { AdminSnackHackTab } from "@/components/admin/tabs/AdminSnackHackTab";
 import { AdminFpuCoachingTab } from "@/components/admin/tabs/AdminFpuCoachingTab";
 import { AdminFpuGroupTab } from "@/components/admin/tabs/AdminFpuGroupTab";
 import { AdminBlogTab } from "@/components/admin/tabs/AdminBlogTab";
+import { AdminCommonFilesTab } from "@/components/admin/tabs/AdminCommonFilesTab";
 import { AdminManualEnrollModal } from "@/components/admin/tabs/AdminManualEnrollModal";
 import { ADMIN_TAB_IDS, TABS, type AdminTab } from "@/components/admin/tabs/adminTypes";
 import { trpc } from "@/lib/trpc";
@@ -184,6 +185,7 @@ export default function Admin() {
         )}
         {tab === "crm-automations" && <AdminCrmAutomationsTab />}
         {tab === "deposits" && <AdminPaymentsTab />}
+        {tab === "filelibrary" && <AdminCommonFilesTab />}
       </div>
 
       <AdminManualEnrollModal open={showEnrollModal} onOpenChange={setShowEnrollModal} />

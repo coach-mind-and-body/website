@@ -1,7 +1,20 @@
 import { useState, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { CheckCircle2, Clock, Calendar, Video, PenLine, Play, Upload, FileText, Trash2, ExternalLink } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock,
+  Calendar,
+  Video,
+  PenLine,
+  Play,
+  Upload,
+  FileText,
+  Trash2,
+  ExternalLink,
+  Share2,
+  X,
+} from "lucide-react";
 
 const SESSION_LABELS = [
   "Discovery & Reset Foundation",
@@ -24,6 +37,7 @@ export default function AdminClientSessions({ enrollmentId, gcalConnected }: Pro
   const [privateNotes, setPrivateNotes] = useState<Record<number, string>>({});
   const [activeNotesTab, setActiveNotesTab] = useState<Record<number, 'shared' | 'private'>>({});
   const [uploading, setUploading] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: sessions, refetch } = trpc.enrollment.adminGetSessions.useQuery(
@@ -36,6 +50,11 @@ export default function AdminClientSessions({ enrollmentId, gcalConnected }: Pro
     { enabled: !!enrollmentId }
   );
 
+  const { data: commonFiles, isLoading: commonLoading } = trpc.clientFiles.listCommon.useQuery(
+    undefined,
+    { enabled: shareOpen }
+  );
+
   const uploadFile = trpc.clientFiles.upload.useMutation({
     onSuccess: (data) => {
       toast.success(`Uploaded "${data.fileName}"`);
@@ -46,6 +65,19 @@ export default function AdminClientSessions({ enrollmentId, gcalConnected }: Pro
       toast.error(e.message);
       setUploading(false);
     },
+  });
+
+  const shareCommon = trpc.clientFiles.shareCommonToEnrollment.useMutation({
+    onSuccess: (data) => {
+      if (data.alreadyShared) {
+        toast.message(`"${data.fileName}" is already on this client`);
+      } else {
+        toast.success(`Shared "${data.fileName}" with client`);
+      }
+      refetchFiles();
+      setShareOpen(false);
+    },
+    onError: (e) => toast.error(e.message),
   });
 
   const deleteFile = trpc.clientFiles.delete.useMutation({
@@ -281,18 +313,33 @@ export default function AdminClientSessions({ enrollmentId, gcalConnected }: Pro
 
       {/* ── Client Files ── */}
       <div className="mt-4">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
           <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "oklch(0.52 0.015 50)" }}>
             Client Files
           </p>
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
-            style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}
-          >
-            <Upload size={12} /> {uploading ? "Uploading..." : "Upload File"}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShareOpen((v) => !v)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+              style={{
+                background: shareOpen ? "oklch(0.38 0.10 148)" : "oklch(0.96 0.02 80)",
+                color: shareOpen ? "white" : "oklch(0.30 0.02 50)",
+                border: shareOpen ? "none" : "1px solid oklch(0.90 0.02 80)",
+              }}
+            >
+              <Share2 size={12} /> Share file
+            </button>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+              style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}
+            >
+              <Upload size={12} /> {uploading ? "Uploading..." : "Upload File"}
+            </button>
+          </div>
           <input
             ref={fileInputRef}
             type="file"
@@ -301,6 +348,55 @@ export default function AdminClientSessions({ enrollmentId, gcalConnected }: Pro
             accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp,.txt,.csv,.xlsx,.mp3,.mp4"
           />
         </div>
+
+        {shareOpen && (
+          <div
+            className="mb-3 rounded-xl p-3 border"
+            style={{ background: "oklch(0.99 0.005 80)", borderColor: "oklch(0.90 0.02 80)" }}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-bold" style={{ color: "oklch(0.30 0.02 50)" }}>
+                Shared library — pick a file to put on this client&apos;s portal
+              </p>
+              <button type="button" onClick={() => setShareOpen(false)} className="p-1 text-gray-400 hover:text-gray-600">
+                <X size={14} />
+              </button>
+            </div>
+            {commonLoading ? (
+              <p className="text-xs text-gray-500">Loading library…</p>
+            ) : commonFiles && commonFiles.length > 0 ? (
+              <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                {commonFiles.map((cf) => (
+                  <button
+                    key={cf.id}
+                    type="button"
+                    disabled={shareCommon.isPending}
+                    onClick={() =>
+                      shareCommon.mutate({ commonFileId: cf.id, enrollmentId })
+                    }
+                    className="w-full flex items-center justify-between gap-2 p-2.5 rounded-lg text-left text-sm hover:bg-white transition-colors disabled:opacity-60"
+                    style={{ border: "1px solid oklch(0.92 0.01 80)" }}
+                  >
+                    <span className="flex items-center gap-2 min-w-0">
+                      <FileText size={14} className="shrink-0" style={{ color: "oklch(0.72 0.12 75)" }} />
+                      <span className="truncate font-medium" style={{ color: "oklch(0.20 0.015 50)" }}>
+                        {cf.fileName}
+                      </span>
+                    </span>
+                    <span className="text-xs font-bold shrink-0" style={{ color: "oklch(0.45 0.10 148)" }}>
+                      Share →
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs" style={{ color: "oklch(0.52 0.015 50)" }}>
+                Library is empty. Go to Admin → <strong>File library</strong> tab and upload common
+                worksheets first.
+              </p>
+            )}
+          </div>
+        )}
 
         {files && files.length > 0 ? (
           <div className="space-y-2">

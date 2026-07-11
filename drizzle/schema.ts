@@ -183,6 +183,20 @@ export const clientFiles = mysqlTable("client_files", {
 export type ClientFile = typeof clientFiles.$inferSelect;
 export type InsertClientFile = typeof clientFiles.$inferInsert;
 
+// ── Common Files (shared library admins re-share to clients) ─────────────────
+export const commonFiles = mysqlTable("common_files", {
+  id: int("id").autoincrement().primaryKey(),
+  fileName: varchar("fileName", { length: 500 }).notNull(),
+  fileKey: varchar("fileKey", { length: 1000 }).notNull(),
+  fileUrl: varchar("fileUrl", { length: 2000 }).notNull(),
+  mimeType: varchar("mimeType", { length: 255 }),
+  uploadedByUserId: int("uploadedByUserId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type CommonFile = typeof commonFiles.$inferSelect;
+export type InsertCommonFile = typeof commonFiles.$inferInsert;
+
 // ── FPU Orders (Financial Peace University Stripe purchases) ────────────────
 export const fpuOrders = mysqlTable("fpu_orders", {
   id: int("id").autoincrement().primaryKey(),
