@@ -1,5 +1,5 @@
 /**
- * ChatWidget — floating AI chat button (bottom-left) on public marketing pages.
+ * ChatWidget — floating AI chat button (bottom-right) on public marketing pages.
  * Hidden on /admin, /habit-tracker (PWA), /snack-hack, and /reclaim-invite.
  *
  * Features:
@@ -267,12 +267,12 @@ export default function ChatWidget() {
 
   return (
     <>
-      {/* Chat panel — bottom-left, opens upward above the FAB */}
+      {/* Chat panel — bottom-right, opens upward above the FAB */}
       {isOpen && (
         <div
           className="fixed z-50 flex flex-col rounded-2xl overflow-hidden shadow-2xl"
           style={{
-            left: "max(1.25rem, env(safe-area-inset-left, 0px))",
+            right: "max(1.25rem, env(safe-area-inset-right, 0px))",
             bottom: "calc(5.5rem + env(safe-area-inset-bottom, 0px))",
             width: "360px",
             maxWidth: "calc(100vw - 40px)",
@@ -444,11 +444,11 @@ export default function ChatWidget() {
         </div>
       )}
 
-      {/* Floating toggle button — bottom-left (away from habit-tracker chrome) */}
+      {/* Floating toggle button — bottom-right */}
       <div
         className="fixed z-50"
         style={{
-          left: "max(1.25rem, env(safe-area-inset-left, 0px))",
+          right: "max(1.25rem, env(safe-area-inset-right, 0px))",
           bottom: "max(1.25rem, env(safe-area-inset-bottom, 0px))",
         }}
       >
