@@ -52,7 +52,7 @@ const FOR_YOU_IF = [
 ];
 
 const NOT_FOR_YOU = [
-  "You want a meal plan, macros, or someone to police your plate",
+  "You only want a list of rules with no coaching or mindset work",
   "You're only browsing and not open to a coaching commitment",
   "You're not willing to show up for yourself between sessions",
 ];
@@ -60,7 +60,8 @@ const NOT_FOR_YOU = [
 const INCLUDED = [
   "6 private 50-minute coaching sessions with Lee Anne",
   "A personalized plan after every session",
-  "Tools to quiet food noise — not another meal plan",
+  "Tools to quiet food noise and rewire midlife patterns",
+  "Habit support (including optional tracking tools when they serve you)",
   "Midlife hormone + habit education for real life",
   "Email support between sessions",
 ];
@@ -254,7 +255,7 @@ function CtaCard({
       <ul className="mt-5 space-y-2 text-xs sm:text-sm text-gray-500">
         {[
           "1-on-1 with Lee Anne (not a group program)",
-          "No meal plans or calorie counting",
+          "Mindset + habits — practical tools that fit real life",
           "Certified life & health coach · women 40+",
           `Only ${SPOTS} intro spots · Stripe secure pay`,
         ].map((line) => (
@@ -505,8 +506,8 @@ export default function ReclaimInviteClient() {
                   a: `Yes. Intro pricing of $${PROGRAM.fullPrice} is for the first ${SPOTS} women who enroll in this cohort, or until ${COHORT_WINDOW} — whichever comes first. After that, the full rate is $${USUAL_PRICE}.`,
                 },
                 {
-                  q: "Is this a diet or meal plan?",
-                  a: "No. R.E.C.L.A.I.M. is a coaching system — mindset, midlife patterns, and habits. No menus. No calorie counting. No food police.",
+                  q: "Is this a diet program?",
+                  a: "No — it's private coaching, not a one-size-fits-all diet. We work on mindset, midlife patterns, and habits. When it's useful, we can also use practical tools (like habit tracking, structure around meals, or light tracking) inside the program and habit tracker — always tailored to you, never food police.",
                 },
                 {
                   q: "Do I need the free guide first?",
