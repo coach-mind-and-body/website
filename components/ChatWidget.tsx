@@ -1,6 +1,6 @@
 /**
  * ChatWidget — floating AI chat button (bottom-left) on public marketing pages.
- * Hidden on /admin, /habit-tracker (PWA), and /snack-hack.
+ * Hidden on /admin, /habit-tracker (PWA), /snack-hack, and /reclaim-invite.
  *
  * Features:
  * - Persists across route changes via ChatContext
@@ -257,7 +257,11 @@ export default function ChatWidget() {
   }));
 
   // Hide on focused conversion flows and the habit-tracker app
-  if (pathname?.startsWith("/habit-tracker") || pathname?.startsWith("/snack-hack")) {
+  if (
+    pathname?.startsWith("/habit-tracker") ||
+    pathname?.startsWith("/snack-hack") ||
+    pathname?.startsWith("/reclaim-invite")
+  ) {
     return null;
   }
 
