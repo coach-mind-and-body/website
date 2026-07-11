@@ -40,12 +40,23 @@ export const paymentRouter = router({
    */
   createDepositCheckout: publicProcedure
     .input(
-      z.object({ plan: z.enum(["full", "deposit"]).default("full") }).merge(metaTrackingInputSchema)
+      z
+        .object({
+          plan: z.enum(["full", "deposit"]).default("full"),
+          /** Where Stripe sends buyers who cancel (same-origin path only). */
+          cancelPath: z
+            .string()
+            .regex(/^\/[a-zA-Z0-9/_-]*$/)
+            .max(120)
+            .optional(),
+        })
+        .merge(metaTrackingInputSchema)
     )
     .mutation(async ({ input, ctx }) => {
       const stripe = getStripe();
       const origin = (ctx.req.headers.get("origin") as string) || "https://localhost:3000";
       const planCfg = PLAN_CONFIG[input.plan];
+      const cancelPath = input.cancelPath || "/enroll";
 
       // Capture user info if logged in (ctx.user may be set for publicProcedure too)
       const loggedInUser = ctx.user ?? null;
@@ -83,7 +94,7 @@ export const paymentRouter = router({
         ],
         metadata,
         success_url: `${origin}/enroll?success=1&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${origin}/enroll`,
+        cancel_url: `${origin}${cancelPath}`,
       });
 
       // Persist the pending deposit record

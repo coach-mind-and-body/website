@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { BRAND, PROGRAM } from "@shared/brand";
+import { trpc } from "@/lib/trpc";
 import { useMetaPixel } from "@/hooks/useMetaPixel";
+import { getMetaParams, generateMetaEventId } from "@/hooks/useMetaParams";
 import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
 
 /** Full rate for value anchor. Intro price = PROGRAM.fullPrice ($597). */
@@ -23,10 +26,6 @@ const LIFESTYLE_IMG =
 
 const BOOK_HREF =
   "/book?utm_source=meta&utm_medium=paid&utm_campaign=rt_reclaim&utm_content=invite_book";
-const ENROLL_HREF =
-  "/enroll?utm_source=meta&utm_medium=paid&utm_campaign=rt_reclaim&utm_content=invite_enroll";
-const ENROLL_DEPOSIT_HREF =
-  "/enroll?plan=deposit&utm_source=meta&utm_medium=paid&utm_campaign=rt_reclaim&utm_content=invite_deposit";
 
 const RECLAIM_MECHANISM = [
   { letter: "R", word: "Reclaim", desc: "ownership of your body and story" },
@@ -108,7 +107,76 @@ function CheckIcon({ className = "text-[#c9a96e]" }: { className?: string }) {
   );
 }
 
-function CtaCard() {
+function useStripeCheckout() {
+  const { trackInitiateCheckout } = useMetaPixel();
+  const ga = useGoogleAnalytics();
+  const [pendingPlan, setPendingPlan] = useState<"full" | "deposit" | null>(null);
+
+  const createCheckout = trpc.payment.createDepositCheckout.useMutation({
+    onSuccess: (data) => {
+      if (data.url) {
+        toast.info("Opening secure checkout…");
+        window.location.href = data.url;
+      } else {
+        setPendingPlan(null);
+        toast.error("Could not open checkout. Please try again.");
+      }
+    },
+    onError: (err) => {
+      setPendingPlan(null);
+      toast.error(err.message || "Could not start checkout. Please try again.");
+    },
+  });
+
+  function startCheckout(plan: "full" | "deposit") {
+    if (createCheckout.isPending) return;
+    setPendingPlan(plan);
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("enroll_checkout_plan", plan);
+    }
+    const value = plan === "full" ? PROGRAM.fullPrice : PROGRAM.depositPrice;
+    const contentName =
+      plan === "full"
+        ? "R.E.C.L.A.I.M. Program - Full Payment"
+        : "R.E.C.L.A.I.M. Program - Deposit";
+    trackInitiateCheckout({
+      content_name: contentName,
+      content_category: "Coaching Program",
+      value,
+      currency: "USD",
+      num_items: 1,
+    });
+    ga.trackInitiateCheckout({
+      items: [{ item_name: contentName, price: value, currency: "USD" }],
+      value,
+      currency: "USD",
+    });
+    const eventId = generateMetaEventId();
+    const meta = getMetaParams();
+    createCheckout.mutate({
+      plan,
+      cancelPath: "/reclaim-invite",
+      ...meta,
+      eventId,
+    });
+  }
+
+  return {
+    startCheckout,
+    isPending: createCheckout.isPending,
+    pendingPlan,
+  };
+}
+
+function CtaCard({
+  startCheckout,
+  isPending,
+  pendingPlan,
+}: {
+  startCheckout: (plan: "full" | "deposit") => void;
+  isPending: boolean;
+  pendingPlan: "full" | "deposit" | null;
+}) {
   return (
     <div className="bg-white p-5 sm:p-8 rounded-2xl shadow-xl border border-gray-100 w-full max-w-md mx-auto">
       <div className="text-center mb-4">
@@ -134,7 +202,6 @@ function CtaCard() {
         <p className="mt-1 text-xs text-gray-500">Then full rate returns to ${USUAL_PRICE}.</p>
       </div>
 
-      {/* Outcome micro-stack near price */}
       <ul className="mb-5 space-y-1.5 text-left text-xs sm:text-sm text-gray-600 bg-[#fdfbf7] rounded-xl px-3 py-3 border border-[#f0e8e0]">
         {OUTCOMES.slice(0, 3).map((o) => (
           <li key={o} className="flex gap-2">
@@ -144,21 +211,32 @@ function CtaCard() {
         ))}
       </ul>
 
-      <Link
-        href={ENROLL_HREF}
-        className="flex w-full min-h-[52px] sm:min-h-[56px] items-center justify-center px-4 text-center text-base sm:text-lg font-bold bg-[#c9a96e] hover:bg-[#b09055] active:bg-[#a08048] text-white rounded-full transition-colors shadow-md mb-2"
+      <button
+        type="button"
+        onClick={() => startCheckout("full")}
+        disabled={isPending}
+        className="flex w-full min-h-[52px] sm:min-h-[56px] items-center justify-center px-4 text-center text-base sm:text-lg font-bold bg-[#c9a96e] hover:bg-[#b09055] active:bg-[#a08048] disabled:opacity-60 text-white rounded-full transition-colors shadow-md mb-2"
       >
-        Yes — Lock My Intro Spot (${PROGRAM.fullPrice})
-      </Link>
+        {isPending && pendingPlan === "full"
+          ? "Opening secure checkout…"
+          : `Yes — Lock My Intro Spot ($${PROGRAM.fullPrice})`}
+      </button>
       <p className="text-center text-xs text-gray-500 mb-3 leading-relaxed px-1">
+        Secure Stripe checkout opens next · email collected there
+      </p>
+      <p className="text-center text-xs text-gray-500 mb-1 leading-relaxed px-1">
         Or hold your seat with ${PROGRAM.depositPrice} today — balance before session one.
       </p>
-      <Link
-        href={ENROLL_DEPOSIT_HREF}
-        className="flex w-full min-h-[44px] items-center justify-center px-4 text-sm font-semibold text-[#3a5a3a] underline underline-offset-2 hover:text-[#c9a96e] mb-5"
+      <button
+        type="button"
+        onClick={() => startCheckout("deposit")}
+        disabled={isPending}
+        className="flex w-full min-h-[44px] items-center justify-center px-4 text-sm font-semibold text-[#3a5a3a] underline underline-offset-2 hover:text-[#c9a96e] disabled:opacity-60 mb-5"
       >
-        Start with ${PROGRAM.depositPrice} deposit →
-      </Link>
+        {isPending && pendingPlan === "deposit"
+          ? "Opening checkout…"
+          : `Start with $${PROGRAM.depositPrice} deposit →`}
+      </button>
 
       <div className="border-t border-gray-100 pt-5">
         <p className="text-center text-sm text-gray-600 mb-2">Not ready to enroll today?</p>
@@ -178,7 +256,7 @@ function CtaCard() {
           "1-on-1 with Lee Anne (not a group program)",
           "No meal plans or calorie counting",
           "Certified life & health coach · women 40+",
-          `Only ${SPOTS} intro spots · secure checkout`,
+          `Only ${SPOTS} intro spots · Stripe secure pay`,
         ].map((line) => (
           <li key={line} className="flex items-start gap-2">
             <span className="text-[#c9a96e] font-bold shrink-0">✓</span>
@@ -193,6 +271,7 @@ function CtaCard() {
 export default function ReclaimInviteClient() {
   const { trackViewContent } = useMetaPixel();
   const ga = useGoogleAnalytics();
+  const checkout = useStripeCheckout();
 
   useEffect(() => {
     trackViewContent({
@@ -213,12 +292,16 @@ export default function ReclaimInviteClient() {
   return (
     <div className="min-h-screen flex flex-col bg-[#FDFBF7]">
       <div className="fixed bottom-0 inset-x-0 z-50 md:hidden border-t border-gray-200 bg-white/95 backdrop-blur-sm px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
-        <Link
-          href={ENROLL_HREF}
-          className="flex w-full min-h-[48px] items-center justify-center text-sm sm:text-base font-bold bg-[#c9a96e] hover:bg-[#b09055] text-white rounded-full shadow-md px-3 text-center"
+        <button
+          type="button"
+          onClick={() => checkout.startCheckout("full")}
+          disabled={checkout.isPending}
+          className="flex w-full min-h-[48px] items-center justify-center text-sm sm:text-base font-bold bg-[#c9a96e] hover:bg-[#b09055] disabled:opacity-60 text-white rounded-full shadow-md px-3 text-center"
         >
-          Lock Intro Spot — ${PROGRAM.fullPrice}
-        </Link>
+          {checkout.isPending && checkout.pendingPlan === "full"
+            ? "Opening checkout…"
+            : `Lock Intro Spot — $${PROGRAM.fullPrice}`}
+        </button>
       </div>
 
       <main className="flex-1 pt-6 sm:pt-10 md:pt-14 pb-28 md:pb-16 px-4 sm:px-6 md:px-12 relative overflow-hidden">
@@ -365,7 +448,11 @@ export default function ReclaimInviteClient() {
             </div>
 
             <div className="order-1 md:order-2 md:sticky md:top-6">
-              <CtaCard />
+              <CtaCard
+                startCheckout={checkout.startCheckout}
+                isPending={checkout.isPending}
+                pendingPlan={checkout.pendingPlan}
+              />
             </div>
           </div>
 
@@ -446,7 +533,11 @@ export default function ReclaimInviteClient() {
           </div>
 
           <div className="hidden md:block mt-14 max-w-md mx-auto">
-            <CtaCard />
+            <CtaCard
+              startCheckout={checkout.startCheckout}
+              isPending={checkout.isPending}
+              pendingPlan={checkout.pendingPlan}
+            />
           </div>
 
           <p className="text-center text-xs text-gray-400 mt-10 sm:mt-12 pb-2">

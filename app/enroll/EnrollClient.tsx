@@ -78,30 +78,41 @@ export default function Enroll() {
     onError: (err) => toast.error(err.message || "Could not start checkout. Please try again."),
   });
 
-  const handlePay = () => {
+  const handlePay = (overridePlan?: "full" | "deposit") => {
+    const p = overridePlan ?? plan;
     trackInitiateCheckout({
-      content_name: plan === "full" ? "R.E.C.L.A.I.M. Program - Full Payment" : "R.E.C.L.A.I.M. Program - Deposit",
+      content_name: p === "full" ? "R.E.C.L.A.I.M. Program - Full Payment" : "R.E.C.L.A.I.M. Program - Deposit",
       content_category: "Coaching Program",
-      value: plan === "full" ? 597 : 200,
+      value: p === "full" ? 597 : 200,
       currency: "USD",
       num_items: 1,
     });
     ga.trackInitiateCheckout({
       items: [{
-        item_name: plan === "full" ? "R.E.C.L.A.I.M. Program - Full Payment" : "R.E.C.L.A.I.M. Program - Deposit",
-        price: plan === "full" ? 597 : 200,
+        item_name: p === "full" ? "R.E.C.L.A.I.M. Program - Full Payment" : "R.E.C.L.A.I.M. Program - Deposit",
+        price: p === "full" ? 597 : 200,
         currency: "USD",
       }],
-      value: plan === "full" ? 597 : 200,
+      value: p === "full" ? 597 : 200,
       currency: "USD"
     });
     if (typeof window !== "undefined") {
-      sessionStorage.setItem("enroll_checkout_plan", plan);
+      sessionStorage.setItem("enroll_checkout_plan", p);
     }
     const eventId = generateMetaEventId();
     const meta = getMetaParams();
-    createCheckout.mutate({ plan, ...meta, eventId });
+    createCheckout.mutate({ plan: p, cancelPath: "/enroll", ...meta, eventId });
   };
+
+  // One-click path: /enroll?plan=full&checkout=1 (or deposit) → straight to Stripe
+  useEffect(() => {
+    if (searchParams?.get("success") === "1") return;
+    if (searchParams?.get("checkout") !== "1") return;
+    if (planParam !== "full" && planParam !== "deposit") return;
+    if (createCheckout.isPending || createCheckout.isSuccess) return;
+    handlePay(planParam);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const selectPlan = (p: "full" | "deposit") => {
     setPlan(p);
@@ -195,40 +206,54 @@ export default function Enroll() {
           {/* Step 2: Payment */}
           {step === "pay" && !paymentDone && (
             <div className="max-w-lg mx-auto">
-              <button onClick={() => setStep("choose")} className="inline-flex items-center gap-1 text-xs font-bold mb-6" style={{ color: "oklch(0.38 0.10 148)" }}>
-                ← Change Plan
-              </button>
-              <div className="card-brand rounded-2xl p-8">
-                <div className="flex items-center gap-2 mb-6">
-                  <Lock size={16} style={{ color: "oklch(0.38 0.10 148)" }} />
-                  <span className="text-sm font-bold" style={{ color: "oklch(0.38 0.10 148)" }}>Secure Checkout via Stripe</span>
+              {searchParams?.get("checkout") === "1" && createCheckout.isPending ? (
+                <div className="card-brand rounded-2xl p-10 text-center">
+                  <Lock size={28} className="mx-auto mb-4" style={{ color: "oklch(0.38 0.10 148)" }} />
+                  <h2 className="font-bold text-2xl mb-2" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.22 0.02 160)" }}>
+                    Opening secure checkout…
+                  </h2>
+                  <p className="text-sm" style={{ color: "oklch(0.55 0.02 160)" }}>
+                    Taking you to Stripe to complete your ${plan === "full" ? PROGRAM.fullPrice : PROGRAM.depositPrice} payment.
+                  </p>
                 </div>
-                <h2 className="font-bold text-2xl mb-2" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.22 0.02 160)" }}>
-                  {plan === "full" ? "Pay in Full" : "Pay Deposit"}
-                </h2>
-                <div className="flex items-center justify-between p-4 rounded-xl mb-6" style={{ background: "oklch(0.93 0.06 75)" }}>
-                  <div>
-                    <p className="font-bold text-sm" style={{ color: "oklch(0.22 0.02 160)" }}>{PROGRAM.fullName}</p>
-                    <p className="text-xs" style={{ color: "oklch(0.55 0.02 160)" }}>
-                      {plan === "deposit" ? `$${PROGRAM.depositPrice} deposit (non-refundable) + $${PROGRAM.balancePrice} balance before Session 1` : `Full program — ${PROGRAM.sessionCount} sessions × ${PROGRAM.sessionDurationMins} min`}
+              ) : (
+                <>
+                  <button onClick={() => setStep("choose")} className="inline-flex items-center gap-1 text-xs font-bold mb-6" style={{ color: "oklch(0.38 0.10 148)" }}>
+                    ← Change Plan
+                  </button>
+                  <div className="card-brand rounded-2xl p-8">
+                    <div className="flex items-center gap-2 mb-6">
+                      <Lock size={16} style={{ color: "oklch(0.38 0.10 148)" }} />
+                      <span className="text-sm font-bold" style={{ color: "oklch(0.38 0.10 148)" }}>Secure Checkout via Stripe</span>
+                    </div>
+                    <h2 className="font-bold text-2xl mb-2" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.22 0.02 160)" }}>
+                      {plan === "full" ? "Pay in Full" : "Pay Deposit"}
+                    </h2>
+                    <div className="flex items-center justify-between p-4 rounded-xl mb-6" style={{ background: "oklch(0.93 0.06 75)" }}>
+                      <div>
+                        <p className="font-bold text-sm" style={{ color: "oklch(0.22 0.02 160)" }}>{PROGRAM.fullName}</p>
+                        <p className="text-xs" style={{ color: "oklch(0.55 0.02 160)" }}>
+                          {plan === "deposit" ? `$${PROGRAM.depositPrice} deposit (non-refundable) + $${PROGRAM.balancePrice} balance before Session 1` : `Full program — ${PROGRAM.sessionCount} sessions × ${PROGRAM.sessionDurationMins} min`}
+                        </p>
+                      </div>
+                      <span className="font-bold text-xl" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.45 0.12 65)" }}>
+                        ${plan === "full" ? PROGRAM.fullPrice : PROGRAM.depositPrice}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => handlePay()}
+                      disabled={createCheckout.isPending}
+                      className="w-full py-4 rounded-full font-bold text-base transition-all hover:shadow-xl disabled:opacity-60"
+                      style={{ background: "oklch(0.22 0.02 160)", color: "oklch(0.97 0.008 10)" }}
+                    >
+                      {createCheckout.isPending ? "Opening Checkout..." : `Pay $${plan === "full" ? PROGRAM.fullPrice : PROGRAM.depositPrice} Securely →`}
+                    </button>
+                    <p className="text-xs text-center mt-3" style={{ color: "oklch(0.60 0.02 160)" }}>
+                      You&apos;ll be redirected to Stripe&apos;s secure checkout. After payment, return here to book Session 1.
                     </p>
                   </div>
-                  <span className="font-bold text-xl" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.45 0.12 65)" }}>
-                    ${plan === "full" ? PROGRAM.fullPrice : PROGRAM.depositPrice}
-                  </span>
-                </div>
-                <button
-                  onClick={handlePay}
-                  disabled={createCheckout.isPending}
-                  className="w-full py-4 rounded-full font-bold text-base transition-all hover:shadow-xl disabled:opacity-60"
-                  style={{ background: "oklch(0.22 0.02 160)", color: "oklch(0.97 0.008 10)" }}
-                >
-                  {createCheckout.isPending ? "Opening Checkout..." : `Pay $${plan === "full" ? PROGRAM.fullPrice : PROGRAM.depositPrice} Securely →`}
-                </button>
-                <p className="text-xs text-center mt-3" style={{ color: "oklch(0.60 0.02 160)" }}>
-                  You'll be redirected to Stripe's secure checkout. After payment, return here to book Session 1.
-                </p>
-              </div>
+                </>
+              )}
             </div>
           )}
 
