@@ -9,8 +9,6 @@ import HabitTrackerInstallPrompt from "@/components/HabitTrackerInstallPrompt";
 
 const TRACKER_HREF =
   "/habit-tracker?utm_source=meta&utm_medium=paid&utm_campaign=ht_invite&utm_content=open_app";
-const LOGIN_HREF =
-  "/login?utm_source=meta&utm_medium=paid&utm_campaign=ht_invite&utm_content=login";
 const OG_IMG = "/og-habit-tracker.jpg";
 const LEEANNE_IMG =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/3542web-rigeljackson(2)_83b0d4af.webp";
@@ -73,40 +71,27 @@ function CtaCard() {
     <div className="bg-white p-5 sm:p-8 rounded-2xl shadow-xl border border-gray-100 w-full max-w-md mx-auto">
       <div className="text-center mb-4">
         <span className="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide bg-[#f4f8f4] text-[#3a5a3a] border border-[#c8dcc8]">
-          Free · No credit card
+          Free · No account needed
         </span>
       </div>
       <h2 className="text-center font-playfair text-2xl sm:text-3xl font-bold text-[#3a5a3a] mb-2">
         Open your free tracker
       </h2>
       <p className="text-center text-sm text-gray-600 mb-6 leading-relaxed">
-        Habits, macros, and fitness in one place. Start in seconds — create a free account anytime
-        to save progress across devices.
+        Habits, meals, and movement in one place. Tap below and start — no signup wall.
       </p>
       <Link
         href={TRACKER_HREF}
-        className="flex w-full min-h-[52px] sm:min-h-[56px] items-center justify-center px-4 text-center text-base sm:text-lg font-bold bg-[#c9a96e] hover:bg-[#b09055] text-white rounded-full transition-colors shadow-md mb-3"
+        className="flex w-full min-h-[52px] sm:min-h-[56px] items-center justify-center px-4 text-center text-base sm:text-lg font-bold bg-[#c9a96e] hover:bg-[#b09055] text-white rounded-full transition-colors shadow-md mb-4"
       >
         Start Free Tracker →
       </Link>
-      <Link
-        href={LOGIN_HREF}
-        className="flex w-full min-h-[48px] items-center justify-center px-4 text-base font-bold border-2 border-[#3a5a3a] text-[#3a5a3a] hover:bg-[#f4f8f4] rounded-full transition-colors mb-5"
-      >
-        Sign in to sync my data
-      </Link>
-      <ul className="space-y-2 text-xs sm:text-sm text-gray-500">
-        {[
-          "Works on phone & desktop",
-          "Guest mode stores data on this device",
-          "Account = cloud sync + macros & fitness log",
-        ].map((line) => (
-          <li key={line} className="flex items-start gap-2">
-            <span className="text-[#c9a96e] font-bold shrink-0">✓</span>
-            <span>{line}</span>
-          </li>
-        ))}
-      </ul>
+      {/* Home-screen icon is optional & hard on iPhone — never the main CTA */}
+      <HabitTrackerInstallPrompt variant="button" />
+      <p className="text-center text-[11px] text-gray-400 mt-4 leading-relaxed">
+        Works in the browser. Home-screen icon is optional (and on iPhone takes a few Safari taps —
+        Apple doesn&apos;t allow a one-button install).
+      </p>
     </div>
   );
 }
@@ -130,8 +115,7 @@ export default function HabitTrackerInviteClient() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FDFBF7]">
-      <HabitTrackerInstallPrompt />
-      {/* Mobile sticky CTA */}
+      {/* Mobile sticky CTA — open app only (no install / sign-in) */}
       <div className="fixed bottom-0 inset-x-0 z-50 md:hidden border-t border-gray-200 bg-white/95 backdrop-blur-sm px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
         <Link
           href={TRACKER_HREF}
@@ -286,11 +270,15 @@ export default function HabitTrackerInviteClient() {
               {[
                 {
                   q: "Is it really free?",
-                  a: "Yes. Open the tracker and start. No credit card. Optional free account if you want to sync across devices and unlock full meal & workout logging.",
+                  a: "Yes. Open the tracker and start. No credit card and no account required to try it.",
                 },
                 {
                   q: "Do I need an account?",
-                  a: "No for daily habits on this device (guest mode). Yes for cloud sync, macros, and fitness logs that follow you from phone to phone.",
+                  a: "No. Open the tracker and start. An account is optional later if you want the same data on more than one device.",
+                },
+                {
+                  q: "Why isn't there an Install button on iPhone?",
+                  a: "Apple doesn't let websites add a one-tap install. In Safari: Share → Add to Home Screen → Add. Or just use the tracker in the browser — install is optional.",
                 },
                 {
                   q: "Is this only calorie counting?",

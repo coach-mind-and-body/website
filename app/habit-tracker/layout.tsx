@@ -88,7 +88,8 @@ export default function HabitTrackerLayout({
           {children}
         </div>
 
-        <HabitTrackerInstallPrompt />
+        {/* Optional home-screen tip only when Android Chrome offers install */}
+        <HabitTrackerInstallPrompt variant="auto" />
 
         {/* Bottom Navigation */}
         <nav className="habit-tracker-nav fixed bottom-0 left-0 right-0 bg-white border-t border-[#f0e8e4] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-50 px-6 py-3 safe-area-pb">
