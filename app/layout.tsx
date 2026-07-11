@@ -72,14 +72,23 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "default",
     title: "MBR Habits",
+    startupImage: ["/logo-circular.png"],
   },
-  themeColor: "#ffb6c1",
+  icons: {
+    icon: [{ url: "/logo-circular.png", type: "image/png" }],
+    apple: [{ url: "/logo-circular.png", sizes: "180x180", type: "image/png" }],
+  },
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#3a5a3a" },
+    { media: "(prefers-color-scheme: dark)", color: "#3a5a3a" },
+  ],
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  themeColor: "#3a5a3a",
 };
 
 const jsonLd = {

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, Utensils, Activity } from "lucide-react";
+import HabitTrackerInstallPrompt from "@/components/HabitTrackerInstallPrompt";
 
 export default function HabitTrackerLayout({
   children,
@@ -86,6 +87,8 @@ export default function HabitTrackerLayout({
         <div className="habit-tracker-content pb-24">
           {children}
         </div>
+
+        <HabitTrackerInstallPrompt />
 
         {/* Bottom Navigation */}
         <nav className="habit-tracker-nav fixed bottom-0 left-0 right-0 bg-white border-t border-[#f0e8e4] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-50 px-6 py-3 safe-area-pb">

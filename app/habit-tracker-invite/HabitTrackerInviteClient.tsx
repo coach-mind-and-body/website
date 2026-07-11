@@ -5,6 +5,7 @@ import Link from "next/link";
 import { BRAND } from "@shared/brand";
 import { useMetaPixel } from "@/hooks/useMetaPixel";
 import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
+import HabitTrackerInstallPrompt from "@/components/HabitTrackerInstallPrompt";
 
 const TRACKER_HREF =
   "/habit-tracker?utm_source=meta&utm_medium=paid&utm_campaign=ht_invite&utm_content=open_app";
@@ -129,6 +130,7 @@ export default function HabitTrackerInviteClient() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FDFBF7]">
+      <HabitTrackerInstallPrompt />
       {/* Mobile sticky CTA */}
       <div className="fixed bottom-0 inset-x-0 z-50 md:hidden border-t border-gray-200 bg-white/95 backdrop-blur-sm px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
         <Link

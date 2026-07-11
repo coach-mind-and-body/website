@@ -1,23 +1,73 @@
 {
-  "name": "Mind and Body Reset Habit Tracker",
+  "name": "Mind & Body Reset Habit Tracker",
   "short_name": "MBR Habits",
-  "description": "Habit Tracker by Mind and Body Reset",
-  "start_url": "/habit-tracker",
+  "description": "Free midlife habit tracker: daily habits, meals & macros, and fitness. Built by Mind & Body Reset.",
+  "start_url": "/habit-tracker?source=pwa",
   "scope": "/",
   "id": "/habit-tracker",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#ffb6c1",
+  "display_override": ["standalone", "browser"],
+  "orientation": "any",
+  "background_color": "#FDFBF7",
+  "theme_color": "#3a5a3a",
+  "lang": "en-US",
+  "dir": "ltr",
+  "categories": ["health", "lifestyle", "fitness"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/logo-circular.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/logo-circular.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo-circular.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/og-habit-tracker.jpg",
+      "sizes": "1200x630",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "Habit Tracker dashboard"
+    },
+    {
+      "src": "/og-habit-tracker.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Habit Tracker on mobile"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Today's habits",
+      "short_name": "Habits",
+      "url": "/habit-tracker?source=pwa_shortcut",
+      "description": "Open daily habit dashboard"
+    },
+    {
+      "name": "Log meal / macros",
+      "short_name": "Macros",
+      "url": "/habit-tracker/calories?source=pwa_shortcut",
+      "description": "Log meals and macros"
+    },
+    {
+      "name": "Fitness",
+      "short_name": "Fitness",
+      "url": "/habit-tracker/fitness?source=pwa_shortcut",
+      "description": "Log workouts and videos"
     }
   ]
 }
