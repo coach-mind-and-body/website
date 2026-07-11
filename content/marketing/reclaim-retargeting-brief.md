@@ -20,8 +20,8 @@ Move **warm** people (site visitors + PDF engagers) to the **dedicated ad landin
 
 Snack-hack-style short LP (not the long SEO `/reclaim` page):
 
-1. **Primary CTA:** free discovery call → `/book`  
-2. **Secondary CTA:** enroll → `/enroll` at **$597** (usually **$999**)
+1. **Primary CTA:** enroll → `/enroll` at **$597** (usually **$999**, first 10)  
+2. **Secondary CTA:** free discovery call → `/book`
 
 **Do not** retarget with “download free PDF” as the hero CTA.
 

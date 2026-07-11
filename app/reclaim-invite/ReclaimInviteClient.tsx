@@ -76,29 +76,29 @@ function CtaCard() {
         </p>
       </div>
 
-      {/* Primary path = lowest friction */}
-      <p className="text-center text-sm font-semibold text-[#3a5a3a] mb-2">
-        Not sure yet? Start here (free)
-      </p>
+      {/* Primary = paid offer (warm RT traffic is closer to ready) */}
       <Link
-        href={BOOK_HREF}
+        href={ENROLL_HREF}
         className="flex w-full min-h-[52px] sm:min-h-[56px] items-center justify-center px-4 text-base sm:text-lg font-bold bg-[#c9a96e] hover:bg-[#b09055] active:bg-[#a08048] text-white rounded-full transition-colors shadow-md mb-2"
       >
-        Book My Free 30-Min Call
+        Enroll Now — ${PROGRAM.fullPrice}
       </Link>
       <p className="text-center text-xs text-gray-500 mb-5 leading-relaxed px-1">
-        No pressure. We&apos;ll see if it&apos;s a fit — then you decide.
+        Lock your intro rate · First {SPOTS} spots only
       </p>
 
-      {/* Secondary = ready buyers */}
+      {/* Secondary = free call for the not-quite-ready */}
       <div className="border-t border-gray-100 pt-5">
-        <p className="text-center text-sm text-gray-600 mb-2">Already know you want in?</p>
+        <p className="text-center text-sm text-gray-600 mb-2">Want to talk it through first?</p>
         <Link
-          href={ENROLL_HREF}
+          href={BOOK_HREF}
           className="flex w-full min-h-[48px] sm:min-h-[52px] items-center justify-center px-4 text-base font-bold border-2 border-[#3a5a3a] text-[#3a5a3a] hover:bg-[#f4f8f4] active:bg-[#eaf2ea] rounded-full transition-colors"
         >
-          Enroll Now — ${PROGRAM.fullPrice}
+          Book a Free 30-Min Call
         </Link>
+        <p className="text-center text-xs text-gray-500 mt-2 leading-relaxed px-1">
+          No pressure — see if it&apos;s a fit, then decide.
+        </p>
       </div>
 
       <ul className="mt-5 space-y-2 text-xs sm:text-sm text-gray-500">
@@ -139,13 +139,13 @@ export default function ReclaimInviteClient() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FDFBF7]">
-      {/* Mobile sticky CTA — high conversion, thumb-friendly */}
+      {/* Mobile sticky CTA — matches primary offer (enroll) */}
       <div className="fixed bottom-0 inset-x-0 z-50 md:hidden border-t border-gray-200 bg-white/95 backdrop-blur-sm px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
         <Link
-          href={BOOK_HREF}
+          href={ENROLL_HREF}
           className="flex w-full min-h-[48px] items-center justify-center text-base font-bold bg-[#c9a96e] hover:bg-[#b09055] text-white rounded-full shadow-md"
         >
-          Book Free Call — See If It&apos;s a Fit
+          Enroll Now — ${PROGRAM.fullPrice}
         </Link>
       </div>
 
