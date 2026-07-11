@@ -42,12 +42,22 @@ export default function AdminClientSessions({ enrollmentId, gcalConnected }: Pro
 
   const { data: sessions, refetch } = trpc.enrollment.adminGetSessions.useQuery(
     { enrollmentId },
-    { enabled: !!enrollmentId }
+    {
+      enabled: !!enrollmentId,
+      refetchInterval: () =>
+        typeof document !== "undefined" && document.hidden ? false : 10_000,
+      refetchOnWindowFocus: true,
+    }
   );
 
   const { data: files, refetch: refetchFiles } = trpc.clientFiles.list.useQuery(
     { enrollmentId },
-    { enabled: !!enrollmentId }
+    {
+      enabled: !!enrollmentId,
+      refetchInterval: () =>
+        typeof document !== "undefined" && document.hidden ? false : 10_000,
+      refetchOnWindowFocus: true,
+    }
   );
 
   const { data: commonFiles, isLoading: commonLoading } = trpc.clientFiles.listCommon.useQuery(

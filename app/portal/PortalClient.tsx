@@ -38,26 +38,36 @@ export default function Portal() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeUploadEnrollmentId, setActiveUploadEnrollmentId] = useState<number | null>(null);
 
-  const { data, isLoading, refetch } = trpc.enrollment.myEnrollment.useQuery(undefined, {
+  // Poll while the tab is open so coach schedule/notes/files appear without a hard refresh
+  const liveOpts = {
     enabled: isAuthenticated,
-  });
+    refetchInterval: () =>
+      typeof document !== "undefined" && document.hidden ? false : 8_000,
+    refetchOnWindowFocus: true,
+  } as const;
+
+  const { data, isLoading, refetch } = trpc.enrollment.myEnrollment.useQuery(undefined, liveOpts);
 
   const { data: paymentData, isLoading: loadingPayments } = trpc.payment.myPayments.useQuery(undefined, {
     enabled: isAuthenticated,
   });
 
-  const { data: fpuData, isLoading: fpuLoading } = trpc.fpu.myCoaching.useQuery(undefined, {
-    enabled: isAuthenticated,
-  });
+  const { data: fpuData, isLoading: fpuLoading } = trpc.fpu.myCoaching.useQuery(undefined, liveOpts);
 
   const { data: filesData, refetch: refetchFiles } = trpc.clientFiles.list.useQuery(
     { enrollmentId: data?.enrollment?.id ?? 0 },
-    { enabled: !!data?.enrollment?.id }
+    {
+      enabled: !!data?.enrollment?.id,
+      refetchInterval: () =>
+        typeof document !== "undefined" && document.hidden ? false : 8_000,
+      refetchOnWindowFocus: true,
+    }
   );
 
-  const { data: upcomingEvents, isLoading: upcomingLoading } = trpc.reclaimHub.getUpcomingAppointments.useQuery(undefined, {
-    enabled: isAuthenticated,
-  });
+  const { data: upcomingEvents, isLoading: upcomingLoading } = trpc.reclaimHub.getUpcomingAppointments.useQuery(
+    undefined,
+    liveOpts
+  );
 
   const uploadFile = trpc.clientFiles.upload.useMutation({
     onSuccess: () => {

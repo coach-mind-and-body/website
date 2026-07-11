@@ -266,8 +266,19 @@ export default function ProgramBuilderTab() {
               <div className="p-4 rounded-lg mb-4" style={{ background: "oklch(0.96 0.025 50)" }}>
                 <p className="text-sm font-semibold mb-2" style={{ color: "oklch(0.72 0.12 75)" }}>Client Answer:</p>
                 <p className="text-sm whitespace-pre-wrap" style={{ color: "oklch(0.20 0.015 50)" }}>
-                  {item.submission.answer}
+                  {item.submission.answer || (item.submission.fileUrl ? "(File only — no text answer)" : "—")}
                 </p>
+                {item.submission.fileUrl && (
+                  <a
+                    href={item.submission.fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 mt-3 text-sm font-bold underline"
+                    style={{ color: "oklch(0.45 0.10 148)" }}
+                  >
+                    Open uploaded file / worksheet →
+                  </a>
+                )}
               </div>
 
               <div>

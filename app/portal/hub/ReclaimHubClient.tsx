@@ -42,6 +42,10 @@ export default function ReclaimHub() {
   
   const { data, refetch, isLoading } = trpc.reclaimHub.getModules.useQuery(undefined, {
     enabled: isAuthenticated,
+    // Coach schedule / notes / unlocks show up without a full page refresh
+    refetchInterval: () =>
+      typeof document !== "undefined" && document.hidden ? false : 8_000,
+    refetchOnWindowFocus: true,
   });
 
   const submitAssignment = trpc.reclaimHub.submitAssignment.useMutation({
@@ -64,18 +68,19 @@ export default function ReclaimHub() {
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [fileUrls, setFileUrls] = useState<Record<number, string>>({});
   const [uploadingAssignmentId, setUploadingAssignmentId] = useState<number | null>(null);
+  const [uploadingWorksheet, setUploadingWorksheet] = useState(false);
   const [expandedAssignmentId, setExpandedAssignmentId] = useState<number | null>(null);
+  const worksheetInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const uploadFile = trpc.clientFiles.upload.useMutation({
-    onSuccess: (res, variables) => {
-      toast.success(`File uploaded successfully!`);
-      // Update fileUrl for the specific assignment
-      // (The assignmentId was passed via a temporary property we can't easily access here, so we will handle it in the callback)
+    onSuccess: () => {
+      toast.success("File uploaded successfully!");
     },
     onError: (e) => {
       toast.error(e.message);
       setUploadingAssignmentId(null);
+      setUploadingWorksheet(false);
     },
   });
 
@@ -119,6 +124,48 @@ export default function ReclaimHub() {
 
   const handleAnswerChange = (assignmentId: number, text: string) => {
     setAnswers(prev => ({ ...prev, [assignmentId]: text }));
+  };
+
+  /** Upload completed module PDF/worksheet so coach sees it under client files */
+  const handleWorksheetUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("File must be under 10 MB");
+      return;
+    }
+    if (!data?.enrollment?.id || !selectedModule) {
+      toast.error("Enrollment not found.");
+      return;
+    }
+    setUploadingWorksheet(true);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = (reader.result as string).split(",")[1];
+      const prefix = `Module ${selectedModule.order} — `;
+      const fileName = file.name.startsWith(prefix) ? file.name : `${prefix}${file.name}`;
+      uploadFile.mutate(
+        {
+          enrollmentId: data.enrollment.id,
+          fileName,
+          mimeType: file.type || "application/octet-stream",
+          base64Data: base64,
+        },
+        {
+          onSuccess: () => {
+            toast.success("Worksheet sent to your coach!");
+            setUploadingWorksheet(false);
+            refetch();
+          },
+        }
+      );
+    };
+    reader.onerror = () => {
+      toast.error("Failed to read file");
+      setUploadingWorksheet(false);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
   };
 
   const handleFileUpload = async (assignmentId: number, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -415,25 +462,66 @@ export default function ReclaimHub() {
                 )}
 
                 {selectedModule.pdfUrl && (
-                  <div className="mb-12 p-6 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4" style={{ background: "#fbeee9", border: "1px solid #e8c99a" }}>
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-white shadow-sm text-red-500">
-                        <FileText size={24} />
+                  <div
+                    className="mb-12 p-6 rounded-2xl flex flex-col gap-5"
+                    style={{ background: "#fbeee9", border: "1px solid #e8c99a" }}
+                  >
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-white shadow-sm text-red-500">
+                          <FileText size={24} />
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-lg" style={{ color: "#2d3b2d" }}>
+                            Module Guide &amp; Worksheets
+                          </h4>
+                          <p className="text-sm" style={{ color: "#5a6b5a" }}>
+                            Download the PDF, complete it, then upload it back so Lee Anne can see it.
+                          </p>
+                        </div>
+                      </div>
+                      <a
+                        href={selectedModule.pdfUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-6 py-3 rounded-full font-bold text-sm transition-transform hover:scale-105 shadow-md shrink-0"
+                        style={{ background: "#c9a96e", color: "white" }}
+                      >
+                        Download PDF
+                      </a>
+                    </div>
+                    <div
+                      className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-4 rounded-xl bg-white/80 border"
+                      style={{ borderColor: "#e8c99a" }}
+                    >
+                      <div>
+                        <p className="text-sm font-semibold" style={{ color: "#2d3b2d" }}>
+                          Upload completed worksheet
+                        </p>
+                        <p className="text-xs" style={{ color: "#8a9a8a" }}>
+                          PDF, Word, or image — appears in your portal files for your coach
+                        </p>
                       </div>
                       <div>
-                        <h4 className="font-bold text-lg" style={{ color: "#2d3b2d" }}>Module Guide & Worksheets</h4>
-                        <p className="text-sm" style={{ color: "#5a6b5a" }}>Download the companion PDF for this module.</p>
+                        <input
+                          ref={worksheetInputRef}
+                          type="file"
+                          className="hidden"
+                          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp"
+                          onChange={handleWorksheetUpload}
+                        />
+                        <button
+                          type="button"
+                          disabled={uploadingWorksheet}
+                          onClick={() => worksheetInputRef.current?.click()}
+                          className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold shadow-sm disabled:opacity-60"
+                          style={{ background: "#2d3b2d", color: "white" }}
+                        >
+                          <Upload size={16} />
+                          {uploadingWorksheet ? "Uploading…" : "Upload to coach"}
+                        </button>
                       </div>
                     </div>
-                    <a 
-                      href={selectedModule.pdfUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="px-6 py-3 rounded-full font-bold text-sm transition-transform hover:scale-105 shadow-md"
-                      style={{ background: "#c9a96e", color: "white" }}
-                    >
-                      Download PDF
-                    </a>
                   </div>
                 )}
 
@@ -492,8 +580,12 @@ export default function ReclaimHub() {
 
                               <div className="flex items-center justify-between p-4 rounded-xl border border-dashed" style={{ borderColor: "#f0e8e4" }}>
                                 <div>
-                                  <p className="text-sm font-semibold" style={{ color: "#2d3b2d" }}>Upload a File (Optional)</p>
-                                  <p className="text-xs" style={{ color: "#8a9a8a" }}>PDF, Word, Images, etc.</p>
+                                  <p className="text-sm font-semibold" style={{ color: "#2d3b2d" }}>
+                                    Upload completed worksheet (optional)
+                                  </p>
+                                  <p className="text-xs" style={{ color: "#8a9a8a" }}>
+                                    PDF, Word, images — your coach can open this in Program Builder → Submissions and Client Files
+                                  </p>
                                 </div>
                                 {fileUrls[assignment.id] ? (
                                   <div className="flex items-center gap-3">
