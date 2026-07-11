@@ -216,7 +216,7 @@ export default function Portal() {
                 style={{ background: "#c9a96e", color: "white" }}
               >
                 <BookOpen size={14} />
-                <span className="hidden sm:inline">Modules</span>
+                <span className="hidden sm:inline">My modules</span>
               </Link>
             )}
             <Link
@@ -225,7 +225,7 @@ export default function Portal() {
               style={{ background: "#fbeee9", color: "#c9a96e" }}
             >
               <CheckCircle2 size={14} />
-              <span className="hidden xs:inline sm:inline">Tracker</span>
+              <span className="hidden sm:inline">Tracker</span>
             </Link>
             <div className="flex items-center gap-2">
               <div
@@ -325,7 +325,7 @@ export default function Portal() {
                   className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full font-bold text-sm shadow-sm"
                   style={{ background: "#c9a96e", color: "white" }}
                 >
-                  <BookOpen size={16} /> Open modules
+                  <BookOpen size={16} /> My modules
                 </Link>
                 <Link
                   href="/habit-tracker"

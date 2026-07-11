@@ -1,8 +1,9 @@
 import ReclaimHubClient from "./ReclaimHubClient";
 
 export const metadata = {
-  title: "Reclaim Hub | Mind and Body Reset",
-  description: "Access your R.E.C.L.A.I.M. modules, workshops, and assignments.",
+  title: "My Modules | Mind and Body Reset",
+  description:
+    "Your assigned R.E.C.L.A.I.M. modules, worksheets, and assignments — only what your coach has unlocked for you.",
   robots: { index: false, follow: false },
 };
 

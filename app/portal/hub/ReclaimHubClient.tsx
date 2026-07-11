@@ -225,10 +225,10 @@ export default function ReclaimHub() {
                 className="block font-bold text-base sm:text-lg leading-tight truncate"
                 style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}
               >
-                Modules
+                My modules
               </span>
               <span className="block text-[10px] sm:text-xs" style={{ color: "#8a9a8a" }}>
-                ← Back to portal home
+                Learning room · only what Lee Anne assigns
               </span>
             </div>
           </Link>
@@ -238,7 +238,7 @@ export default function ReclaimHub() {
               className="px-3 py-1.5 rounded-full text-xs font-bold"
               style={{ background: "#f5f5f5", color: "#5a6b5a" }}
             >
-              Home
+              Portal home
             </Link>
             <Link
               href="/habit-tracker"
@@ -251,7 +251,7 @@ export default function ReclaimHub() {
         </div>
       </header>
 
-      <main className="container max-w-5xl mx-auto px-6 py-12">
+      <main className="container max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <AnimatePresence mode="wait">
           {!selectedModule ? (
             <motion.div
@@ -261,26 +261,40 @@ export default function ReclaimHub() {
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
             >
-              <div className="mb-12 text-center">
-                <h1 className="text-4xl md:text-5xl font-bold mb-4" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
-                  Your Reclaim Journey
+              <div className="mb-8 sm:mb-10 text-center">
+                <h1
+                  className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3"
+                  style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}
+                >
+                  My modules
                 </h1>
-                <p className="text-lg max-w-2xl mx-auto" style={{ color: "#5a6b5a" }}>
-                  Modules appear here when Lee Anne assigns them to you. Complete each one as it unlocks.
+                <p className="text-base sm:text-lg max-w-xl mx-auto" style={{ color: "#5a6b5a" }}>
+                  Only modules Lee Anne has assigned to you. Sessions and files live on your{" "}
+                  <Link href="/portal" className="font-semibold underline underline-offset-2" style={{ color: "#c9a96e" }}>
+                    portal home
+                  </Link>
+                  .
                 </p>
               </div>
 
               {modules.length === 0 && (
                 <div
-                  className="max-w-lg mx-auto mb-12 p-8 rounded-2xl text-center"
+                  className="max-w-md mx-auto mb-10 p-8 rounded-2xl text-center"
                   style={{ background: "white", border: "1px solid #f0e8e4" }}
                 >
                   <p className="font-semibold mb-2" style={{ color: "#2d3b2d" }}>
-                    No modules assigned yet
+                    Nothing assigned yet
                   </p>
-                  <p className="text-sm" style={{ color: "#5a6b5a" }}>
-                    Your coach will unlock modules as you go — check back after your sessions, or message Lee Anne if you have questions.
+                  <p className="text-sm mb-5" style={{ color: "#5a6b5a" }}>
+                    Your coach unlocks modules as you go. Check your portal home for sessions and files in the meantime.
                   </p>
+                  <Link
+                    href="/portal"
+                    className="inline-flex items-center justify-center px-5 py-2.5 rounded-full text-sm font-bold text-white"
+                    style={{ background: "#c9a96e" }}
+                  >
+                    Back to portal home
+                  </Link>
                 </div>
               )}
 
@@ -406,7 +420,7 @@ export default function ReclaimHub() {
                 className="flex items-center gap-2 mb-8 text-sm font-semibold hover:opacity-70 transition-opacity"
                 style={{ color: "#5a6b5a" }}
               >
-                <ArrowLeft size={16} /> Back to Modules
+                <ArrowLeft size={16} /> Back to my modules
               </button>
 
               <div className="bg-white rounded-3xl p-8 md:p-12 shadow-xl shadow-black/5 border" style={{ borderColor: "#f0e8e4" }}>
