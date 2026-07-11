@@ -28,6 +28,7 @@ const STATIC_PAGES: Array<{
   { path: "/health-wellness-blog", changefreq: "weekly", priority: "0.85" },
   { path: "/food-quiz", changefreq: "monthly", priority: "0.8" },
   { path: "/snack-hack", changefreq: "monthly", priority: "0.8" },
+  { path: "/habit-tracker-invite", changefreq: "monthly", priority: "0.75" },
   { path: "/holistic-health-and-wellness", changefreq: "monthly", priority: "0.8" },
   { path: "/life-after-glp-1", changefreq: "monthly", priority: "0.85" },
   { path: "/insulin-resistance-after-40", changefreq: "monthly", priority: "0.9" },
