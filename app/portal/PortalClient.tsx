@@ -166,13 +166,16 @@ export default function Portal() {
     }
   );
 
-  const nextScheduled = [...sessions]
-    .filter((s) => s.status === "scheduled" && s.scheduledAt != null)
-    .sort((a, b) => {
-      const aTime = a.scheduledAt ? new Date(a.scheduledAt).getTime() : 0;
-      const bTime = b.scheduledAt ? new Date(b.scheduledAt).getTime() : 0;
-      return aTime - bTime;
-    })[0];
+  const scheduledWithTime = sessions
+    .filter(
+      (s): s is typeof s & { scheduledAt: Date } =>
+        s.status === "scheduled" && s.scheduledAt != null
+    )
+    .sort(
+      (a, b) =>
+        new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
+    );
+  const nextScheduled = scheduledWithTime[0];
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
