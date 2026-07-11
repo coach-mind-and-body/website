@@ -166,14 +166,13 @@ export default function Portal() {
     }
   );
 
-  const nextScheduled = sessions
-    .filter((s: { status: string; scheduledAt?: Date | string | null }) => s.status === "scheduled" && s.scheduledAt)
-    .sort(
-      (a: { scheduledAt: Date | string }, b: { scheduledAt: Date | string }) =>
-        new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
-    )[0] as
-    | { sessionNumber: number; scheduledAt: Date | string; googleMeetLink?: string | null }
-    | undefined;
+  const nextScheduled = [...sessions]
+    .filter((s) => s.status === "scheduled" && s.scheduledAt != null)
+    .sort((a, b) => {
+      const aTime = a.scheduledAt ? new Date(a.scheduledAt).getTime() : 0;
+      const bTime = b.scheduledAt ? new Date(b.scheduledAt).getTime() : 0;
+      return aTime - bTime;
+    })[0];
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
