@@ -249,9 +249,23 @@ export default function ReclaimHub() {
                   Your Reclaim Journey
                 </h1>
                 <p className="text-lg max-w-2xl mx-auto" style={{ color: "#5a6b5a" }}>
-                  Explore your modules, complete assignments, and track your progress through the 6-session Mind & Body Reset program.
+                  Modules appear here when Lee Anne assigns them to you. Complete each one as it unlocks.
                 </p>
               </div>
+
+              {modules.length === 0 && (
+                <div
+                  className="max-w-lg mx-auto mb-12 p-8 rounded-2xl text-center"
+                  style={{ background: "white", border: "1px solid #f0e8e4" }}
+                >
+                  <p className="font-semibold mb-2" style={{ color: "#2d3b2d" }}>
+                    No modules assigned yet
+                  </p>
+                  <p className="text-sm" style={{ color: "#5a6b5a" }}>
+                    Your coach will unlock modules as you go — check back after your sessions, or message Lee Anne if you have questions.
+                  </p>
+                </div>
+              )}
 
               {/* Next Upcoming Session Banner */}
               {(() => {

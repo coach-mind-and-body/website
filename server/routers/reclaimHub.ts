@@ -96,14 +96,16 @@ export const reclaimHubRouter = router({
       .from(coachingSessions)
       .where(eq(coachingSessions.userId, ctx.user!.id));
 
-    // Calculate drip logic
-    const enrichedModules = modules.map((mod, index) => {
-      const progress = progressRecords.find(p => p.moduleId === mod.id);
-      const session = sessions.find(s => s.sessionNumber === mod.order);
-      
-      // Module is unlocked if the admin has explicitly assigned it (a progress record exists)
-      // OR if it's the very first module and we auto-unlock it for new clients so they have a starting point.
-      let isUnlocked = (progress !== undefined && progress.unlockedAt !== null) || index === 0;
+    // Only modules the coach has assigned (moduleProgress.unlockedAt set) are visible.
+    // Admins see all published modules for preview when browsing the hub.
+    const isAdmin = ctx.user!.role === "admin";
+
+    const enrichedModules = modules.map((mod) => {
+      const progress = progressRecords.find((p) => p.moduleId === mod.id);
+      const session = sessions.find((s) => s.sessionNumber === mod.order);
+      const isUnlocked =
+        isAdmin ||
+        (progress !== undefined && progress.unlockedAt !== null);
 
       return {
         ...mod,
@@ -113,7 +115,21 @@ export const reclaimHubRouter = router({
       };
     });
 
-    return { enrollment: effectiveEnrollment, modules: enrichedModules, assignments: allAssignments, submissions };
+    const visibleModules = isAdmin
+      ? enrichedModules
+      : enrichedModules.filter((m) => m.isUnlocked);
+
+    const visibleModuleIds = new Set(visibleModules.map((m) => m.id));
+    const visibleAssignments = isAdmin
+      ? allAssignments
+      : allAssignments.filter((a) => visibleModuleIds.has(a.moduleId));
+
+    return {
+      enrollment: effectiveEnrollment,
+      modules: visibleModules,
+      assignments: visibleAssignments,
+      submissions,
+    };
   }),
 
   submitAssignment: protectedProcedure
