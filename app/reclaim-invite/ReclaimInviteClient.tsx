@@ -14,7 +14,7 @@ const SPOTS = 10;
  * Soft deadline for scarcity (honest window). Update when you open a new cohort.
  * Shown as “or by [date], whichever comes first.”
  */
-const COHORT_WINDOW = "July 25, 2026";
+const COHORT_WINDOW = "August 1, 2026";
 
 const LEEANNE_IMG =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/3542web-rigeljackson(2)_83b0d4af.webp";
