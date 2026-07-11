@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import crypto from "crypto";
 import Stripe from "stripe";
 import { fireMetaPixelPurchase } from "@/server/metaCapi";
 import { metaParamsFromStripeMetadata } from "@/server/metaParamBuilder";
@@ -7,7 +8,12 @@ import { getDb } from "@/server/db";
 import { deposits, fpuOrders, fpuCoachingSessions, enrollments, coachingSessions, users, leads, subscribers, sequenceEnrollments } from "@/drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import { notifyOwner } from "@/server/_core/notification";
-import { sendOwnerEmail, sendReclaimWelcomeEmail, sendFpuWelcomeEmail } from "@/server/notifications";
+import {
+  sendOwnerEmail,
+  sendReclaimWelcomeEmail,
+  sendFpuWelcomeEmail,
+  sendWelcomeAndSetPasswordEmail,
+} from "@/server/notifications";
 import { enrollUserInSequence } from "@/server/sequences";
 
 async function firePurchaseFromSession(
@@ -297,9 +303,17 @@ async function processStripeEvent(event: Stripe.Event) {
             })
             .where(eq(deposits.stripeSessionId, session.id));
 
-          // 2. Look up user by email to link enrollment
+          // 2. Resolve or create portal user (most buyers pay as guests from the invite LP)
           let userId: number | null = null;
-          if (clientEmail) {
+          let createdNewUser = false;
+          let passwordResetToken = "";
+
+          if (!userId && session.metadata?.user_id) {
+            const metaId = parseInt(session.metadata.user_id, 10);
+            if (!Number.isNaN(metaId)) userId = metaId;
+          }
+
+          if (!userId && clientEmail) {
             const userRows = await db
               .select({ id: users.id })
               .from(users)
@@ -309,19 +323,56 @@ async function processStripeEvent(event: Stripe.Event) {
               userId = userRows[0].id;
             }
           }
-          // Also check metadata for user_id (set when logged-in user checks out)
-          if (!userId && session.metadata?.user_id) {
-            userId = parseInt(session.metadata.user_id);
+
+          if (!userId && clientEmail) {
+            passwordResetToken = crypto.randomBytes(32).toString("hex");
+            const expiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+            const displayName =
+              clientName && clientName !== "Unknown"
+                ? clientName
+                : clientEmail.split("@")[0];
+            try {
+              const [newUser] = await db
+                .insert(users)
+                .values({
+                  openId: `email:${clientEmail}`,
+                  name: displayName,
+                  email: clientEmail,
+                  phone: clientPhone,
+                  loginMethod: "email",
+                  emailVerified: true, // verified via Stripe payment email
+                  role: "user",
+                  passwordResetToken,
+                  passwordResetExpiry: expiry,
+                  lastSignedIn: new Date(),
+                })
+                .$returningId();
+              if (newUser) {
+                userId = newUser.id;
+                createdNewUser = true;
+                console.log(
+                  `[Stripe] Created portal user ${userId} for RECLAIM buyer ${clientEmail}`
+                );
+              }
+            } catch (createErr) {
+              // Race: user may have been created between select and insert
+              console.error("[Stripe] User create failed, re-lookup:", createErr);
+              const again = await db
+                .select({ id: users.id })
+                .from(users)
+                .where(eq(users.email, clientEmail))
+                .limit(1);
+              if (again[0]) userId = again[0].id;
+            }
           }
 
-          // Update user's phone number if provided
+          // Save phone (Stripe phone_number_collection) on existing users
           if (userId && clientPhone) {
             await db.update(users).set({ phone: clientPhone }).where(eq(users.id, userId));
           }
 
-          // 3. Create enrollment record (if we have a userId)
+          // 3. Create or update RECLAIM enrollment + 6 session slots
           if (userId) {
-            // Check if enrollment already exists for this user
             const existingEnrollment = await db
               .select({ id: enrollments.id })
               .from(enrollments)
@@ -343,7 +394,6 @@ async function processStripeEvent(event: Stripe.Event) {
                 .$returningId();
 
               if (newEnrollment) {
-                // Create 6 coaching session records
                 const sessionValues = RECLAIM_SESSION_LABELS.map((_, idx) => ({
                   enrollmentId: newEnrollment.id,
                   userId,
@@ -351,13 +401,15 @@ async function processStripeEvent(event: Stripe.Event) {
                   status: "not_scheduled" as const,
                 }));
                 await db.insert(coachingSessions).values(sessionValues);
-                console.log(`[Stripe] Created enrollment ${newEnrollment.id} + 6 coaching sessions for user ${userId} (${clientEmail})`);
-                
-                // Enroll in drip sequence
-                await enrollUserInSequence(clientEmail, clientName, "reclaim_6_week");
+                console.log(
+                  `[Stripe] Created enrollment ${newEnrollment.id} + 6 coaching sessions for user ${userId} (${clientEmail})`
+                );
+
+                if (clientEmail) {
+                  await enrollUserInSequence(clientEmail, clientName, "reclaim_6_week");
+                }
               }
             } else {
-              // Enrollment exists — update payment status
               await db
                 .update(enrollments)
                 .set({
@@ -370,9 +422,9 @@ async function processStripeEvent(event: Stripe.Event) {
               console.log(`[Stripe] Updated existing enrollment for user ${userId}`);
             }
           } else {
-            // No user account yet — enrollment will be created when they sign up
-            // The deposit record is saved with their email so it can be linked later
-            console.log(`[Stripe] Deposit paid by ${clientEmail} — no user account yet. Enrollment pending account creation.`);
+            console.error(
+              `[Stripe] CRITICAL: RECLAIM paid but no userId could be resolved for ${clientEmail}`
+            );
           }
 
           // 4. Automated Funnel Progression
@@ -417,17 +469,28 @@ async function processStripeEvent(event: Stripe.Event) {
             console.error("[Stripe Webhook] Failed automated funnel progression:", err);
           }
 
-          // Send welcome email to client
-          await sendReclaimWelcomeEmail({
-            clientEmail,
-            clientName,
-            isPaidInFull: plan === "full",
-          });
+          // Welcome email: portal + book session 1
+          if (clientEmail) {
+            await sendReclaimWelcomeEmail({
+              clientEmail,
+              clientName,
+              isPaidInFull: plan === "full",
+            });
+            // New buyers: password set link so they can open the portal without guessing
+            if (createdNewUser && passwordResetToken) {
+              await sendWelcomeAndSetPasswordEmail({
+                clientEmail,
+                clientName: clientName !== "Unknown" ? clientName : clientEmail,
+                resetToken: passwordResetToken,
+              });
+            }
+          }
+
+          const phoneNote = clientPhone ? ` · Phone: ${clientPhone}` : "";
           await notifyOwner({
             title: plan === "full" ? "New RECLAIM Full Payment Received! 🎉" : "New $200 RECLAIM Deposit Received!",
-            content: `Client: ${clientName} (${clientEmail}) has ${plan === "full" ? "paid in full ($597)" : "paid the $200 deposit"}. ${userId ? "Enrollment created automatically." : "No account yet — enrollment pending sign-up."}`,
+            content: `Client: ${clientName} (${clientEmail})${phoneNote} has ${plan === "full" ? "paid in full ($597)" : "paid the $200 deposit"}. ${userId ? "Enrollment + portal user ready." : "WARNING: enrollment not created."}`,
           });
-          // Also send email to coach@
           await sendOwnerEmail({
             subject: plan === "full" ? `New RECLAIM Client (Full Payment): ${clientName}` : `New RECLAIM Deposit: ${clientName} — $200`,
             htmlBody: `
@@ -440,15 +503,16 @@ async function processStripeEvent(event: Stripe.Event) {
                   <div style="background:#f9f5f0;border-left:4px solid #c9a96e;padding:16px 20px;margin:20px 0;border-radius:0 8px 8px 0;">
                     <p style="margin:0 0 8px;font-size:18px;font-weight:700;color:#3a5a3a;">${clientName}</p>
                     <p style="margin:0;font-size:16px;color:#4a4a4a;"><strong>Email:</strong> <a href="mailto:${clientEmail}" style="color:#c9a96e;">${clientEmail}</a></p>
+                    ${clientPhone ? `<p style="margin:8px 0 0;font-size:16px;color:#4a4a4a;"><strong>Phone:</strong> <a href="tel:${clientPhone}" style="color:#c9a96e;">${clientPhone}</a></p>` : ""}
                     <p style="margin:8px 0 0;font-size:14px;color:#6a6a6a;">${plan === "full" ? "Paid in full: $597" : "Deposit paid: $200 (balance $397 remaining)"}</p>
-                    <p style="margin:8px 0 0;font-size:14px;color:#6a6a6a;">${userId ? "✅ Enrollment created automatically" : "â³ No account yet — enrollment pending sign-up"}</p>
+                    <p style="margin:8px 0 0;font-size:14px;color:#6a6a6a;">${userId ? `✅ Portal user #${userId} + enrollment created` : "⚠️ Could not create enrollment — check logs"}</p>
                   </div>
                   <hr style="border:none;border-top:1px solid #e8e0d8;margin:28px 0;" />
                   <p style="color:#8a9a8a;font-size:13px;text-align:center;">Mind &amp; Body Reset — mindandbodyresetcoach.com</p>
                 </div>
               </div>
             `,
-            textBody: `New RECLAIM Client!\n\nName: ${clientName}\nEmail: ${clientEmail}\nPayment: ${plan === "full" ? "Full $597" : "$200 deposit (balance $397 remaining)"}\n${userId ? "Enrollment created automatically." : "No account yet — enrollment pending sign-up."}`,
+            textBody: `New RECLAIM Client!\n\nName: ${clientName}\nEmail: ${clientEmail}\nPhone: ${clientPhone ?? "n/a"}\nPayment: ${plan === "full" ? "Full $597" : "$200 deposit (balance $397 remaining)"}\n${userId ? `Enrollment created (user ${userId}).` : "WARNING: enrollment not created."}`,
           });
         }
       } catch (dbErr) {
