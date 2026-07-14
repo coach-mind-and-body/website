@@ -1,0 +1,11 @@
+---
+pid: 8952
+cwd: "C:\Users\carte\Downloads\mind-body-reset-portal"
+command: "npm run check"
+started_at: 2026-07-06T23:20:03.349Z
+running_for_ms: 5980004  
+---
+
+> mind-body-reset-portal@1.0.0 check
+> tsc --noEmit
+

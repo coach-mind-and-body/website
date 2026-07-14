@@ -1,0 +1,16 @@
+---
+pid: 3472
+cwd: "C:\Users\carte\Downloads\mind-body-reset-portal"
+command: "cd \"C:\\Users\\carte\\Downloads\\mind-body-reset-portal\"; npm install @date-fns/tz --save 2>&1 | Select-Object -Last 8"
+started_at: 2026-07-06T22:08:52.938Z
+running_for_ms: 10249991 
+---
+node.exe : npm error Cannot read properties of null (reading 'matches')
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm error Canno...ding 'matches'):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+npm error A complete log of this run can be found in: 
+C:\Users\carte\AppData\Local\npm-cache\_logs\2026-07-06T22_08_53_545Z-debug-0.log

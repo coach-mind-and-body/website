@@ -1,0 +1,162 @@
+---
+pid: 11440
+cwd: "C:\Users\carte\Downloads\mind-body-reset-portal"
+command: "cd \"C:\\Users\\carte\\Downloads\\mind-body-reset-portal\"; npx tsx scripts/backfill-snack-hack-sequence-staggered.ts"
+started_at: 2026-07-07T04:58:35.762Z
+running_for_ms: 110007   
+---
+Backfilling 30 leads across 5 waves (6/wave)
+Sequence cadence: Day 2, Day 4, Day 7, Day 10
+
+  [wave 1] chacosummer21@gmail.com (Becca)
+           signed up: Wed, Jun 17, 2026
+           anchor:  Mon, Jul 6, 2026
+           emails:  Day2 Wed, Jul 8, 2026 | Day4 Fri, Jul 10, 2026 | Day7 Mon, Jul 13, 2026 | Day10 Thu, Jul 16, 2026
+[Sequences] Enrolled chacosummer21@gmail.com in sequence: snack_hack_nurture
+  [wave 1] hillcrest99@hotmail.com (Wendy)
+           signed up: Wed, Jun 17, 2026
+           anchor:  Mon, Jul 6, 2026
+           emails:  Day2 Wed, Jul 8, 2026 | Day4 Fri, Jul 10, 2026 | Day7 Mon, Jul 13, 2026 | Day10 Thu, Jul 16, 2026
+[Sequences] Enrolled hillcrest99@hotmail.com in sequence: snack_hack_nurture
+  [wave 1] maryhancey@gmail.com (Mary)
+           signed up: Wed, Jun 17, 2026
+           anchor:  Mon, Jul 6, 2026
+           emails:  Day2 Wed, Jul 8, 2026 | Day4 Fri, Jul 10, 2026 | Day7 Mon, Jul 13, 2026 | Day10 Thu, Jul 16, 2026
+[Sequences] Enrolled maryhancey@gmail.com in sequence: snack_hack_nurture
+  [wave 1] lisaptlnsk@aol.com (Lisa)
+           signed up: Wed, Jun 17, 2026
+           anchor:  Mon, Jul 6, 2026
+           emails:  Day2 Wed, Jul 8, 2026 | Day4 Fri, Jul 10, 2026 | Day7 Mon, Jul 13, 2026 | Day10 Thu, Jul 16, 2026
+[Sequences] Enrolled lisaptlnsk@aol.com in sequence: snack_hack_nurture
+  [wave 1] hilton2@ymail.com (Brenda)
+           signed up: Wed, Jun 17, 2026
+           anchor:  Mon, Jul 6, 2026
+           emails:  Day2 Wed, Jul 8, 2026 | Day4 Fri, Jul 10, 2026 | Day7 Mon, Jul 13, 2026 | Day10 Thu, Jul 16, 2026
+[Sequences] Enrolled hilton2@ymail.com in sequence: snack_hack_nurture
+  [wave 1] mlwalker9@gmail.com (Marie)
+           signed up: Sat, Jun 20, 2026
+           anchor:  Mon, Jul 6, 2026
+           emails:  Day2 Wed, Jul 8, 2026 | Day4 Fri, Jul 10, 2026 | Day7 Mon, Jul 13, 2026 | Day10 Thu, Jul 16, 2026
+[Sequences] Enrolled mlwalker9@gmail.com in sequence: snack_hack_nurture
+  [wave 2] marlenew1079@gmail.com (M)
+           signed up: Sun, Jun 21, 2026
+           anchor:  Tue, Jul 7, 2026
+           emails:  Day2 Thu, Jul 9, 2026 | Day4 Sat, Jul 11, 2026 | Day7 Tue, Jul 14, 2026 | Day10 Fri, Jul 17, 2026
+[Sequences] Enrolled marlenew1079@gmail.com in sequence: snack_hack_nurture
+  [wave 2] marsha32259@gmail.com (Marsha)
+           signed up: Tue, Jun 23, 2026
+           anchor:  Tue, Jul 7, 2026
+           emails:  Day2 Thu, Jul 9, 2026 | Day4 Sat, Jul 11, 2026 | Day7 Tue, Jul 14, 2026 | Day10 Fri, Jul 17, 2026
+[Sequences] Enrolled marsha32259@gmail.com in sequence: snack_hack_nurture
+  [wave 2] laureepezel10@gmail.com (LAUREE)
+           signed up: Tue, Jun 23, 2026
+           anchor:  Tue, Jul 7, 2026
+           emails:  Day2 Thu, Jul 9, 2026 | Day4 Sat, Jul 11, 2026 | Day7 Tue, Jul 14, 2026 | Day10 Fri, Jul 17, 2026
+[Sequences] Enrolled laureepezel10@gmail.com in sequence: snack_hack_nurture
+  [wave 2] gma1griff@gmail.com (Hazelann)
+           signed up: Tue, Jun 23, 2026
+           anchor:  Tue, Jul 7, 2026
+           emails:  Day2 Thu, Jul 9, 2026 | Day4 Sat, Jul 11, 2026 | Day7 Tue, Jul 14, 2026 | Day10 Fri, Jul 17, 2026
+[Sequences] Enrolled gma1griff@gmail.com in sequence: snack_hack_nurture
+  [wave 2] rocksiesquarry@gmail.com (Sharla)
+           signed up: Wed, Jun 24, 2026
+           anchor:  Tue, Jul 7, 2026
+           emails:  Day2 Thu, Jul 9, 2026 | Day4 Sat, Jul 11, 2026 | Day7 Tue, Jul 14, 2026 | Day10 Fri, Jul 17, 2026
+[Sequences] Enrolled rocksiesquarry@gmail.com in sequence: snack_hack_nurture
+  [wave 2] lvnaylor123@gmail.com (Naylor)
+           signed up: Wed, Jun 24, 2026
+           anchor:  Tue, Jul 7, 2026
+           emails:  Day2 Thu, Jul 9, 2026 | Day4 Sat, Jul 11, 2026 | Day7 Tue, Jul 14, 2026 | Day10 Fri, Jul 17, 2026
+[Sequences] Enrolled lvnaylor123@gmail.com in sequence: snack_hack_nurture
+  [wave 3] chantelalvord@gmail.com (Chantel)
+           signed up: Wed, Jun 24, 2026
+           anchor:  Wed, Jul 8, 2026
+           emails:  Day2 Fri, Jul 10, 2026 | Day4 Sun, Jul 12, 2026 | Day7 Wed, Jul 15, 2026 | Day10 Sat, Jul 18, 2026
+[Sequences] Enrolled chantelalvord@gmail.com in sequence: snack_hack_nurture
+  [wave 3] khamh4@yahoo.com (K)
+           signed up: Wed, Jun 24, 2026
+           anchor:  Wed, Jul 8, 2026
+           emails:  Day2 Fri, Jul 10, 2026 | Day4 Sun, Jul 12, 2026 | Day7 Wed, Jul 15, 2026 | Day10 Sat, Jul 18, 2026
+[Sequences] Enrolled khamh4@yahoo.com in sequence: snack_hack_nurture
+  [wave 3] jgjuliet@yahoo.com (Jayna )
+           signed up: Thu, Jun 25, 2026
+           anchor:  Wed, Jul 8, 2026
+           emails:  Day2 Fri, Jul 10, 2026 | Day4 Sun, Jul 12, 2026 | Day7 Wed, Jul 15, 2026 | Day10 Sat, Jul 18, 2026
+[Sequences] Enrolled jgjuliet@yahoo.com in sequence: snack_hack_nurture
+  [wave 3] neeruggles@yahoo.com (Renee)
+           signed up: Thu, Jun 25, 2026
+           anchor:  Wed, Jul 8, 2026
+           emails:  Day2 Fri, Jul 10, 2026 | Day4 Sun, Jul 12, 2026 | Day7 Wed, Jul 15, 2026 | Day10 Sat, Jul 18, 2026
+[Sequences] Enrolled neeruggles@yahoo.com in sequence: snack_hack_nurture
+  [wave 3] dawnean@yahoo.com (Dawnean )
+           signed up: Thu, Jun 25, 2026
+           anchor:  Wed, Jul 8, 2026
+           emails:  Day2 Fri, Jul 10, 2026 | Day4 Sun, Jul 12, 2026 | Day7 Wed, Jul 15, 2026 | Day10 Sat, Jul 18, 2026
+[Sequences] Enrolled dawnean@yahoo.com in sequence: snack_hack_nurture
+  [wave 3] rightprice1@msn.com (Lisa)
+           signed up: Mon, Jun 29, 2026
+           anchor:  Wed, Jul 8, 2026
+           emails:  Day2 Fri, Jul 10, 2026 | Day4 Sun, Jul 12, 2026 | Day7 Wed, Jul 15, 2026 | Day10 Sat, Jul 18, 2026
+[Sequences] Enrolled rightprice1@msn.com in sequence: snack_hack_nurture
+  [wave 4] jett2000us@gmail.com (Jeanette )
+           signed up: Mon, Jun 29, 2026
+           anchor:  Thu, Jul 9, 2026
+           emails:  Day2 Sat, Jul 11, 2026 | Day4 Mon, Jul 13, 2026 | Day7 Thu, Jul 16, 2026 | Day10 Sun, Jul 19, 2026
+[Sequences] Enrolled jett2000us@gmail.com in sequence: snack_hack_nurture
+  [wave 4] smilesncare@yahoo.com (Cynthia)
+           signed up: Tue, Jun 30, 2026
+           anchor:  Thu, Jul 9, 2026
+           emails:  Day2 Sat, Jul 11, 2026 | Day4 Mon, Jul 13, 2026 | Day7 Thu, Jul 16, 2026 | Day10 Sun, Jul 19, 2026
+[Sequences] Enrolled smilesncare@yahoo.com in sequence: snack_hack_nurture
+  [wave 4] ashleylopez61@gmail.com (Ashley)
+           signed up: Tue, Jun 30, 2026
+           anchor:  Thu, Jul 9, 2026
+           emails:  Day2 Sat, Jul 11, 2026 | Day4 Mon, Jul 13, 2026 | Day7 Thu, Jul 16, 2026 | Day10 Sun, Jul 19, 2026
+[Sequences] Enrolled ashleylopez61@gmail.com in sequence: snack_hack_nurture
+  [wave 4] randbeth@gmail.com (Beth)
+           signed up: Tue, Jun 30, 2026
+           anchor:  Thu, Jul 9, 2026
+           emails:  Day2 Sat, Jul 11, 2026 | Day4 Mon, Jul 13, 2026 | Day7 Thu, Jul 16, 2026 | Day10 Sun, Jul 19, 2026
+[Sequences] Enrolled randbeth@gmail.com in sequence: snack_hack_nurture
+  [wave 4] jeancundick@gmail.com (Jean)
+           signed up: Tue, Jun 30, 2026
+           anchor:  Thu, Jul 9, 2026
+           emails:  Day2 Sat, Jul 11, 2026 | Day4 Mon, Jul 13, 2026 | Day7 Thu, Jul 16, 2026 | Day10 Sun, Jul 19, 2026
+[Sequences] Enrolled jeancundick@gmail.com in sequence: snack_hack_nurture
+  [wave 4] garciateacher@yahoo.com (Patty)
+           signed up: Tue, Jun 30, 2026
+           anchor:  Thu, Jul 9, 2026
+           emails:  Day2 Sat, Jul 11, 2026 | Day4 Mon, Jul 13, 2026 | Day7 Thu, Jul 16, 2026 | Day10 Sun, Jul 19, 2026
+[Sequences] Enrolled garciateacher@yahoo.com in sequence: snack_hack_nurture
+  [wave 5] rb_1986@yahoo.com (Rachel)
+           signed up: Tue, Jun 30, 2026
+           anchor:  Fri, Jul 10, 2026
+           emails:  Day2 Sun, Jul 12, 2026 | Day4 Tue, Jul 14, 2026 | Day7 Fri, Jul 17, 2026 | Day10 Mon, Jul 20, 2026
+[Sequences] Enrolled rb_1986@yahoo.com in sequence: snack_hack_nurture
+  [wave 5] marshalshay@gmail.com (Shaylyn )
+           signed up: Tue, Jun 30, 2026
+           anchor:  Fri, Jul 10, 2026
+           emails:  Day2 Sun, Jul 12, 2026 | Day4 Tue, Jul 14, 2026 | Day7 Fri, Jul 17, 2026 | Day10 Mon, Jul 20, 2026
+[Sequences] Enrolled marshalshay@gmail.com in sequence: snack_hack_nurture
+  [wave 5] taffyski@hotmail.com (Taffy)
+           signed up: Wed, Jul 1, 2026
+           anchor:  Fri, Jul 10, 2026
+           emails:  Day2 Sun, Jul 12, 2026 | Day4 Tue, Jul 14, 2026 | Day7 Fri, Jul 17, 2026 | Day10 Mon, Jul 20, 2026
+[Sequences] Enrolled taffyski@hotmail.com in sequence: snack_hack_nurture
+  [wave 5] debbieedwards5@msn.com (Debbie)
+           signed up: Wed, Jul 1, 2026
+           anchor:  Fri, Jul 10, 2026
+           emails:  Day2 Sun, Jul 12, 2026 | Day4 Tue, Jul 14, 2026 | Day7 Fri, Jul 17, 2026 | Day10 Mon, Jul 20, 2026
+[Sequences] Enrolled debbieedwards5@msn.com in sequence: snack_hack_nurture
+  [wave 5] clehonepace@gmail.com (Cle)
+           signed up: Wed, Jul 1, 2026
+           anchor:  Fri, Jul 10, 2026
+           emails:  Day2 Sun, Jul 12, 2026 | Day4 Tue, Jul 14, 2026 | Day7 Fri, Jul 17, 2026 | Day10 Mon, Jul 20, 2026
+[Sequences] Enrolled clehonepace@gmail.com in sequence: snack_hack_nurture
+  [wave 5] janicelsimpson17@gmail.com (Jan)
+           signed up: Wed, Jul 1, 2026
+           anchor:  Fri, Jul 10, 2026
+           emails:  Day2 Sun, Jul 12, 2026 | Day4 Tue, Jul 14, 2026 | Day7 Fri, Jul 17, 2026 | Day10 Mon, Jul 20, 2026
+[Sequences] Enrolled janicelsimpson17@gmail.com in sequence: snack_hack_nurture
+
+Backfill complete. The sequence poller will send emails when each step is due.

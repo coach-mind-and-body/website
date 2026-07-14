@@ -1,0 +1,14 @@
+node_modules
+.next
+dist
+build
+.git
+temp.ts
+*.log
+public
+test-results
+playwright-report
+scratch
+notes
+coverage
+.cache
