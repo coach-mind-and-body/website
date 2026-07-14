@@ -99,6 +99,33 @@ export const caloriesRouter = router({
       return { success: true };
     }),
 
+  updateLog: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      dateStr: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      mealType: z.enum(["breakfast", "lunch", "dinner", "snack", "drink"]),
+      foodName: z.string().min(1),
+      calories: z.number().min(0),
+      protein: z.number().min(0),
+      carbs: z.number().min(0),
+      fat: z.number().min(0),
+      fiber: z.number().min(0),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      
+      const { id, ...updateData } = input;
+      
+      await db.update(calorieLogs)
+        .set(updateData)
+        .where(and(eq(calorieLogs.id, id), eq(calorieLogs.userId, ctx.user.id)));
+        
+      await syncMacrosToHabits(db, ctx.user.id, input.dateStr);
+
+      return { success: true };
+    }),
+
   deleteLog: protectedProcedure
     .input(z.object({
       id: z.number(),

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { Calendar as CalendarIcon, Plus, Trash2, Camera, Loader2, Info } from "lucide-react";
+import { Calendar as CalendarIcon, Plus, Trash2, Camera, Loader2, Info, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format, subDays, addDays, isSameDay } from "date-fns";
 import { usePageTitle } from "@/hooks/usePageTitle";
@@ -30,6 +30,17 @@ export default function CalorieTrackerClient() {
   const addLogMutation = trpc.calories.addLog.useMutation({
     onSuccess: () => {
       toast.success("Meal logged!");
+      refetch();
+      utils.habit.getUserHabits.invalidate();
+      setIsAdding(false);
+      resetForm();
+    },
+    onError: (e) => toast.error(e.message)
+  });
+
+  const updateLogMutation = trpc.calories.updateLog.useMutation({
+    onSuccess: () => {
+      toast.success("Meal updated!");
       refetch();
       utils.habit.getUserHabits.invalidate();
       setIsAdding(false);
@@ -74,6 +85,7 @@ export default function CalorieTrackerClient() {
   });
 
   const [isAdding, setIsAdding] = useState(false);
+  const [editingLogId, setEditingLogId] = useState<number | null>(null);
   const [mealType, setMealType] = useState<"breakfast" | "lunch" | "dinner" | "snack" | "drink">("snack");
   const [foodName, setFoodName] = useState("");
   const [calories, setCalories] = useState("");
@@ -93,20 +105,35 @@ export default function CalorieTrackerClient() {
     setFat("");
     setFiber("");
     setUserHint("");
+    setEditingLogId(null);
   };
 
   const handleSave = () => {
     if (!foodName) return toast.error("Please enter a food name");
-    addLogMutation.mutate({
-      dateStr,
-      mealType,
-      foodName,
-      calories: parseInt(calories) || 0,
-      protein: parseInt(protein) || 0,
-      carbs: parseInt(carbs) || 0,
-      fat: parseInt(fat) || 0,
-      fiber: parseInt(fiber) || 0,
-    });
+    if (editingLogId) {
+      updateLogMutation.mutate({
+        id: editingLogId,
+        dateStr,
+        mealType,
+        foodName,
+        calories: parseInt(calories) || 0,
+        protein: parseInt(protein) || 0,
+        carbs: parseInt(carbs) || 0,
+        fat: parseInt(fat) || 0,
+        fiber: parseInt(fiber) || 0,
+      });
+    } else {
+      addLogMutation.mutate({
+        dateStr,
+        mealType,
+        foodName,
+        calories: parseInt(calories) || 0,
+        protein: parseInt(protein) || 0,
+        carbs: parseInt(carbs) || 0,
+        fat: parseInt(fat) || 0,
+        fiber: parseInt(fiber) || 0,
+      });
+    }
   };
 
   const handleImageCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -214,8 +241,8 @@ export default function CalorieTrackerClient() {
               style={{ borderColor: "#f0e8e4" }}
             >
               <div className="flex justify-between items-center mb-6">
-                <h3 className="font-bold text-xl" style={{ color: "#2d3b2d" }}>Log Food/Drink</h3>
-                <button onClick={() => setIsAdding(false)} className="text-gray-400 hover:text-gray-600">
+                <h3 className="font-bold text-xl" style={{ color: "#2d3b2d" }}>{editingLogId ? "Edit Food/Drink" : "Log Food/Drink"}</h3>
+                <button onClick={() => { setIsAdding(false); resetForm(); }} className="text-gray-400 hover:text-gray-600">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
               </div>
@@ -304,11 +331,11 @@ export default function CalorieTrackerClient() {
 
                 <Button 
                   onClick={handleSave} 
-                  disabled={addLogMutation.isPending}
+                  disabled={addLogMutation.isPending || updateLogMutation.isPending}
                   className="w-full rounded-2xl py-6 text-lg font-bold mt-4 shadow-md"
                   style={{ background: "#2d3b2d", color: "white" }}
                 >
-                  {addLogMutation.isPending ? "Saving..." : "Save Food/Drink"}
+                  {addLogMutation.isPending || updateLogMutation.isPending ? "Saving..." : (editingLogId ? "Update Food/Drink" : "Save Food/Drink")}
                 </Button>
               </div>
             </motion.div>
@@ -335,12 +362,31 @@ export default function CalorieTrackerClient() {
                     <span className="text-green-600">{log.fiber}fb</span>
                   </div>
                 </div>
-                <button 
-                  onClick={() => deleteLogMutation.mutate({ id: log.id, dateStr })}
-                  className="p-2 text-gray-300 hover:text-red-500 transition-colors"
-                >
-                  <Trash2 size={20} />
-                </button>
+                <div className="flex gap-1 sm:gap-2">
+                  <button 
+                    onClick={() => {
+                      setEditingLogId(log.id);
+                      setMealType(log.mealType as any);
+                      setFoodName(log.foodName);
+                      setCalories(log.calories.toString());
+                      setProtein(log.protein.toString());
+                      setCarbs(log.carbs.toString());
+                      setFat(log.fat.toString());
+                      setFiber(log.fiber.toString());
+                      setIsAdding(true);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="p-2 text-gray-300 hover:text-[#c9a96e] transition-colors"
+                  >
+                    <Pencil size={20} />
+                  </button>
+                  <button 
+                    onClick={() => deleteLogMutation.mutate({ id: log.id, dateStr })}
+                    className="p-2 text-gray-300 hover:text-red-500 transition-colors"
+                  >
+                    <Trash2 size={20} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
