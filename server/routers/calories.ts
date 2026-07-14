@@ -159,4 +159,30 @@ export const caloriesRouter = router({
 
       return result.object;
     }),
+
+  analyzeFoodText: protectedProcedure
+    .input(z.object({
+      foodName: z.string().min(1),
+    }))
+    .mutation(async ({ input }) => {
+      const result = await generateObject({
+        model: google("gemini-2.5-flash"),
+        schema: z.object({
+          foodName: z.string().describe("The normalized name of the food"),
+          calories: z.number().describe("Estimated total calories"),
+          protein: z.number().describe("Estimated protein in grams"),
+          carbs: z.number().describe("Estimated carbohydrates in grams"),
+          fat: z.number().describe("Estimated fat in grams"),
+          fiber: z.number().describe("Estimated fiber in grams"),
+        }),
+        messages: [
+          {
+            role: "user",
+            content: `You are an expert nutritionist and calorie estimator. Estimate the macros and calories as accurately as possible for the following food item or meal: "${input.foodName}". Assume standard portions if none are provided.`,
+          },
+        ],
+      });
+
+      return result.object;
+    }),
 });

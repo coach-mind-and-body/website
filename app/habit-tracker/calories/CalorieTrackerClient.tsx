@@ -60,6 +60,19 @@ export default function CalorieTrackerClient() {
     onError: (e) => toast.error(e.message)
   });
 
+  const analyzeTextMutation = trpc.calories.analyzeFoodText.useMutation({
+    onSuccess: (data) => {
+      setFoodName(data.foodName);
+      setCalories(data.calories.toString());
+      setProtein(data.protein.toString());
+      setCarbs(data.carbs.toString());
+      setFat(data.fat.toString());
+      setFiber(data.fiber.toString());
+      toast.success("AI estimated macros successfully!");
+    },
+    onError: (e) => toast.error(e.message)
+  });
+
   const [isAdding, setIsAdding] = useState(false);
   const [mealType, setMealType] = useState<"breakfast" | "lunch" | "dinner" | "snack" | "drink">("snack");
   const [foodName, setFoodName] = useState("");
@@ -246,7 +259,22 @@ export default function CalorieTrackerClient() {
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Food/Drink Name</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-bold text-gray-500 uppercase">Food/Drink Name</label>
+                    <button 
+                      onClick={() => {
+                        if (!foodName) {
+                          toast.error("Please enter a food name to estimate");
+                          return;
+                        }
+                        analyzeTextMutation.mutate({ foodName });
+                      }}
+                      disabled={analyzeTextMutation.isPending || !foodName}
+                      className="text-xs font-bold text-[#c9a96e] hover:opacity-80 transition-opacity flex items-center gap-1 disabled:opacity-50"
+                    >
+                      {analyzeTextMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : "✨"} Auto-fill Macros
+                    </button>
+                  </div>
                   <input type="text" value={foodName} onChange={e => setFoodName(e.target.value)} className="w-full p-3 rounded-xl border focus:outline-none focus:ring-1 focus:ring-[#c9a96e]" placeholder="e.g. Grilled Chicken Salad" />
                 </div>
 
