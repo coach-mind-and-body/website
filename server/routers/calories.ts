@@ -131,7 +131,7 @@ export const caloriesRouter = router({
       const base64Data = input.imageBase64.replace(/^data:image\/\w+;base64,/, "");
 
       const result = await generateObject({
-        model: google("gemini-2.5-flash"),
+        model: google("gemini-3.5-flash"),
         schema: z.object({
           foodName: z.string().describe("A descriptive name for the food identified in the image, incorporating the user's hint if provided."),
           calories: z.number().describe("Estimated total calories"),
@@ -166,7 +166,7 @@ export const caloriesRouter = router({
     }))
     .mutation(async ({ input }) => {
       const result = await generateObject({
-        model: google("gemini-2.5-flash"),
+        model: google("gemini-3.5-flash"),
         schema: z.object({
           foodName: z.string().describe("The normalized name of the food"),
           calories: z.number().describe("Estimated total calories"),
