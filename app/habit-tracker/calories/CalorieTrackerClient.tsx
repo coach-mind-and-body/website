@@ -259,8 +259,9 @@ export default function CalorieTrackerClient() {
                 </div>
 
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-bold text-gray-500 uppercase">Food/Drink Name</label>
+                  <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Food/Drink Name</label>
+                  <div className="flex gap-2">
+                    <input type="text" value={foodName} onChange={e => setFoodName(e.target.value)} className="flex-1 p-3 rounded-xl border focus:outline-none focus:ring-1 focus:ring-[#c9a96e]" placeholder="e.g. Grilled Chicken Salad" />
                     <button 
                       onClick={() => {
                         if (!foodName) {
@@ -270,12 +271,12 @@ export default function CalorieTrackerClient() {
                         analyzeTextMutation.mutate({ foodName });
                       }}
                       disabled={analyzeTextMutation.isPending || !foodName}
-                      className="text-xs font-bold text-[#c9a96e] hover:opacity-80 transition-opacity flex items-center gap-1 disabled:opacity-50"
+                      className="px-4 py-3 rounded-xl font-bold transition-all disabled:opacity-50 flex items-center justify-center shrink-0 shadow-sm"
+                      style={{ background: "#fbeee9", color: "#c9a96e" }}
                     >
-                      {analyzeTextMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : "✨"} Auto-fill Macros
+                      {analyzeTextMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : <span className="flex items-center gap-1.5">✨ <span className="hidden sm:inline">Auto-fill</span></span>}
                     </button>
                   </div>
-                  <input type="text" value={foodName} onChange={e => setFoodName(e.target.value)} className="w-full p-3 rounded-xl border focus:outline-none focus:ring-1 focus:ring-[#c9a96e]" placeholder="e.g. Grilled Chicken Salad" />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
