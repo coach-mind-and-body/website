@@ -13,51 +13,51 @@ function escapeXml(str: string): string {
     .replace(/'/g, "&apos;");
 }
 
-/** Public, indexable marketing pages only (no thank-yous, no private apps). */
+/**
+ * High-value public marketing pages only.
+ * Omit thin conversion/app shells and pure legal pages from the sitemap so
+ * Google spends crawl budget on content that should rank (blog, pillars, offer pages).
+ * Legal pages stay linked from the footer — they do not need sitemap discovery.
+ */
 const STATIC_PAGES: Array<{
   path: string;
   changefreq: string;
   priority: string;
-  lastmod?: string;
+  /** Real last meaningful content update — never "always today" (hurts sitemap trust). */
+  lastmod: string;
 }> = [
-  { path: "/", changefreq: "weekly", priority: "1.0" },
-  { path: "/about", changefreq: "monthly", priority: "0.9" },
-  { path: "/reclaim", changefreq: "monthly", priority: "0.9" },
-  { path: "/book", changefreq: "monthly", priority: "0.85" },
-  { path: "/midlife-health-podcast", changefreq: "weekly", priority: "0.85" },
-  { path: "/health-wellness-blog", changefreq: "weekly", priority: "0.85" },
-  { path: "/food-quiz", changefreq: "monthly", priority: "0.8" },
-  { path: "/snack-hack", changefreq: "monthly", priority: "0.8" },
-  { path: "/habit-tracker-invite", changefreq: "monthly", priority: "0.75" },
-  { path: "/holistic-health-and-wellness", changefreq: "monthly", priority: "0.8" },
-  { path: "/life-after-glp-1", changefreq: "monthly", priority: "0.85" },
-  { path: "/insulin-resistance-after-40", changefreq: "monthly", priority: "0.9" },
-  { path: "/financial-peace", changefreq: "monthly", priority: "0.75" },
-  { path: "/unicity", changefreq: "monthly", priority: "0.75" },
-  { path: "/habit-tracker", changefreq: "monthly", priority: "0.6" },
-  { path: "/enroll", changefreq: "monthly", priority: "0.7" },
-  { path: "/join", changefreq: "monthly", priority: "0.55" },
-  { path: "/terms", changefreq: "yearly", priority: "0.2" },
-  { path: "/privacy", changefreq: "yearly", priority: "0.2" },
-  { path: "/disclaimer", changefreq: "yearly", priority: "0.2" },
+  { path: "/", changefreq: "weekly", priority: "1.0", lastmod: "2026-07-14" },
+  { path: "/about", changefreq: "monthly", priority: "0.9", lastmod: "2026-07-10" },
+  { path: "/reclaim", changefreq: "monthly", priority: "0.9", lastmod: "2026-07-10" },
+  { path: "/book", changefreq: "monthly", priority: "0.85", lastmod: "2026-07-01" },
+  { path: "/midlife-health-podcast", changefreq: "weekly", priority: "0.85", lastmod: "2026-07-10" },
+  { path: "/health-wellness-blog", changefreq: "weekly", priority: "0.9", lastmod: "2026-07-10" },
+  { path: "/food-quiz", changefreq: "monthly", priority: "0.8", lastmod: "2026-06-15" },
+  { path: "/snack-hack", changefreq: "monthly", priority: "0.8", lastmod: "2026-06-20" },
+  { path: "/holistic-health-and-wellness", changefreq: "monthly", priority: "0.85", lastmod: "2026-07-01" },
+  { path: "/life-after-glp-1", changefreq: "monthly", priority: "0.85", lastmod: "2026-07-01" },
+  { path: "/insulin-resistance-after-40", changefreq: "monthly", priority: "0.9", lastmod: "2026-07-01" },
+  { path: "/financial-peace", changefreq: "monthly", priority: "0.75", lastmod: "2026-06-01" },
+  { path: "/unicity", changefreq: "monthly", priority: "0.75", lastmod: "2026-06-01" },
+  // Omitted on purpose (low index value / app or legal):
+  // /habit-tracker, /habit-tracker-invite, /enroll, /join, /terms, /privacy, /disclaimer
   // Note: /feel-great-system redirects to /unicity — not listed
   // Note: /fpu-may-12 is a dated event landing — omit from sitemap after event
 ];
 
 export async function GET() {
   try {
-    const today = new Date().toISOString().split("T")[0];
-
     const staticUrls = STATIC_PAGES.map(
       (page) => `
   <url>
     <loc>${SITE_URL}${page.path}</loc>
-    <lastmod>${page.lastmod || today}</lastmod>
+    <lastmod>${page.lastmod}</lastmod>
     <changefreq>${page.changefreq}</changefreq>
     <priority>${page.priority}</priority>
   </url>`
     ).join("");
 
+    const fallbackDay = "2026-07-01";
     let blogUrls = "";
     const db = await getDb();
     if (db) {
@@ -77,13 +77,13 @@ export async function GET() {
             ? new Date(post.updatedAt).toISOString().split("T")[0]
             : post.publishedAt
               ? new Date(post.publishedAt).toISOString().split("T")[0]
-              : today;
+              : fallbackDay;
           return `
   <url>
     <loc>${SITE_URL}/health-wellness-blog/${escapeXml(post.slug)}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.75</priority>
   </url>`;
         })
         .join("");
@@ -106,7 +106,7 @@ export async function GET() {
             ? new Date(ep.updatedAt).toISOString().split("T")[0]
             : ep.publishedAt
               ? new Date(ep.publishedAt).toISOString().split("T")[0]
-              : today;
+              : fallbackDay;
           return `
   <url>
     <loc>${SITE_URL}/midlife-health-podcast/${escapeXml(ep.slug)}</loc>

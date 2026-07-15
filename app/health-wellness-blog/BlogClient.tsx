@@ -2,12 +2,12 @@
 
 import { useState, useMemo } from "react";
 import Link from 'next/link';
-;
 import { ChevronRight, Search, X } from "lucide-react";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import { trpc } from "@/lib/trpc";
+import { SITE_URL } from "@shared/brand";
 
 
 const CDN = "https://cdn.mindandbodyresetcoach.com/blog-images";
@@ -20,11 +20,19 @@ const STATIC_POSTS = [
   { slug: "thought-work-intro", category: "Thought Work", date: "January 15, 2026", publishedAt: new Date("2026-01-15"), title: "What Is Thought Work and Why Does It Change Everything?", excerpt: "An introduction to the most powerful tool in the coaching toolkit — and why it's not therapy.", coverImage: `${CDN}/reclaim-rewire-reset-become-a-different-decision-maker.png` },
 ];
 
-export default function Blog() {
+type InitialListPost = {
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  category: string | null;
+  coverImage: string | null;
+  content: string;
+  publishedAt: string | null;
+};
+
+export default function Blog({ initialPosts = [] }: { initialPosts?: InitialListPost[] }) {
   usePageTitle({ title: "Health & Wellness Blog | Mind & Body Reset", description: "Read the latest insights on midlife health, mindset, and weight loss from Lee Anne Chapman." });
 
-  
-  
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -40,8 +48,13 @@ export default function Blog() {
     category: selectedCategory ?? undefined 
   });
 
-  const dbPosts = postsData?.posts;
-  const totalCount = postsData?.totalCount ?? 0;
+  // Prefer live query; fall back to SSR seed on first page (no filter) so HTML has real links
+  const dbPosts =
+    postsData?.posts ??
+    (page === 1 && !selectedCategory && initialPosts.length > 0
+      ? initialPosts
+      : undefined);
+  const totalCount = postsData?.totalCount ?? initialPosts.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / limit));
 
   const allPosts = useMemo(() => (dbPosts && dbPosts.length > 0)
@@ -74,7 +87,7 @@ export default function Blog() {
     "itemListElement": posts.map((post, index) => ({
       "@type": "ListItem",
       "position": index + 1,
-      "url": `https://coach-mind-and-body.com/health-wellness-blog/${post.slug}`
+      "url": `${SITE_URL}/health-wellness-blog/${post.slug}`
     }))
   };
 

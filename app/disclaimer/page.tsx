@@ -5,6 +5,8 @@ export const metadata = {
   description:
     "Important disclaimers about Mind & Body Reset coaching services — Lee Anne is a certified coach, not a medical professional.",
   alternates: { canonical: "/disclaimer" },
+  // Legal utility page — linked in footer; no need to compete for crawl budget
+  robots: { index: false, follow: true },
 };
 
 export default function Page() {

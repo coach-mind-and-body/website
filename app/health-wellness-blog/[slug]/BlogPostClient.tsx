@@ -270,14 +270,61 @@ Women who go through the R.E.C.L.A.I.M. program consistently report that the foo
   },
 };
 
-export default function BlogPost() {
+type InitialPost = {
+  id: number;
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  content: string;
+  category: string | null;
+  coverImage: string | null;
+  coverImageAlt?: string | null;
+  published: boolean;
+  publishedAt: string | null;
+  authorId: number | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  schemaTypes?: string | null;
+  schemaFaqJson?: string | null;
+  schemaVideoUrl?: string | null;
+  schemaVideoDescription?: string | null;
+  schemaHowToStepsJson?: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+};
+
+export default function BlogPost({ initialPost = null }: { initialPost?: InitialPost | null }) {
   const params = useParams<{ slug: string }>();
-  const slug = params.slug;
-  const { data: dbPost, isLoading } = trpc.blog.bySlug.useQuery({ slug: slug ?? "" }, { enabled: !!slug });
+  const slug = params.slug ?? initialPost?.slug;
+  // Client refetch for freshness; initialPost from the server already has full body for SSR/SEO
+  const { data: dbPost, isLoading } = trpc.blog.bySlug.useQuery(
+    { slug: slug ?? "" },
+    { enabled: !!slug, staleTime: 60_000 }
+  );
 
   const staticPost = slug ? STATIC_POSTS[slug] : undefined;
   const staticCover = slug ? (STATIC_POST_COVERS[slug] ?? null) : null;
-  const post = dbPost ?? (staticPost ? { ...staticPost, slug: slug ?? "", id: 0, coverImage: staticCover, seoTitle: null, seoDescription: null, published: true, publishedAt: null, authorId: null, createdAt: new Date(), updatedAt: new Date() } : null);
+  const post =
+    dbPost ??
+    initialPost ??
+    (staticPost
+      ? {
+          ...staticPost,
+          slug: slug ?? "",
+          id: 0,
+          coverImage: staticCover,
+          seoTitle: null,
+          seoDescription: null,
+          published: true,
+          publishedAt: null,
+          authorId: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }
+      : null);
+
+  // Only show spinner when we have nothing to render yet (SSR path never hits this)
+  const waitingForData = isLoading && !initialPost && !staticPost;
 
   // Update page title + meta tags for SEO
   useEffect(() => {
@@ -398,7 +445,7 @@ export default function BlogPost() {
     };
   }, [post]);
 
-  if (isLoading) {
+  if (waitingForData) {
     return (
       <div className="min-h-screen" style={{ background: "oklch(0.97 0.008 10)" }}>
         <SiteNav />

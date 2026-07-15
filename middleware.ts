@@ -3,6 +3,24 @@ import type { NextRequest } from "next/server";
 
 
 export function middleware(request: NextRequest) {
+  // Don't set marketing cookies for crawlers or pure SEO assets — keeps
+  // responses cache-friendly and avoids Set-Cookie on every Googlebot hit.
+  const ua = request.headers.get("user-agent") ?? "";
+  const path = request.nextUrl.pathname;
+  const isBot =
+    /bot|crawl|spider|slurp|facebookexternalhit|bingpreview|google-inspectiontool/i.test(
+      ua
+    );
+  const isSeoAsset =
+    path === "/robots.txt" ||
+    path === "/sitemap.xml" ||
+    path === "/feed.xml" ||
+    path === "/llms.txt";
+
+  if (isBot || isSeoAsset) {
+    return NextResponse.next();
+  }
+
   const cookiesToSet: { name: string; value: string; maxAge: number; domain?: string }[] = [];
   const now = Date.now();
   const host = request.headers.get("host") ?? "";
