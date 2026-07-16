@@ -14,16 +14,14 @@ function escapeXml(str: string): string {
 }
 
 /**
- * High-value public marketing pages only.
- * Omit thin conversion/app shells and pure legal pages from the sitemap so
- * Google spends crawl budget on content that should rank (blog, pillars, offer pages).
- * Legal pages stay linked from the footer — they do not need sitemap discovery.
+ * Public pages we want discovered and indexed.
+ * Omit pure legal + thin checkout shells so crawl budget goes to content/product.
+ * lastmod = real content-change date (never "always today").
  */
 const STATIC_PAGES: Array<{
   path: string;
   changefreq: string;
   priority: string;
-  /** Real last meaningful content update — never "always today" (hurts sitemap trust). */
   lastmod: string;
 }> = [
   { path: "/", changefreq: "weekly", priority: "1.0", lastmod: "2026-07-14" },
@@ -34,13 +32,15 @@ const STATIC_PAGES: Array<{
   { path: "/health-wellness-blog", changefreq: "weekly", priority: "0.9", lastmod: "2026-07-10" },
   { path: "/food-quiz", changefreq: "monthly", priority: "0.8", lastmod: "2026-06-15" },
   { path: "/snack-hack", changefreq: "monthly", priority: "0.8", lastmod: "2026-06-20" },
+  // Free product pages — worth indexing (habits / macros / midlife keywords)
+  { path: "/habit-tracker-invite", changefreq: "monthly", priority: "0.8", lastmod: "2026-07-01" },
+  { path: "/habit-tracker", changefreq: "weekly", priority: "0.85", lastmod: "2026-07-15" },
   { path: "/holistic-health-and-wellness", changefreq: "monthly", priority: "0.85", lastmod: "2026-07-01" },
   { path: "/life-after-glp-1", changefreq: "monthly", priority: "0.85", lastmod: "2026-07-01" },
   { path: "/insulin-resistance-after-40", changefreq: "monthly", priority: "0.9", lastmod: "2026-07-01" },
   { path: "/financial-peace", changefreq: "monthly", priority: "0.75", lastmod: "2026-06-01" },
   { path: "/unicity", changefreq: "monthly", priority: "0.75", lastmod: "2026-06-01" },
-  // Omitted on purpose (low index value / app or legal):
-  // /habit-tracker, /habit-tracker-invite, /enroll, /join, /terms, /privacy, /disclaimer
+  // Still omitted: /enroll, /join (thin conversion), /terms, /privacy, /disclaimer (legal + noindex)
   // Note: /feel-great-system redirects to /unicity — not listed
   // Note: /fpu-may-12 is a dated event landing — omit from sitemap after event
 ];
