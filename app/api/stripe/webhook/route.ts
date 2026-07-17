@@ -7,7 +7,6 @@ import { ENV } from "@/server/_core/env";
 import { getDb } from "@/server/db";
 import { deposits, fpuOrders, fpuCoachingSessions, enrollments, coachingSessions, users, leads, subscribers, sequenceEnrollments } from "@/drizzle/schema";
 import { eq, and } from "drizzle-orm";
-import { notifyOwner } from "@/server/_core/notification";
 import {
   sendOwnerEmail,
   sendReclaimWelcomeEmail,
@@ -128,13 +127,6 @@ async function processStripeEvent(event: Stripe.Event) {
             clientName,
             includesCoaching: isCoaching,
           });
-          // Send Manus in-app notification
-          await notifyOwner({
-            title: isCoaching ? `New FPU Coaching Purchase — ${clientName}!` : `New FPU Enrollment — ${clientName}!`,
-            content: isCoaching
-              ? `${clientName} (${clientEmail}) just purchased 3 FPU 1:1 coaching sessions ($249). A welcome email with your booking link has been sent to them — they'll schedule their first session directly!`
-              : `${clientName} (${clientEmail}) just enrolled in Financial Peace University.`,
-          });
           // Create 3 coaching session records for tracking
           if (isCoaching) {
             // Find the fpuOrder id we just updated
@@ -246,11 +238,6 @@ async function processStripeEvent(event: Stripe.Event) {
                 customerName: balanceName,
               });
             }
-            await notifyOwner({
-              title: "RECLAIM Balance Payment Received!",
-              content: `Client (user ID: ${userId}) has paid the $397 balance for their R.E.C.L.A.I.M. program.`,
-            });
-            // Also send email to coach@
             await sendOwnerEmail({
               subject: "RECLAIM Balance Payment Received — $397",
               htmlBody: `
@@ -486,11 +473,6 @@ async function processStripeEvent(event: Stripe.Event) {
             }
           }
 
-          const phoneNote = clientPhone ? ` · Phone: ${clientPhone}` : "";
-          await notifyOwner({
-            title: plan === "full" ? "New RECLAIM Full Payment Received! 🎉" : "New $200 RECLAIM Deposit Received!",
-            content: `Client: ${clientName} (${clientEmail})${phoneNote} has ${plan === "full" ? "paid in full ($597)" : "paid the $200 deposit"}. ${userId ? "Enrollment + portal user ready." : "WARNING: enrollment not created."}`,
-          });
           await sendOwnerEmail({
             subject: plan === "full" ? `New RECLAIM Client (Full Payment): ${clientName}` : `New RECLAIM Deposit: ${clientName} — $200`,
             htmlBody: `

@@ -1,9 +1,17 @@
+/**
+ * Meta Conversions API (server-side) — primary ad attribution path.
+ * Browser pixel + event_id dedupe for Leads; Purchase from Stripe webhooks.
+ * No Manus / CAPIG dependency — posts directly to graph.facebook.com.
+ */
 import { ENV } from "./_core/env";
 import {
   extractMetaParamsFromRequest,
   getParamBuilderForPii,
   type MetaRequestParams,
 } from "./metaParamBuilder";
+
+/** Graph API version for Conversions API */
+const META_GRAPH_VERSION = "v21.0";
 
 export interface MetaLeadParams {
   customerEmail: string;
@@ -29,6 +37,8 @@ export interface MetaPurchaseParams {
   eventId?: string;
   fbc?: string | null;
   fbp?: string | null;
+  clientIp?: string | null;
+  userAgent?: string | null;
 }
 
 type UserData = Record<string, string | string[]>;
@@ -47,7 +57,11 @@ function buildUserData(params: {
 
   if (params.email) {
     const hashed = builder.getNormalizedAndHashedPII(params.email, "email");
-    if (hashed) userData.em = [hashed];
+    if (hashed) {
+      userData.em = [hashed];
+      // external_id = hashed email improves match quality when cookie/fbp missing
+      userData.external_id = [hashed];
+    }
   }
 
   if (params.name) {
@@ -57,7 +71,10 @@ function buildUserData(params: {
       if (fn) userData.fn = [fn];
     }
     if (parts.length > 1) {
-      const ln = builder.getNormalizedAndHashedPII(parts.slice(1).join(" "), "last_name");
+      const ln = builder.getNormalizedAndHashedPII(
+        parts.slice(1).join(" "),
+        "last_name"
+      );
       if (ln) userData.ln = [ln];
     }
   }
@@ -92,6 +109,16 @@ function resolveTracking(
   return extractMetaParamsFromRequest(req, overrides);
 }
 
+function hasUsefulUserData(userData: UserData): boolean {
+  return Boolean(
+    userData.em ||
+      userData.ph ||
+      userData.fbc ||
+      userData.fbp ||
+      userData.external_id
+  );
+}
+
 async function sendMetaEvent(payload: {
   event_name: string;
   event_time: number;
@@ -101,33 +128,65 @@ async function sendMetaEvent(payload: {
   event_id?: string;
   user_data: UserData;
   custom_data?: Record<string, string>;
-}) {
+}): Promise<boolean> {
   if (!ENV.metaConversionsApiToken) {
-    console.warn(`[Meta CAPI] No access token configured - skipping ${payload.event_name} event`);
-    return;
+    console.warn(
+      `[Meta CAPI] No META_CONVERSIONS_API_TOKEN — skipping ${payload.event_name}`
+    );
+    return false;
   }
 
-  if (Object.keys(payload.user_data).length === 0) {
-    console.warn(`[Meta CAPI] No user_data for ${payload.event_name} - skipping`);
-    return;
+  if (!hasUsefulUserData(payload.user_data)) {
+    console.warn(
+      `[Meta CAPI] Insufficient user_data for ${payload.event_name} — need email, phone, fbc, or fbp`
+    );
+    return false;
   }
 
-  const url = `https://graph.facebook.com/v18.0/${ENV.metaPixelId}/events?access_token=${ENV.metaConversionsApiToken}`;
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ data: [payload] }),
-  });
+  const url = `https://graph.facebook.com/${META_GRAPH_VERSION}/${ENV.metaPixelId}/events?access_token=${ENV.metaConversionsApiToken}`;
 
-  const result = (await response.json()) as {
-    events_received?: number;
-    error?: { message: string };
+  const body: {
+    data: unknown[];
+    test_event_code?: string;
+  } = {
+    data: [payload],
   };
 
-  if (result.error) {
-    console.error(`[Meta CAPI] API error (${payload.event_name}):`, result.error.message);
-  } else {
-    console.log(`[Meta CAPI] ${payload.event_name} sent - events_received: ${result.events_received}`);
+  // Optional: set META_TEST_EVENT_CODE in Railway to verify in Events Manager Test Events
+  const testCode = process.env.META_TEST_EVENT_CODE?.trim();
+  if (testCode) {
+    body.test_event_code = testCode;
+  }
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    const result = (await response.json()) as {
+      events_received?: number;
+      fbtrace_id?: string;
+      error?: { message: string; code?: number; error_subcode?: number };
+    };
+
+    if (!response.ok || result.error) {
+      console.error(
+        `[Meta CAPI] ${payload.event_name} failed HTTP ${response.status}:`,
+        result.error?.message ?? JSON.stringify(result)
+      );
+      return false;
+    }
+
+    console.log(
+      `[Meta CAPI] ${payload.event_name} ok — events_received=${result.events_received}` +
+        (payload.event_id ? ` event_id=${payload.event_id}` : "")
+    );
+    return true;
+  } catch (err) {
+    console.error(`[Meta CAPI] Network error (${payload.event_name}):`, err);
+    return false;
   }
 }
 
@@ -153,8 +212,11 @@ export async function fireMetaPixelLead(params: MetaLeadParams) {
       event_time: Math.floor(Date.now() / 1000),
       action_source: "website",
       event_source_url:
-        params.eventSourceUrl ?? tracking?.eventSourceUrl ?? "https://mindandbodyresetcoach.com",
+        params.eventSourceUrl ??
+        tracking?.eventSourceUrl ??
+        "https://mindandbodyresetcoach.com",
       referrer_url: tracking?.referrerUrl,
+      // Same event_id as browser fbq(..., { eventID }) for dedupe
       event_id: params.eventId,
       user_data: userData,
       custom_data: {
@@ -175,18 +237,24 @@ export async function fireMetaPixelPurchase(params: MetaPurchaseParams) {
       phone: params.customerPhone,
       fbc: params.fbc,
       fbp: params.fbp,
+      clientIp: params.clientIp,
+      userAgent: params.userAgent,
     });
 
-    if (Object.keys(userData).length === 0) {
-      userData.client_ip_address = "0.0.0.0";
-      userData.client_user_agent = "Mozilla/5.0";
+    // Prefer real match keys; do NOT invent fake IP/UA (hurts Event Match Quality)
+    if (!hasUsefulUserData(userData)) {
+      console.warn(
+        "[Meta CAPI] Purchase skipped — no email/phone/fbc/fbp for matching"
+      );
+      return;
     }
 
     await sendMetaEvent({
       event_name: "Purchase",
       event_time: Math.floor(Date.now() / 1000),
       action_source: "website",
-      event_source_url: params.eventSourceUrl ?? "https://mindandbodyresetcoach.com",
+      event_source_url:
+        params.eventSourceUrl ?? "https://mindandbodyresetcoach.com",
       event_id: params.eventId,
       user_data: userData,
       custom_data: {
@@ -218,7 +286,7 @@ export async function fireMetaCrmEvent(params: MetaCrmParams) {
       phone: params.customerPhone,
     });
 
-    if (Object.keys(userData).length === 0) {
+    if (!hasUsefulUserData(userData)) {
       console.warn("[Meta CAPI] No user data for CRM event");
       return;
     }

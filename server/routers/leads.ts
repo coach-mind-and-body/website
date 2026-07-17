@@ -4,7 +4,6 @@ import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { leads, users } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
-import { notifyOwner } from "../_core/notification";
 import { sendOwnerEmail } from "../notifications";
 import { fireMetaPixelLead, fireMetaCrmEvent } from "../metaCapi";
 import { metaTrackingInputSchema } from "@shared/metaTracking";
@@ -37,17 +36,7 @@ export const leadsRouter = router({
         notes: input.notes,
       });
 
-      // Optional Manus push — must never fail the booking UX (calendar step).
-      try {
-        await notifyOwner({
-          title: "New Discovery Call Lead",
-          content: `${input.name} (${input.email}) just booked a discovery call.${input.phone ? ` Phone: ${input.phone}` : ""}`,
-        });
-      } catch (err) {
-        console.warn("[leads.submit] notifyOwner failed (non-fatal):", err);
-      }
-
-      // Primary owner alert: email to coach@
+      // Owner alert: email to coach@ (Resend) — never blocks calendar step
       try {
         await sendOwnerEmail({
           subject: `New Discovery Call Lead: ${input.name}`,

@@ -1,5 +1,9 @@
+/**
+ * Owner alerts — email only (Resend → OWNER_EMAIL).
+ * No Manus / Forge dependency. Never throws for delivery failures.
+ */
 import { TRPCError } from "@trpc/server";
-import { ENV } from "./env";
+import { sendOwnerEmail } from "../notifications";
 
 export type NotificationPayload = {
   title: string;
@@ -12,16 +16,6 @@ const CONTENT_MAX_LENGTH = 20000;
 const trimValue = (value: string): string => value.trim();
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === "string" && value.trim().length > 0;
-
-const buildEndpointUrl = (baseUrl: string): string => {
-  const normalizedBase = baseUrl.endsWith("/")
-    ? baseUrl
-    : `${baseUrl}/`;
-  return new URL(
-    "webdevtoken.v1.WebDevService/SendNotification",
-    normalizedBase
-  ).toString();
-};
 
 const validatePayload = (input: NotificationPayload): NotificationPayload => {
   if (!isNonEmptyString(input.title)) {
@@ -58,57 +52,43 @@ const validatePayload = (input: NotificationPayload): NotificationPayload => {
 };
 
 /**
- * Dispatches a project-owner notification through the Manus Notification Service.
- * Returns `true` if the request was accepted, `false` when the service is
- * unconfigured or unreachable (callers should treat this as optional — email/SMS
- * are the real production paths).
- *
- * IMPORTANT: Never throw for missing env / network failures. Throwing used to
- * break /book lead capture with "Notification service URL is not configured."
- * and blocked users from reaching the Google Calendar step.
- *
- * Validation errors for empty title/content still throw so callers can fix payloads.
+ * Alert the site owner (Lee Anne) via email.
+ * Returns true if Resend accepted the message; false if email is unconfigured or failed.
+ * Callers must never treat this as required for user-facing success (booking, checkout, etc.).
  */
 export async function notifyOwner(
   payload: NotificationPayload
 ): Promise<boolean> {
   const { title, content } = validatePayload(payload);
 
-  if (!ENV.forgeApiUrl || !ENV.forgeApiKey) {
-    // Expected on Railway — Manus forge is optional leftover scaffolding.
-    console.warn(
-      "[Notification] Manus forge notification skipped (BUILT_IN_FORGE_API_URL / KEY not set). Rely on email/SMS."
-    );
-    return false;
-  }
-
-  const endpoint = buildEndpointUrl(ENV.forgeApiUrl);
-
   try {
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        accept: "application/json",
-        authorization: `Bearer ${ENV.forgeApiKey}`,
-        "content-type": "application/json",
-        "connect-protocol-version": "1",
-      },
-      body: JSON.stringify({ title, content }),
+    const htmlBody = `
+      <div style="font-family:'Nunito Sans',Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff;">
+        <div style="background:#3a5a3a;padding:24px 32px;text-align:center;">
+          <h1 style="margin:0;color:white;font-size:20px;font-weight:700;">${escapeHtml(title)}</h1>
+        </div>
+        <div style="padding:28px 32px;color:#4a4a4a;font-size:16px;line-height:1.6;white-space:pre-wrap;">${escapeHtml(content)}</div>
+        <div style="padding:0 32px 28px;color:#8a9a8a;font-size:13px;text-align:center;">
+          Mind &amp; Body Reset — automated owner alert
+        </div>
+      </div>
+    `;
+
+    return await sendOwnerEmail({
+      subject: title,
+      htmlBody,
+      textBody: content,
     });
-
-    if (!response.ok) {
-      const detail = await response.text().catch(() => "");
-      console.warn(
-        `[Notification] Failed to notify owner (${response.status} ${response.statusText})${
-          detail ? `: ${detail}` : ""
-        }`
-      );
-      return false;
-    }
-
-    return true;
-  } catch (error) {
-    console.warn("[Notification] Error calling notification service:", error);
+  } catch (err) {
+    console.warn("[Notification] Owner email failed (non-fatal):", err);
     return false;
   }
+}
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
