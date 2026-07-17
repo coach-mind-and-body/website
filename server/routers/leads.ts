@@ -36,15 +36,22 @@ export const leadsRouter = router({
         phone: input.phone,
         notes: input.notes,
       });
-      // Notify Lee Anne
-      await notifyOwner({
-        title: "New Discovery Call Lead",
-        content: `${input.name} (${input.email}) just booked a discovery call.${input.phone ? ` Phone: ${input.phone}` : ""}`,
-      });
-      // Also send email to coach@
-      await sendOwnerEmail({
-        subject: `New Discovery Call Lead: ${input.name}`,
-        htmlBody: `
+
+      // Optional Manus push — must never fail the booking UX (calendar step).
+      try {
+        await notifyOwner({
+          title: "New Discovery Call Lead",
+          content: `${input.name} (${input.email}) just booked a discovery call.${input.phone ? ` Phone: ${input.phone}` : ""}`,
+        });
+      } catch (err) {
+        console.warn("[leads.submit] notifyOwner failed (non-fatal):", err);
+      }
+
+      // Primary owner alert: email to coach@
+      try {
+        await sendOwnerEmail({
+          subject: `New Discovery Call Lead: ${input.name}`,
+          htmlBody: `
           <div style="font-family:'Nunito Sans',Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff;">
             <div style="background:#3a5a3a;padding:28px 40px;text-align:center;">
               <h1 style="margin:0;color:white;font-size:22px;font-weight:700;">New Discovery Call Lead!</h1>
@@ -62,19 +69,27 @@ export const leadsRouter = router({
             </div>
           </div>
         `,
-        textBody: `New Discovery Call Lead!\n\nName: ${input.name}\nEmail: ${input.email}${input.phone ? `\nPhone: ${input.phone}` : ""}${input.notes ? `\nNotes: ${input.notes}` : ""}`,
-      });
-      await fireMetaPixelLead({
-        customerEmail: input.email,
-        customerName: input.name,
-        customerPhone: input.phone,
-        contentName: "Discovery Call Booking",
-        eventSourceUrl: "https://mindandbodyresetcoach.com/book",
-        eventId: input.eventId,
-        req: ctx.req,
-        fbc: input.fbc,
-        fbp: input.fbp,
-      });
+          textBody: `New Discovery Call Lead!\n\nName: ${input.name}\nEmail: ${input.email}${input.phone ? `\nPhone: ${input.phone}` : ""}${input.notes ? `\nNotes: ${input.notes}` : ""}`,
+        });
+      } catch (err) {
+        console.warn("[leads.submit] sendOwnerEmail failed (non-fatal):", err);
+      }
+
+      try {
+        await fireMetaPixelLead({
+          customerEmail: input.email,
+          customerName: input.name,
+          customerPhone: input.phone,
+          contentName: "Discovery Call Booking",
+          eventSourceUrl: "https://mindandbodyresetcoach.com/book",
+          eventId: input.eventId,
+          req: ctx.req,
+          fbc: input.fbc,
+          fbp: input.fbp,
+        });
+      } catch (err) {
+        console.warn("[leads.submit] fireMetaPixelLead failed (non-fatal):", err);
+      }
 
       return { success: true };
     }),

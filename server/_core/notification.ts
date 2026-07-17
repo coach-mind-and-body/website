@@ -59,27 +59,27 @@ const validatePayload = (input: NotificationPayload): NotificationPayload => {
 
 /**
  * Dispatches a project-owner notification through the Manus Notification Service.
- * Returns `true` if the request was accepted, `false` when the upstream service
- * cannot be reached (callers can fall back to email/slack). Validation errors
- * bubble up as TRPC errors so callers can fix the payload.
+ * Returns `true` if the request was accepted, `false` when the service is
+ * unconfigured or unreachable (callers should treat this as optional — email/SMS
+ * are the real production paths).
+ *
+ * IMPORTANT: Never throw for missing env / network failures. Throwing used to
+ * break /book lead capture with "Notification service URL is not configured."
+ * and blocked users from reaching the Google Calendar step.
+ *
+ * Validation errors for empty title/content still throw so callers can fix payloads.
  */
 export async function notifyOwner(
   payload: NotificationPayload
 ): Promise<boolean> {
   const { title, content } = validatePayload(payload);
 
-  if (!ENV.forgeApiUrl) {
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Notification service URL is not configured.",
-    });
-  }
-
-  if (!ENV.forgeApiKey) {
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Notification service API key is not configured.",
-    });
+  if (!ENV.forgeApiUrl || !ENV.forgeApiKey) {
+    // Expected on Railway — Manus forge is optional leftover scaffolding.
+    console.warn(
+      "[Notification] Manus forge notification skipped (BUILT_IN_FORGE_API_URL / KEY not set). Rely on email/SMS."
+    );
+    return false;
   }
 
   const endpoint = buildEndpointUrl(ENV.forgeApiUrl);
