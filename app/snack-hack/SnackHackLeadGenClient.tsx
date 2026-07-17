@@ -1,9 +1,10 @@
 ﻿"use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
 import { BRAND } from "@shared/brand";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -16,8 +17,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { toast } from "sonner";
-import SiteNav from "@/components/SiteNav";
-import SiteFooter from "@/components/SiteFooter";
 
 import { useMetaPixel } from "@/hooks/useMetaPixel";
 import { getMetaParams, generateMetaEventId } from "@/hooks/useMetaParams";
@@ -29,7 +28,7 @@ const formSchema = z.object({
 });
 
 export default function SnackHackLeadGen() {
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const router = useRouter();
   const subscribeMutation = trpc.leadgen.subscribeSnackHack.useMutation();
   const { trackViewContent, trackLead } = useMetaPixel();
   const ga = useGoogleAnalytics();
@@ -41,6 +40,7 @@ export default function SnackHackLeadGen() {
       content_type: "product",
     });
     ga.trackViewContent({ item_name: "Snack Hack Download", item_category: "Lead Generation" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -56,12 +56,13 @@ export default function SnackHackLeadGen() {
       const eventId = generateMetaEventId();
       const meta = getMetaParams();
       await subscribeMutation.mutateAsync({ ...values, ...meta, eventId });
-      setIsSubmitted(true);
-      toast.success("Success! Check your email for your free guide.");
-      
-      // Fire conversion events
+
+      // Fire conversion events before navigate
       trackLead({ content_name: "Snack Hack Download", content_category: "Lead Generation" }, eventId);
       ga.trackLead({ category: "Lead Generation", label: "Snack Hack Download" });
+
+      // Immediate upsell / thank-you (restored after Next.js migration drop)
+      router.push("/snack-hack-offer");
     } catch (err: any) {
       toast.error(err.message || "Something went wrong. Please try again.");
     }
@@ -117,63 +118,47 @@ export default function SnackHackLeadGen() {
 
             {/* Right Column: Form */}
             <div className="bg-white p-6 sm:p-8 md:p-10 rounded-2xl shadow-xl border border-gray-100 relative max-w-md mx-auto w-full">
-              {isSubmitted ? (
-                <div className="text-center py-10 sm:py-12">
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#f4f8f4] text-[#3a5a3a] rounded-full flex items-center justify-center mx-auto mb-6">
-                    <svg className="w-8 h-8 sm:w-10 sm:h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                  <h3 className="text-2xl font-playfair font-bold text-[#3a5a3a] mb-4">You're In!</h3>
-                  <p className="text-gray-600 text-base sm:text-lg">
-                    The Midlife Mindset Guide is on its way to your inbox. Check your email in a few minutes!
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <h3 className="text-xl sm:text-2xl font-playfair font-bold text-[#3a5a3a] mb-2 text-center md:text-left">Get Your Free Guide</h3>
-                  <p className="text-gray-600 mb-6 sm:mb-8 text-center md:text-left text-sm sm:text-base">Tell us where to send your copy.</p>
+              <h3 className="text-xl sm:text-2xl font-playfair font-bold text-[#3a5a3a] mb-2 text-center md:text-left">Get Your Free Guide</h3>
+              <p className="text-gray-600 mb-6 sm:mb-8 text-center md:text-left text-sm sm:text-base">Tell us where to send your copy.</p>
 
-                  <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-5">
-                      <FormField
-                        control={form.control}
-                        name="firstName"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Input placeholder="First Name" className="h-12 bg-gray-50 border-gray-200 text-base" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Input placeholder="Email Address" type="email" className="h-12 bg-gray-50 border-gray-200 text-base" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <Button 
-                        type="submit" 
-                        className="w-full h-12 sm:h-14 text-base font-bold bg-[#c9a96e] hover:bg-[#b09055] text-white rounded-full transition-colors shadow-md mt-2 sm:mt-4"
-                        disabled={subscribeMutation.isPending}
-                      >
-                        {subscribeMutation.isPending ? "Sending..." : "Send Me The Guide"}
-                      </Button>
-                    </form>
-                  </Form>
-                  <p className="text-[10px] sm:text-xs text-center text-gray-400 mt-6">
-                    By signing up, you agree to receive emails from {BRAND.name}. We respect your privacy and will never share your information.
-                  </p>
-                </>
-              )}
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-5">
+                  <FormField
+                    control={form.control}
+                    name="firstName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Input placeholder="First Name" className="h-12 bg-gray-50 border-gray-200 text-base" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Input placeholder="Email Address" type="email" className="h-12 bg-gray-50 border-gray-200 text-base" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button
+                    type="submit"
+                    className="w-full h-12 sm:h-14 text-base font-bold bg-[#c9a96e] hover:bg-[#b09055] text-white rounded-full transition-colors shadow-md mt-2 sm:mt-4"
+                    disabled={subscribeMutation.isPending}
+                  >
+                    {subscribeMutation.isPending ? "Sending..." : "Send Me The Guide"}
+                  </Button>
+                </form>
+              </Form>
+              <p className="text-[10px] sm:text-xs text-center text-gray-400 mt-6">
+                By signing up, you agree to receive emails from {BRAND.name}. We respect your privacy and will never share your information.
+              </p>
             </div>
 
           </div>

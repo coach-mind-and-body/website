@@ -44,13 +44,28 @@ Snack-hack-style short LP (not the long SEO `/reclaim` page):
 
 ## Campaign setup (simple)
 
-- **Name:** `RT – RECLAIM Warm – Book`  
+### Campaign A — existing warm traffic (keep ~$8/day)
+
+- **Name:** `RT – RECLAIM Warm – Invite` (rename if still labeled “Snack Hack Guide”)  
 - **Objective:** Conversions (if you have enough Lead/Schedule events) **or** Traffic / Landing page views if Meta needs more data first  
-- **Optimization (when possible):** Lead on book form, or ViewContent on `/reclaim`  
+- **Optimization (when possible):** Lead on book form, or ViewContent on `/reclaim-invite`  
 - **Landing (always for RT ads):**  
   `https://mindandbodyresetcoach.com/reclaim-invite`  
   (UTMs optional; buttons on page already carry `rt_reclaim` params to book/enroll)  
 - **Do not** send RT ads straight to `/book` or `/snack-hack` — use the invite LP first.
+
+### Campaign B — optional second RT for the new invite LP (add when ready)
+
+- **Name:** `RT – Reclaim Invite – Jul 2026`  
+- **Budget:** start **$8–12/day** (don’t stack huge RT until calls are booking)  
+- **Audience ideas (OR):**  
+  - Visited `/snack-hack` or engaged with Snack Hack lead form (last 30–60 days)  
+  - Visited site but **not** `/enroll` purchasers  
+  - Video viewers 50%+ / IG engagers (if you have them)  
+- **Exclude:** purchasers, people who already booked (when you can), recent `/reclaim-invite` converters if overserving  
+- **Landing:** `https://mindandbodyresetcoach.com/reclaim-invite` only  
+- **Creative angle:** “You already have the Snack Hack — here’s the full path” / free discovery call  
+- **Cold evergreen:** keep at **~$12/day** (or lower) until call volume is healthy
 
 ---
 

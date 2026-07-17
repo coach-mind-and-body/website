@@ -112,9 +112,17 @@ export async function buildUnifiedContacts(db: Db): Promise<UnifiedContact[]> {
         // ignore invalid segments JSON
       }
     }
+    let optInLabel = "Joined Subscriber List";
+    if (sub.segments?.includes("leadgen_snack_hack")) {
+      optInLabel = "Downloaded Snack Hack Guide";
+      if (!contact.tags.includes("leadgen_snack_hack")) contact.tags.push("leadgen_snack_hack");
+    } else if (sub.segments?.includes("leadgen_food_quiz")) {
+      optInLabel = "Completed Food Freedom Quiz";
+      if (!contact.tags.includes("leadgen_food_quiz")) contact.tags.push("leadgen_food_quiz");
+    }
     contact.timeline.push({
       date: sub.createdAt.toISOString(),
-      action: "Joined Subscriber List",
+      action: optInLabel,
       type: "optin",
     });
   });
@@ -132,15 +140,44 @@ export async function buildUnifiedContacts(db: Db): Promise<UnifiedContact[]> {
 
   allLeads.forEach((lead) => {
     const contact = getContact(lead.email, lead.name);
+    // Prefer a real display name over email-local-part / "Unknown" from earlier sources
+    if (lead.name && lead.name !== "Unknown" && !lead.name.includes("@")) {
+      if (
+        !contact.name ||
+        contact.name === "Unknown" ||
+        contact.name.toLowerCase() === contact.email.split("@")[0]
+      ) {
+        contact.name = lead.name;
+      }
+    }
     contact.phone = lead.phone || contact.phone;
     contact.leadStatus = lead.status;
     contact.leadId = lead.id;
-    if (lead.notes) contact.notes = lead.notes;
+    // Append notes; don't wipe prior snack-hack / form notes if both exist
+    if (lead.notes) {
+      contact.notes = contact.notes
+        ? contact.notes.includes(lead.notes)
+          ? contact.notes
+          : `${contact.notes}\n\n${lead.notes}`
+        : lead.notes;
+    }
+    const fromGcal = !!lead.notes?.includes("gcal_event:");
     contact.timeline.push({
       date: lead.createdAt.toISOString(),
-      action: "Booked Discovery Call",
+      action: fromGcal
+        ? "Booked Discovery Call (Google Calendar)"
+        : "Booked Discovery Call",
       type: "discovery",
     });
+    // Surface booking time from notes when present
+    const whenMatch = lead.notes?.match(/When \(MT\):\s*(.+)/);
+    if (whenMatch?.[1]) {
+      contact.timeline.push({
+        date: lead.updatedAt?.toISOString?.() ?? lead.createdAt.toISOString(),
+        action: `Call scheduled: ${whenMatch[1].trim()}`,
+        type: "discovery",
+      });
+    }
     if (lead.status === "enrolled") {
       contact.highestStatus = "reclaim";
     } else if (contact.highestStatus !== "reclaim") {

@@ -39,6 +39,12 @@ const SEQUENCE_CONFIG: Record<string, SequenceConfig> = {
     emails: SNACK_HACK_EMAILS,
     dayOffsets: SNACK_HACK_DAY_OFFSETS,
   },
+  // 6-email food quiz nurture — every 2 days after enrollment
+  [FOOD_QUIZ_SEQUENCE_ID]: {
+    type: "interval",
+    emails: FOOD_QUIZ_NURTURE_EMAILS,
+    delayDays: 2,
+  },
 };
 
 function getSequenceConfig(sequenceId: string): SequenceConfig | null {

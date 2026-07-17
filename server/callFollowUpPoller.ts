@@ -491,15 +491,22 @@ export function startCallFollowUpPoller(): void {
 
   console.log("[CallPoller] Starting call follow-up polling service (every 5 minutes)");
 
+  const tick = async () => {
+    // Pull new discovery bookings + coaching session links into CRM/DB
+    try {
+      const { syncRecentCalendarEvents } = await import("./googleCalendar");
+      await syncRecentCalendarEvents();
+    } catch (err) {
+      console.error("[CallPoller] Calendar sync error:", err);
+    }
+    await pollForCompletedSessions();
+  };
+
   // Run immediately on startup (catches any missed sessions from server restarts)
-  pollForCompletedSessions().catch((err) =>
-    console.error("[CallPoller] Initial poll error:", err)
-  );
+  tick().catch((err) => console.error("[CallPoller] Initial poll error:", err));
 
   // Then run every 5 minutes
   setInterval(() => {
-    pollForCompletedSessions().catch((err) =>
-      console.error("[CallPoller] Poll error:", err)
-    );
+    tick().catch((err) => console.error("[CallPoller] Poll error:", err));
   }, INTERVAL_MS);
 }

@@ -28,11 +28,15 @@ export const getSnackHackDay2Email = (firstName: string) => ({
           <a href="${ENV.appPublicUrl}/late-night-snack-hack.pdf" style="${ctaStyle}">Open the Snack Hack Guide</a>
         </div>
         <p>If you <em>have</em> tried it — even once — that's a massive win. One evening where you pause instead of panic-eat is proof your nervous system can learn a new pattern.</p>
+        <p>If evenings still feel like a battle, you don't have to figure it out alone. I offer a free 30-minute discovery call — no pressure, just clarity:</p>
+        <div style="text-align:center;margin:28px 0;">
+          <a href="${ENV.appPublicUrl}/book" style="${ctaStyle}">Book Your Free Discovery Call</a>
+        </div>
         <p>Also, don't forget to use your free habit tracker. Tracking your daily wins takes just 30 seconds and keeps you accountable:</p>
         <p style="text-align:center;margin:24px 0;">
           <a href="${ENV.appPublicUrl}/habit-tracker" style="color:#c9a96e;font-weight:700;text-decoration:underline;">Open Your Free Habit Tracker</a>
         </p>
-        <p>Reply to this email and tell me — what's the hardest part of your evenings right now? I read every message.</p>
+        <p>Or just reply to this email and tell me — what's the hardest part of your evenings right now? I read every message.</p>
         <p style="margin-top:32px;">With love,<br/><strong>${BRAND.coachName}</strong><br/><span style="color:#8a9a8a;font-size:13px;">Certified Life &amp; Health Coach | ${BRAND.name}</span></p>
       </div>
     </div>
@@ -122,9 +126,12 @@ export const getSnackHackDay10Email = (firstName: string) => ({
           </ul>
         </div>
         <p>If you are ready to stop fighting yourself and start living, I would be honored to guide you.</p>
-        <div style="text-align:center;margin:32px 0;">
-          <a href="${ENV.appPublicUrl}/reclaim" style="${ctaStyle}">Learn More & Join R.E.C.L.A.I.M.</a>
+        <div style="text-align:center;margin:28px 0 12px;">
+          <a href="${ENV.appPublicUrl}/book" style="${ctaStyle}">Book a Free Discovery Call First</a>
         </div>
+        <p style="text-align:center;margin:0 0 28px;">
+          <a href="${ENV.appPublicUrl}/reclaim" style="color:#c9a96e;font-weight:700;text-decoration:underline;">Or learn more about R.E.C.L.A.I.M.</a>
+        </p>
         <p style="margin-top:32px;">With love,<br/><strong>${BRAND.coachName}</strong><br/><span style="color:#8a9a8a;font-size:13px;">Certified Life &amp; Health Coach | ${BRAND.name}</span></p>
       </div>
     </div>

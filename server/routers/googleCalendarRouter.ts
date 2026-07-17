@@ -1,6 +1,11 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
-import { getGoogleCalendarStatus, createCalendarEventWithMeet } from "../googleCalendar";
+import {
+  getGoogleCalendarStatus,
+  createCalendarEventWithMeet,
+  listAdminCalendarEvents,
+  syncRecentCalendarEvents,
+} from "../googleCalendar";
 import { getDb } from "../db";
 import { coachingSessions, enrollments, users } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
@@ -15,6 +20,31 @@ export const googleCalendarRouter = router({
   status: protectedProcedure.query(async ({ ctx }) => {
     adminOnly(ctx.user?.role);
     return getGoogleCalendarStatus(ctx.user!.id);
+  }),
+
+  /** All timed events from the connected Google Calendar (discovery + RECLAIM + other). */
+  listAllEvents: protectedProcedure
+    .input(
+      z
+        .object({
+          daysPast: z.number().int().min(0).max(60).optional(),
+          daysAhead: z.number().int().min(1).max(90).optional(),
+        })
+        .optional()
+    )
+    .query(async ({ ctx, input }) => {
+      adminOnly(ctx.user?.role);
+      return listAdminCalendarEvents({
+        daysPast: input?.daysPast,
+        daysAhead: input?.daysAhead,
+      });
+    }),
+
+  /** Manually pull calendar bookings into CRM (leads + RECLAIM session links). */
+  syncNow: protectedProcedure.mutation(async ({ ctx }) => {
+    adminOnly(ctx.user?.role);
+    await syncRecentCalendarEvents();
+    return { success: true };
   }),
 
   // Admin: schedule a session and create a Google Meet event
