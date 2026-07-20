@@ -20,6 +20,8 @@ const nextConfig = {
   async redirects() {
     return [
       // ── Legacy site URLs still ranking in Google Search Console ──
+      // Soft 404 examples (GSC Jul 2026): privacy-policy, about-us, mini-reset-plan-quiz,
+      // /f/… (old host paths), health/financial-disclaim, junk /$
       { source: '/about-us', destination: '/about', permanent: true },
       { source: '/about-us/', destination: '/about', permanent: true },
       { source: '/privacy-policy', destination: '/privacy', permanent: true },
@@ -35,11 +37,33 @@ const nextConfig = {
       { source: '/coaching', destination: '/reclaim', permanent: true },
       { source: '/coaching/', destination: '/reclaim', permanent: true },
       { source: '/services', destination: '/reclaim', permanent: true },
+      // Old host/platform paths (GSC soft 404: /f/calming-food-noise-drop-the-food)
+      {
+        source: '/f/calming-food-noise-drop-the-food',
+        destination: '/health-wellness-blog/calming-food-noise-drop-the-food-courtroom',
+        permanent: true,
+      },
+      {
+        source: '/f/calming-food-noise-drop-the-food-courtroom',
+        destination: '/health-wellness-blog/calming-food-noise-drop-the-food-courtroom',
+        permanent: true,
+      },
+      // Broken/legacy disclaimer paths
+      { source: '/health/financial-disclaim', destination: '/disclaimer', permanent: true },
+      { source: '/health/financial-disclaim/', destination: '/disclaimer', permanent: true },
+      { source: '/health/financial-disclaimer', destination: '/disclaimer', permanent: true },
+      { source: '/financial-disclaim', destination: '/disclaimer', permanent: true },
+      { source: '/financial-disclaimer', destination: '/disclaimer', permanent: true },
       // Legacy blog index ONLY. Never redirect /blog/* files — static assets live under public/blog/
       // and covers also live on Cloudflare R2 (cdn.mindandbodyresetcoach.com).
       { source: '/blog', destination: '/health-wellness-blog', permanent: true },
       { source: '/blog/', destination: '/health-wellness-blog', permanent: true },
       // Intentionally NO /blog/:slug catch-all — it hijacked image URLs like /blog/foo.png
+
+      // Old Atom / RSS paths (GSC crawled-not-indexed: /f.atom)
+      { source: '/f.atom', destination: '/feed.xml', permanent: true },
+      { source: '/atom.xml', destination: '/feed.xml', permanent: true },
+      { source: '/feed', destination: '/feed.xml', permanent: true },
 
       // Old show-notes slug (wrong video binding) → correct Tiny Movements episode
       {

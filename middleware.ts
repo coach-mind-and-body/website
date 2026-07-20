@@ -3,10 +3,26 @@ import type { NextRequest } from "next/server";
 
 
 export function middleware(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+  const url = request.nextUrl.clone();
+
+  // ── SEO: kill legacy GoDaddy / old-platform crawl junk (GSC "Crawled - not indexed") ──
+  // Old category filters served the homepage at 200 with only a query param — thin duplicates.
+  if (url.searchParams.has("blogcategory")) {
+    url.pathname = "/health-wellness-blog";
+    url.search = "";
+    return NextResponse.redirect(url, 301);
+  }
+  // Old Atom feed → current RSS
+  if (path === "/f.atom" || path === "/atom.xml" || path === "/feed") {
+    url.pathname = "/feed.xml";
+    url.search = "";
+    return NextResponse.redirect(url, 301);
+  }
+
   // Don't set marketing cookies for crawlers or pure SEO assets — keeps
   // responses cache-friendly and avoids Set-Cookie on every Googlebot hit.
   const ua = request.headers.get("user-agent") ?? "";
-  const path = request.nextUrl.pathname;
   const isBot =
     /bot|crawl|spider|slurp|facebookexternalhit|bingpreview|google-inspectiontool/i.test(
       ua

@@ -13,6 +13,8 @@ Allow: /
 Disallow: /admin
 Disallow: /portal
 Disallow: /my-program
+Disallow: /cdn-cgi/
+Disallow: /api/
 
 Sitemap: ${DOMAIN}/sitemap.xml`);
   });

@@ -14,6 +14,9 @@ Disallow: /food-quiz-thank-you
 Disallow: /financial-peace/thank-you
 Disallow: /api/
 
+# Cloudflare system paths (email protection etc.) — not content
+Disallow: /cdn-cgi/
+
 # Prefer apex host (www redirects in production)
 Host: https://mindandbodyresetcoach.com
 
