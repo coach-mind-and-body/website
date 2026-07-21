@@ -70,6 +70,7 @@ export default function HabitTrackerClient() {
   };
 
   const [showDismissed, setShowDismissed] = useState(false);
+  const [challengeTab, setChallengeTab] = useState<"active" | "completed">("active");
   const joinChallengeMutation = trpc.challenges.joinChallenge.useMutation({
     onSuccess: () => {
       toast.success("Challenge joined!");
@@ -539,12 +540,36 @@ export default function HabitTrackerClient() {
         {/* Active Challenges Section */}
         {activeChallengesData && activeChallengesData.length > 0 && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white rounded-3xl shadow-xl overflow-hidden p-6 md:p-8" style={{ border: "1px solid #f0e8e4" }}>
-            <h3 className="font-bold text-xl mb-4 flex items-center gap-2" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
-              <Target size={24} style={{ color: "#c9a96e" }} />
-              Active Challenges
-            </h3>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+              <h3 className="font-bold text-xl flex items-center gap-2" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
+                <Target size={24} style={{ color: "#c9a96e" }} />
+                Challenges
+              </h3>
+              <div className="flex bg-gray-100 p-1 rounded-full w-fit">
+                <button 
+                  onClick={() => setChallengeTab("active")}
+                  className={`px-4 py-1.5 rounded-full text-sm font-bold transition-colors ${challengeTab === "active" ? "bg-white shadow-sm text-[#2d3b2d]" : "text-gray-500 hover:text-gray-700"}`}
+                >
+                  Active
+                </button>
+                <button 
+                  onClick={() => setChallengeTab("completed")}
+                  className={`px-4 py-1.5 rounded-full text-sm font-bold transition-colors ${challengeTab === "completed" ? "bg-white shadow-sm text-[#2d3b2d]" : "text-gray-500 hover:text-gray-700"}`}
+                >
+                  Completed
+                </button>
+              </div>
+            </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {activeChallengesData.map(challenge => {
+              {activeChallengesData.filter(challenge => {
+                const uc = userChallengesData?.challenges?.find(u => u.challengeId === challenge.id);
+                const progress = uc ? getChallengeProgress(challenge.id) : 0;
+                const isJoined = !!uc;
+                const percent = isJoined && progress !== null ? Math.min(100, Math.round((progress / challenge.durationDays) * 100)) : 0;
+                const isCompleted = percent === 100;
+                return challengeTab === "active" ? !isCompleted : isCompleted;
+              }).map(challenge => {
                 const uc = userChallengesData?.challenges?.find(u => u.challengeId === challenge.id);
                 const progress = uc ? getChallengeProgress(challenge.id) : 0;
                 const isJoined = !!uc;
@@ -555,7 +580,7 @@ export default function HabitTrackerClient() {
                 const isCompletedToday = logs.some(l => l.dateStr === todayStr);
 
                 return (
-                  <div key={challenge.id} className="p-5 rounded-2xl border transition-all" style={{ background: isJoined ? "#faf5f5" : "white", borderColor: "#f0e8e4" }}>
+                  <div key={challenge.id} className="p-5 rounded-2xl border transition-all flex flex-col h-full" style={{ background: isJoined ? "#faf5f5" : "white", borderColor: "#f0e8e4" }}>
                     <div className="flex justify-between items-start mb-2">
                       <h4 className="font-bold text-lg" style={{ color: "#2d3b2d" }}>{challenge.title}</h4>
                       {!isJoined ? (
@@ -563,11 +588,11 @@ export default function HabitTrackerClient() {
                           size="sm" 
                           onClick={() => joinChallengeMutation.mutate({ challengeId: challenge.id, deviceId: getDeviceId() })}
                           disabled={joinChallengeMutation.isPending}
-                          className="rounded-full h-8" style={{ background: "#c9a96e", color: "white" }}>
+                          className="rounded-full h-8 shrink-0 ml-2" style={{ background: "#c9a96e", color: "white" }}>
                           <Plus size={16} className="mr-1" /> Join
                         </Button>
                       ) : (
-                        <div className="text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1" style={{ background: isCompletedToday ? "#d4ecd4" : "#f0e8e4", color: isCompletedToday ? "#2d5a2d" : "#8a9a8a" }}>
+                        <div className="text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1 shrink-0 ml-2" style={{ background: isCompletedToday ? "#d4ecd4" : "#f0e8e4", color: isCompletedToday ? "#2d5a2d" : "#8a9a8a" }}>
                           {isCompletedToday ? <><Check size={12} /> Done Today</> : "Joined"}
                         </div>
                       )}
@@ -575,7 +600,7 @@ export default function HabitTrackerClient() {
                     {challenge.description && <p className="text-sm text-gray-500 mb-4">{challenge.description}</p>}
                     
                     {isJoined && (
-                      <div className="mt-4 space-y-4">
+                      <div className="mt-auto pt-4 space-y-4">
                         <div>
                           <div className="flex justify-between text-xs font-bold mb-1" style={{ color: "#8a9a8a" }}>
                             <span>{progress} of {challenge.durationDays} Days Completed</span>
@@ -586,30 +611,53 @@ export default function HabitTrackerClient() {
                           </div>
                         </div>
                         
-                        <Button
-                          className="w-full rounded-xl font-bold border-2"
-                          variant={isCompletedToday ? "outline" : "default"}
-                          disabled={toggleChallengeLogMutation.isPending}
-                          style={{
-                            background: isCompletedToday ? "transparent" : "#c9a96e",
-                            color: isCompletedToday ? "#c9a96e" : "white",
-                            borderColor: "#c9a96e"
-                          }}
-                          onClick={() => toggleChallengeLogMutation.mutate({
-                            userChallengeId: uc.id,
-                            dateStr: todayStr,
-                            completed: !isCompletedToday,
-                            deviceId: getDeviceId(),
-                          })}
-                        >
-                          {isCompletedToday ? "Completed for Today!" : "Complete for Today"}
-                        </Button>
+                        {percent < 100 && (
+                          <Button
+                            className="w-full rounded-xl font-bold border-2 mt-2"
+                            variant={isCompletedToday ? "outline" : "default"}
+                            disabled={toggleChallengeLogMutation.isPending}
+                            style={{
+                              background: isCompletedToday ? "transparent" : "#c9a96e",
+                              color: isCompletedToday ? "#c9a96e" : "white",
+                              borderColor: "#c9a96e"
+                            }}
+                            onClick={() => toggleChallengeLogMutation.mutate({
+                              userChallengeId: uc.id,
+                              dateStr: todayStr,
+                              completed: !isCompletedToday,
+                              deviceId: getDeviceId(),
+                            })}
+                          >
+                            {isCompletedToday ? "Completed for Today!" : "Complete for Today"}
+                          </Button>
+                        )}
+                        {percent === 100 && (
+                          <div className="w-full py-2 text-center rounded-xl font-bold text-sm" style={{ background: "#d4ecd4", color: "#2d5a2d" }}>
+                            🎉 Challenge Completed!
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
                 );
               })}
             </div>
+
+            {challengeTab === "completed" && activeChallengesData.filter(c => {
+                const uc = userChallengesData?.challenges?.find(u => u.challengeId === c.id);
+                const progress = uc ? getChallengeProgress(c.id) : 0;
+                return uc && Math.min(100, Math.round((progress / c.durationDays) * 100)) === 100;
+            }).length === 0 && (
+              <p className="text-gray-500 text-sm text-center py-6">No completed challenges yet. Keep going!</p>
+            )}
+
+            {challengeTab === "active" && activeChallengesData.filter(c => {
+                const uc = userChallengesData?.challenges?.find(u => u.challengeId === c.id);
+                const progress = uc ? getChallengeProgress(c.id) : 0;
+                return !uc || Math.min(100, Math.round((progress / c.durationDays) * 100)) < 100;
+            }).length === 0 && (
+              <p className="text-gray-500 text-sm text-center py-6">You've completed all active challenges! 🎉</p>
+            )}
           </motion.div>
         )}
 
