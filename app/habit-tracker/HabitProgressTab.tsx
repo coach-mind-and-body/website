@@ -18,6 +18,13 @@ import {
 } from "@/lib/habitStreak";
 import { trpc } from "@/lib/trpc";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
   Trophy,
   Calendar as CalendarIcon,
   Star,
@@ -27,7 +34,6 @@ import {
   ChevronRight,
   Check,
   Utensils,
-  X,
   Loader2,
 } from "lucide-react";
 
@@ -83,7 +89,8 @@ export function HabitProgressTab({
 
   const todayStr = todayMountainDateStr();
   const [viewMonth, setViewMonth] = useState(() => parseCalendarDate(todayStr));
-  const [selectedDateStr, setSelectedDateStr] = useState<string | null>(todayStr);
+  // Closed by default — only opens when user taps a day
+  const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
 
   const { data: foodLogs, isLoading: foodLoading } = trpc.calories.getLogs.useQuery(
     { dateStr: selectedDateStr || todayStr },
@@ -208,10 +215,7 @@ export function HabitProgressTab({
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setViewMonth(parseCalendarDate(todayStr));
-                  setSelectedDateStr(todayStr);
-                }}
+                onClick={() => setViewMonth(parseCalendarDate(todayStr))}
                 className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-gray-500 hover:bg-slate-100 rounded-full"
               >
                 Today
@@ -250,9 +254,7 @@ export function HabitProgressTab({
                   title={`View ${dStr}`}
                   onClick={() => setSelectedDateStr(dStr)}
                   className={`aspect-square rounded-xl flex items-center justify-center text-xs font-bold transition-all focus:outline-none focus:ring-2 focus:ring-[#c9a96e]/50 ${
-                    isSelected
-                      ? "ring-2 ring-[#2d3b2d] ring-offset-1"
-                      : ""
+                    isSelected ? "ring-2 ring-[#2d3b2d] ring-offset-1" : ""
                   } ${
                     isCompleted
                       ? "bg-[#c9a96e] text-white shadow-sm hover:bg-[#b8955a]"
@@ -316,159 +318,154 @@ export function HabitProgressTab({
         </div>
       </div>
 
-      {/* Day detail panel */}
-      {selectedDateStr && (
-        <div
-          className="bg-white p-6 md:p-8 rounded-3xl border shadow-sm space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300"
-          style={{ borderColor: "#f0e8e4" }}
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">
-                Day details
-              </p>
-              <h3
-                className="text-xl font-bold"
-                style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}
-              >
-                {format(parseCalendarDate(selectedDateStr), "EEEE, MMMM d, yyyy")}
-              </h3>
-              <p className="text-sm text-gray-500 mt-1">
-                {completedCount} of {activeHabits.length} habits completed
-                {isAuthenticated && foodLogs && foodLogs.length > 0
-                  ? ` · ${foodLogs.length} meal${foodLogs.length === 1 ? "" : "s"} · ${foodTotalCals} kcal`
-                  : ""}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setSelectedDateStr(null)}
-              className="p-2 rounded-full hover:bg-slate-100 text-gray-400"
-              aria-label="Close day details"
-            >
-              <X size={18} />
-            </button>
-          </div>
+      {/* Day details modal — closed by default */}
+      <Dialog
+        open={!!selectedDateStr}
+        onOpenChange={(open) => {
+          if (!open) setSelectedDateStr(null);
+        }}
+      >
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl p-0 gap-0 sm:rounded-2xl">
+          {selectedDateStr && (
+            <>
+              <DialogHeader className="px-6 pt-6 pb-3 text-left border-b border-slate-100">
+                <DialogTitle
+                  className="text-xl font-bold pr-8"
+                  style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}
+                >
+                  {format(parseCalendarDate(selectedDateStr), "EEEE, MMMM d")}
+                </DialogTitle>
+                <DialogDescription className="text-sm text-gray-500">
+                  {completedCount} of {activeHabits.length} habits completed
+                  {isAuthenticated && foodLogs && foodLogs.length > 0
+                    ? ` · ${foodLogs.length} meal${foodLogs.length === 1 ? "" : "s"} · ${foodTotalCals} kcal`
+                    : ""}
+                </DialogDescription>
+              </DialogHeader>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Habits that day */}
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-2">
-                <Check size={14} className="text-[#c9a96e]" />
-                Habits
-              </p>
-              {activeHabits.length === 0 ? (
-                <p className="text-sm text-gray-400">No active habits.</p>
-              ) : (
-                <ul className="space-y-2">
-                  {selectedHabitDetails.map(({ habit, completed, numericValue }) => (
-                    <li
-                      key={habit.id}
-                      className={`flex items-center justify-between gap-3 p-3 rounded-xl border ${
-                        completed
-                          ? "bg-[#fcfaf9] border-[#c9a96e]/30"
-                          : "bg-slate-50 border-slate-100"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span
-                          className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
-                            completed ? "bg-[#c9a96e] text-white" : "bg-slate-200 text-transparent"
+              <div className="px-6 py-5 space-y-6">
+                {/* Habits */}
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-2">
+                    <Check size={14} className="text-[#c9a96e]" />
+                    Habits
+                  </p>
+                  {activeHabits.length === 0 ? (
+                    <p className="text-sm text-gray-400">No active habits.</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {selectedHabitDetails.map(({ habit, completed, numericValue }) => (
+                        <li
+                          key={habit.id}
+                          className={`flex items-center justify-between gap-3 p-3 rounded-xl border ${
+                            completed
+                              ? "bg-[#fcfaf9] border-[#c9a96e]/30"
+                              : "bg-slate-50 border-slate-100"
                           }`}
                         >
-                          <Check size={14} />
-                        </span>
-                        <span
-                          className={`text-sm font-medium truncate ${
-                            completed ? "text-[#2d3b2d]" : "text-gray-400"
-                          }`}
-                        >
-                          {habit.title}
-                        </span>
-                      </div>
-                      {habit.type === "numeric" && (
-                        <span className="text-xs font-bold text-gray-500 shrink-0">
-                          {numericValue ?? 0}
-                          {habit.unit ? ` ${habit.unit}` : ""}
-                          {habit.targetValue != null ? ` / ${habit.targetValue}` : ""}
-                        </span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            {/* Food that day */}
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-2">
-                <Utensils size={14} className="text-[#c9a96e]" />
-                Food logged
-              </p>
-              {!isAuthenticated ? (
-                <p className="text-sm text-gray-400">
-                  Sign in to see meals logged for this day.
-                </p>
-              ) : foodLoading ? (
-                <div className="flex items-center gap-2 text-sm text-gray-400 py-4">
-                  <Loader2 size={16} className="animate-spin" />
-                  Loading meals…
+                          <div className="flex items-center gap-3 min-w-0">
+                            <span
+                              className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
+                                completed
+                                  ? "bg-[#c9a96e] text-white"
+                                  : "bg-slate-200 text-transparent"
+                              }`}
+                            >
+                              <Check size={14} />
+                            </span>
+                            <span
+                              className={`text-sm font-medium truncate ${
+                                completed ? "text-[#2d3b2d]" : "text-gray-400"
+                              }`}
+                            >
+                              {habit.title}
+                            </span>
+                          </div>
+                          {habit.type === "numeric" && (
+                            <span className="text-xs font-bold text-gray-500 shrink-0">
+                              {numericValue ?? 0}
+                              {habit.unit ? ` ${habit.unit}` : ""}
+                              {habit.targetValue != null ? ` / ${habit.targetValue}` : ""}
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
-              ) : !foodLogs || foodLogs.length === 0 ? (
-                <p className="text-sm text-gray-400">No food logged this day.</p>
-              ) : (
-                <ul className="space-y-2">
-                  {foodLogs.map((food) => (
-                    <li
-                      key={food.id}
-                      className="p-3 rounded-xl border bg-white border-slate-100 shadow-sm"
-                    >
-                      <div className="flex justify-between items-start gap-2">
-                        <div className="min-w-0">
-                          <p className="text-sm font-bold text-gray-800 truncate">
-                            {food.foodName}
-                          </p>
-                          <p className="text-[10px] uppercase tracking-wider text-gray-400 mt-0.5">
-                            {mealLabel(food.mealType)}
-                          </p>
-                        </div>
-                        <p className="text-sm font-bold text-gray-800 shrink-0">
-                          {food.calories} kcal
-                        </p>
-                      </div>
-                      <p className="text-[10px] text-gray-500 mt-1.5">
-                        <span className="text-blue-500">{food.protein}p</span>
-                        {" · "}
-                        <span className="text-orange-500">{food.carbs}c</span>
-                        {" · "}
-                        <span className="text-yellow-600">{food.fat}f</span>
-                        {food.fiber != null && food.fiber > 0 && (
-                          <>
-                            {" · "}
-                            <span className="text-green-600">{food.fiber}fb</span>
-                          </>
-                        )}
-                      </p>
-                    </li>
-                  ))}
-                  <li className="pt-2 text-right text-xs font-bold text-gray-500">
-                    Day total: {foodTotalCals} kcal
-                  </li>
-                </ul>
-              )}
-            </div>
-          </div>
 
-          {selectedNote && (
-            <div className="pt-2 border-t border-slate-100">
-              <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">
-                Note
-              </p>
-              <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedNote}</p>
-            </div>
+                {/* Food */}
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-2">
+                    <Utensils size={14} className="text-[#c9a96e]" />
+                    Food logged
+                  </p>
+                  {!isAuthenticated ? (
+                    <p className="text-sm text-gray-400">
+                      Sign in to see meals logged for this day.
+                    </p>
+                  ) : foodLoading ? (
+                    <div className="flex items-center gap-2 text-sm text-gray-400 py-2">
+                      <Loader2 size={16} className="animate-spin" />
+                      Loading meals…
+                    </div>
+                  ) : !foodLogs || foodLogs.length === 0 ? (
+                    <p className="text-sm text-gray-400">No food logged this day.</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {foodLogs.map((food) => (
+                        <li
+                          key={food.id}
+                          className="p-3 rounded-xl border bg-white border-slate-100 shadow-sm"
+                        >
+                          <div className="flex justify-between items-start gap-2">
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-gray-800 truncate">
+                                {food.foodName}
+                              </p>
+                              <p className="text-[10px] uppercase tracking-wider text-gray-400 mt-0.5">
+                                {mealLabel(food.mealType)}
+                              </p>
+                            </div>
+                            <p className="text-sm font-bold text-gray-800 shrink-0">
+                              {food.calories} kcal
+                            </p>
+                          </div>
+                          <p className="text-[10px] text-gray-500 mt-1.5">
+                            <span className="text-blue-500">{food.protein}p</span>
+                            {" · "}
+                            <span className="text-orange-500">{food.carbs}c</span>
+                            {" · "}
+                            <span className="text-yellow-600">{food.fat}f</span>
+                            {food.fiber != null && food.fiber > 0 && (
+                              <>
+                                {" · "}
+                                <span className="text-green-600">{food.fiber}fb</span>
+                              </>
+                            )}
+                          </p>
+                        </li>
+                      ))}
+                      <li className="pt-1 text-right text-xs font-bold text-gray-500">
+                        Day total: {foodTotalCals} kcal
+                      </li>
+                    </ul>
+                  )}
+                </div>
+
+                {selectedNote && (
+                  <div className="pt-2 border-t border-slate-100">
+                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">
+                      Note
+                    </p>
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedNote}</p>
+                  </div>
+                )}
+              </div>
+            </>
           )}
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
