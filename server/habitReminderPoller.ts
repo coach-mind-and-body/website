@@ -2,12 +2,22 @@ import { isHabitReminderWindow, processHabitReminders } from "./habitReminders";
 
 const CHECK_INTERVAL_MS = 60_000; // every minute
 
+const globalForPoller = globalThis as typeof globalThis & {
+  __habitReminderPollerStarted?: boolean;
+};
+
 /**
  * Background poller: around 8:00 PM America/Denver, send daily habit push reminders.
- * Durable once-per-day lock is inside processHabitReminders.
+ * Starts at most once per Node process (Next can call instrumentation more than once).
  */
 export function startHabitReminderPoller() {
-  console.log("[Habit Reminder Poller] Starting (fires ~8:00 PM America/Denver)...");
+  if (globalForPoller.__habitReminderPollerStarted) {
+    console.log("[Habit Reminder Poller] Already started in this process — skipping.");
+    return;
+  }
+  globalForPoller.__habitReminderPollerStarted = true;
+
+  console.log("[Habit Reminder Poller] Starting (fires ~8:00 PM America/Denver, once per day)...");
 
   const tick = () => {
     if (!isHabitReminderWindow()) return;
@@ -16,7 +26,6 @@ export function startHabitReminderPoller() {
     );
   };
 
-  // Check shortly after boot, then every minute
-  setTimeout(tick, 5_000);
+  // Do not fire on boot unless we're already in the evening window
   setInterval(tick, CHECK_INTERVAL_MS);
 }

@@ -1045,11 +1045,12 @@ export default function HabitTrackerClient() {
       )}
 
       {mainTab === "progress" && (
-        <HabitProgressTab 
-          logs={logs} 
-          activeHabits={activeHabits} 
-          currentStreak={currentStreak} 
-          isAuthenticated={isAuthenticated} 
+        <HabitProgressTab
+          logs={logs}
+          activeHabits={activeHabits}
+          notes={notes}
+          currentStreak={currentStreak}
+          isAuthenticated={isAuthenticated}
         />
       )}
 

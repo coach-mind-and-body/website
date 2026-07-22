@@ -12,6 +12,9 @@ if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
   webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 }
 
+/** In-process guard so a single Node process never sends twice the same Denver day. */
+let lastSentDateStrInProcess: string | null = null;
+
 /** Ensure durable dedupe table exists (safe if already migrated). */
 async function ensureReminderRunsTable(db: NonNullable<Awaited<ReturnType<typeof getDb>>>) {
   await db.execute(sql`
@@ -26,24 +29,26 @@ async function ensureReminderRunsTable(db: NonNullable<Awaited<ReturnType<typeof
 }
 
 /**
- * Claim today's run before sending (unique dateStr). Returns false if another process already claimed.
+ * Claim today's run before sending (unique dateStr).
+ * Returns claimed:false if already ran (or another process claimed first).
+ * Never "proceed without lock" — that caused per-minute spam when claim failed.
  */
 async function claimTodaysRun(
   db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
   todayStr: string,
   force?: boolean
-): Promise<{ claimed: boolean; runId?: number }> {
-  if (force) {
-    const existing = await db
-      .select({ id: habitReminderRuns.id })
-      .from(habitReminderRuns)
-      .where(eq(habitReminderRuns.dateStr, todayStr))
-      .limit(1);
-    if (existing.length > 0) {
+): Promise<{ claimed: boolean; runId?: number; reason?: string }> {
+  const existing = await db
+    .select({ id: habitReminderRuns.id })
+    .from(habitReminderRuns)
+    .where(eq(habitReminderRuns.dateStr, todayStr))
+    .limit(1);
+
+  if (existing.length > 0) {
+    if (force) {
       return { claimed: true, runId: existing[0].id };
     }
-    const [result] = await db.insert(habitReminderRuns).values({ dateStr: todayStr, sentCount: 0 });
-    return { claimed: true, runId: Number((result as any)?.insertId) || undefined };
+    return { claimed: false, reason: "already_ran" };
   }
 
   try {
@@ -52,7 +57,7 @@ async function claimTodaysRun(
   } catch (err: any) {
     const msg = String(err?.message || err);
     if (msg.includes("Duplicate") || err?.code === "ER_DUP_ENTRY") {
-      return { claimed: false };
+      return { claimed: false, reason: "race_lost" };
     }
     throw err;
   }
@@ -64,7 +69,7 @@ async function claimTodaysRun(
  * - have ≥1 active habit
  * - have not completed any active habit today (America/Denver)
  *
- * Durable once-per-day via habit_reminder_runs.dateStr unique row (claim-before-send).
+ * Once per Denver calendar day (DB unique + in-process guard).
  */
 export async function processHabitReminders(options?: { force?: boolean }) {
   const db = await getDb();
@@ -72,19 +77,36 @@ export async function processHabitReminders(options?: { force?: boolean }) {
 
   const todayStr = todayMountainDateStr();
 
+  if (!options?.force && lastSentDateStrInProcess === todayStr) {
+    return {
+      success: true as const,
+      message: `Already sent habit reminders for ${todayStr} in this process.`,
+      sent: 0,
+      removed: 0,
+      skipped: true as const,
+    };
+  }
+
   try {
     await ensureReminderRunsTable(db);
   } catch (err) {
-    console.warn("[Cron] Could not ensure habit_reminder_runs table:", err);
+    console.error("[Cron] Could not ensure habit_reminder_runs table — aborting send:", err);
+    return {
+      success: false as const,
+      message: "Could not create/verify habit_reminder_runs; refusing to send without lock.",
+      sent: 0,
+      removed: 0,
+    };
   }
 
   let runId: number | undefined;
   try {
     const claim = await claimTodaysRun(db, todayStr, options?.force);
     if (!claim.claimed) {
+      lastSentDateStrInProcess = todayStr;
       return {
         success: true as const,
-        message: `Already ran habit reminders for ${todayStr}.`,
+        message: `Already ran habit reminders for ${todayStr} (${claim.reason || "skipped"}).`,
         sent: 0,
         removed: 0,
         skipped: true as const,
@@ -92,7 +114,18 @@ export async function processHabitReminders(options?: { force?: boolean }) {
     }
     runId = claim.runId;
   } catch (err) {
-    console.warn("[Cron] Claim failed, proceeding without durable lock:", err);
+    console.error("[Cron] Claim failed — aborting send (no lock, no spam):", err);
+    return {
+      success: false as const,
+      message: "Failed to claim daily reminder lock; not sending.",
+      sent: 0,
+      removed: 0,
+    };
+  }
+
+  // Mark process-local immediately after claim so concurrent ticks in this process bail out
+  if (!options?.force) {
+    lastSentDateStrInProcess = todayStr;
   }
 
   console.log(`[Cron] Running habit reminders for ${todayStr} (Mountain now: ${nowMountain()})...`);
@@ -148,13 +181,17 @@ export async function processHabitReminders(options?: { force?: boolean }) {
     const hasCompletedAnyActiveHabit = activeIds.some((id) => completedIds.includes(id));
     if (hasCompletedAnyActiveHabit) continue;
 
+    // One notification per user (first healthy subscription), not one per device spam
+    let userSent = false;
     for (const sub of subs) {
+      if (userSent) break;
       try {
         await webpush.sendNotification(
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
           payload
         );
         sent++;
+        userSent = true;
       } catch (err: any) {
         console.warn(`[Cron Push] Failed to send to sub ${sub.id}:`, err.statusCode || err.message);
         if (err.statusCode === 410 || err.statusCode === 404) {
@@ -187,10 +224,11 @@ export async function processHabitReminders(options?: { force?: boolean }) {
 }
 
 /**
- * True when Mountain Time is in the 8:00–8:14 PM window (catches 1-minute pollers).
+ * True only in a narrow 8:00–8:02 PM America/Denver window.
+ * Poller checks every minute; DB + process lock ensure at most one send per day.
  */
 export function isHabitReminderWindow(nowLocal = nowMountain()): boolean {
   const hour = Number(nowLocal.slice(11, 13));
   const minute = Number(nowLocal.slice(14, 16));
-  return hour === 20 && minute < 15;
+  return hour === 20 && minute <= 2;
 }
