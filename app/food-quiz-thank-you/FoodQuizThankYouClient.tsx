@@ -58,7 +58,7 @@ export default function FoodQuizThankYou() {
             </h2>
 
             <p className="text-base leading-relaxed mb-5" style={{ color: "oklch(0.40 0.02 160)" }}>
-              Take a breath. You did the brave thing by starting. Your Food Freedom Quiz results are headed to your inbox right now. 💛 You're officially part of the Mind & Body Reset community.
+              Take a breath. You did the brave thing by starting. Your Food Freedom Quiz results are headed to your inbox right now. 💛 You're officially part of the Mind & Body Reset Coaches community.
             </p>
 
             <h3

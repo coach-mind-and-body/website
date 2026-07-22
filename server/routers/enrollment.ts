@@ -311,8 +311,8 @@ export const enrollmentRouter = router({
               currency: "usd",
               unit_amount: 39700,
               product_data: {
-                name: "R.E.C.L.A.I.M. 6-Week Mind & Body Reset — Balance Payment",
-                description: "Remaining balance for your 6-Week Mind & Body Reset program.",
+                name: "R.E.C.L.A.I.M. 6-Week Mind & Body Reset Coaches — Balance Payment",
+                description: "Remaining balance for your 6-Week Mind & Body Reset Coaches program.",
               },
             },
             quantity: 1,

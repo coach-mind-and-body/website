@@ -7,11 +7,14 @@ import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { Check, Info, Calendar as CalendarIcon, Sparkles, Flame, Bell, BellRing, Target, LogOut, Settings, Plus, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { format, subDays, addDays, isSameDay, differenceInDays, parseISO } from "date-fns";
+import { format, subDays, addDays } from "date-fns";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import Link from "next/link";
 import { useWebPush } from "@/hooks/useWebPush";
 import { getDeviceId } from "@/lib/deviceId";
+import { todayMountainDateStr, dateToMountainDateStr } from "@/lib/mountainTime";
+import { calendarDateStr, parseCalendarDate, calculateCurrentStreak } from "@/lib/habitStreak";
+import { HabitProgressTab } from "./HabitProgressTab";
 
 type LocalHabit = { id: number; title: string; description?: string | null; type: "boolean" | "numeric"; targetValue: number | null; unit: string | null; isActive: boolean; };
 
@@ -29,7 +32,7 @@ type LocalNote = {
 
 export default function HabitTrackerClient() {
   usePageTitle({
-    title: "Habit Tracker | Mind & Body Reset",
+    title: "Habit Tracker | Mind & Body Reset Coaches",
     description: "Track your daily habits and reclaim your wellness journey. Access anywhere with an account, or track locally on your device.",
     keywords: "habit tracker, daily habits, wellness tracker, mind body reset"
   });
@@ -43,9 +46,11 @@ export default function HabitTrackerClient() {
   const [localNotes, setLocalNotes] = useState<LocalNote[]>([]);
   
   const [isMounted, setIsMounted] = useState(false);
+  const [mainTab, setMainTab] = useState<"daily" | "progress">("daily");
 
-  const [currentDate, setCurrentDate] = useState(new Date()); // For week navigation
-  const [selectedDate, setSelectedDate] = useState(new Date()); // For mobile view & notes
+  // Week / selection anchored to America/Denver calendar days
+  const [currentDate, setCurrentDate] = useState(() => parseCalendarDate(todayMountainDateStr()));
+  const [selectedDate, setSelectedDate] = useState(() => parseCalendarDate(todayMountainDateStr()));
   const [isNotesExpanded, setIsNotesExpanded] = useState(false); // For expanding/collapsing daily notes
   const [isSettingsExpanded, setIsSettingsExpanded] = useState(false);
   const [optimisticLogs, setOptimisticLogs] = useState<LocalLog[]>([]);
@@ -55,7 +60,16 @@ export default function HabitTrackerClient() {
 
   // TRPC
   const { data: templates } = trpc.habit.getTemplates.useQuery(undefined, { enabled: !isAuthenticated });
-  const { data: userSyncData, refetch: refetchUserSync } = trpc.habit.getUserHabits.useQuery(undefined, { enabled: isAuthenticated });
+  // Load ~1 year of logs so Progress calendar + long streaks / trophies have history
+  const habitLogsFromDate = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 400);
+    return dateToMountainDateStr(d);
+  })();
+  const { data: userSyncData, refetch: refetchUserSync } = trpc.habit.getUserHabits.useQuery(
+    { fromDate: habitLogsFromDate },
+    { enabled: isAuthenticated }
+  );
   
   const { data: activeChallengesData } = trpc.challenges.getActiveChallenges.useQuery();
   const { data: userChallengesData, refetch: refetchUserChallenges } = trpc.challenges.getUserChallenges.useQuery({ deviceId: getDeviceId() });
@@ -230,7 +244,7 @@ export default function HabitTrackerClient() {
   const logs = isAuthenticated ? (userSyncData?.logs || []) : localLogs;
   const notes = isAuthenticated ? (userSyncData?.notes || []) : localNotes;
 
-  const currentNoteDateStr = format(selectedDate, "yyyy-MM-dd");
+  const currentNoteDateStr = calendarDateStr(selectedDate);
   const currentNote = notes.find(n => n.dateStr === currentNoteDateStr)?.note || "";
 
   const [noteText, setNoteText] = useState("");
@@ -348,30 +362,21 @@ export default function HabitTrackerClient() {
   };
 
   const currentStreak = (() => {
-    let streak = 0;
-    let checkDate = new Date();
-    while (true) {
-      const dStr = format(checkDate, "yyyy-MM-dd");
-      const didAnyHabit = activeHabits.some(h => isLogCompleted(h.id, dStr));
-      
-      if (didAnyHabit) {
-        streak++;
-        checkDate = subDays(checkDate, 1);
-      } else {
-        if (isSameDay(checkDate, new Date())) {
-          checkDate = subDays(checkDate, 1);
-          continue;
-        } else {
-          break;
-        }
-      }
+    // Build completed-day set using isLogCompleted (includes optimistic toggles)
+    const completed = new Set<string>();
+    const todayStr = todayMountainDateStr();
+    let probe = parseCalendarDate(todayStr);
+    for (let i = 0; i < 400; i++) {
+      const dStr = calendarDateStr(probe);
+      if (activeHabits.some((h) => isLogCompleted(h.id, dStr))) completed.add(dStr);
+      probe = subDays(probe, 1);
     }
-    return streak;
+    return calculateCurrentStreak(completed);
   })();
 
-  // Generate 7 days
+  // Generate 7 days around currentDate (Denver-anchored)
   const days = Array.from({ length: 7 }).map((_, i) => subDays(currentDate, 3 - i));
-  const isSelectedDate = (day: Date) => isSameDay(day, selectedDate);
+  const isSelectedDate = (day: Date) => calendarDateStr(day) === calendarDateStr(selectedDate);
 
   const getChallengeProgress = (challengeId: number) => {
     const uc = userChallengesData?.challenges?.find(u => u.challengeId === challengeId);
@@ -425,7 +430,7 @@ export default function HabitTrackerClient() {
       <div className="pt-8 pb-8 px-6 max-w-4xl mx-auto text-center relative">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
           <Link href="/" className="inline-block mb-6 transition-transform hover:scale-105">
-            <img src="/logo-new.jpg" alt="Mind & Body Reset" className="h-16 md:h-20 mx-auto object-contain rounded-xl shadow-sm" />
+            <img src="/logo-new.jpg" alt="Mind & Body Reset Coaches" className="h-16 md:h-20 mx-auto object-contain rounded-xl shadow-sm" />
           </Link>
           <h1 className="text-4xl md:text-5xl font-bold mb-4" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
             My Daily Reset
@@ -442,9 +447,23 @@ export default function HabitTrackerClient() {
         </motion.div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 md:px-6 space-y-6">
-        
-        {/* Coach Updates Section */}
+      <div className="max-w-4xl mx-auto px-4 md:px-6 space-y-6 mb-8">
+        <div className="flex justify-center">
+          <div className="bg-white p-1.5 rounded-full flex gap-1 shadow-sm border border-slate-100">
+            <button onClick={() => setMainTab("daily")} className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${mainTab === "daily" ? "bg-[#2d3b2d] text-white shadow-md" : "text-gray-500 hover:text-gray-700 hover:bg-slate-50"}`}>
+              Daily Tracking
+            </button>
+            <button onClick={() => setMainTab("progress")} className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${mainTab === "progress" ? "bg-[#2d3b2d] text-white shadow-md" : "text-gray-500 hover:text-gray-700 hover:bg-slate-50"}`}>
+              My Progress
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {mainTab === "daily" && (
+        <div className="max-w-4xl mx-auto px-4 md:px-6 space-y-6">
+          
+          {/* Coach Updates Section */}
         {updatesData && updatesData.length > 0 && (
           <div className="space-y-4 mb-8">
             <div className="flex justify-between items-center">
@@ -575,7 +594,7 @@ export default function HabitTrackerClient() {
                 const isJoined = !!uc;
                 const percent = isJoined && progress !== null ? Math.min(100, Math.round((progress / challenge.durationDays) * 100)) : 0;
                 
-                const todayStr = format(new Date(), "yyyy-MM-dd");
+                const todayStr = todayMountainDateStr();
                 const logs = userChallengesData?.logs?.filter(l => l.userChallengeId === uc?.id) || [];
                 const isCompletedToday = logs.some(l => l.dateStr === todayStr);
 
@@ -685,7 +704,7 @@ export default function HabitTrackerClient() {
               <div className="grid grid-cols-8 gap-2 mb-4">
                 <div className="col-span-1"></div>
                 {days.map(day => {
-                  const isToday = isSameDay(day, new Date());
+                  const isToday = calendarDateStr(day) === todayMountainDateStr();
                   const isSelected = isSelectedDate(day);
                   return (
                     <button 
@@ -723,7 +742,7 @@ export default function HabitTrackerClient() {
                       )}
                     </div>
                     {days.map(day => {
-                      const dateStr = format(day, "yyyy-MM-dd");
+                      const dateStr = calendarDateStr(day);
                       const completed = isLogCompleted(habit.id, dateStr);
                       const isSelected = isSelectedDate(day);
 
@@ -778,7 +797,7 @@ export default function HabitTrackerClient() {
             <div className="flex overflow-x-auto gap-2 mb-6 pb-2 snap-x scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
               {days.map(day => {
                 const isSelected = isSelectedDate(day);
-                const isToday = isSameDay(day, new Date());
+                const isToday = calendarDateStr(day) === todayMountainDateStr();
                 return (
                   <button
                     key={day.toISOString()}
@@ -1022,7 +1041,17 @@ export default function HabitTrackerClient() {
             </AnimatePresence>
           </div>
         </div>
-      </div>
+        </div>
+      )}
+
+      {mainTab === "progress" && (
+        <HabitProgressTab 
+          logs={logs} 
+          activeHabits={activeHabits} 
+          currentStreak={currentStreak} 
+          isAuthenticated={isAuthenticated} 
+        />
+      )}
 
       {/* CTA Section */}
       <div className="mt-20 max-w-3xl mx-auto text-center px-4">

@@ -146,7 +146,7 @@ function buildFollowUpEmail(params: {
     </div>
   `;
 
-  const text = `Hi ${firstName},\n\nYou did great work in Session ${sessionNumber} today!\n\nWhen you're ready, book Session ${nextSession} here:\n${bookingUrl}\n\nYou have ${PROGRAM.sessionCount - sessionNumber} session(s) remaining in your R.E.C.L.A.I.M. program.\n\nIf you have any questions, just reply to this email!\n\n— Lee Anne\nMind & Body Reset`;
+  const text = `Hi ${firstName},\n\nYou did great work in Session ${sessionNumber} today!\n\nWhen you're ready, book Session ${nextSession} here:\n${bookingUrl}\n\nYou have ${PROGRAM.sessionCount - sessionNumber} session(s) remaining in your R.E.C.L.A.I.M. program.\n\nIf you have any questions, just reply to this email!\n\n— Lee Anne\nMind & Body Reset Coaches`;
 
   return { subject, html, text };
 }
@@ -462,7 +462,7 @@ async function processFpuCoachingSession(clientEmail: string, eventId: string): 
         </div>
       </div>
     `;
-    const text = `Hi ${firstName},\n\nYou did amazing work in FPU Coaching Session ${sessionNumber} today!\n\nWhen you're ready, book Session ${nextSession} here:\n${FPU_COACHING_BOOKING_URL}\n\nYou have ${FPU_COACHING_SESSION_COUNT - sessionNumber} session(s) remaining.\n\n— Lee Anne\nMind & Body Reset`;
+    const text = `Hi ${firstName},\n\nYou did amazing work in FPU Coaching Session ${sessionNumber} today!\n\nWhen you're ready, book Session ${nextSession} here:\n${FPU_COACHING_BOOKING_URL}\n\nYou have ${FPU_COACHING_SESSION_COUNT - sessionNumber} session(s) remaining.\n\n— Lee Anne\nMind & Body Reset Coaches`;
 
     const sent = await sendTransactionalEmail({
       to: clientEmail,

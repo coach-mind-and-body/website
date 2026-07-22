@@ -2,7 +2,7 @@ import CalorieTrackerClient from './CalorieTrackerClient';
 import { usePageTitle } from "@/hooks/usePageTitle";
 
 export const metadata = {
-  title: "Calorie Tracker | Mind & Body Reset",
+  title: "Calorie Tracker | Mind & Body Reset Coaches",
   description: "Track your meals and macros easily.",
 };
 

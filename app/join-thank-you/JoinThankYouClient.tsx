@@ -45,7 +45,7 @@ export default function JoinThankYou() {
         >
           <img
             src={BRAND.logoUrl}
-            alt="Mind & Body Reset"
+            alt="Mind & Body Reset Coaches"
             className="mb-5"
             style={{ width: "90px", height: "90px", objectFit: "contain" }}
           />
@@ -107,7 +107,7 @@ export default function JoinThankYou() {
           >
             <iframe
               src="https://youtube.com/embed/nglocFhI-WM?autoplay=1&mute=1&modestbranding=1&rel=0&controls=1&playsinline=1"
-              title="Mind & Body Reset Coaching"
+              title="Mind & Body Reset Coaches Coaching"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
               style={{

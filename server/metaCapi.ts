@@ -1,4 +1,4 @@
-﻿import { ENV } from "./_core/env";
+import { ENV } from "./_core/env";
 import {
   extractMetaParamsFromRequest,
   getParamBuilderForPii,
@@ -231,7 +231,7 @@ export async function fireMetaCrmEvent(params: MetaCrmParams) {
       user_data: userData,
       custom_data: {
         event_source: "crm",
-        lead_event_source: "Mind & Body Reset CRM",
+        lead_event_source: "Mind & Body Reset Coaches CRM",
       },
     });
   } catch (err) {

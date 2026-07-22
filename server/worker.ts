@@ -3,6 +3,7 @@ import { startCallFollowUpPoller } from "./callFollowUpPoller";
 import { startLmsPoller } from "./lmsPoller";
 import { startYoutubePoller } from "./youtubePoller";
 import { startSequencePoller } from "./sequencePoller";
+import { startHabitReminderPoller } from "./habitReminderPoller";
 import { processScheduledCampaigns } from "./crm/campaignJob";
 
 console.log("Starting background worker pollers...");
@@ -18,6 +19,9 @@ startYoutubePoller();
 
 // Process nurture email sequences (snack hack, reclaim, FPU)
 startSequencePoller();
+
+// Daily habit push reminders (~8:00 PM America/Denver)
+startHabitReminderPoller();
 
 // Process scheduled CRM SMS campaigns every 60 seconds
 processScheduledCampaigns().catch((err) =>

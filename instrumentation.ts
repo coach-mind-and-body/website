@@ -3,6 +3,11 @@ export async function register() {
     const { startSequencePoller } = await import("./server/sequencePoller");
     startSequencePoller();
 
+    // Daily habit push reminders (~8pm America/Denver) even if the separate
+    // worker process isn't running. Durable once-per-day lock prevents doubles.
+    const { startHabitReminderPoller } = await import("./server/habitReminderPoller");
+    startHabitReminderPoller();
+
     // Lightweight calendar sync so discovery bookings land in CRM even if the
     // separate worker process isn't running (webhook + this poll both call the same path).
     const { syncRecentCalendarEvents } = await import("./server/googleCalendar");

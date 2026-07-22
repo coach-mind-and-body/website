@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import SnackHackOfferClient from "./SnackHackOfferClient";
 
 export const metadata: Metadata = {
-  title: { absolute: "Your Guide Is On the Way | Mind & Body Reset" },
+  title: { absolute: "Your Guide Is On the Way | Mind & Body Reset Coaches" },
   robots: { index: false, follow: false },
   alternates: { canonical: "/snack-hack-offer" },
 };

@@ -1,23 +1,33 @@
 import { publicProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
-import { programModules, moduleProgress, enrollments, users } from "../../drizzle/schema";
-import { eq, and, isNull } from "drizzle-orm";
-import { resendSubscribe } from "../resendSubscribe";
+import { processHabitReminders } from "../habitReminders";
+import { TRPCError } from "@trpc/server";
+import { z } from "zod";
+
+function assertCronAuthorized(secret?: string | null) {
+  const expected = process.env.CRON_SECRET;
+  const isProd = process.env.NODE_ENV === "production";
+
+  if (isProd) {
+    if (!expected) {
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "CRON_SECRET not configured" });
+    }
+    if (secret !== expected) {
+      throw new TRPCError({ code: "UNAUTHORIZED", message: "Unauthorized" });
+    }
+    return;
+  }
+
+  // Dev: if CRON_SECRET is set, require it; otherwise allow local testing.
+  if (expected && secret !== expected) {
+    throw new TRPCError({ code: "UNAUTHORIZED", message: "Unauthorized" });
+  }
+}
 
 export const cronRouter = router({
-  processReminders: publicProcedure.mutation(async () => {
-    const db = await getDb();
-    if (!db) return { success: false, message: "No DB" };
-
-    // This would typically scan for modules that unlocked today
-    // and send a Resend email to the user.
-    // For now, this is a placeholder structure that we will flesh out.
-    
-    console.log("[Cron] Running scheduled checks for Reclaim Hub & FPU...");
-    
-    // Example: Find enrollments and their unlocked modules
-    // In a full implementation, we would check lastEmailSentAt to avoid spamming.
-    
-    return { success: true, message: "Cron jobs processed successfully." };
-  }),
+  processReminders: publicProcedure
+    .input(z.object({ secret: z.string().optional() }).optional())
+    .mutation(async ({ input }) => {
+      assertCronAuthorized(input?.secret);
+      return processHabitReminders();
+    }),
 });

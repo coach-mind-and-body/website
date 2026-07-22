@@ -29,7 +29,7 @@ export const getFoodQuizRebalancerEmail = (firstName: string) => ({
               <!-- LOGO -->
               <tr>
                 <td align="center" style="padding:26px 24px 10px;">
-                  <img src="https://img1.wsimg.com/isteam/ip/a5a9c59b-2adc-48fc-995e-909cdea8df57/blob-0e2bead.png" alt="Mind & Body Reset" width="140" style="display:block; max-width:140px; height:auto;">
+                  <img src="https://img1.wsimg.com/isteam/ip/a5a9c59b-2adc-48fc-995e-909cdea8df57/blob-0e2bead.png" alt="Mind & Body Reset Coaches" width="140" style="display:block; max-width:140px; height:auto;">
                 </td>
               </tr>
 
@@ -133,7 +133,8 @@ export const getFoodQuizRebalancerEmail = (firstName: string) => ({
     </div>
   </body>
 </html>
-`
+
+`
 });
 
 export const getFoodQuizDoerEmail = (firstName: string) => ({
@@ -162,7 +163,7 @@ export const getFoodQuizDoerEmail = (firstName: string) => ({
             <!-- LOGO -->
             <tr>
               <td align="center" style="padding:26px 24px 10px;">
-                <img src="https://img1.wsimg.com/isteam/ip/a5a9c59b-2adc-48fc-995e-909cdea8df57/blob-0e2bead.png" alt="Mind & Body Reset" width="140" style="display:block;">
+                <img src="https://img1.wsimg.com/isteam/ip/a5a9c59b-2adc-48fc-995e-909cdea8df57/blob-0e2bead.png" alt="Mind & Body Reset Coaches" width="140" style="display:block;">
               </td>
             </tr>
 
@@ -247,7 +248,8 @@ export const getFoodQuizDoerEmail = (firstName: string) => ({
   </div>
 </body>
 </html>
-`
+
+`
 });
 
 export const getFoodQuizAchieverEmail = (firstName: string) => ({
@@ -277,7 +279,7 @@ export const getFoodQuizAchieverEmail = (firstName: string) => ({
               <!-- LOGO -->
               <tr>
                 <td align="center" style="padding:26px 24px 10px;">
-                  <img src="https://img1.wsimg.com/isteam/ip/a5a9c59b-2adc-48fc-995e-909cdea8df57/blob-0e2bead.png" alt="Mind & Body Reset" width="140" style="display:block; max-width:140px; height:auto;">
+                  <img src="https://img1.wsimg.com/isteam/ip/a5a9c59b-2adc-48fc-995e-909cdea8df57/blob-0e2bead.png" alt="Mind & Body Reset Coaches" width="140" style="display:block; max-width:140px; height:auto;">
                 </td>
               </tr>
 
@@ -373,7 +375,8 @@ export const getFoodQuizAchieverEmail = (firstName: string) => ({
     </div>
   </body>
 </html>
-`
+
+`
 });
 
 export const getFoodQuizFeelerEmail = (firstName: string) => ({
@@ -403,7 +406,7 @@ export const getFoodQuizFeelerEmail = (firstName: string) => ({
               <!-- LOGO -->
               <tr>
                 <td align="center" style="padding:26px 24px 10px;">
-                  <img src="https://img1.wsimg.com/isteam/ip/a5a9c59b-2adc-48fc-995e-909cdea8df57/blob-0e2bead.png" alt="Mind & Body Reset" width="140" style="display:block; max-width:140px; height:auto;">
+                  <img src="https://img1.wsimg.com/isteam/ip/a5a9c59b-2adc-48fc-995e-909cdea8df57/blob-0e2bead.png" alt="Mind & Body Reset Coaches" width="140" style="display:block; max-width:140px; height:auto;">
                 </td>
               </tr>
 
@@ -500,5 +503,6 @@ export const getFoodQuizFeelerEmail = (firstName: string) => ({
   </body>
 </html>
 
-Nurture Email 1`
+Nurture Email 1
+`
 });

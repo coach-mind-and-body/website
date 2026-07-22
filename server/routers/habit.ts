@@ -3,6 +3,7 @@ import { adminProcedure, protectedProcedure, publicProcedure, router } from "../
 import { getDb } from "../db";
 import { habitTemplates, userHabits, userHabitLogs, userDailyNotes, users } from "../../drizzle/schema";
 import { eq, and, gte } from "drizzle-orm";
+import { calculateUserHabitStats } from "../habitHelpers";
 
 export const habitRouter = router({
   // --- Public: Get default templates for unauthenticated tracking ---
@@ -48,6 +49,7 @@ export const habitRouter = router({
 
     const defaultFrom = new Date();
     defaultFrom.setDate(defaultFrom.getDate() - 30);
+    // Prefer client-supplied fromDate; default remains ~30 days (UTC date is fine for default window)
     const fromDateStr = input?.fromDate ?? defaultFrom.toISOString().split("T")[0];
 
     const logs = await db.select().from(userHabitLogs)
@@ -263,6 +265,76 @@ export const habitRouter = router({
       return { success: true };
     }),
 
+  adminUpsertClientHabit: adminProcedure
+    .input(z.object({
+      userId: z.number(),
+      id: z.number().optional(),
+      title: z.string(),
+      description: z.string().optional(),
+      type: z.enum(["boolean", "numeric"]),
+      targetValue: z.number().optional(),
+      unit: z.string().optional(),
+      order: z.number().optional(),
+      isActive: z.boolean().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("DB Error");
+
+      const userRecord = await db.select().from(users).where(eq(users.id, input.userId)).limit(1);
+      if (userRecord.length === 0 || !userRecord[0].shareHabitsWithCoach) {
+        throw new Error("User has not shared habit progress with coaches.");
+      }
+
+      if (input.id) {
+        await db.update(userHabits)
+          .set({
+            title: input.title,
+            description: input.description,
+            type: input.type,
+            targetValue: input.targetValue,
+            unit: input.unit,
+            order: input.order,
+            isActive: input.isActive ?? true,
+          })
+          .where(and(eq(userHabits.id, input.id), eq(userHabits.userId, input.userId)));
+      } else {
+        await db.insert(userHabits).values({
+          userId: input.userId,
+          title: input.title,
+          description: input.description,
+          type: input.type,
+          targetValue: input.targetValue,
+          unit: input.unit,
+          order: input.order ?? 99,
+          isActive: input.isActive ?? true,
+        });
+      }
+      return { success: true };
+    }),
+
+  adminSetClientHabitActive: adminProcedure
+    .input(z.object({
+      userId: z.number(),
+      habitId: z.number(),
+      isActive: z.boolean(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("DB Error");
+
+      const userRecord = await db.select().from(users).where(eq(users.id, input.userId)).limit(1);
+      if (userRecord.length === 0 || !userRecord[0].shareHabitsWithCoach) {
+        throw new Error("User has not shared habit progress with coaches.");
+      }
+
+      await db.update(userHabits)
+        .set({ isActive: input.isActive })
+        .where(and(eq(userHabits.id, input.habitId), eq(userHabits.userId, input.userId)));
+        
+      return { success: true };
+    }),
+
   adminGetClientHabits: adminProcedure
     .input(z.object({ userId: z.number() }))
     .query(async ({ input }) => {
@@ -280,6 +352,8 @@ export const habitRouter = router({
       const cLogs = await db.select().from(require("../../drizzle/schema").calorieLogs).where(eq(require("../../drizzle/schema").calorieLogs.userId, input.userId));
       const fLogs = await db.select().from(require("../../drizzle/schema").fitnessLogs).where(eq(require("../../drizzle/schema").fitnessLogs.userId, input.userId));
       
-      return { habits, logs, notes, calorieLogs: cLogs, fitnessLogs: fLogs };
+      const stats = await calculateUserHabitStats(db, input.userId);
+      
+      return { habits, logs, notes, calorieLogs: cLogs, fitnessLogs: fLogs, stats };
     }),
 });

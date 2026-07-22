@@ -8,7 +8,7 @@ import { SITE_URL, absoluteUrl, BRAND } from "@shared/brand";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Health Coach for Women Over 40 | Mind & Body Reset",
+    default: "Health Coach for Women Over 40 | Mind & Body Reset Coaches",
     template: "%s | Mind and Body Reset",
   },
   description:
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   authors: [{ name: "Lee Anne Chapman", url: absoluteUrl("/about") }],
   creator: "Lee Anne Chapman",
   openGraph: {
-    title: "Health Coach for Women Over 40 | Mind & Body Reset",
+    title: "Health Coach for Women Over 40 | Mind & Body Reset Coaches",
     description:
       "Reclaim your health, balance hormones, and reverse insulin resistance with certified coach Lee Anne Chapman.",
     url: SITE_URL,
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Health Coach for Women Over 40 | Mind & Body Reset",
+    title: "Health Coach for Women Over 40 | Mind & Body Reset Coaches",
     description:
       "Reclaim your health, balance hormones, and reverse insulin resistance with Lee Anne Chapman.",
     images: ["/logo-new.jpg"],

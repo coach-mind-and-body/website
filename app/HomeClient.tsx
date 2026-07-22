@@ -95,7 +95,7 @@ export default function Home() {
               {/* Circular logo */}
               <Image
                 src={LOGO}
-                alt="Mind & Body Reset"
+                alt="Mind & Body Reset Coaches"
                 className="w-32 h-32 rounded-full object-cover mb-6"
                 style={{ border: "3px solid oklch(0.90 0.015 80)" }}
                 width={128}

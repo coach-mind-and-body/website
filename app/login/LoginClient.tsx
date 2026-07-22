@@ -119,7 +119,7 @@ export default function Login() {
                 color: "oklch(0.18 0.025 50)",
               }}
             >
-              Mind & Body Reset
+              Mind & Body Reset Coaches
             </h1>
           </a>
           <p className="text-sm mt-1" style={{ color: "oklch(0.52 0.035 55)" }}>

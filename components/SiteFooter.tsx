@@ -14,7 +14,7 @@ export default function SiteFooter() {
             <div className="flex items-center gap-3 mb-4">
               <img
                 src={LOGO}
-                alt="Mind & Body Reset"
+                alt="Mind & Body Reset Coaches"
                 className="w-12 h-12 rounded-full object-cover"
               />
               <div>
@@ -22,7 +22,7 @@ export default function SiteFooter() {
                   className="font-bold text-lg"
                   style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.52 0.09 75)" }}
                 >
-                  Mind & Body Reset
+                  Mind & Body Reset Coaches
                 </p>
                 <p className="text-xs" style={{ color: "#7a6e6e" }}>
                   Holistic Wellness Coaching

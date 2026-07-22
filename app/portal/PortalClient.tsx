@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -132,7 +132,7 @@ export default function Portal() {
             No coaching program yet
           </h1>
           <p className="text-base mb-6" style={{ color: "#5a6b5a" }}>
-            This portal is for R.E.C.L.A.I.M. and FPU coaching clients. If you signed in for the free habit tracker, you can open it below — no enrollment required.
+            This portal is for R.E.C.L.A.I.M. and FPU coaching clients. If you signed in for the free habit tracker, you can open it below � no enrollment required.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center flex-wrap">
             <Link href="/habit-tracker" className="inline-block px-6 py-3 rounded-full font-bold text-white" style={{ background: "#c9a96e" }}>
@@ -156,7 +156,7 @@ export default function Portal() {
   const totalSessions = 6;
   const progressPct = Math.round((completedCount / totalSessions) * 100);
 
-  // Only show completed, scheduled, and the next session to book — hide locked future rows
+  // Only show completed, scheduled, and the next session to book � hide locked future rows
   const visibleSessionNums = Array.from({ length: totalSessions }, (_, i) => i + 1).filter(
     (sessionNum) => {
       const session = sessions.find((s: { sessionNumber: number }) => s.sessionNumber === sessionNum);
@@ -207,7 +207,7 @@ export default function Portal() {
           <Link href="/" className="flex items-center gap-3">
               <img src={BRAND.logoUrl} alt={BRAND.name} className="w-8 h-8 rounded-full object-cover" />
               <span className="font-bold hidden sm:block" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d", fontSize: "1.1rem" }}>
-                Mind & Body Reset
+                Mind & Body Reset Coaches
               </span>
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
@@ -262,7 +262,7 @@ export default function Portal() {
           {enrollment ? (
             <>
               <p className="text-sm sm:text-base mb-4" style={{ color: "#5a6b5a" }}>
-                Your coaching home — next session, modules, and files in one place.
+                Your coaching home � next session, modules, and files in one place.
               </p>
               <div className="flex items-center gap-3 mb-2">
                 <div className="flex-1 h-2.5 rounded-full overflow-hidden" style={{ background: "#f0e8e4" }}>
@@ -281,10 +281,10 @@ export default function Portal() {
               <p className="text-xs mb-5" style={{ color: "#8a9a8a" }}>
                 {enrollment.paymentType === "full"
                   ? "Program paid in full"
-                  : "Deposit paid — balance due before your later sessions"}
+                  : "Deposit paid � balance due before your later sessions"}
               </p>
 
-              {/* One clear “do this next” card */}
+              {/* One clear �do this next� card */}
               {nextScheduled ? (
                 <div
                   className="rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4"
@@ -340,7 +340,7 @@ export default function Portal() {
             </>
           ) : (
             <p className="text-base" style={{ color: "#5a6b5a" }}>
-              Your coaching portal — sessions, files, and more.
+              Your coaching portal � sessions, files, and more.
             </p>
           )}
         </div>
@@ -363,7 +363,7 @@ export default function Portal() {
                         {event.summary}
                       </p>
                       <p className="text-xs mt-0.5 font-semibold" style={{ color: "#8a9a8a" }}>
-                        {new Date(event.startTime).toLocaleString()} — {new Date(event.endTime).toLocaleTimeString()}
+                        {new Date(event.startTime).toLocaleString()} � {new Date(event.endTime).toLocaleTimeString()}
                       </p>
                     </div>
                   </div>
@@ -384,7 +384,7 @@ export default function Portal() {
           </div>
         )}
 
-        {/* RECLAIM Sessions — only current + scheduled + completed (no wall of locked sessions) */}
+        {/* RECLAIM Sessions � only current + scheduled + completed (no wall of locked sessions) */}
         {enrollment && <>
         <h2 className="text-lg sm:text-xl font-bold mb-3" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
           Your sessions
@@ -535,7 +535,7 @@ export default function Portal() {
                     <div>
                       <p className="text-sm font-semibold" style={{ color: "#2d3b2d" }}>{file.fileName}</p>
                       <p className="text-xs" style={{ color: "#8a9a8a" }}>
-                        {file.uploadedByRole === "admin" ? "From your coach" : "Uploaded by you"} · {new Date(file.createdAt).toLocaleDateString()}
+                        {file.uploadedByRole === "admin" ? "From your coach" : "Uploaded by you"} � {new Date(file.createdAt).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
@@ -599,7 +599,7 @@ function FpuCoachingSection({ order, sessions }: { order: any; sessions: any[] }
             FPU 1:1 Accountability Coaching
           </h2>
           <p className="text-xs" style={{ color: "#8a9a8a" }}>
-            3 private 50-minute sessions · {order.status === "paid" ? "Paid ✓" : "Pending payment"}
+            3 private 50-minute sessions � {order.status === "paid" ? "Paid ?" : "Pending payment"}
           </p>
         </div>
       </div>
@@ -775,7 +775,7 @@ function PaymentHistorySection({ data, isLoading }: { data: any; isLoading: bool
   );
 }
 
-// â”€â”€ Pay Balance Button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Pay Balance Button ────────────────────────────────────────────────────────
 function PayBalanceButton() {
   const payBalanceMutation = trpc.payment.payBalance.useMutation({
     onSuccess: (data) => {
@@ -804,7 +804,7 @@ function PayBalanceButton() {
   );
 }
 
-// â”€â”€ Google Calendar Booking Button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Google Calendar Booking Button ────────────────────────────────────────────
 const BOOKING_URL = 'https://calendar.google.com/calendar/appointments/schedules/AcZssZ3tlzR8FWHdYzdtXqI43ULRAnOYehFPjpe7uLgjQn9fJ3udHMCJLlIQhahbQ9-_R-GjtY8r6O5k?gv=true';
 
 function GoogleCalendarBookingButton({ sessionNumber }: { sessionNumber: number }) {

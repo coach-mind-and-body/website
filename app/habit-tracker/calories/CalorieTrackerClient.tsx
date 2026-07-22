@@ -13,7 +13,7 @@ import Link from "next/link";
 
 export default function CalorieTrackerClient() {
   usePageTitle({
-    title: "Calorie Tracker | Mind & Body Reset",
+    title: "Calorie Tracker | Mind & Body Reset Coaches",
     description: "Track your meals and macros easily.",
   });
 

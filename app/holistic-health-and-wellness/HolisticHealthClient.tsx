@@ -62,7 +62,7 @@ export default function HolisticHealth() {
           <div className="container px-4 md:px-6">
             <div className="text-center max-w-3xl mx-auto mb-16">
               <h2 className="text-3xl md:text-4xl font-bold text-[oklch(0.22_0.02_160)] mb-4" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-                The Three Pillars of Mind & Body Reset
+                The Three Pillars of Mind & Body Reset Coaches
               </h2>
               <p className="text-[oklch(0.45_0.02_160)] text-lg">
                 To achieve lasting change—whether that's sustainable weight loss, reversing burnout, or regaining your energy—we must address all three pillars simultaneously.
@@ -162,7 +162,7 @@ export default function HolisticHealth() {
              </h2>
              <p className="text-[oklch(0.45_0.02_160)] text-lg mb-8">
                We publish new insights on metabolic health, emotional eating, and burnout recovery regularly. 
-               Check out the Mind & Body Reset Blog for the latest science-backed strategies.
+               Check out the Mind & Body Reset Coaches Blog for the latest science-backed strategies.
              </p>
              <Link href="/health-wellness-blog">
                <Button className="bg-[oklch(0.22_0.02_160)] hover:bg-[oklch(0.35_0.02_160)] text-white h-12 px-8 text-base rounded-full">

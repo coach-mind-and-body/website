@@ -121,8 +121,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ action:
       sendTransactionalEmail({
         to: normalizedEmail,
         toName: name.trim(),
-        subject: "Verify your email — Mind & Body Reset",
-        htmlBody: `<p>Hi ${name},</p><p>Welcome to Mind & Body Reset! Please verify your email address:</p><p><a href="${origin}/api/auth/verify-email?token=${emailVerifyToken}">Verify Email</a></p>`,
+        subject: "Verify your email — Mind & Body Reset Coaches",
+        htmlBody: `<p>Hi ${name},</p><p>Welcome to Mind & Body Reset Coaches! Please verify your email address:</p><p><a href="${origin}/api/auth/verify-email?token=${emailVerifyToken}">Verify Email</a></p>`,
       }).catch(err => console.error("[Auth] Verification email failed:", err));
 
       await issueSession(user.openId, user.name || name);
@@ -181,7 +181,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ action:
       sendTransactionalEmail({
         to: normalizedEmail,
         toName: user.name || "there",
-        subject: "Reset your password — Mind & Body Reset",
+        subject: "Reset your password — Mind & Body Reset Coaches",
         htmlBody: `<p>Hi ${user.name || "there"},</p><p>We received a request to reset your password. Click the link below:</p><p><a href="${origin}/reset-password?token=${resetToken}">Reset Password</a></p>`,
       }).catch(err => console.error("[Auth] Reset email failed:", err));
 

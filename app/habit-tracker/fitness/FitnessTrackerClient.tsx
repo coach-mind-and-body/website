@@ -14,7 +14,7 @@ import Link from "next/link";
 
 export default function FitnessTrackerClient() {
   usePageTitle({
-    title: "Fitness Tracker | Mind & Body Reset",
+    title: "Fitness Tracker | Mind & Body Reset Coaches",
     description: "Log your workouts and explore our video library.",
   });
 

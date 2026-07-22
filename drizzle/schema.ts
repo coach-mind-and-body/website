@@ -493,6 +493,17 @@ export const userDailyNotes = mysqlTable("user_daily_notes", {
 export type UserDailyNote = typeof userDailyNotes.$inferSelect;
 export type InsertUserDailyNote = typeof userDailyNotes.$inferInsert;
 
+/** Durable once-per-day lock for evening habit push reminders (America/Denver dateStr). */
+export const habitReminderRuns = mysqlTable("habit_reminder_runs", {
+  id: int("id").autoincrement().primaryKey(),
+  dateStr: varchar("dateStr", { length: 10 }).notNull().unique(),
+  sentCount: int("sentCount").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type HabitReminderRun = typeof habitReminderRuns.$inferSelect;
+export type InsertHabitReminderRun = typeof habitReminderRuns.$inferInsert;
+
 // ─── CRM Conversations (Unified Inbox) ───────────────────────────────────────
 export const conversations = mysqlTable("conversations", {
   id: int("id").autoincrement().primaryKey(),

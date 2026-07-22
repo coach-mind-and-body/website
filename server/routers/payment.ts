@@ -19,8 +19,8 @@ function adminOnly(role: string | undefined) {
 }
 
 const PLAN_CONFIG = {
-  full: { amount: 59700, label: "R.E.C.L.A.I.M. 6-Week Mind & Body Reset — Full Payment", desc: "Full enrollment in the 6-Week Mind & Body Reset program. Includes 6 private 50-minute coaching sessions with Lee Anne." },
-  deposit: { amount: 20000, label: "R.E.C.L.A.I.M. 6-Week Mind & Body Reset — Non-Refundable Deposit", desc: "Non-refundable deposit to secure your spot. Balance of $397 due before Session 1." },
+  full: { amount: 59700, label: "R.E.C.L.A.I.M. 6-Week Mind & Body Reset Coaches — Full Payment", desc: "Full enrollment in the 6-Week Mind & Body Reset Coaches program. Includes 6 private 50-minute coaching sessions with Lee Anne." },
+  deposit: { amount: 20000, label: "R.E.C.L.A.I.M. 6-Week Mind & Body Reset Coaches — Non-Refundable Deposit", desc: "Non-refundable deposit to secure your spot. Balance of $397 due before Session 1." },
 };
 
 const RECLAIM_SESSION_LABELS = [
@@ -206,8 +206,8 @@ export const paymentRouter = router({
           currency: "usd",
           unit_amount: 39700,
           product_data: {
-            name: "R.E.C.L.A.I.M. 6-Week Mind & Body Reset — Balance Payment",
-            description: "Remaining balance for your 6-Week Mind & Body Reset program.",
+            name: "R.E.C.L.A.I.M. 6-Week Mind & Body Reset Coaches — Balance Payment",
+            description: "Remaining balance for your 6-Week Mind & Body Reset Coaches program.",
           },
         },
         quantity: 1,

@@ -67,3 +67,13 @@ export function utcToMountain(utcIso: string): string {
 export function nowMountain(): string {
   return utcToMountain(new Date().toISOString());
 }
+
+/** Returns the current Mountain Time as a date string ("YYYY-MM-DD") */
+export function todayMountainDateStr(): string {
+  return nowMountain().slice(0, 10);
+}
+
+/** Converts a given Date object to a Mountain Time date string ("YYYY-MM-DD") */
+export function dateToMountainDateStr(date: Date): string {
+  return utcToMountain(date.toISOString()).slice(0, 10);
+}

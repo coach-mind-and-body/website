@@ -286,7 +286,7 @@ export default function HabitTrackerInviteClient() {
                 },
                 {
                   q: "Is this a diet program?",
-                  a: "No. It's a free tracking tool from Mind & Body Reset. Coaching (like R.E.C.L.A.I.M.) is separate if you want 1-on-1 support later.",
+                  a: "No. It's a free tracking tool from Mind & Body Reset Coaches. Coaching (like R.E.C.L.A.I.M.) is separate if you want 1-on-1 support later.",
                 },
                 {
                   q: "Will my coach see my data?",

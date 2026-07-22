@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { leads, subscribers, enrollments, users, fpuLeads } from "../../drizzle/schema";
+import { leads, subscribers, enrollments, users, fpuLeads, userHabits, userHabitLogs } from "../../drizzle/schema";
 import type { getDb } from "../db";
 
 type Db = NonNullable<Awaited<ReturnType<typeof getDb>>>;
@@ -20,6 +20,8 @@ export type UnifiedContact = {
   userId?: number;
   shareHabitsWithCoach?: boolean;
   notes?: string;
+  hasActiveHabits?: boolean;
+  lastHabitDateStr?: string | null;
 };
 
 export type UnifiedContactFilter = "all" | "reclaim" | "habit" | "leads";
@@ -62,7 +64,7 @@ function matchesSearch(contact: UnifiedContact, search: string): boolean {
 }
 
 export async function buildUnifiedContacts(db: Db): Promise<UnifiedContact[]> {
-  const [allLeads, allSubscribers, allEnrollments, allFpu, allUsers] = await Promise.all([
+  const [allLeads, allSubscribers, allEnrollments, allFpu, allUsers, activeHabitsRaw, allCompletedLogs] = await Promise.all([
     db.select().from(leads),
     db.select().from(subscribers),
     db
@@ -81,7 +83,26 @@ export async function buildUnifiedContacts(db: Db): Promise<UnifiedContact[]> {
       .leftJoin(users, eq(users.id, enrollments.userId)),
     db.select().from(fpuLeads),
     db.select().from(users),
+    db.select({ id: userHabits.id, userId: userHabits.userId }).from(userHabits).where(eq(userHabits.isActive, true)),
+    db.select({ userId: userHabitLogs.userId, dateStr: userHabitLogs.dateStr, userHabitId: userHabitLogs.userHabitId }).from(userHabitLogs).where(eq(userHabitLogs.completed, true))
   ]);
+
+  const activeHabitIdsByUserId = new Map<number, Set<number>>();
+  for (const h of activeHabitsRaw) {
+    if (!activeHabitIdsByUserId.has(h.userId)) activeHabitIdsByUserId.set(h.userId, new Set());
+    activeHabitIdsByUserId.get(h.userId)!.add(h.id);
+  }
+  
+  const lastLogByUserId = new Map<number, string>();
+  for (const log of allCompletedLogs) {
+    const activeIds = activeHabitIdsByUserId.get(log.userId);
+    if (activeIds && activeIds.has(log.userHabitId)) {
+      const currentLast = lastLogByUserId.get(log.userId);
+      if (!currentLast || log.dateStr > currentLast) {
+        lastLogByUserId.set(log.userId, log.dateStr);
+      }
+    }
+  }
 
   const contactsMap = new Map<string, UnifiedContact>();
 
@@ -190,6 +211,9 @@ export async function buildUnifiedContacts(db: Db): Promise<UnifiedContact[]> {
     const contact = getContact(user.email, user.name || "Unknown");
     contact.userId = user.id;
     contact.shareHabitsWithCoach = user.shareHabitsWithCoach;
+    contact.hasActiveHabits = !!activeHabitIdsByUserId.get(user.id)?.size;
+    contact.lastHabitDateStr = lastLogByUserId.get(user.id) || null;
+    
     if (contact.highestStatus === "subscriber" || contact.highestStatus === "fpu") {
       contact.highestStatus = "habit-only";
     }

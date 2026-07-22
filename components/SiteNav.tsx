@@ -99,7 +99,7 @@ export default function SiteNav() {
           <Link href="/" className="flex items-center gap-3 flex-shrink-0">
             <Image
               src={LOGO}
-              alt="Mind & Body Reset"
+              alt="Mind & Body Reset Coaches"
               className="w-9 h-9 rounded-full object-cover border-2 border-white/40"
               width={36}
               height={36}
@@ -114,7 +114,7 @@ export default function SiteNav() {
                 letterSpacing: "0.01em",
               }}
             >
-              Mind & Body Reset
+              Mind & Body Reset Coaches
             </span>
           </Link>
 

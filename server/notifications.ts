@@ -81,7 +81,7 @@ export async function sendPostSessionSMS(params: {
   const { clientPhone, clientName, sessionNumber, isLastSession, portalUrl } = params;
   let body: string;
   if (isLastSession) {
-    body = `Congratulations ${clientName}! 🎉 You've completed all 6 sessions of the Mind & Body Reset program. It's been an honor working with you! Visit your portal to access all your session notes: ${portalUrl}`;
+    body = `Congratulations ${clientName}! 🎉 You've completed all 6 sessions of the Mind & Body Reset Coaches program. It's been an honor working with you! Visit your portal to access all your session notes: ${portalUrl}`;
   } else {
     const nextSession = sessionNumber + 1;
     body = `Great session today, ${clientName}! Session ${sessionNumber} is complete. When you're ready, log in to your portal to schedule Session ${nextSession}: ${portalUrl}`;
@@ -110,7 +110,7 @@ export async function sendTransactionalEmail(params: {
   }
   try {
     const { error } = await client.emails.send({
-      from: `Lee Anne — Mind & Body Reset <${ENV.resendFromEmail}>`,
+      from: `Lee Anne — Mind & Body Reset Coaches <${ENV.resendFromEmail}>`,
       to: [params.to],
       subject: params.subject,
       html: params.htmlBody,
@@ -157,7 +157,7 @@ export async function sendPostSessionEmail(params: {
   const { clientEmail, clientName, sessionNumber, sessionLabel, adminNotes, isLastSession, portalUrl } = params;
 
   const subject = isLastSession
-    ? `🎉 Congratulations on Completing Your Mind & Body Reset!`
+    ? `🎉 Congratulations on Completing Your Mind & Body Reset Coaches!`
     : `Session ${sessionNumber} Complete — Your Next Steps`;
 
   const notesSection = adminNotes
@@ -175,19 +175,19 @@ export async function sendPostSessionEmail(params: {
   const htmlBody = `
     <div style="font-family:'Nunito Sans',Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff;">
       <div style="background:#c9a96e;padding:32px 40px;text-align:center;">
-        <h1 style="margin:0;color:white;font-size:24px;font-weight:700;">Mind & Body Reset</h1>
+        <h1 style="margin:0;color:white;font-size:24px;font-weight:700;">Mind & Body Reset Coaches</h1>
       </div>
       <div style="padding:32px 40px;">
         <p style="color:#4a4a4a;font-size:16px;">Hi ${clientName},</p>
         ${isLastSession
-          ? `<p style="color:#4a4a4a;font-size:16px;">🎉 <strong>Congratulations!</strong> You've completed all 6 sessions of the Mind & Body Reset program. This is a huge milestone and you should be incredibly proud of the work you've done.</p>`
-          : `<p style="color:#4a4a4a;font-size:16px;">Great work completing <strong>Session ${sessionNumber}: ${sessionLabel}</strong>! You're making real progress on your Mind & Body Reset journey.</p>`
+          ? `<p style="color:#4a4a4a;font-size:16px;">🎉 <strong>Congratulations!</strong> You've completed all 6 sessions of the Mind & Body Reset Coaches program. This is a huge milestone and you should be incredibly proud of the work you've done.</p>`
+          : `<p style="color:#4a4a4a;font-size:16px;">Great work completing <strong>Session ${sessionNumber}: ${sessionLabel}</strong>! You're making real progress on your Mind & Body Reset Coaches journey.</p>`
         }
         ${notesSection}
         ${ctaSection}
         <hr style="border:none;border-top:1px solid #e8e0d8;margin:32px 0;" />
         <p style="color:#8a9a8a;font-size:13px;text-align:center;">
-          Mind & Body Reset with Lee Anne<br/>
+          Mind & Body Reset Coaches with Lee Anne<br/>
           <a href="${portalUrl}" style="color:#c9a96e;">View Your Portal</a>
         </p>
       </div>
@@ -195,7 +195,7 @@ export async function sendPostSessionEmail(params: {
   `;
 
   const textBody = isLastSession
-    ? `Hi ${clientName},\n\nCongratulations on completing all 6 sessions of the Mind & Body Reset program!\n\n${adminNotes ? `Lee Anne's Notes:\n${adminNotes}\n\n` : ""}Visit your portal: ${portalUrl}`
+    ? `Hi ${clientName},\n\nCongratulations on completing all 6 sessions of the Mind & Body Reset Coaches program!\n\n${adminNotes ? `Lee Anne's Notes:\n${adminNotes}\n\n` : ""}Visit your portal: ${portalUrl}`
     : `Hi ${clientName},\n\nGreat work completing Session ${sessionNumber}: ${sessionLabel}!\n\n${adminNotes ? `Lee Anne's Notes:\n${adminNotes}\n\n` : ""}Schedule your next session: ${portalUrl}`;
 
   return sendTransactionalEmail({ to: clientEmail, toName: clientName, subject, htmlBody, textBody });
@@ -270,7 +270,7 @@ export async function sendReclaimWelcomeEmail(params: {
     ``,
     `With love,`,
     `Lee Anne`,
-    `Mind & Body Reset`,
+    `Mind & Body Reset Coaches`,
   ];
   const textBody = lines.join("\n");
 
@@ -376,7 +376,7 @@ export async function sendFpuWelcomeEmail(params: {
     ``,
     `With excitement,`,
     `Lee Anne`,
-    `Mind & Body Reset`,
+    `Mind & Body Reset Coaches`,
   ];
   const textBody = lines2.join("\n");
 
@@ -431,7 +431,7 @@ export async function sendBalanceReminderEmail(params: {
     ``,
     `With love,`,
     `Lee Anne`,
-    `Mind & Body Reset`,
+    `Mind & Body Reset Coaches`,
   ].join("\n");
 
   return sendTransactionalEmail({ to: clientEmail, toName: clientName, subject, htmlBody, textBody });
@@ -451,7 +451,7 @@ export async function sendOwnerFpuGroupSignUpEmail(params: {
   const htmlBody = `
 <div style="font-family:'Georgia',serif;max-width:600px;margin:0 auto;background:#fffdf9;border:1px solid #e8ddd0;border-radius:12px;overflow:hidden;">
   <div style="background:linear-gradient(135deg,#3a6b35 0%,#2d5229 100%);padding:28px 32px;text-align:center;">
-    <p style="margin:0;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.75);">Mind & Body Reset</p>
+    <p style="margin:0;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.75);">Mind & Body Reset Coaches</p>
     <h1 style="margin:8px 0 0;font-size:22px;font-weight:700;color:#ffffff;">New FPU Group Sign-Up!</h1>
   </div>
   <div style="padding:32px;">
@@ -485,7 +485,7 @@ export async function sendOwnerFpuGroupSignUpEmail(params: {
     </p>
   </div>
   <div style="background:#f4f0eb;padding:16px 32px;text-align:center;border-top:1px solid #e8ddd0;">
-    <p style="margin:0;font-size:12px;color:#8a7060;">Mind & Body Reset · Sent via your portal</p>
+    <p style="margin:0;font-size:12px;color:#8a7060;">Mind & Body Reset Coaches · Sent via your portal</p>
   </div>
 </div>`;
 
@@ -498,7 +498,7 @@ export async function sendOwnerFpuGroupSignUpEmail(params: {
     `Next step: Add ${clientEmail} to your Tuesday FPU recurring Google Calendar event.`,
     `(Edit → "This and following events" → Guests → Save)`,
     ``,
-    `Lee Anne — Mind & Body Reset`,
+    `Lee Anne — Mind & Body Reset Coaches`,
   ].join("\n");
 
   return sendOwnerEmail({ subject, htmlBody, textBody });
@@ -518,7 +518,7 @@ export async function sendFpuGroupSignUpConfirmationEmail(params: {
   const htmlBody = `
 <div style="font-family:'Georgia',serif;max-width:600px;margin:0 auto;background:#fffdf9;border:1px solid #e8ddd0;border-radius:12px;overflow:hidden;">
   <div style="background:linear-gradient(135deg,#3a6b35 0%,#2d5229 100%);padding:28px 32px;text-align:center;">
-    <p style="margin:0;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.75);">Mind & Body Reset</p>
+    <p style="margin:0;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.75);">Mind & Body Reset Coaches</p>
     <h1 style="margin:8px 0 0;font-size:22px;font-weight:700;color:#ffffff;">You're In! 🎉</h1>
   </div>
   <div style="padding:32px;">
@@ -545,11 +545,11 @@ export async function sendFpuGroupSignUpConfirmationEmail(params: {
     </p>
     <p style="margin:16px 0 0;font-size:15px;color:#3a3028;font-weight:600;">
       — Lee Anne<br/>
-      <span style="font-weight:400;color:#8a7060;font-size:13px;">Mind & Body Reset · Certified Life &amp; Health Coach</span>
+      <span style="font-weight:400;color:#8a7060;font-size:13px;">Mind & Body Reset Coaches · Certified Life &amp; Health Coach</span>
     </p>
   </div>
   <div style="background:#f4f0eb;padding:16px 32px;text-align:center;border-top:1px solid #e8ddd0;">
-    <p style="margin:0;font-size:12px;color:#8a7060;">Mind & Body Reset · You're receiving this because you signed up for FPU.</p>
+    <p style="margin:0;font-size:12px;color:#8a7060;">Mind & Body Reset Coaches · You're receiving this because you signed up for FPU.</p>
   </div>
 </div>`;
 
@@ -568,7 +568,7 @@ export async function sendFpuGroupSignUpConfirmationEmail(params: {
     `See you on Tuesday! 💚`,
     ``,
     `— Lee Anne`,
-    `Mind & Body Reset`,
+    `Mind & Body Reset Coaches`,
   ].join("\n");
 
   return sendTransactionalEmail({ to: clientEmail, toName: clientName, subject, htmlBody, textBody });
@@ -624,7 +624,7 @@ export async function sendModuleReminderEmail(params: {
       <div style="padding:36px 40px;">
         <p style="color:#4a4a4a;font-size:16px;margin:0 0 16px;">Hi ${firstName},</p>
         <p style="color:#4a4a4a;font-size:16px;margin:0 0 16px;">I noticed you haven't completed the assignments for <strong>Module ${moduleOrder}: ${moduleTitle}</strong> yet.</p>
-        <p style="color:#4a4a4a;font-size:16px;margin:0 0 16px;">Taking the time to reflect and complete these exercises is a crucial part of your Mind & Body Reset journey. Whenever you're ready, you can jump back in.</p>
+        <p style="color:#4a4a4a;font-size:16px;margin:0 0 16px;">Taking the time to reflect and complete these exercises is a crucial part of your Mind & Body Reset Coaches journey. Whenever you're ready, you can jump back in.</p>
         <div style="text-align:center;margin:28px 0;">
           <a href="https://mindandbodyresetcoach.com/portal/hub" style="display:inline-block;background:#3a5a3a;color:white;padding:14px 36px;border-radius:9999px;text-decoration:none;font-size:16px;font-weight:700;">Continue Your Module</a>
         </div>
@@ -689,7 +689,7 @@ export async function sendSnackHackEmail(params: {
   const htmlBody = `
     <div style="font-family:'Nunito Sans',Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
       <div style="background:#FDFBF7;padding:30px;text-align:center;border-bottom:1px solid #f0e8e4;">
-        <img src="${ENV.appPublicUrl}/logo-wide.jpg" alt="Mind & Body Reset" style="max-width:200px;height:auto;" />
+        <img src="${ENV.appPublicUrl}/logo-wide.jpg" alt="Mind & Body Reset Coaches" style="max-width:200px;height:auto;" />
       </div>
       <div style="background:linear-gradient(135deg,#fbeee9 0%,#f5dcd3 100%);padding:30px;text-align:center;">
         <h1 style="margin:0 0 8px;color:#8a7060;font-size:26px;font-weight:700;">The Midlife Mindset Guide</h1>

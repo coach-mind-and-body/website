@@ -71,7 +71,7 @@ export const googleCalendarRouter = router({
       // Try to create Google Calendar event with Meet link
       const calEvent = await createCalendarEventWithMeet({
         adminUserId: ctx.user!.id,
-        summary: `Mind & Body Reset — Session ${session.sessionNumber} with ${client?.name ?? "Client"}`,
+        summary: `Mind & Body Reset Coaches — Session ${session.sessionNumber} with ${client?.name ?? "Client"}`,
         description: `Coaching session ${session.sessionNumber} of 6 for the R.E.C.L.A.I.M. program.`,
         startTime: input.scheduledAt,
         durationMinutes: input.durationMinutes,

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect } from "react";
 import Link from 'next/link';
@@ -23,14 +23,14 @@ const PHOTO_COUCH = "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/Ao
 const PHOTO_LEEANNE_VEGGIES = "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/fpu-can-you-relate-LRquhXRPb6JDxJMEKYRtRh.webp";
 const LEEANNE_PHOTO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/3542web-rigeljackson(2)_83b0d4af.webp";
 
-// â”€â”€ Coaching checkout button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-function CoachingCheckoutButton({ label = "Add 1:1 Coaching — $249 →", className = "" }: { label?: string; className?: string; }) {
+// ── Coaching checkout button ──────────────────────────────────────────────────
+function CoachingCheckoutButton({ label = "Add 1:1 Coaching � $249 ?", className = "" }: { label?: string; className?: string; }) {
   const { trackInitiateCheckout } = useMetaPixel();
   const ga = useGoogleAnalytics();
   const checkoutMutation = trpc.fpu.createCoachingCheckout.useMutation({
     onSuccess: (data) => {
       if (data.url) {
-        toast.info("Redirecting to secure checkout…");
+        toast.info("Redirecting to secure checkout�");
         window.location.href = data.url;
       }
     },
@@ -64,12 +64,12 @@ function CoachingCheckoutButton({ label = "Add 1:1 Coaching — $249 →", class
       disabled={checkoutMutation.isPending}
       className={`inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full font-bold text-base transition-all bg-[#d4a017] text-[#1a2e1e] shadow-[0_4px_20px_rgba(212,160,23,0.35)] hover:-translate-y-1 hover:shadow-[0_8px_28px_rgba(212,160,23,0.45)] disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0 ${className}`}
     >
-      {checkoutMutation.isPending ? "Loading…" : label}
+      {checkoutMutation.isPending ? "Loading�" : label}
     </button>
   );
 }
 
-// â”€â”€ Shorthand helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Shorthand helper ──────────────────────────────────────────────────────────
 function E({ k, style, className }: { k: string; style?: React.CSSProperties; className?: string }) {
   return (
     <EditableBlock
@@ -82,7 +82,7 @@ function E({ k, style, className }: { k: string; style?: React.CSSProperties; cl
   );
 }
 
-// â”€â”€ Main Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Main Page ─────────────────────────────────────────────────────────────────
 export default function FPULandingPage() {
   
   
@@ -106,14 +106,14 @@ function FPULandingPageContent() {
       {/* SIMPLE LOGO HEADER */}
       <header className="py-6 px-6 border-b border-gray-100 flex justify-center bg-[#fffef9] sticky top-0 z-50">
         <Link href="/" className="flex items-center gap-3">
-          <img src={BRAND.logoUrl} alt="Mind & Body Reset" className="w-10 h-10 rounded-full object-cover" />
+          <img src={BRAND.logoUrl} alt="Mind & Body Reset Coaches" className="w-10 h-10 rounded-full object-cover" />
           <span className="font-serif text-2xl text-[#1a2e1e] font-bold cursor-pointer">
-            Mind & Body Reset
+            Mind & Body Reset Coaches
           </span>
         </Link>
       </header>
 
-      {/* â”€â”€ HERO â”€â”€ */}
+      {/* ── HERO ── */}
       <section className="relative overflow-hidden bg-gradient-to-br from-[#1a2e1e] to-[#2d6a4f] text-white py-16 md:py-24">
         {/* Decorative blobs */}
         <div className="absolute -top-16 -right-16 w-72 h-72 rounded-full pointer-events-none bg-[#52b788]/20 blur-3xl" />
@@ -139,11 +139,11 @@ function FPULandingPageContent() {
                   href="#pricing"
                   className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full font-bold text-lg transition-all bg-[#d4a017] text-[#1a2e1e] shadow-[0_4px_20px_rgba(212,160,23,0.35)] hover:-translate-y-1 hover:shadow-[0_8px_28px_rgba(212,160,23,0.45)]"
                 >
-                  Join the Class →
+                  Join the Class ?
                 </a>
               </div>
               <p className="text-sm mt-4 text-white/60">
-                FPU kits start at <strong className="text-[#52b788] font-bold">~$99</strong> Â· Optional 1:1 coaching add-on available
+                FPU kits start at <strong className="text-[#52b788] font-bold">~$99</strong> · Optional 1:1 coaching add-on available
               </p>
             </div>
 
@@ -152,7 +152,7 @@ function FPULandingPageContent() {
               <div className="relative">
                 <img
                   src={PHOTO_LEEANNE_CHAIR}
-                  alt="Lee Anne — Financial Peace Coordinator"
+                  alt="Lee Anne � Financial Peace Coordinator"
                   className="rounded-3xl object-cover w-full max-w-xs md:max-w-sm border-4 border-white/10 shadow-2xl"
                   style={{ objectPosition: "center 5%", aspectRatio: "3/4" }}
                   loading="eager"
@@ -168,7 +168,7 @@ function FPULandingPageContent() {
         </div>
       </section>
 
-      {/* â”€â”€ CAN YOU RELATE â”€â”€ */}
+      {/* ── CAN YOU RELATE ── */}
       <section className="py-20 bg-[#fdf8f0]">
         <div className="container max-w-5xl mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
@@ -186,7 +186,7 @@ function FPULandingPageContent() {
             <div className="hidden lg:flex items-start justify-center pt-8">
               <img
                 src={PHOTO_LEEANNE_VEGGIES}
-                alt="Lee Anne — warm and approachable"
+                alt="Lee Anne � warm and approachable"
                 className="rounded-3xl object-cover w-full max-w-sm border-4 border-white shadow-[0_8px_40px_rgba(26,46,30,0.12)]"
                 loading="lazy"
               />
@@ -195,7 +195,7 @@ function FPULandingPageContent() {
         </div>
       </section>
 
-      {/* â”€â”€ MY STORY â”€â”€ */}
+      {/* ── MY STORY ── */}
       <section className="py-20 bg-white">
         <div className="container max-w-5xl mx-auto px-4">
           {/* Full-width image banner */}
@@ -209,7 +209,7 @@ function FPULandingPageContent() {
             />
             <div className="absolute inset-0 flex items-end p-8 bg-gradient-to-t from-[#1a2e1e]/80 to-transparent">
               <p className="text-white font-bold font-serif text-2xl md:text-3xl max-w-2xl leading-tight">
-                "The moment I stopped white-knuckling it alone — everything changed."
+                "The moment I stopped white-knuckling it alone � everything changed."
               </p>
             </div>
           </div>
@@ -224,7 +224,7 @@ function FPULandingPageContent() {
         </div>
       </section>
 
-      {/* â”€â”€ MEET LEE ANNE â”€â”€ */}
+      {/* ── MEET LEE ANNE ── */}
       <section className="py-20 bg-[#fdf8f0]">
         <div className="container max-w-4xl mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-10 items-center">
@@ -232,7 +232,7 @@ function FPULandingPageContent() {
             <div className="md:col-span-2 flex justify-center">
               <img
                 src={LEEANNE_PHOTO}
-                alt="Lee Anne — Financial Peace Coordinator"
+                alt="Lee Anne � Financial Peace Coordinator"
                 className="rounded-3xl object-cover w-full max-w-xs border-4 border-white shadow-[0_8px_40px_rgba(26,46,30,0.12)]"
                 loading="lazy"
               />
@@ -257,7 +257,7 @@ function FPULandingPageContent() {
         </div>
       </section>
 
-      {/* â”€â”€ WHAT YOU'LL LEARN / THE CURRICULUM â”€â”€ */}
+      {/* ── WHAT YOU'LL LEARN / THE CURRICULUM ── */}
       <section className="py-20 bg-white">
         <div className="container max-w-4xl mx-auto px-4">
           <div className="text-center mb-12">
@@ -271,7 +271,7 @@ function FPULandingPageContent() {
         </div>
       </section>
 
-      {/* â”€â”€ COHORT DETAILS â”€â”€ */}
+      {/* ── COHORT DETAILS ── */}
       <section className="py-14 bg-[#1a2e1e] text-white text-center">
         <div className="container max-w-3xl mx-auto px-4">
           <E k="cohort-heading" className="font-serif text-3xl md:text-4xl text-[#d4a017] font-bold mb-10" />
@@ -292,7 +292,7 @@ function FPULandingPageContent() {
         </div>
       </section>
 
-      {/* â”€â”€ WHO IT'S FOR â”€â”€ */}
+      {/* ── WHO IT'S FOR ── */}
       <section className="py-20 bg-[#fdf8f0]">
         <div className="container max-w-5xl mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -300,7 +300,7 @@ function FPULandingPageContent() {
             <div className="hidden lg:block">
               <img
                 src={PHOTO_COUCH}
-                alt="Lee Anne with a client — warm and supportive"
+                alt="Lee Anne with a client � warm and supportive"
                 className="rounded-3xl object-cover w-full border-4 border-white shadow-[0_8px_40px_rgba(26,46,30,0.10)] h-[500px]"
                 loading="lazy"
               />
@@ -318,14 +318,14 @@ function FPULandingPageContent() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full font-bold text-lg transition-all bg-[#d4a017] text-[#1a2e1e] shadow-[0_4px_20px_rgba(212,160,23,0.35)] hover:-translate-y-1 hover:shadow-[0_8px_28px_rgba(212,160,23,0.45)]"
               >
-                Sign Up for Class →
+                Sign Up for Class ?
               </a>
             </div>
           </div>
         </div>
       </section>
 
-      {/* â”€â”€ 1:1 COACHING ADD-ON â”€â”€ */}
+      {/* ── 1:1 COACHING ADD-ON ── */}
       <section id="fpu-coaching" className="py-20 bg-white">
         <div className="container max-w-5xl mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -348,10 +348,10 @@ function FPULandingPageContent() {
                       $249
                     </p>
                     <p className="text-sm text-[#2c3e28] opacity-80 font-medium">
-                      3 private sessions Â· 50 minutes each
+                      3 private sessions · 50 minutes each
                     </p>
                   </div>
-                  <CoachingCheckoutButton label="Add Coaching — $249 →" />
+                  <CoachingCheckoutButton label="Add Coaching � $249 ?" />
                 </div>
                 <div className="prose prose-sm prose-[#2c3e28] max-w-none relative z-10">
                   <E k="coaching-features" />
@@ -379,7 +379,7 @@ function FPULandingPageContent() {
         </div>
       </section>
 
-      {/* â”€â”€ OBJECTIONS / FAQ â”€â”€ */}
+      {/* ── OBJECTIONS / FAQ ── */}
       <section className="py-20 bg-[#fdf8f0]">
         <div className="container max-w-2xl mx-auto px-4">
           <div className="text-center mb-10">
@@ -392,7 +392,7 @@ function FPULandingPageContent() {
         </div>
       </section>
 
-      {/* â”€â”€ PRICING & SIGN-UP â”€â”€ */}
+      {/* ── PRICING & SIGN-UP ── */}
       <section id="pricing" className="py-20 bg-[#1a2e1e] text-white">
         <div className="container max-w-4xl mx-auto px-4">
           <div className="text-center mb-12">
@@ -484,14 +484,14 @@ function FPULandingPageContent() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2 px-10 py-5 rounded-full font-bold text-lg transition-all bg-[#d4a017] text-[#1a2e1e] shadow-[0_4px_20px_rgba(212,160,23,0.35)] hover:-translate-y-1 hover:shadow-[0_8px_28px_rgba(212,160,23,0.45)]"
               >
-                Sign Up for Lee Anne's Class →
+                Sign Up for Lee Anne's Class ?
               </a>
             </div>
           </div>
         </div>
       </section>
 
-      {/* â”€â”€ CLOSING CTA â”€â”€ */}
+      {/* ── CLOSING CTA ── */}
       <section className="py-24 text-center bg-gradient-to-t from-[#1a2e1e] to-[#2d6a4f] text-white">
         <div className="container max-w-xl mx-auto px-4">
           <div className="mb-10 flex justify-center">
@@ -508,23 +508,23 @@ function FPULandingPageContent() {
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full font-bold text-lg transition-all bg-[#d4a017] text-[#1a2e1e] shadow-[0_4px_20px_rgba(212,160,23,0.35)] hover:-translate-y-1 hover:shadow-[0_8px_28px_rgba(212,160,23,0.45)] w-full sm:w-auto"
             >
-              Sign Up for Class →
+              Sign Up for Class ?
             </a>
-            <CoachingCheckoutButton label="Add 1:1 Coaching — $249" className="w-full sm:w-auto" />
+            <CoachingCheckoutButton label="Add 1:1 Coaching � $249" className="w-full sm:w-auto" />
           </div>
           <p className="text-sm opacity-70">
             Questions?{" "}
             <a href={GOOGLE_CALENDAR.discoveryCall} target="_blank" rel="noopener noreferrer" className="underline hover:text-[#d4a017] transition-colors">
               Book a free call
             </a>{" "}
-            — I'd love to chat.
+            � I'd love to chat.
           </p>
         </div>
       </section>
 
       <footer className="bg-[#111] text-white/40 py-8 text-center text-xs">
         <div className="container mx-auto px-4">
-          <p>Â© {new Date().getFullYear()} Mind and Body Reset. All Rights Reserved.</p>
+          <p>© {new Date().getFullYear()} Mind and Body Reset. All Rights Reserved.</p>
         </div>
       </footer>
     </div>

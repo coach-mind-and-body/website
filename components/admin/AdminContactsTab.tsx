@@ -9,6 +9,8 @@ import AdminClientSessions from "../AdminClientSessions";
 import AdminModuleAssignment from "../AdminModuleAssignment";
 import AdminClientHabits from "../AdminClientHabits";
 import { toast } from "sonner";
+import { differenceInDays, parseISO } from "date-fns";
+import { todayMountainDateStr } from "@/lib/mountainTime";
 
 const PAGE_SIZE = 25;
 
@@ -199,6 +201,31 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
               }}>
                 {contact.highestStatus === "reclaim" ? "Reclaim Client" : contact.highestStatus === "discovery" ? "Discovery Call" : contact.highestStatus === "fpu" ? "FPU Interest" : contact.highestStatus === "habit-only" ? "Habit Tracker" : "Subscriber"}
               </span>
+              {contact.shareHabitsWithCoach && contact.hasActiveHabits && (() => {
+                  const todayStr = todayMountainDateStr();
+                  let riskColor = "bg-red-100 text-red-700";
+                  let riskText = "High Risk";
+                  
+                  if (contact.lastHabitDateStr) {
+                    const todayDate = parseISO(`${todayStr}T12:00:00`);
+                    const lastLogDate = parseISO(`${contact.lastHabitDateStr}T12:00:00`);
+                    const diff = differenceInDays(todayDate, lastLogDate);
+                    
+                    if (diff <= 1) {
+                      riskColor = "bg-green-100 text-green-700";
+                      riskText = "Active Habit";
+                    } else if (diff === 2) {
+                      riskColor = "bg-yellow-100 text-yellow-700";
+                      riskText = "Habit At Risk";
+                    }
+                  }
+                  
+                  return (
+                    <span className={`text-xs px-2 py-1 rounded-full font-bold ${riskColor}`}>
+                      {riskText}
+                    </span>
+                  );
+                })()}
               <ChevronRight size={16} style={{ color: "oklch(0.52 0.015 50)" }} />
             </div>
           </button>

@@ -4,7 +4,7 @@ import LoginClient from "./LoginClient";
 export const metadata = {
   title: "Sign In | Mind and Body Reset",
   description:
-    "Sign in to your Mind & Body Reset account — coaching portal, habit tracker, and program resources.",
+    "Sign in to your Mind & Body Reset Coaches account — coaching portal, habit tracker, and program resources.",
   robots: { index: false, follow: false },
 };
 

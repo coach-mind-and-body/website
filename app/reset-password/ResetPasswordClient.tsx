@@ -14,7 +14,7 @@ import { usePageTitle } from "@/hooks/usePageTitle";
 export default function ResetPasswordClient() {
   usePageTitle({
     title: "Reset Password | Mind and Body Reset",
-    description: "Reset your Mind & Body Reset account password securely.",
+    description: "Reset your Mind & Body Reset Coaches account password securely.",
     keywords: "reset password, forgot password, account recovery"
   });
   const router = useRouter();
@@ -83,7 +83,7 @@ export default function ResetPasswordClient() {
         <div className="text-center mb-8">
           <a href="/" className="inline-block">
             <h1 className="text-3xl font-bold" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.18 0.025 50)" }}>
-              Mind & Body Reset
+              Mind & Body Reset Coaches
             </h1>
           </a>
           <p className="text-sm mt-1" style={{ color: "oklch(0.52 0.035 55)" }}>

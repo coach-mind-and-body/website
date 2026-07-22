@@ -31,7 +31,7 @@ type InitialListPost = {
 };
 
 export default function Blog({ initialPosts = [] }: { initialPosts?: InitialListPost[] }) {
-  usePageTitle({ title: "Health & Wellness Blog | Mind & Body Reset", description: "Read the latest insights on midlife health, mindset, and weight loss from Lee Anne Chapman." });
+  usePageTitle({ title: "Health & Wellness Blog | Mind & Body Reset Coaches", description: "Read the latest insights on midlife health, mindset, and weight loss from Lee Anne Chapman." });
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
