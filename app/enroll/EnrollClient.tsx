@@ -178,7 +178,7 @@ export default function Enroll() {
                   <div className="text-sm line-through mb-4" style={{ color: "oklch(0.55 0.02 160)" }}>${PROGRAM.originalPrice}</div>
                   <p className="text-sm mb-6" style={{ color: "oklch(0.65 0.02 160)" }}>One payment. Full access. Immediate enrollment.</p>
                   <span className="inline-flex items-center justify-center w-full py-3 rounded-full font-bold text-sm transition-all hover:shadow-lg" style={{ background: "oklch(0.72 0.12 75)", color: "oklch(0.22 0.02 160)" }}>
-                    Select — Pay in Full <ArrowRight size={14} className="inline ml-1" />
+                    Select â€” Pay in Full <ArrowRight size={14} className="inline ml-1" />
                   </span>
                 </button>
                 {/* Deposit */}
@@ -193,7 +193,7 @@ export default function Enroll() {
                   <div className="text-xs mb-4 px-3 py-1 rounded-full inline-block" style={{ background: "oklch(0.93 0.03 10)", color: "oklch(0.45 0.09 10)" }}>Non-refundable deposit</div>
                   <p className="text-sm mb-6" style={{ color: "oklch(0.45 0.02 160)" }}>Secure your spot now, pay balance before your first session.</p>
                   <span className="inline-flex items-center justify-center w-full py-3 rounded-full font-bold text-sm border-2 transition-all hover:shadow-md" style={{ borderColor: "oklch(0.45 0.12 65)", color: "oklch(0.45 0.12 65)", background: "transparent" }}>
-                    Select — ${PROGRAM.depositPrice} Deposit <ArrowRight size={14} className="inline ml-1" />
+                    Select â€” ${PROGRAM.depositPrice} Deposit <ArrowRight size={14} className="inline ml-1" />
                   </span>
                 </button>
               </div>
@@ -210,7 +210,7 @@ export default function Enroll() {
                 <div className="card-brand rounded-2xl p-10 text-center">
                   <Lock size={28} className="mx-auto mb-4" style={{ color: "oklch(0.38 0.10 148)" }} />
                   <h2 className="font-bold text-2xl mb-2" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.22 0.02 160)" }}>
-                    Opening secure checkout…
+                    Opening secure checkoutâ€¦
                   </h2>
                   <p className="text-sm" style={{ color: "oklch(0.55 0.02 160)" }}>
                     Taking you to Stripe to complete your ${plan === "full" ? PROGRAM.fullPrice : PROGRAM.depositPrice} payment.
@@ -233,7 +233,7 @@ export default function Enroll() {
                       <div>
                         <p className="font-bold text-sm" style={{ color: "oklch(0.22 0.02 160)" }}>{PROGRAM.fullName}</p>
                         <p className="text-xs" style={{ color: "oklch(0.55 0.02 160)" }}>
-                          {plan === "deposit" ? `$${PROGRAM.depositPrice} deposit (non-refundable) + $${PROGRAM.balancePrice} balance before Session 1` : `Full program — ${PROGRAM.sessionCount} sessions × ${PROGRAM.sessionDurationMins} min`}
+                          {plan === "deposit" ? `$${PROGRAM.depositPrice} deposit (non-refundable) + $${PROGRAM.balancePrice} balance before Session 1` : `Full program â€” ${PROGRAM.sessionCount} sessions Ã— ${PROGRAM.sessionDurationMins} min`}
                         </p>
                       </div>
                       <span className="font-bold text-xl" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.45 0.12 65)" }}>
@@ -277,7 +277,7 @@ export default function Enroll() {
               </p>
               <div className="rounded-2xl overflow-hidden shadow-lg" style={{ border: "1px solid oklch(0.90 0.01 160)" }}>
                 <div className="flex items-center gap-2 px-5 py-3" style={{ background: "oklch(0.22 0.02 160)" }}>
-                  <span className="text-sm font-bold" style={{ color: "oklch(0.72 0.12 75)" }}>R.E.C.L.A.I.M. Session 1 — 50 Minutes</span>
+                  <span className="text-sm font-bold" style={{ color: "oklch(0.72 0.12 75)" }}>R.E.C.L.A.I.M. Session 1 â€” 50 Minutes</span>
                 </div>
                 <iframe
                   src={GOOGLE_CALENDAR.reclaimSession}

@@ -29,9 +29,9 @@ const PHOTO_LEEANNE_VEGGIES =
 const LEEANNE_PHOTO =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/3542web-rigeljackson(2)_83b0d4af.webp";
 
-// ── FPU Group Sign-Up Form ───────────────────────────────────────────────────
+// â”€â”€ FPU Group Sign-Up Form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function CoachingCheckoutButton({
-  label = "Add 1:1 Coaching � $249 ?",
+  label = "Add 1:1 Coaching — $249 ?",
   className = "",
 }: {
   label?: string;
@@ -42,7 +42,7 @@ function CoachingCheckoutButton({
   const checkoutMutation = trpc.fpu.createCoachingCheckout.useMutation({
     onSuccess: (data) => {
       if (data.url) {
-        toast.info("Redirecting to secure checkout�");
+        toast.info("Redirecting to secure checkout…");
         window.location.href = data.url;
       }
     },
@@ -77,12 +77,12 @@ function CoachingCheckoutButton({
       className={`inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full font-bold text-base transition-all hover:shadow-xl hover:-translate-y-1 disabled:opacity-70 disabled:cursor-not-allowed ${className}`}
       style={{ background: "oklch(0.72 0.11 78)", color: "oklch(0.20 0.015 50)" }}
     >
-      {checkoutMutation.isPending ? "Loading�" : label}
+      {checkoutMutation.isPending ? "Loading…" : label}
     </button>
   );
 }
 
-// ── Shorthand helper ──────────────────────────────────────────────────────────
+// â”€â”€ Shorthand helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function E({ k, style }: { k: string; style?: React.CSSProperties }) {
   return (
     <EditableBlock
@@ -94,7 +94,7 @@ function E({ k, style }: { k: string; style?: React.CSSProperties }) {
   );
 }
 
-// ── Main Page ─────────────────────────────────────────────────────────────────
+// â”€â”€ Main Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function FinancialPeace() {
   
   const isAdminEdit = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("admin_edit") === "1";
@@ -120,7 +120,7 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
     <div className="min-h-screen" style={{ background: "oklch(0.985 0.008 80)" }}>
       {!hideNav && <SiteNav />}
 
-      {/* ── HERO ── */}
+      {/* â”€â”€ HERO â”€â”€ */}
       <section
         className="relative overflow-hidden"
         style={{
@@ -193,7 +193,7 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
               </div>
               <p className="text-sm mt-4" style={{ color: "oklch(0.75 0.015 148)" }}>
                 FPU kits start at{" "}
-                <strong style={{ color: "oklch(0.72 0.11 78)" }}>$99</strong> · <a href="#fpu-coaching" className="underline transition-colors hover:opacity-80" style={{ color: "oklch(0.72 0.11 78)" }}>Optional 1:1
+                <strong style={{ color: "oklch(0.72 0.11 78)" }}>$99</strong> Â· <a href="#fpu-coaching" className="underline transition-colors hover:opacity-80" style={{ color: "oklch(0.72 0.11 78)" }}>Optional 1:1
                 coaching add-on available</a>
               </p>
             </div>
@@ -203,7 +203,7 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
               <div className="relative">
                 <img
                   src={PHOTO_LEEANNE_CHAIR}
-                  alt="Lee Anne � Financial Peace Coordinator"
+                  alt="Lee Anne — Financial Peace Coordinator"
                   className="rounded-3xl object-cover w-full max-w-xs md:max-w-sm"
                   style={{
                     boxShadow: "0 20px 60px oklch(0.10 0.05 148 / 0.5)",
@@ -231,7 +231,7 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
         </div>
       </section>
 
-      {/* ── CAN YOU RELATE ── */}
+      {/* â”€â”€ CAN YOU RELATE â”€â”€ */}
       <section className="py-20" style={{ background: "oklch(0.97 0.012 80)" }}>
         <div className="container">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start max-w-5xl mx-auto">
@@ -247,7 +247,7 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
             <div className="hidden lg:flex items-start justify-center pt-8">
               <img
                 src={PHOTO_LEEANNE_VEGGIES}
-                alt="Lee Anne � warm and approachable"
+                alt="Lee Anne — warm and approachable"
                 className="rounded-3xl object-cover w-full max-w-sm"
                 style={{
                   boxShadow: "0 8px 40px oklch(0.20 0.015 50 / 0.12)",
@@ -260,7 +260,7 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
         </div>
       </section>
 
-      {/* ── MY STORY ── */}
+      {/* â”€â”€ MY STORY â”€â”€ */}
       <section className="py-20" style={{ background: "oklch(1 0 0)" }}>
         <div className="container max-w-5xl mx-auto">
           {/* Full-width image banner */}
@@ -283,7 +283,7 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
                 className="text-white font-bold text-xl max-w-lg"
                 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(1.2rem, 2.5vw, 1.6rem)" }}
               >
-                "The moment I stopped white-knuckling it alone � everything changed."
+                "The moment I stopped white-knuckling it alone — everything changed."
               </p>
             </div>
           </div>
@@ -296,7 +296,7 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
         </div>
       </section>
 
-      {/* ── MEET LEE ANNE ── */}
+      {/* â”€â”€ MEET LEE ANNE â”€â”€ */}
       <section className="py-20" style={{ background: "oklch(0.97 0.012 80)" }}>
         <div className="container max-w-4xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-10 items-center">
@@ -304,7 +304,7 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
             <div className="md:col-span-2 flex justify-center">
               <img
                 src={LEEANNE_PHOTO}
-                alt="Lee Anne � Financial Peace Coordinator"
+                alt="Lee Anne — Financial Peace Coordinator"
                 className="rounded-3xl object-cover w-full max-w-xs"
                 style={{
                   border: "4px solid oklch(1 0 0)",
@@ -343,7 +343,7 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
         </div>
       </section>
 
-      {/* ── WHAT YOU'LL LEARN ── */}
+      {/* â”€â”€ WHAT YOU'LL LEARN â”€â”€ */}
       <section className="py-20" style={{ background: "oklch(1 0 0)" }}>
         <div className="container max-w-4xl mx-auto">
           <div className="text-center mb-12">
@@ -355,7 +355,7 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
         </div>
       </section>
 
-      {/* ── COHORT DETAILS ── */}
+      {/* â”€â”€ COHORT DETAILS â”€â”€ */}
       <section className="py-14 text-center" style={{ background: "oklch(0.38 0.09 148)" }}>
         <div className="container max-w-2xl mx-auto">
           <E
@@ -405,7 +405,7 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
         </div>
       </section>
 
-      {/* ── WHO IT'S FOR ── */}
+      {/* â”€â”€ WHO IT'S FOR â”€â”€ */}
       <section className="py-20" style={{ background: "oklch(0.97 0.012 80)" }}>
         <div className="container max-w-5xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -413,7 +413,7 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
             <div className="hidden lg:block">
               <img
                 src={PHOTO_COUCH}
-                alt="Lee Anne with a client � warm and supportive"
+                alt="Lee Anne with a client — warm and supportive"
                 className="rounded-3xl object-cover w-full"
                 style={{
                   boxShadow: "0 8px 40px oklch(0.20 0.015 50 / 0.10)",
@@ -442,7 +442,7 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
         </div>
       </section>
 
-      {/* ── 1:1 COACHING ADD-ON ── */}
+      {/* â”€â”€ 1:1 COACHING ADD-ON â”€â”€ */}
       <section id="fpu-coaching" className="py-20" style={{ background: "oklch(0.985 0.008 80)" }}>
         <div className="container max-w-5xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -479,10 +479,10 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
                       $249
                     </p>
                     <p className="text-sm mt-1" style={{ color: "oklch(0.52 0.015 50)" }}>
-                      3 private sessions · 50 minutes each
+                      3 private sessions Â· 50 minutes each
                     </p>
                   </div>
-                  <CoachingCheckoutButton label="Add Coaching � $249 ?" />
+                  <CoachingCheckoutButton label="Add Coaching — $249 ?" />
                 </div>
                 <E k="coaching-features" />
               </div>
@@ -521,7 +521,7 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
         </div>
       </section>
 
-      {/* ── OBJECTIONS / FAQ ── */}
+      {/* â”€â”€ OBJECTIONS / FAQ â”€â”€ */}
       <section className="py-20" style={{ background: "oklch(0.97 0.012 80)" }}>
         <div className="container max-w-2xl mx-auto">
           <span className="badge-gold mb-3 inline-block">Your Questions, Answered</span>
@@ -530,7 +530,7 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
         </div>
       </section>
 
-      {/* ── PRICING & SIGN-UP ── */}
+      {/* â”€â”€ PRICING & SIGN-UP â”€â”€ */}
       <section className="py-20" style={{ background: "oklch(1 0 0)" }}>
         <div className="container max-w-4xl mx-auto">
           <div className="text-center mb-12">
@@ -697,7 +697,7 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
         </div>
       </section>
 
-      {/* ── CLOSING CTA ── */}
+      {/* â”€â”€ CLOSING CTA â”€â”€ */}
       <section
         className="py-20 text-center"
         style={{
@@ -722,7 +722,7 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
             >
               Sign Up for Class ?
             </a>
-            <CoachingCheckoutButton label="Add 1:1 Coaching � $249" />
+            <CoachingCheckoutButton label="Add 1:1 Coaching — $249" />
           </div>
           <p className="text-sm" style={{ color: "oklch(0.65 0.015 148)" }}>
             Questions?{" "}
@@ -735,7 +735,7 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
             >
               Book a free call
             </a>{" "}
-            � I'd love to chat.
+            — I'd love to chat.
           </p>
         </div>
       </section>
