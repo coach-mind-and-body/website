@@ -29,12 +29,38 @@ export const leadsRouter = router({
       const safePhone = input.phone ? escapeHtml(input.phone) : "";
       const safeNotes = input.notes ? escapeHtml(input.notes) : "";
 
-      await db.insert(leads).values({
-        name: input.name,
-        email: input.email,
-        phone: input.phone,
-        notes: input.notes,
-      });
+      // Upsert by email so double-submits (e.g. Cynthia's 5 rows) don't spam CRM
+      const emailNorm = input.email.trim().toLowerCase();
+      const [existingLead] = await db
+        .select()
+        .from(leads)
+        .where(eq(leads.email, emailNorm))
+        .limit(1);
+
+      if (existingLead) {
+        const mergedNotes = input.notes
+          ? existingLead.notes
+            ? existingLead.notes.includes(input.notes)
+              ? existingLead.notes
+              : `${existingLead.notes}\n\n${input.notes}`
+            : input.notes
+          : existingLead.notes;
+        await db
+          .update(leads)
+          .set({
+            name: input.name,
+            phone: input.phone || existingLead.phone,
+            notes: mergedNotes,
+          })
+          .where(eq(leads.id, existingLead.id));
+      } else {
+        await db.insert(leads).values({
+          name: input.name,
+          email: emailNorm,
+          phone: input.phone,
+          notes: input.notes,
+        });
+      }
 
       // Owner alert: email to coach@ (Resend) — never blocks calendar step
       try {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { keepPreviousData } from "@tanstack/react-query";
-import { ChevronRight, CheckCircle2, Loader2 } from "lucide-react";
+import { ChevronRight, CheckCircle2, Loader2, Calendar, Video, ExternalLink } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { trpc } from "@/lib/trpc";
 import { formatPhoneDisplay, formatPhoneE164 } from "@/lib/phone";
@@ -47,12 +47,32 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
   const [editPhone, setEditPhone] = useState("");
   const [editNotes, setEditNotes] = useState("");
 
+  // Schedule meeting state
+  const [showScheduleMeeting, setShowScheduleMeeting] = useState(false);
+  const [meetingDate, setMeetingDate] = useState("");
+  const [meetingDuration, setMeetingDuration] = useState(30);
+  const [meetingType, setMeetingType] = useState<"discovery" | "general">("discovery");
+  const [lastScheduledMeeting, setLastScheduledMeeting] = useState<{
+    meetLink: string | null;
+    calendarLink: string | null;
+    when: string;
+  } | null>(null);
+
   useEffect(() => {
     if (selectedContact) {
       setEditName(selectedContact.name || "");
       setEditPhone(selectedContact.phone || "");
       setEditNotes(selectedContact.notes || "");
       setIsEditing(false);
+      setShowScheduleMeeting(false);
+      setMeetingDate("");
+      setMeetingDuration(30);
+      setMeetingType(
+        selectedContact.leadId && selectedContact.leadStatus !== "enrolled"
+          ? "discovery"
+          : "general"
+      );
+      setLastScheduledMeeting(null);
     }
   }, [selectedContact]);
 
@@ -88,6 +108,70 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
     onSuccess: () => { toast.success("Status updated!"); refetch(); },
     onError: (e) => toast.error(e.message),
   });
+
+  const scheduleMeeting = trpc.googleCalendar.scheduleMeeting.useMutation({
+    onSuccess: (data, variables) => {
+      if (data.meetLink) {
+        toast.success("Meeting scheduled with Google Meet — invite sent to their email");
+      } else {
+        toast.success("Meeting scheduled on your calendar");
+      }
+      const whenStr = variables.scheduledAt.toLocaleString("en-US", {
+        timeZone: "America/Denver",
+        dateStyle: "full",
+        timeStyle: "short",
+      });
+      setLastScheduledMeeting({
+        meetLink: data.meetLink,
+        calendarLink: data.calendarLink,
+        when: variables.scheduledAt.toISOString(),
+      });
+      setShowScheduleMeeting(false);
+      setMeetingDate("");
+      refetch();
+      setSelectedContact((prev: any) => {
+        if (!prev) return prev;
+        const noteLines = [
+          `Scheduled ${variables.meetingType === "discovery" ? "discovery call" : "meeting"} (admin)`,
+          `When (MT): ${whenStr}`,
+          data.meetLink ? `Meet: ${data.meetLink}` : null,
+        ]
+          .filter(Boolean)
+          .join("\n");
+        return {
+          ...prev,
+          leadStatus:
+            prev.leadId && prev.leadStatus === "new" ? "contacted" : prev.leadStatus,
+          notes: [prev.notes, noteLines].filter(Boolean).join("\n\n"),
+        };
+      });
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const handleScheduleMeeting = () => {
+    if (!selectedContact?.email) {
+      toast.error("This contact needs an email address to send a calendar invite");
+      return;
+    }
+    if (!meetingDate) {
+      toast.error("Please select a date and time");
+      return;
+    }
+    const scheduledAt = new Date(meetingDate);
+    if (isNaN(scheduledAt.getTime())) {
+      toast.error("Invalid date");
+      return;
+    }
+    scheduleMeeting.mutate({
+      attendeeEmail: selectedContact.email,
+      attendeeName: selectedContact.name || selectedContact.email,
+      scheduledAt,
+      durationMinutes: meetingDuration,
+      meetingType,
+      leadId: selectedContact.leadId || undefined,
+    });
+  };
 
   const contacts = contactsPage?.items ?? [];
   const total = contactsPage?.total ?? 0;
@@ -414,22 +498,291 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
                   </div>
 
                   {selectedContact.leadId && selectedContact.leadStatus !== 'enrolled' && (
-                    <div className="p-5 rounded-xl border" style={{ borderColor: "oklch(0.90 0.015 80)", background: "oklch(0.96 0.025 50)" }}>
-                      <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "oklch(0.52 0.015 50)" }}>Discovery Call Management</p>
+                    <div className="p-5 rounded-xl border space-y-4" style={{ borderColor: "oklch(0.90 0.015 80)", background: "oklch(0.96 0.025 50)" }}>
+                      <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "oklch(0.52 0.015 50)" }}>Discovery Call Management</p>
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <span className="text-sm" style={{ color: "oklch(0.20 0.015 50)" }}>Current Status: <strong className="capitalize">{selectedContact.leadStatus}</strong></span>
-                        <button 
-                          onClick={() => {
-                            updateLeadStatus.mutate({ id: selectedContact.leadId, status: "enrolled" });
-                            setSelectedContact({ ...selectedContact, leadStatus: "enrolled", highestStatus: "reclaim" });
-                          }}
-                          disabled={updateLeadStatus.isPending}
-                          className="shrink-0 px-4 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap"
-                          style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMeetingType("discovery");
+                              setMeetingDuration(30);
+                              setShowScheduleMeeting((v) => !v);
+                            }}
+                            className="shrink-0 flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap"
+                            style={{
+                              background: showScheduleMeeting ? "oklch(0.20 0.015 50)" : "oklch(1 0 0)",
+                              color: showScheduleMeeting ? "white" : "oklch(0.20 0.015 50)",
+                              border: "1px solid oklch(0.85 0.02 80)",
+                            }}
+                          >
+                            <Calendar size={12} />
+                            {showScheduleMeeting ? "Cancel" : "Schedule Meeting"}
+                          </button>
+                          <button 
+                            onClick={() => {
+                              updateLeadStatus.mutate({ id: selectedContact.leadId, status: "enrolled" });
+                              setSelectedContact({ ...selectedContact, leadStatus: "enrolled", highestStatus: "reclaim" });
+                            }}
+                            disabled={updateLeadStatus.isPending}
+                            className="shrink-0 px-4 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap"
+                            style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}
+                          >
+                            {updateLeadStatus.isPending ? "Updating..." : "Mark as Enrolled"}
+                          </button>
+                        </div>
+                      </div>
+
+                      {showScheduleMeeting && (
+                        <div className="pt-3 border-t space-y-3" style={{ borderColor: "oklch(0.90 0.015 80)" }}>
+                          <p className="text-xs" style={{ color: "oklch(0.45 0.02 50)" }}>
+                            Creates a Google Calendar event with a Meet link and emails an invite to{" "}
+                            <strong>{selectedContact.email}</strong>.
+                            {!gcalConnected && (
+                              <span className="block mt-1 font-semibold" style={{ color: "oklch(0.55 0.12 40)" }}>
+                                Connect Google Calendar in Admin → Settings first.
+                              </span>
+                            )}
+                          </p>
+                          <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-end gap-2">
+                            <div className="flex-1 min-w-[160px]">
+                              <label className="text-[10px] font-bold uppercase tracking-wider block mb-1" style={{ color: "oklch(0.52 0.015 50)" }}>
+                                Date & time
+                              </label>
+                              <input
+                                type="datetime-local"
+                                value={meetingDate}
+                                onChange={(e) => setMeetingDate(e.target.value)}
+                                className="w-full text-xs rounded-lg px-2 py-1.5"
+                                style={{ background: "oklch(1 0 0)", color: "oklch(0.20 0.015 50)", border: "1px solid oklch(0.85 0.02 80)" }}
+                              />
+                            </div>
+                            <div className="w-full sm:w-28">
+                              <label className="text-[10px] font-bold uppercase tracking-wider block mb-1" style={{ color: "oklch(0.52 0.015 50)" }}>
+                                Duration
+                              </label>
+                              <select
+                                value={meetingDuration}
+                                onChange={(e) => setMeetingDuration(Number(e.target.value))}
+                                className="w-full text-xs rounded-lg px-2 py-1.5"
+                                style={{ background: "oklch(1 0 0)", color: "oklch(0.20 0.015 50)", border: "1px solid oklch(0.85 0.02 80)" }}
+                              >
+                                <option value={30}>30 min</option>
+                                <option value={45}>45 min</option>
+                                <option value={60}>60 min</option>
+                              </select>
+                            </div>
+                            <div className="w-full sm:w-36">
+                              <label className="text-[10px] font-bold uppercase tracking-wider block mb-1" style={{ color: "oklch(0.52 0.015 50)" }}>
+                                Type
+                              </label>
+                              <select
+                                value={meetingType}
+                                onChange={(e) => setMeetingType(e.target.value as "discovery" | "general")}
+                                className="w-full text-xs rounded-lg px-2 py-1.5"
+                                style={{ background: "oklch(1 0 0)", color: "oklch(0.20 0.015 50)", border: "1px solid oklch(0.85 0.02 80)" }}
+                              >
+                                <option value="discovery">Discovery call</option>
+                                <option value="general">General meeting</option>
+                              </select>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={handleScheduleMeeting}
+                              disabled={scheduleMeeting.isPending || !gcalConnected}
+                              className="flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold disabled:opacity-50"
+                              style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}
+                            >
+                              {scheduleMeeting.isPending ? (
+                                <>
+                                  <Loader2 size={12} className="animate-spin" /> Scheduling…
+                                </>
+                              ) : (
+                                <>
+                                  <Video size={12} /> Schedule + Meet
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {lastScheduledMeeting && (
+                        <div
+                          className="flex flex-wrap items-center gap-2 p-3 rounded-lg text-xs"
+                          style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.015 80)" }}
                         >
-                          {updateLeadStatus.isPending ? "Updating..." : "Mark as Enrolled"}
+                          <span className="font-semibold" style={{ color: "oklch(0.38 0.10 148)" }}>
+                            Meeting scheduled
+                            {lastScheduledMeeting.when
+                              ? ` for ${new Date(lastScheduledMeeting.when).toLocaleString()}`
+                              : ""}
+                          </span>
+                          {lastScheduledMeeting.meetLink && (
+                            <a
+                              href={lastScheduledMeeting.meetLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 px-2 py-1 rounded-lg font-bold"
+                              style={{ background: "#1a73e8", color: "white" }}
+                            >
+                              <Video size={11} /> Join Meet
+                            </a>
+                          )}
+                          {lastScheduledMeeting.calendarLink && (
+                            <a
+                              href={lastScheduledMeeting.calendarLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 px-2 py-1 rounded-lg font-bold"
+                              style={{ background: "oklch(0.96 0.025 50)", color: "oklch(0.30 0.02 50)" }}
+                            >
+                              <ExternalLink size={11} /> Calendar
+                            </a>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Schedule meeting for non-lead contacts (or enrolled leads without the discovery card) */}
+                  {selectedContact.email &&
+                    !(selectedContact.leadId && selectedContact.leadStatus !== "enrolled") && (
+                    <div className="p-5 rounded-xl border space-y-3" style={{ borderColor: "oklch(0.90 0.015 80)", background: "oklch(0.985 0.008 80)" }}>
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "oklch(0.52 0.015 50)" }}>
+                            Schedule Meeting
+                          </p>
+                          <p className="text-xs mt-1" style={{ color: "oklch(0.52 0.015 50)" }}>
+                            Create a Google Meet and calendar invite for this contact
+                            {selectedContact.enrollmentId ? " (in addition to RECLAIM sessions below)" : ""}.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMeetingType("general");
+                            setMeetingDuration(selectedContact.enrollmentId ? 60 : 30);
+                            setShowScheduleMeeting((v) => !v);
+                          }}
+                          className="shrink-0 flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap"
+                          style={{
+                            background: showScheduleMeeting ? "oklch(0.20 0.015 50)" : "oklch(0.72 0.12 75)",
+                            color: "white",
+                          }}
+                        >
+                          <Calendar size={12} />
+                          {showScheduleMeeting ? "Cancel" : "Schedule Meeting"}
                         </button>
                       </div>
+
+                      {showScheduleMeeting && (
+                        <div className="pt-2 space-y-3">
+                          {!gcalConnected && (
+                            <p className="text-xs font-semibold" style={{ color: "oklch(0.55 0.12 40)" }}>
+                              Connect Google Calendar in Admin → Settings first.
+                            </p>
+                          )}
+                          <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-end gap-2">
+                            <div className="flex-1 min-w-[160px]">
+                              <label className="text-[10px] font-bold uppercase tracking-wider block mb-1" style={{ color: "oklch(0.52 0.015 50)" }}>
+                                Date & time
+                              </label>
+                              <input
+                                type="datetime-local"
+                                value={meetingDate}
+                                onChange={(e) => setMeetingDate(e.target.value)}
+                                className="w-full text-xs rounded-lg px-2 py-1.5"
+                                style={{ background: "oklch(1 0 0)", color: "oklch(0.20 0.015 50)", border: "1px solid oklch(0.85 0.02 80)" }}
+                              />
+                            </div>
+                            <div className="w-full sm:w-28">
+                              <label className="text-[10px] font-bold uppercase tracking-wider block mb-1" style={{ color: "oklch(0.52 0.015 50)" }}>
+                                Duration
+                              </label>
+                              <select
+                                value={meetingDuration}
+                                onChange={(e) => setMeetingDuration(Number(e.target.value))}
+                                className="w-full text-xs rounded-lg px-2 py-1.5"
+                                style={{ background: "oklch(1 0 0)", color: "oklch(0.20 0.015 50)", border: "1px solid oklch(0.85 0.02 80)" }}
+                              >
+                                <option value={30}>30 min</option>
+                                <option value={45}>45 min</option>
+                                <option value={60}>60 min</option>
+                              </select>
+                            </div>
+                            <div className="w-full sm:w-36">
+                              <label className="text-[10px] font-bold uppercase tracking-wider block mb-1" style={{ color: "oklch(0.52 0.015 50)" }}>
+                                Type
+                              </label>
+                              <select
+                                value={meetingType}
+                                onChange={(e) => setMeetingType(e.target.value as "discovery" | "general")}
+                                className="w-full text-xs rounded-lg px-2 py-1.5"
+                                style={{ background: "oklch(1 0 0)", color: "oklch(0.20 0.015 50)", border: "1px solid oklch(0.85 0.02 80)" }}
+                              >
+                                <option value="discovery">Discovery call</option>
+                                <option value="general">General meeting</option>
+                              </select>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={handleScheduleMeeting}
+                              disabled={scheduleMeeting.isPending || !gcalConnected}
+                              className="flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold disabled:opacity-50"
+                              style={{ background: "oklch(0.20 0.015 50)", color: "white" }}
+                            >
+                              {scheduleMeeting.isPending ? (
+                                <>
+                                  <Loader2 size={12} className="animate-spin" /> Scheduling…
+                                </>
+                              ) : (
+                                <>
+                                  <Video size={12} /> Schedule + Meet
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {lastScheduledMeeting && (
+                        <div
+                          className="flex flex-wrap items-center gap-2 p-3 rounded-lg text-xs"
+                          style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.015 80)" }}
+                        >
+                          <span className="font-semibold" style={{ color: "oklch(0.38 0.10 148)" }}>
+                            Meeting scheduled
+                            {lastScheduledMeeting.when
+                              ? ` for ${new Date(lastScheduledMeeting.when).toLocaleString()}`
+                              : ""}
+                          </span>
+                          {lastScheduledMeeting.meetLink && (
+                            <a
+                              href={lastScheduledMeeting.meetLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 px-2 py-1 rounded-lg font-bold"
+                              style={{ background: "#1a73e8", color: "white" }}
+                            >
+                              <Video size={11} /> Join Meet
+                            </a>
+                          )}
+                          {lastScheduledMeeting.calendarLink && (
+                            <a
+                              href={lastScheduledMeeting.calendarLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 px-2 py-1 rounded-lg font-bold"
+                              style={{ background: "oklch(0.96 0.025 50)", color: "oklch(0.30 0.02 50)" }}
+                            >
+                              <ExternalLink size={11} /> Calendar
+                            </a>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
 

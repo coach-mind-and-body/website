@@ -159,7 +159,10 @@ export async function buildUnifiedContacts(db: Db): Promise<UnifiedContact[]> {
     if (contact.highestStatus === "subscriber") contact.highestStatus = "fpu";
   });
 
-  allLeads.forEach((lead) => {
+  // Process leads in id order so leadId settles on the earliest canonical row,
+  // unless a later row is more advanced (enrolled/contacted) or has richer notes.
+  const sortedLeads = [...allLeads].sort((a, b) => a.id - b.id);
+  sortedLeads.forEach((lead) => {
     const contact = getContact(lead.email, lead.name);
     // Prefer a real display name over email-local-part / "Unknown" from earlier sources
     if (lead.name && lead.name !== "Unknown" && !lead.name.includes("@")) {
@@ -172,8 +175,24 @@ export async function buildUnifiedContacts(db: Db): Promise<UnifiedContact[]> {
       }
     }
     contact.phone = lead.phone || contact.phone;
-    contact.leadStatus = lead.status;
-    contact.leadId = lead.id;
+
+    const statusRank: Record<string, number> = {
+      new: 0,
+      contacted: 1,
+      not_a_fit: 1,
+      enrolled: 2,
+    };
+    const prevRank = contact.leadStatus ? (statusRank[contact.leadStatus] ?? 0) : -1;
+    const nextRank = statusRank[lead.status] ?? 0;
+    const hasRicherNotes =
+      !!lead.notes && (!contact.notes || lead.notes.length > (contact.notes?.length ?? 0));
+    if (!contact.leadId || nextRank > prevRank || (nextRank === prevRank && hasRicherNotes)) {
+      contact.leadId = lead.id;
+      contact.leadStatus = lead.status;
+    } else if (!contact.leadStatus) {
+      contact.leadStatus = lead.status;
+    }
+
     // Append notes; don't wipe prior snack-hack / form notes if both exist
     if (lead.notes) {
       contact.notes = contact.notes
@@ -183,21 +202,36 @@ export async function buildUnifiedContacts(db: Db): Promise<UnifiedContact[]> {
         : lead.notes;
     }
     const fromGcal = !!lead.notes?.includes("gcal_event:");
-    contact.timeline.push({
-      date: lead.createdAt.toISOString(),
-      action: fromGcal
-        ? "Booked Discovery Call (Google Calendar)"
-        : "Booked Discovery Call",
-      type: "discovery",
-    });
-    // Surface booking time from notes when present
-    const whenMatch = lead.notes?.match(/When \(MT\):\s*(.+)/);
-    if (whenMatch?.[1]) {
+    const discoveryAction = fromGcal
+      ? "Booked Discovery Call (Google Calendar)"
+      : "Booked Discovery Call";
+    // Dedupe spammy re-submits: same action within the same calendar day
+    const dayKey = lead.createdAt.toISOString().slice(0, 10);
+    const alreadySameDay = contact.timeline.some(
+      (t) => t.type === "discovery" && t.action === discoveryAction && t.date.slice(0, 10) === dayKey
+    );
+    if (!alreadySameDay) {
       contact.timeline.push({
-        date: lead.updatedAt?.toISOString?.() ?? lead.createdAt.toISOString(),
-        action: `Call scheduled: ${whenMatch[1].trim()}`,
+        date: lead.createdAt.toISOString(),
+        action: discoveryAction,
         type: "discovery",
       });
+    }
+    // Surface booking time(s) from notes when present (each When line once)
+    const whenMatches = lead.notes?.matchAll(/When \(MT\):\s*(.+)/g);
+    if (whenMatches) {
+      for (const m of whenMatches) {
+        const label = m[1]?.trim();
+        if (!label) continue;
+        const action = `Call scheduled: ${label}`;
+        if (!contact.timeline.some((t) => t.action === action)) {
+          contact.timeline.push({
+            date: lead.updatedAt?.toISOString?.() ?? lead.createdAt.toISOString(),
+            action,
+            type: "discovery",
+          });
+        }
+      }
     }
     if (lead.status === "enrolled") {
       contact.highestStatus = "reclaim";
