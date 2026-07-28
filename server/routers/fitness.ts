@@ -182,6 +182,46 @@ export const fitnessRouter = router({
       return { success: true };
     }),
 
+  /** Import guest localStorage fitness logs after sign-in */
+  importGuestLogs: protectedProcedure
+    .input(
+      z.object({
+        logs: z.array(
+          z.object({
+            dateStr: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+            exerciseName: z.string().min(1),
+            sets: z.number().min(0).default(1),
+            reps: z.number().min(0).default(0),
+            weight: z.number().min(0).default(0),
+            durationMinutes: z.number().min(0).default(0),
+          })
+        ).max(500),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      if (input.logs.length === 0) return { imported: 0 };
+
+      const dates = new Set<string>();
+      for (const log of input.logs) {
+        await db.insert(fitnessLogs).values({
+          userId: ctx.user.id,
+          dateStr: log.dateStr,
+          exerciseName: log.exerciseName,
+          sets: log.sets || 1,
+          reps: log.reps || 0,
+          weight: log.weight || 0,
+          durationMinutes: log.durationMinutes || 0,
+        });
+        dates.add(log.dateStr);
+      }
+      for (const d of dates) {
+        await syncFitnessToHabits(db, ctx.user.id, d);
+      }
+      return { imported: input.logs.length };
+    }),
+
   // --- Workout Videos ---
   getVideos: publicProcedure
     .query(async () => {

@@ -1,5 +1,9 @@
 import { isHabitReminderWindow, processHabitReminders } from "./habitReminders";
 import { isDay3Window, processDay3Reengage } from "./habitDay3";
+import {
+  isWeeklyInsightEmailWindow,
+  processWeeklyInsightEmails,
+} from "./habitWeeklyInsightEmail";
 
 const CHECK_INTERVAL_MS = 60_000; // every minute
 
@@ -11,6 +15,7 @@ const globalForPoller = globalThis as typeof globalThis & {
  * Background poller:
  * - ~8:00 PM MT evening habit / victory push
  * - ~9:00 AM MT day-3 re-engage
+ * - Sunday ~9:05 AM MT weekly insight email
  * Starts at most once per Node process.
  */
 export function startHabitReminderPoller() {
@@ -21,7 +26,7 @@ export function startHabitReminderPoller() {
   globalForPoller.__habitReminderPollerStarted = true;
 
   console.log(
-    "[Habit Reminder Poller] Starting (8pm evening + 9am day3, America/Denver)..."
+    "[Habit Reminder Poller] Starting (8pm evening + 9am day3 + Sunday insight email, America/Denver)..."
   );
 
   const tick = () => {
@@ -33,6 +38,11 @@ export function startHabitReminderPoller() {
     if (isDay3Window()) {
       processDay3Reengage().catch((err) =>
         console.error("[Habit Day3 Poller] Error:", err)
+      );
+    }
+    if (isWeeklyInsightEmailWindow()) {
+      processWeeklyInsightEmails().catch((err) =>
+        console.error("[Habit Weekly Insight] Error:", err)
       );
     }
   };

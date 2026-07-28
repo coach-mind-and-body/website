@@ -848,13 +848,26 @@ export default function FitnessTrackerClient() {
             </div>
 
             {filteredVideos.length === 0 && (
-              <div className="text-center py-10">
+              <div className="text-center py-10 px-4">
                 <PlayCircle size={40} className="mx-auto text-gray-300 mb-3" />
-                <p className="text-sm text-gray-500">
+                <p className="text-sm font-bold mb-1" style={{ color: "#2d3b2d" }}>
                   {selectedCategory !== "All"
-                    ? `No videos in “${selectedCategory}” yet.`
-                    : "No videos yet — check back soon."}
+                    ? `No videos in “${selectedCategory}” yet`
+                    : "Video library is empty"}
                 </p>
+                <p className="text-xs text-gray-500 mb-4">
+                  Use one-tap log above for a walk or strength session — you don&apos;t need a
+                  video to count movement. Lee Anne can add videos anytime from admin.
+                </p>
+                <Button
+                  className="rounded-full"
+                  style={{ background: "#c9a96e", color: "white" }}
+                  onClick={() => {
+                    setActiveTab("log");
+                  }}
+                >
+                  Back to quick log
+                </Button>
               </div>
             )}
           </motion.div>

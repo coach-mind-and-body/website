@@ -190,13 +190,26 @@ export default function HabitTrackerClient() {
     mergeVictories.mutate({ deviceId: getDeviceId() });
   }, [isAuthenticated]);
 
-  // Offer to import local data after login
+  const importFitness = trpc.fitness.importGuestLogs.useMutation();
+  const importCalories = trpc.calories.importGuestLogs.useMutation();
+
+  // Offer to import local data after login (habits + fitness + meals)
   useEffect(() => {
     if (!isAuthenticated || !userSyncData) return;
     const hasLocalHabits = !!localStorage.getItem("mbr_habits");
     const hasLocalLogs = !!localStorage.getItem("mbr_habit_logs");
+    let hasFitness = false;
+    let hasMeals = false;
+    try {
+      const f = JSON.parse(localStorage.getItem("mbr_fitness_logs") || "[]");
+      const m = JSON.parse(localStorage.getItem("mbr_calorie_logs") || "[]");
+      hasFitness = Array.isArray(f) && f.length > 0;
+      hasMeals = Array.isArray(m) && m.length > 0;
+    } catch {
+      /* ignore */
+    }
     const dismissed = localStorage.getItem("mbr_import_dismissed");
-    if ((hasLocalHabits || hasLocalLogs) && !dismissed) {
+    if ((hasLocalHabits || hasLocalLogs || hasFitness || hasMeals) && !dismissed) {
       setShowImportPrompt(true);
     }
   }, [isAuthenticated, userSyncData]);
@@ -248,11 +261,58 @@ export default function HabitTrackerClient() {
         });
       }
 
+      // Fitness guest logs
+      let fitnessCount = 0;
+      try {
+        const fitnessLogs = JSON.parse(localStorage.getItem("mbr_fitness_logs") || "[]");
+        if (Array.isArray(fitnessLogs) && fitnessLogs.length > 0) {
+          const payload = fitnessLogs.map((l: any) => ({
+            dateStr: l.dateStr,
+            exerciseName: l.exerciseName,
+            sets: l.sets ?? 1,
+            reps: l.reps ?? 0,
+            weight: l.weight ?? 0,
+            durationMinutes: l.durationMinutes ?? 0,
+          }));
+          const res = await importFitness.mutateAsync({ logs: payload });
+          fitnessCount = res.imported;
+          localStorage.removeItem("mbr_fitness_logs");
+        }
+      } catch {
+        /* ignore fitness import errors after habits */
+      }
+
+      // Meal guest logs
+      let mealCount = 0;
+      try {
+        const mealLogs = JSON.parse(localStorage.getItem("mbr_calorie_logs") || "[]");
+        if (Array.isArray(mealLogs) && mealLogs.length > 0) {
+          const payload = mealLogs.map((l: any) => ({
+            dateStr: l.dateStr,
+            mealType: l.mealType || "snack",
+            foodName: l.foodName,
+            calories: l.calories || 0,
+            protein: l.protein || 0,
+            carbs: l.carbs || 0,
+            fat: l.fat || 0,
+            fiber: l.fiber || 0,
+          }));
+          const res = await importCalories.mutateAsync({ logs: payload });
+          mealCount = res.imported;
+          localStorage.removeItem("mbr_calorie_logs");
+        }
+      } catch {
+        /* ignore */
+      }
+
       localStorage.removeItem("mbr_habits");
       localStorage.removeItem("mbr_habit_logs");
       localStorage.setItem("mbr_import_dismissed", "1");
       setShowImportPrompt(false);
-      toast.success("Local habits imported successfully!");
+      const bits = ["habits"];
+      if (fitnessCount) bits.push(`${fitnessCount} workouts`);
+      if (mealCount) bits.push(`${mealCount} meals`);
+      toast.success(`Imported ${bits.join(" · ")} to your account`);
       refetchUserSync();
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Import failed";
@@ -431,7 +491,7 @@ export default function HabitTrackerClient() {
       {/* Import local data prompt */}
       {showImportPrompt && isAuthenticated && (
         <div className="py-3 px-4 text-center text-sm flex flex-col sm:flex-row items-center justify-center gap-3" style={{ background: "#2d3b2d", color: "white" }}>
-          <span>We found habits saved on this device. Import them to your account?</span>
+          <span>We found tracker data on this device (habits, workouts, and/or meals). Import to your account?</span>
           <div className="flex gap-2">
             <Button
               size="sm"
@@ -660,7 +720,63 @@ export default function HabitTrackerClient() {
           </div>
         )}
 
-        {/* Challenges — collapsed by default; joined chip always visible */}
+        {/* Featured / joined challenge chips (always visible) */}
+        {activeChallengesData && activeChallengesData.length > 0 && (() => {
+          const featured = activeChallengesData.filter(
+            (c: any) => c.isFeatured || userChallengesData?.challenges?.some((u) => u.challengeId === c.id)
+          );
+          const chips = featured.length > 0 ? featured.slice(0, 3) : activeChallengesData.slice(0, 2);
+          return (
+            <div className="flex flex-wrap gap-2">
+              {chips.map((challenge: any) => {
+                const uc = userChallengesData?.challenges?.find((u) => u.challengeId === challenge.id);
+                const joined = !!uc;
+                const todayStr = todayMountainDateStr();
+                const doneToday =
+                  joined &&
+                  (userChallengesData?.logs || []).some(
+                    (l) => l.userChallengeId === uc.id && l.dateStr === todayStr
+                  );
+                return (
+                  <button
+                    key={challenge.id}
+                    type="button"
+                    onClick={() => {
+                      if (!joined) {
+                        joinChallengeMutation.mutate({
+                          challengeId: challenge.id,
+                          deviceId: getDeviceId(),
+                        });
+                      } else if (!doneToday) {
+                        toggleChallengeLogMutation.mutate({
+                          userChallengeId: uc.id,
+                          dateStr: todayStr,
+                          completed: true,
+                          deviceId: getDeviceId(),
+                        });
+                      } else {
+                        setShowChallenges(true);
+                      }
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold border transition-all"
+                    style={{
+                      borderColor: doneToday ? "#a7f3d0" : joined ? "#c9a96e" : "#f0e8e4",
+                      background: doneToday ? "#ecfdf5" : joined ? "#faf5f5" : "white",
+                      color: "#2d3b2d",
+                    }}
+                  >
+                    <Target size={12} style={{ color: "#c9a96e" }} />
+                    {doneToday ? "✓ " : joined ? "" : "+ "}
+                    {challenge.title}
+                    {challenge.linkedPodcastSlug ? " · 🎧" : ""}
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })()}
+
+        {/* Challenges — full list collapsed by default */}
         {activeChallengesData && activeChallengesData.length > 0 && (
           <>
             <button
@@ -671,7 +787,7 @@ export default function HabitTrackerClient() {
             >
               <span className="font-bold text-sm flex items-center gap-2" style={{ color: "#2d3b2d" }}>
                 <Target size={16} style={{ color: "#c9a96e" }} />
-                Challenges
+                All challenges
               </span>
               <span className="text-[#8a9a8a] text-sm font-bold">{showChallenges ? "−" : "+"}</span>
             </button>

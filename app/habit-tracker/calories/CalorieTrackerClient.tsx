@@ -21,6 +21,7 @@ import { usePageTitle } from "@/hooks/usePageTitle";
 import Link from "next/link";
 import { todayMountainDateStr } from "@/lib/mountainTime";
 import { calendarDateStr, parseCalendarDate } from "@/lib/habitStreak";
+import { getDeviceId } from "@/lib/deviceId";
 
 const LOCAL_KEY = "mbr_calorie_logs";
 const PROTEIN_GOAL_DEFAULT = 100;
@@ -278,27 +279,25 @@ export default function CalorieTrackerClient() {
   const handleImageCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!isAuthenticated) {
-      toast.error("Sign in to use AI photo estimate");
-      return;
-    }
     const reader = new FileReader();
     reader.onload = (event) => {
       const base64 = event.target?.result as string;
       toast.info("Analyzing…");
-      analyzeImageMutation.mutate({ imageBase64: base64, userHint });
+      analyzeImageMutation.mutate({
+        imageBase64: base64,
+        userHint,
+        deviceId: getDeviceId(),
+      });
     };
     reader.readAsDataURL(file);
   };
 
   const quickEstimateAndFocus = () => {
     if (!foodName.trim()) return toast.error("Type a food name first");
-    if (!isAuthenticated) {
-      toast.message("Sign in for AI estimate — or enter protein grams below");
-      setShowFullMacros(true);
-      return;
-    }
-    analyzeTextMutation.mutate({ foodName: foodName.trim() });
+    analyzeTextMutation.mutate({
+      foodName: foodName.trim(),
+      deviceId: getDeviceId(),
+    });
   };
 
   if (!mounted) return <div className="min-h-screen bg-[#faf5f5]" />;
@@ -596,44 +595,47 @@ export default function CalorieTrackerClient() {
                   </div>
                 )}
 
-                {/* Photo AI — signed in only */}
-                {isAuthenticated && (
-                  <div
-                    className="p-3 rounded-2xl border border-dashed flex flex-col items-center gap-2"
-                    style={{ borderColor: "#e8c99a", background: "#fcfaf9" }}
+                {/* Photo AI — guests get a soft daily limit server-side */}
+                <div
+                  className="p-3 rounded-2xl border border-dashed flex flex-col items-center gap-2"
+                  style={{ borderColor: "#e8c99a", background: "#fcfaf9" }}
+                >
+                  <input
+                    type="text"
+                    placeholder="Optional hint: '1 cup rice'"
+                    value={userHint}
+                    onChange={(e) => setUserHint(e.target.value)}
+                    className="w-full p-2 rounded-xl border text-xs text-center"
+                  />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    ref={fileInputRef}
+                    className="hidden"
+                    onChange={handleImageCapture}
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={analyzeImageMutation.isPending}
+                    className="rounded-full"
+                    style={{ background: "#2d3b2d", color: "white" }}
                   >
-                    <input
-                      type="text"
-                      placeholder="Optional hint: '1 cup rice'"
-                      value={userHint}
-                      onChange={(e) => setUserHint(e.target.value)}
-                      className="w-full p-2 rounded-xl border text-xs text-center"
-                    />
-                    <input
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      ref={fileInputRef}
-                      className="hidden"
-                      onChange={handleImageCapture}
-                    />
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={analyzeImageMutation.isPending}
-                      className="rounded-full"
-                      style={{ background: "#2d3b2d", color: "white" }}
-                    >
-                      {analyzeImageMutation.isPending ? (
-                        <Loader2 size={16} className="animate-spin mr-2" />
-                      ) : (
-                        <Camera size={16} className="mr-2" />
-                      )}
-                      Snap photo
-                    </Button>
-                  </div>
-                )}
+                    {analyzeImageMutation.isPending ? (
+                      <Loader2 size={16} className="animate-spin mr-2" />
+                    ) : (
+                      <Camera size={16} className="mr-2" />
+                    )}
+                    Snap photo
+                  </Button>
+                  {!isAuthenticated && (
+                    <p className="text-[10px] text-gray-400 text-center">
+                      Guests: up to 8 AI estimates/day. Sign in for unlimited.
+                    </p>
+                  )}
+                </div>
 
                 <Button
                   onClick={handleSave}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -8,17 +8,41 @@ import { X } from "lucide-react";
 
 const SKIP_KEY = "mbr_onboarding_pack_done";
 
+export function openPackPicker() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(SKIP_KEY);
+  sessionStorage.setItem("mbr_force_pack_picker", "1");
+  window.dispatchEvent(new Event("mbr-open-pack-picker"));
+}
+
 export function OnboardingPackModal({
   isAuthenticated,
   onApplied,
+  forceOpen,
 }: {
   isAuthenticated: boolean;
   onApplied?: () => void;
+  /** When true, parent is controlling open via re-pick */
+  forceOpen?: boolean;
 }) {
   const [open, setOpen] = useState(() => {
     if (typeof window === "undefined") return false;
+    if (sessionStorage.getItem("mbr_force_pack_picker") === "1") {
+      sessionStorage.removeItem("mbr_force_pack_picker");
+      return true;
+    }
     return !localStorage.getItem(SKIP_KEY);
   });
+
+  useEffect(() => {
+    const handler = () => setOpen(true);
+    window.addEventListener("mbr-open-pack-picker", handler);
+    return () => window.removeEventListener("mbr-open-pack-picker", handler);
+  }, []);
+
+  useEffect(() => {
+    if (forceOpen) setOpen(true);
+  }, [forceOpen]);
 
   const { data: packs } = trpc.habit.getPacks.useQuery(undefined, {
     enabled: open,

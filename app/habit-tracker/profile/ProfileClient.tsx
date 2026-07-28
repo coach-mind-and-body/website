@@ -13,7 +13,9 @@ import {
   ExternalLink,
   ChevronRight,
   Sparkles,
+  Layers,
 } from "lucide-react";
+import { openPackPicker } from "@/components/habit/OnboardingPackModal";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/use-auth";
@@ -331,6 +333,21 @@ export default function ProfileClient() {
             </span>
             <ChevronRight size={18} className="text-gray-400" />
           </Link>
+          <button
+            type="button"
+            onClick={() => {
+              openPackPicker();
+              window.location.href = "/habit-tracker";
+            }}
+            className="w-full flex items-center justify-between px-5 py-4 hover:bg-[#faf5f5] transition-colors border-t text-left"
+            style={{ borderColor: "#f0e8e4" }}
+          >
+            <span className="flex items-center gap-3 font-semibold text-sm" style={{ color: "#2d3b2d" }}>
+              <Layers size={18} style={{ color: "#c9a96e" }} />
+              Change focus pack
+            </span>
+            <ChevronRight size={18} className="text-gray-400" />
+          </button>
           <Link
             href="/habit-tracker/podcasts"
             className="flex items-center justify-between px-5 py-4 hover:bg-[#faf5f5] transition-colors border-t"

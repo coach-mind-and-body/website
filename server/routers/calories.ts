@@ -1,10 +1,37 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { calorieLogs, userHabits, userHabitLogs } from "../../drizzle/schema";
 import { eq, and, desc, like } from "drizzle-orm";
 import { generateObject } from "ai";
 import { google } from "@ai-sdk/google";
+import { TRPCError } from "@trpc/server";
+
+/** Soft guest AI limits: deviceId → { day, count } (in-process; resets on deploy) */
+const guestAiUsage = new Map<string, { day: string; count: number }>();
+const GUEST_AI_DAILY_LIMIT = 8;
+
+function checkGuestAiLimit(deviceId: string | undefined, day: string) {
+  if (!deviceId || deviceId.length < 8) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Device id required for guest AI estimates.",
+    });
+  }
+  const key = deviceId.slice(0, 64);
+  const cur = guestAiUsage.get(key);
+  if (!cur || cur.day !== day) {
+    guestAiUsage.set(key, { day, count: 1 });
+    return;
+  }
+  if (cur.count >= GUEST_AI_DAILY_LIMIT) {
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: `Guest AI limit reached (${GUEST_AI_DAILY_LIMIT}/day). Sign in for unlimited estimates.`,
+    });
+  }
+  cur.count += 1;
+}
 
 // Helper function to sync daily protein and fiber to the habit tracker
 async function syncMacrosToHabits(db: any, userId: number, dateStr: string) {
@@ -147,14 +174,57 @@ export const caloriesRouter = router({
       return { success: true };
     }),
 
-  analyzeFoodImage: protectedProcedure
+  /** Import guest localStorage meal logs after sign-in */
+  importGuestLogs: protectedProcedure
+    .input(
+      z.object({
+        logs: z
+          .array(
+            z.object({
+              dateStr: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+              mealType: z.enum(["breakfast", "lunch", "dinner", "snack", "drink"]),
+              foodName: z.string().min(1),
+              calories: z.number().min(0),
+              protein: z.number().min(0),
+              carbs: z.number().min(0),
+              fat: z.number().min(0),
+              fiber: z.number().min(0),
+            })
+          )
+          .max(500),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      if (input.logs.length === 0) return { imported: 0 };
+
+      const dates = new Set<string>();
+      for (const log of input.logs) {
+        await db.insert(calorieLogs).values({
+          userId: ctx.user.id,
+          ...log,
+        });
+        dates.add(log.dateStr);
+      }
+      for (const d of dates) {
+        await syncMacrosToHabits(db, ctx.user.id, d);
+      }
+      return { imported: input.logs.length };
+    }),
+
+  analyzeFoodImage: publicProcedure
     .input(z.object({
       imageBase64: z.string(), // base64 string
       userHint: z.string().optional(),
+      deviceId: z.string().optional(),
     }))
-    .mutation(async ({ input }) => {
-      // Use Gemini to analyze the image
-      // Note: We strip the data:image/jpeg;base64, prefix if present
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.user?.id) {
+        const day = new Date().toISOString().slice(0, 10);
+        checkGuestAiLimit(input.deviceId, day);
+      }
+
       const base64Data = input.imageBase64.replace(/^data:image\/\w+;base64,/, "");
 
       const result = await generateObject({
@@ -187,11 +257,17 @@ export const caloriesRouter = router({
       return result.object;
     }),
 
-  analyzeFoodText: protectedProcedure
+  analyzeFoodText: publicProcedure
     .input(z.object({
       foodName: z.string().min(1),
+      deviceId: z.string().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.user?.id) {
+        const day = new Date().toISOString().slice(0, 10);
+        checkGuestAiLimit(input.deviceId, day);
+      }
+
       const result = await generateObject({
         model: google("gemini-3.5-flash"),
         schema: z.object({
