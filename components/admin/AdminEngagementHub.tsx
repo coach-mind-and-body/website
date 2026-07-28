@@ -3,9 +3,10 @@ import AdminHabitsTab from "@/components/AdminHabitsTab";
 import { AdminChallengesTab } from "@/components/admin/AdminChallengesTab";
 import { AdminUpdatesTab } from "@/components/admin/AdminUpdatesTab";
 import { AdminHabitCoachBoard } from "@/components/admin/AdminHabitCoachBoard";
+import { AdminPodcastsTab } from "@/components/admin/AdminPodcastsTab";
 import AdminVideosClient from "@/app/admin/videos/AdminVideosClient";
 
-type Tab = "updates" | "challenges" | "habits" | "videos" | "coach";
+type Tab = "updates" | "challenges" | "habits" | "videos" | "coach" | "podcasts";
 
 export function AdminEngagementHub() {
   const [activeTab, setActiveTab] = useState<Tab>("updates");
@@ -13,6 +14,7 @@ export function AdminEngagementHub() {
   const tabs: { id: Tab; label: string }[] = [
     { id: "updates", label: "Coach Updates" },
     { id: "challenges", label: "Challenges" },
+    { id: "podcasts", label: "Podcasts" },
     { id: "habits", label: "Templates & Packs" },
     { id: "coach", label: "Coach Board" },
     { id: "videos", label: "Workout Videos" },
@@ -47,6 +49,7 @@ export function AdminEngagementHub() {
       <div>
         {activeTab === "updates" && <AdminUpdatesTab />}
         {activeTab === "challenges" && <AdminChallengesTab />}
+        {activeTab === "podcasts" && <AdminPodcastsTab />}
         {activeTab === "habits" && <AdminHabitsTab />}
         {activeTab === "coach" && <AdminHabitCoachBoard />}
         {activeTab === "videos" && <AdminVideosClient />}

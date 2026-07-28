@@ -157,6 +157,25 @@ export const podcastRouter = router({
       const episodes = await fetchPlaylistEpisodes();
       const db = await getDb();
       if (db && episodes.length > 0) {
+        // Auto-seed default habit actions for newest episodes (does not overwrite admin edits)
+        const { ensureEpisodeDefaults, defaultHabitActionsJson } = await import(
+          "../podcastDefaults"
+        );
+        // Limit writes to the latest 12 so a cold cache doesn't hammer the DB
+        for (const ep of episodes.slice(0, 12)) {
+          try {
+            await ensureEpisodeDefaults(db, {
+              videoId: ep.videoId,
+              title: ep.title,
+              thumbnail: ep.thumbnail,
+              publishedAt: ep.publishedAt,
+              youtubeDescription: ep.description,
+            });
+          } catch (e) {
+            console.warn("[Podcast] ensure defaults failed for", ep.videoId, e);
+          }
+        }
+
         const notes = await db
           .select({
             videoId: podcastEpisodes.videoId,
@@ -164,17 +183,28 @@ export const podcastRouter = router({
             status: podcastEpisodes.status,
             habitActionsJson: podcastEpisodes.habitActionsJson,
             linkedBlogSlug: podcastEpisodes.linkedBlogSlug,
+            linkedChallengeId: podcastEpisodes.linkedChallengeId,
           })
           .from(podcastEpisodes);
 
         const byVideo = new Map(notes.map((n) => [n.videoId, n]));
+        const fallbackActions = defaultHabitActionsJson();
         for (const ep of episodes) {
           const n = byVideo.get(ep.videoId);
-          if (n?.status === "published") {
-            ep.slug = n.slug;
-            ep.hasShowNotes = true;
-            (ep as any).habitActionsJson = n.habitActionsJson;
+          if (n) {
+            if (n.status === "published") {
+              ep.slug = n.slug;
+              ep.hasShowNotes = true;
+            }
+            // Habit actions available even for draft rows (auto-defaults)
+            (ep as any).habitActionsJson =
+              n.habitActionsJson && n.habitActionsJson.trim()
+                ? n.habitActionsJson
+                : fallbackActions;
             (ep as any).linkedBlogSlug = n.linkedBlogSlug;
+            (ep as any).linkedChallengeId = n.linkedChallengeId;
+          } else {
+            (ep as any).habitActionsJson = fallbackActions;
           }
         }
       }
@@ -223,6 +253,167 @@ export const podcastRouter = router({
     return db.select().from(podcastEpisodes).orderBy(desc(podcastEpisodes.publishedAt));
   }),
 
+  /** YouTube playlist + DB enrichment for admin editor */
+  adminListFromYoutube: protectedProcedure.query(async ({ ctx }) => {
+    adminOnly(ctx.user?.role);
+    const db = await getDb();
+    if (!db) return [];
+
+    const { ensureEpisodeDefaults, defaultHabitActionsJson, DEFAULT_HABIT_ACTIONS } =
+      await import("../podcastDefaults");
+
+    let yt: Episode[] = [];
+    try {
+      yt = await fetchPlaylistEpisodes();
+    } catch (e) {
+      console.error("[Podcast admin] RSS failed", e);
+    }
+
+    for (const ep of yt.slice(0, 30)) {
+      try {
+        await ensureEpisodeDefaults(db, {
+          videoId: ep.videoId,
+          title: ep.title,
+          thumbnail: ep.thumbnail,
+          publishedAt: ep.publishedAt,
+          youtubeDescription: ep.description,
+        });
+      } catch {
+        /* continue */
+      }
+    }
+
+    const rows = await db
+      .select()
+      .from(podcastEpisodes)
+      .orderBy(desc(podcastEpisodes.publishedAt));
+
+    const byVideo = new Map(rows.map((r) => [r.videoId, r]));
+    const fallback = defaultHabitActionsJson();
+
+    // Prefer YouTube order (newest first); append DB-only rows
+    const seen = new Set<string>();
+    const merged: Array<{
+      videoId: string;
+      title: string;
+      thumbnail: string | null;
+      publishedAt: Date | string | null;
+      slug: string | null;
+      status: string;
+      habitActionsJson: string;
+      linkedBlogSlug: string | null;
+      linkedChallengeId: number | null;
+      hasShowNotes: boolean;
+      youtubeDescription: string | null;
+      id: number | null;
+    }> = [];
+
+    for (const ep of yt) {
+      seen.add(ep.videoId);
+      const row = byVideo.get(ep.videoId);
+      merged.push({
+        videoId: ep.videoId,
+        title: row?.title || ep.title,
+        thumbnail: row?.thumbnail || ep.thumbnail,
+        publishedAt: row?.publishedAt || ep.publishedAt,
+        slug: row?.slug || null,
+        status: row?.status || "draft",
+        habitActionsJson:
+          row?.habitActionsJson && row.habitActionsJson.trim()
+            ? row.habitActionsJson
+            : fallback,
+        linkedBlogSlug: row?.linkedBlogSlug ?? null,
+        linkedChallengeId: row?.linkedChallengeId ?? null,
+        hasShowNotes: row?.status === "published" && !!row?.showNotesHtml,
+        youtubeDescription: row?.youtubeDescription || ep.description || null,
+        id: row?.id ?? null,
+      });
+    }
+
+    for (const row of rows) {
+      if (seen.has(row.videoId)) continue;
+      merged.push({
+        videoId: row.videoId,
+        title: row.title,
+        thumbnail: row.thumbnail,
+        publishedAt: row.publishedAt,
+        slug: row.slug,
+        status: row.status,
+        habitActionsJson:
+          row.habitActionsJson && row.habitActionsJson.trim()
+            ? row.habitActionsJson
+            : fallback,
+        linkedBlogSlug: row.linkedBlogSlug,
+        linkedChallengeId: row.linkedChallengeId,
+        hasShowNotes: row.status === "published" && !!row.showNotesHtml,
+        youtubeDescription: row.youtubeDescription,
+        id: row.id,
+      });
+    }
+
+    return {
+      episodes: merged,
+      defaultActions: DEFAULT_HABIT_ACTIONS,
+    };
+  }),
+
+  /** Patch only habit-related fields (safe for admin quick edit) */
+  adminUpdateHabitMeta: protectedProcedure
+    .input(
+      z.object({
+        videoId: z.string().min(1),
+        title: z.string().optional(),
+        habitActionsJson: z.string().nullable().optional(),
+        linkedChallengeId: z.number().nullable().optional(),
+        linkedBlogSlug: z.string().nullable().optional(),
+        resetToDefaults: z.boolean().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      adminOnly(ctx.user?.role);
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const { ensureEpisodeDefaults, defaultHabitActionsJson } = await import(
+        "../podcastDefaults"
+      );
+
+      const [existing] = await db
+        .select()
+        .from(podcastEpisodes)
+        .where(eq(podcastEpisodes.videoId, input.videoId))
+        .limit(1);
+
+      if (!existing) {
+        await ensureEpisodeDefaults(db, {
+          videoId: input.videoId,
+          title: input.title || input.videoId,
+        });
+      }
+
+      const habitActionsJson = input.resetToDefaults
+        ? defaultHabitActionsJson()
+        : input.habitActionsJson !== undefined
+          ? input.habitActionsJson
+          : undefined;
+
+      const patch: Record<string, unknown> = {};
+      if (input.title !== undefined) patch.title = input.title;
+      if (habitActionsJson !== undefined) patch.habitActionsJson = habitActionsJson;
+      if (input.linkedChallengeId !== undefined)
+        patch.linkedChallengeId = input.linkedChallengeId;
+      if (input.linkedBlogSlug !== undefined) patch.linkedBlogSlug = input.linkedBlogSlug;
+
+      if (Object.keys(patch).length > 0) {
+        await db
+          .update(podcastEpisodes)
+          .set(patch)
+          .where(eq(podcastEpisodes.videoId, input.videoId));
+      }
+
+      return { success: true };
+    }),
+
   adminUpsert: protectedProcedure
     .input(
       z.object({
@@ -247,6 +438,8 @@ export const podcastRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
+      const { defaultHabitActionsJson } = await import("../podcastDefaults");
+
       const [existing] = await db
         .select({ id: podcastEpisodes.id })
         .from(podcastEpisodes)
@@ -264,17 +457,30 @@ export const podcastRouter = router({
         seoTitle: input.seoTitle,
         seoDescription: input.seoDescription,
         transcript: input.transcript,
-        habitActionsJson: input.habitActionsJson ?? null,
+        habitActionsJson:
+          input.habitActionsJson !== undefined
+            ? input.habitActionsJson
+            : existing
+              ? undefined
+              : defaultHabitActionsJson(),
         linkedChallengeId: input.linkedChallengeId ?? null,
         linkedBlogSlug: input.linkedBlogSlug ?? null,
         status: input.status,
       };
 
+      // Remove undefined so we don't wipe existing actions on partial upsert
+      const clean = Object.fromEntries(
+        Object.entries(values).filter(([, v]) => v !== undefined)
+      );
+
       if (existing) {
-        await db.update(podcastEpisodes).set(values).where(eq(podcastEpisodes.id, existing.id));
+        await db.update(podcastEpisodes).set(clean).where(eq(podcastEpisodes.id, existing.id));
         return { id: existing.id, updated: true };
       }
-      const result = await db.insert(podcastEpisodes).values(values);
+      const result = await db.insert(podcastEpisodes).values({
+        ...clean,
+        habitActionsJson: clean.habitActionsJson ?? defaultHabitActionsJson(),
+      } as any);
       return { id: Number(result[0].insertId), updated: false };
     }),
 });

@@ -108,6 +108,21 @@ async function checkAndBroadcastEpisodes() {
     // Found a new episode! 
     console.log(`[YouTube Poller] Found new unbroadcasted episode: ${episode.title}`);
 
+    // Auto-create DB row + default habit actions (admin can edit later)
+    try {
+      const { ensureEpisodeDefaults } = await import("./podcastDefaults");
+      await ensureEpisodeDefaults(db, {
+        videoId: episode.videoId,
+        title: episode.title,
+        thumbnail: episode.thumbnail,
+        publishedAt: episode.publishedAt,
+        youtubeDescription: episode.description,
+      });
+      console.log(`[YouTube Poller] Default habit actions seeded for ${episode.videoId}`);
+    } catch (e) {
+      console.warn("[YouTube Poller] ensureEpisodeDefaults failed:", e);
+    }
+
     // Fetch all podcast subscribers
     const subscribers = await db.select().from(podcastSubscribers);
     
