@@ -510,16 +510,27 @@ async function upsertDiscoveryLeadFromCalendarEvent(
         console.warn("[GCal Sync] Owner email failed (non-fatal):", err);
       }
 
-      // Server-side conversion for Meta (replaces the old /book form Lead event)
+      // Server-side conversion for Meta ads optimization
+      // Schedule = appointment booked (primary for discovery-call campaigns)
+      // Lead kept for funnel reporting / historical campaigns
       try {
-        const { fireMetaPixelLead } = await import("./metaCapi");
+        const { fireMetaPixelSchedule, fireMetaPixelLead } = await import("./metaCapi");
+        const baseId = `gcal_${event.id}_${email}`;
+        await fireMetaPixelSchedule({
+          customerEmail: email,
+          customerName: name,
+          customerPhone: phoneFromDesc,
+          contentName: "Discovery Call Booking (Google Calendar)",
+          eventSourceUrl: "https://mindandbodyresetcoach.com/book",
+          eventId: `${baseId}_schedule`,
+        });
         await fireMetaPixelLead({
           customerEmail: email,
           customerName: name,
           customerPhone: phoneFromDesc,
           contentName: "Discovery Call Booking (Google Calendar)",
           eventSourceUrl: "https://mindandbodyresetcoach.com/book",
-          eventId: `gcal_${event.id}_${email}`,
+          eventId: `${baseId}_lead`,
         });
       } catch (err) {
         console.warn("[GCal Sync] Meta CAPI failed (non-fatal):", err);

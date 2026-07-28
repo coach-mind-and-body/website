@@ -54,17 +54,40 @@ export function useMetaPixel() {
     track("Lead", params as Record<string, unknown>, eventId);
   }
 
-  function trackViewContent(params?: ViewContentParams) {
-    track("ViewContent", params as Record<string, unknown>);
+  /** Meta standard event for appointment booking (discovery / fit calls). */
+  function trackSchedule(
+    params?: {
+      content_name?: string;
+      content_category?: string;
+      value?: number;
+      currency?: string;
+    },
+    eventId?: string
+  ) {
+    track("Schedule", params as Record<string, unknown>, eventId);
+  }
+
+  function trackViewContent(params?: ViewContentParams, eventId?: string) {
+    track("ViewContent", params as Record<string, unknown>, eventId);
   }
 
   function trackInitiateCheckout(params?: Record<string, unknown>, eventId?: string) {
     track("InitiateCheckout", params, eventId);
   }
 
-  function trackPurchase(params?: { value: number; currency: string }, eventId?: string) {
+  function trackPurchase(
+    params?: { value: number; currency: string; content_name?: string; content_category?: string },
+    eventId?: string
+  ) {
     track("Purchase", params as Record<string, unknown>, eventId);
   }
 
-  return { track, trackLead, trackViewContent, trackInitiateCheckout, trackPurchase };
+  return {
+    track,
+    trackLead,
+    trackSchedule,
+    trackViewContent,
+    trackInitiateCheckout,
+    trackPurchase,
+  };
 }

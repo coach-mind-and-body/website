@@ -167,6 +167,45 @@ export async function fireMetaPixelLead(params: MetaLeadParams) {
   }
 }
 
+/** Discovery / fit-call bookings — Meta standard "Schedule" event for ads optimization. */
+export async function fireMetaPixelSchedule(params: MetaLeadParams) {
+  try {
+    const tracking = resolveTracking(params.req, {
+      fbc: params.fbc,
+      fbp: params.fbp,
+    });
+
+    const userData = buildUserData({
+      email: params.customerEmail,
+      name: params.customerName,
+      phone: params.customerPhone,
+      fbc: tracking?.fbc,
+      fbp: tracking?.fbp,
+      clientIp: tracking?.clientIp,
+      userAgent: tracking?.userAgent,
+    });
+
+    await sendMetaEvent({
+      event_name: "Schedule",
+      event_time: Math.floor(Date.now() / 1000),
+      action_source: "website",
+      event_source_url:
+        params.eventSourceUrl ?? tracking?.eventSourceUrl ?? "https://mindandbodyresetcoach.com/book",
+      referrer_url: tracking?.referrerUrl,
+      event_id: params.eventId,
+      user_data: userData,
+      custom_data: {
+        content_name: params.contentName ?? "Discovery Call Booking",
+        content_category: "Coaching",
+        currency: "USD",
+        value: "0.00",
+      },
+    });
+  } catch (err) {
+    console.error("[Meta CAPI] Failed to fire Schedule event:", err);
+  }
+}
+
 export async function fireMetaPixelPurchase(params: MetaPurchaseParams) {
   try {
     const userData = buildUserData({

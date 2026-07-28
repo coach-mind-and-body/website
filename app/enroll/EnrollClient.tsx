@@ -23,8 +23,19 @@ export default function Enroll() {
   const [plan, setPlan] = useState<"full" | "deposit">(planParam === "deposit" ? "deposit" : "full");
   const [paymentDone, setPaymentDone] = useState(false);
 
-  const { trackInitiateCheckout } = useMetaPixel();
+  const { trackInitiateCheckout, trackPurchase, trackViewContent } = useMetaPixel();
   const ga = useGoogleAnalytics();
+
+  useEffect(() => {
+    trackViewContent({
+      content_name: "R.E.C.L.A.I.M. Enroll Page",
+      content_category: "Coaching",
+      content_type: "product",
+      value: PROGRAM.fullPrice,
+      currency: "USD",
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Check for Stripe success redirect
   useEffect(() => {
@@ -50,17 +61,32 @@ export default function Enroll() {
           : storedPlan === "deposit"
             ? "deposit"
             : "full";
-    const value = effectivePlan === "deposit" ? 200 : 597;
+    const value = effectivePlan === "deposit" ? PROGRAM.depositPrice : PROGRAM.fullPrice;
+    const contentName =
+      effectivePlan === "deposit"
+        ? "R.E.C.L.A.I.M. Program - Deposit"
+        : "R.E.C.L.A.I.M. Program - Full Payment";
+
+    // Browser Purchase — same eventId as CAPI when checkout stored it
+    const eventId =
+      (typeof window !== "undefined" && sessionStorage.getItem("meta_checkout_event_id")) ||
+      sessionId;
+    trackPurchase(
+      {
+        value,
+        currency: "USD",
+        content_name: contentName,
+        content_category: "Coaching Program",
+      },
+      eventId
+    );
 
     ga.trackPurchase({
       transaction_id: sessionId,
       value,
       currency: "USD",
       items: [{
-        item_name:
-          effectivePlan === "deposit"
-            ? "R.E.C.L.A.I.M. Program - Deposit"
-            : "R.E.C.L.A.I.M. Program - Full Payment",
+        item_name: contentName,
         price: value,
         currency: "USD",
       }],
@@ -80,26 +106,35 @@ export default function Enroll() {
 
   const handlePay = (overridePlan?: "full" | "deposit") => {
     const p = overridePlan ?? plan;
-    trackInitiateCheckout({
-      content_name: p === "full" ? "R.E.C.L.A.I.M. Program - Full Payment" : "R.E.C.L.A.I.M. Program - Deposit",
-      content_category: "Coaching Program",
-      value: p === "full" ? 597 : 200,
-      currency: "USD",
-      num_items: 1,
-    });
-    ga.trackInitiateCheckout({
-      items: [{
-        item_name: p === "full" ? "R.E.C.L.A.I.M. Program - Full Payment" : "R.E.C.L.A.I.M. Program - Deposit",
-        price: p === "full" ? 597 : 200,
-        currency: "USD",
-      }],
-      value: p === "full" ? 597 : 200,
-      currency: "USD"
-    });
+    const eventId = generateMetaEventId();
     if (typeof window !== "undefined") {
       sessionStorage.setItem("enroll_checkout_plan", p);
+      sessionStorage.setItem("meta_checkout_event_id", eventId);
     }
-    const eventId = generateMetaEventId();
+    const value = p === "full" ? PROGRAM.fullPrice : PROGRAM.depositPrice;
+    const contentName =
+      p === "full"
+        ? "R.E.C.L.A.I.M. Program - Full Payment"
+        : "R.E.C.L.A.I.M. Program - Deposit";
+    trackInitiateCheckout(
+      {
+        content_name: contentName,
+        content_category: "Coaching Program",
+        value,
+        currency: "USD",
+        num_items: 1,
+      },
+      eventId
+    );
+    ga.trackInitiateCheckout({
+      items: [{
+        item_name: contentName,
+        price: value,
+        currency: "USD",
+      }],
+      value,
+      currency: "USD"
+    });
     const meta = getMetaParams();
     createCheckout.mutate({ plan: p, cancelPath: "/enroll", ...meta, eventId });
   };

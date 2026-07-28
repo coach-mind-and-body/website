@@ -6,7 +6,11 @@ import { toast } from "sonner";
 import { BRAND, PROGRAM } from "@shared/brand";
 import { trpc } from "@/lib/trpc";
 import { useMetaPixel } from "@/hooks/useMetaPixel";
-import { getMetaParams, generateMetaEventId } from "@/hooks/useMetaParams";
+import {
+  getMetaParams,
+  generateMetaEventId,
+  captureFbclidFromUrl,
+} from "@/hooks/useMetaParams";
 import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
 
 /** Full rate for value anchor. Intro price = PROGRAM.fullPrice ($597). */
@@ -24,8 +28,27 @@ const LEEANNE_IMG =
 const LIFESTYLE_IMG =
   "https://cdn.mindandbodyresetcoach.com/blog-images/calming-food-noise-drop-the-food-courtroom.jpg";
 
-const BOOK_HREF =
-  "/book?utm_source=meta&utm_medium=paid&utm_campaign=rt_reclaim&utm_content=invite_book";
+/** Build /book URL preserving Meta click IDs + UTMs from the ad click. */
+function buildBookHref(): string {
+  const base =
+    "/book?utm_source=meta&utm_medium=paid&utm_campaign=rt_reclaim&utm_content=invite_book";
+  if (typeof window === "undefined") return base;
+  try {
+    const here = new URLSearchParams(window.location.search);
+    const out = new URLSearchParams();
+    out.set("utm_source", here.get("utm_source") || "meta");
+    out.set("utm_medium", here.get("utm_medium") || "paid");
+    out.set("utm_campaign", here.get("utm_campaign") || "rt_reclaim");
+    out.set("utm_content", here.get("utm_content") || "invite_book");
+    for (const key of ["fbclid", "utm_term", "utm_id"]) {
+      const v = here.get(key);
+      if (v) out.set(key, v);
+    }
+    return `/book?${out.toString()}`;
+  } catch {
+    return base;
+  }
+}
 
 const RECLAIM_MECHANISM = [
   { letter: "R", word: "Reclaim", desc: "ownership of your body and story" },
@@ -132,27 +155,32 @@ function useStripeCheckout() {
   function startCheckout(plan: "full" | "deposit") {
     if (createCheckout.isPending) return;
     setPendingPlan(plan);
+    const eventId = generateMetaEventId();
     if (typeof window !== "undefined") {
       sessionStorage.setItem("enroll_checkout_plan", plan);
+      sessionStorage.setItem("meta_checkout_event_id", eventId);
     }
     const value = plan === "full" ? PROGRAM.fullPrice : PROGRAM.depositPrice;
     const contentName =
       plan === "full"
         ? "R.E.C.L.A.I.M. Program - Full Payment"
         : "R.E.C.L.A.I.M. Program - Deposit";
-    trackInitiateCheckout({
-      content_name: contentName,
-      content_category: "Coaching Program",
-      value,
-      currency: "USD",
-      num_items: 1,
-    });
+    // Browser + CAPI share eventId for dedupe
+    trackInitiateCheckout(
+      {
+        content_name: contentName,
+        content_category: "Coaching Program",
+        value,
+        currency: "USD",
+        num_items: 1,
+      },
+      eventId
+    );
     ga.trackInitiateCheckout({
       items: [{ item_name: contentName, price: value, currency: "USD" }],
       value,
       currency: "USD",
     });
-    const eventId = generateMetaEventId();
     const meta = getMetaParams();
     createCheckout.mutate({
       plan,
@@ -173,10 +201,14 @@ function CtaCard({
   startCheckout,
   isPending,
   pendingPlan,
+  onBookClick,
+  bookHref,
 }: {
   startCheckout: (plan: "full" | "deposit") => void;
   isPending: boolean;
   pendingPlan: "full" | "deposit" | null;
+  onBookClick: () => void;
+  bookHref: string;
 }) {
   return (
     <div className="bg-white p-5 sm:p-8 rounded-2xl shadow-xl border border-gray-100 w-full max-w-md mx-auto">
@@ -212,47 +244,43 @@ function CtaCard({
         ))}
       </ul>
 
+      {/* Primary for warm RT who need a conversation first */}
+      <Link
+        href={bookHref}
+        onClick={onBookClick}
+        className="flex w-full min-h-[52px] sm:min-h-[56px] items-center justify-center px-4 text-center text-base sm:text-lg font-bold bg-[#3a5a3a] hover:bg-[#2d4a2d] text-white rounded-full transition-colors shadow-md mb-2"
+      >
+        Book a Free Fit Call
+      </Link>
+      <p className="text-center text-xs text-gray-500 mb-4 leading-relaxed px-1">
+        30 minutes · no pressure · honest fit conversation
+      </p>
+
       <button
         type="button"
         onClick={() => startCheckout("full")}
         disabled={isPending}
-        className="flex w-full min-h-[52px] sm:min-h-[56px] items-center justify-center px-4 text-center text-base sm:text-lg font-bold bg-[#c9a96e] hover:bg-[#b09055] active:bg-[#a08048] disabled:opacity-60 text-white rounded-full transition-colors shadow-md mb-2"
+        className="flex w-full min-h-[48px] items-center justify-center px-4 text-center text-base font-bold bg-[#c9a96e] hover:bg-[#b09055] active:bg-[#a08048] disabled:opacity-60 text-white rounded-full transition-colors shadow-md mb-2"
       >
         {isPending && pendingPlan === "full"
           ? "Opening secure checkout…"
-          : `Yes — Lock My Intro Spot ($${PROGRAM.fullPrice})`}
+          : `Or lock intro spot — $${PROGRAM.fullPrice}`}
       </button>
-      <p className="text-center text-xs text-gray-500 mb-3 leading-relaxed px-1">
-        Secure Stripe checkout opens next · email collected there
-      </p>
-      <p className="text-center text-xs text-gray-500 mb-1 leading-relaxed px-1">
-        Or hold your seat with ${PROGRAM.depositPrice} today — balance before session one.
+      <p className="text-center text-xs text-gray-500 mb-2 leading-relaxed px-1">
+        Secure Stripe checkout · email collected there
       </p>
       <button
         type="button"
         onClick={() => startCheckout("deposit")}
         disabled={isPending}
-        className="flex w-full min-h-[44px] items-center justify-center px-4 text-sm font-semibold text-[#3a5a3a] underline underline-offset-2 hover:text-[#c9a96e] disabled:opacity-60 mb-5"
+        className="flex w-full min-h-[40px] items-center justify-center px-4 text-sm font-semibold text-[#3a5a3a] underline underline-offset-2 hover:text-[#c9a96e] disabled:opacity-60 mb-4"
       >
         {isPending && pendingPlan === "deposit"
           ? "Opening checkout…"
           : `Start with $${PROGRAM.depositPrice} deposit →`}
       </button>
 
-      <div className="border-t border-gray-100 pt-5">
-        <p className="text-center text-sm text-gray-600 mb-2">Not ready to enroll today?</p>
-        <Link
-          href={BOOK_HREF}
-          className="flex w-full min-h-[48px] sm:min-h-[52px] items-center justify-center px-4 text-base font-bold border-2 border-[#3a5a3a] text-[#3a5a3a] hover:bg-[#f4f8f4] active:bg-[#eaf2ea] rounded-full transition-colors"
-        >
-          Book a Free Fit Call
-        </Link>
-        <p className="text-center text-xs text-gray-500 mt-2 leading-relaxed px-1">
-          30 minutes. If it&apos;s not the right fit, Lee Anne will tell you — no pressure pitch.
-        </p>
-      </div>
-
-      <ul className="mt-5 space-y-2 text-xs sm:text-sm text-gray-500">
+      <ul className="mt-2 space-y-2 text-xs sm:text-sm text-gray-500 border-t border-gray-100 pt-4">
         {[
           "1-on-1 with Lee Anne (not a group program)",
           "Mindset + habits — practical tools that fit real life",
@@ -270,18 +298,30 @@ function CtaCard({
 }
 
 export default function ReclaimInviteClient() {
-  const { trackViewContent } = useMetaPixel();
+  const { trackViewContent, trackSchedule, trackLead } = useMetaPixel();
   const ga = useGoogleAnalytics();
   const checkout = useStripeCheckout();
+  const [bookHref, setBookHref] = useState(
+    "/book?utm_source=meta&utm_medium=paid&utm_campaign=rt_reclaim&utm_content=invite_book"
+  );
 
   useEffect(() => {
-    trackViewContent({
-      content_name: "R.E.C.L.A.I.M. Retargeting Invite",
-      content_category: "Coaching",
-      content_type: "product",
-      value: PROGRAM.fullPrice,
-      currency: "USD",
-    });
+    captureFbclidFromUrl();
+    setBookHref(buildBookHref());
+    const eventId = generateMetaEventId();
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("meta_reclaim_invite_vc_id", eventId);
+    }
+    trackViewContent(
+      {
+        content_name: "R.E.C.L.A.I.M. Retargeting Invite",
+        content_category: "Coaching",
+        content_type: "product",
+        value: PROGRAM.fullPrice,
+        currency: "USD",
+      },
+      eventId
+    );
     ga.trackViewContent({
       item_name: "R.E.C.L.A.I.M. Retargeting Invite",
       item_category: "Coaching",
@@ -290,18 +330,52 @@ export default function ReclaimInviteClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const onBookClick = () => {
+    const eventId = generateMetaEventId();
+    trackSchedule(
+      {
+        content_name: "Discovery Call — from RECLAIM invite",
+        content_category: "Coaching",
+        value: 0,
+        currency: "USD",
+      },
+      eventId
+    );
+    trackLead(
+      {
+        content_name: "Discovery Call CTA — RECLAIM invite",
+        content_category: "Coaching",
+        value: 0,
+        currency: "USD",
+      },
+      `${eventId}_lead`
+    );
+    ga.trackLead({
+      category: "Coaching",
+      label: "RECLAIM Invite Book CTA",
+    });
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-[#FDFBF7]">
-      <div className="fixed bottom-0 inset-x-0 z-50 md:hidden border-t border-gray-200 bg-white/95 backdrop-blur-sm px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+      {/* Mobile sticky: book first (warm traffic), enroll second */}
+      <div className="fixed bottom-0 inset-x-0 z-50 md:hidden border-t border-gray-200 bg-white/95 backdrop-blur-sm px-3 py-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.08)] space-y-2">
+        <Link
+          href={bookHref}
+          onClick={onBookClick}
+          className="flex w-full min-h-[46px] items-center justify-center text-sm font-bold bg-[#3a5a3a] text-white rounded-full shadow-md px-3 text-center"
+        >
+          Book Free Fit Call
+        </Link>
         <button
           type="button"
           onClick={() => checkout.startCheckout("full")}
           disabled={checkout.isPending}
-          className="flex w-full min-h-[48px] items-center justify-center text-sm sm:text-base font-bold bg-[#c9a96e] hover:bg-[#b09055] disabled:opacity-60 text-white rounded-full shadow-md px-3 text-center"
+          className="flex w-full min-h-[40px] items-center justify-center text-xs font-bold bg-[#c9a96e] hover:bg-[#b09055] disabled:opacity-60 text-white rounded-full px-3 text-center"
         >
           {checkout.isPending && checkout.pendingPlan === "full"
             ? "Opening checkout…"
-            : `Lock Intro Spot — $${PROGRAM.fullPrice}`}
+            : `Or enroll — $${PROGRAM.fullPrice}`}
         </button>
       </div>
 
@@ -455,6 +529,8 @@ export default function ReclaimInviteClient() {
                 startCheckout={checkout.startCheckout}
                 isPending={checkout.isPending}
                 pendingPlan={checkout.pendingPlan}
+                onBookClick={onBookClick}
+                bookHref={bookHref}
               />
             </div>
           </div>
@@ -540,6 +616,8 @@ export default function ReclaimInviteClient() {
               startCheckout={checkout.startCheckout}
               isPending={checkout.isPending}
               pendingPlan={checkout.pendingPlan}
+              onBookClick={onBookClick}
+              bookHref={bookHref}
             />
           </div>
 
