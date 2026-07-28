@@ -61,9 +61,13 @@ COPY --from=deps /app/node_modules ./node_modules
 # Copy the rest of the source
 COPY . .
 
-# Run DB schema push (requires DATABASE_URL at build time).
-# This is the same as the old "npm run db:push && npm run build" in railway.toml.
-RUN pnpm run db:push
+# NOTE: Do NOT run `drizzle-kit push` during Docker build.
+# It can hang for many minutes on interactive prompts like "Yes, truncate the table"
+# even with --force, and every deploy re-diffed the whole schema against production.
+# Schema changes are applied via:
+#   - scripts/migrate-habit-ritual.ts (and other migrate scripts)
+#   - drizzle SQL files under drizzle/
+#   - one-off: pnpm run db:push (from a laptop/CI job with a TTY, not image build)
 
 # Build the Next.js app
 RUN pnpm run build
