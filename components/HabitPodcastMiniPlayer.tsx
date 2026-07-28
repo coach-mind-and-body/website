@@ -6,11 +6,9 @@ import { ExternalLink, Headphones, X } from "lucide-react";
 import { useHabitPodcastPlayer } from "@/contexts/HabitPodcastPlayerContext";
 
 /**
- * Mini player above the bottom glass nav when an episode is playing and the
- * user leaves the Podcasts tab. Keeps listening available while tracking habits.
- *
- * True lock-screen / leave-app background play is still best via YouTube —
- * mobile browsers limit silent iframe audio when the app is backgrounded.
+ * Always fixed above the bottom glass nav — including on the Podcasts tab —
+ * so scrolling never moves the player. One iframe keeps playback continuous
+ * when switching between episodes or habit-tracker routes.
  */
 export default function HabitPodcastMiniPlayer() {
   const pathname = usePathname();
@@ -18,29 +16,31 @@ export default function HabitPodcastMiniPlayer() {
 
   if (!nowPlaying) return null;
 
-  // Full player is on the podcasts page
-  if (pathname?.startsWith("/habit-tracker/podcasts")) return null;
-
+  const onPodcastsPage = pathname?.startsWith("/habit-tracker/podcasts") ?? false;
   const youtubeUrl = `https://www.youtube.com/watch?v=${nowPlaying.videoId}`;
 
   return (
     <div
       className="fixed left-0 right-0 z-[55] flex justify-center pointer-events-none"
       style={{
+        // Sit just above the glass bottom nav + safe area — never scrolls with content
         bottom: "max(5.25rem, calc(4.5rem + env(safe-area-inset-bottom, 0px)))",
         paddingLeft: "0.75rem",
         paddingRight: "0.75rem",
+        // iOS: keep compositor layer stable while page scrolls
+        transform: "translateZ(0)",
+        WebkitTransform: "translateZ(0)",
       }}
     >
       <div
         className="pointer-events-auto w-full max-w-md rounded-2xl border border-white/50 shadow-[0_8px_28px_rgba(45,59,45,0.14)] overflow-hidden"
         style={{
-          background: "rgba(250, 240, 238, 0.82)",
+          background: "rgba(250, 240, 238, 0.88)",
           backdropFilter: "blur(18px) saturate(1.3)",
           WebkitBackdropFilter: "blur(18px) saturate(1.3)",
         }}
       >
-        <div className="relative w-full bg-black" style={{ height: 96 }}>
+        <div className="relative w-full bg-black" style={{ height: onPodcastsPage ? 120 : 96 }}>
           <iframe
             key={nowPlaying.videoId}
             src={`https://www.youtube.com/embed/${nowPlaying.videoId}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
@@ -60,13 +60,15 @@ export default function HabitPodcastMiniPlayer() {
               {nowPlaying.title}
             </p>
           </div>
-          <Link
-            href="/habit-tracker/podcasts"
-            className="text-[10px] font-bold px-2 py-1 rounded-full shrink-0"
-            style={{ background: "rgba(45,59,45,0.08)", color: "#2d3b2d" }}
-          >
-            Expand
-          </Link>
+          {!onPodcastsPage && (
+            <Link
+              href="/habit-tracker/podcasts"
+              className="text-[10px] font-bold px-2 py-1 rounded-full shrink-0"
+              style={{ background: "rgba(45,59,45,0.08)", color: "#2d3b2d" }}
+            >
+              Episodes
+            </Link>
+          )}
           <a
             href={youtubeUrl}
             target="_blank"

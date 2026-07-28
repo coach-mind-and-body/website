@@ -126,8 +126,8 @@ export default function HabitTrackerLayout({
           </div>
         </nav>
 
-        {/* Extra bottom padding for glass bar + optional mini player */}
-        <div className="habit-tracker-content pb-36">{children}</div>
+        {/* Extra bottom padding: glass nav + docked mini player when playing */}
+        <div className="habit-tracker-content pb-52">{children}</div>
 
         <HabitTrackerInstallPrompt variant="auto" />
         <HabitPodcastMiniPlayer />

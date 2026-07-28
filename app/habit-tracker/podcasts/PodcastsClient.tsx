@@ -133,15 +133,15 @@ export default function PodcastsClient() {
     const videoId = ep.videoId || ep.id;
     setActiveVideo(videoId);
     play({ videoId, title: ep.title, thumbnail: ep.thumbnail });
-    playerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    // Player stays fixed at bottom — no scroll jump
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-4 pt-8 pb-4">
+    <div className="max-w-2xl mx-auto px-4 pt-6 pb-48">
       <motion.div
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-center mb-6"
+        className="text-center mb-5"
       >
         <div
           className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest mb-3"
@@ -151,90 +151,91 @@ export default function PodcastsClient() {
           Mind &amp; Body Podcast
         </div>
         <h1
-          className="text-3xl md:text-4xl font-bold mb-2"
+          className="text-2xl md:text-3xl font-bold mb-2"
           style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}
         >
           Listen with Lee Anne
         </h1>
-        <p className="text-gray-600 text-sm md:text-base max-w-md mx-auto">
-          Real strategy for midlife health, hormones, food freedom, and consistency —
-          new episodes every other week.
+        <p className="text-gray-600 text-sm max-w-md mx-auto">
+          Player stays docked at the bottom while you browse — pick an episode to play.
         </p>
       </motion.div>
 
-      {/* Player */}
+      {/* Status card — actual iframe lives in fixed mini player at bottom */}
       <div
         ref={playerRef}
-        className="bg-white rounded-3xl shadow-xl overflow-hidden mb-4"
+        className="bg-white rounded-3xl shadow-sm overflow-hidden mb-4 p-4"
         style={{ border: "1px solid #f0e8e4" }}
       >
         {loading ? (
-          <div className="aspect-video w-full flex items-center justify-center bg-[#faf5f5]">
-            <Loader2 className="animate-spin text-[#c9a96e]" size={32} />
+          <div className="flex items-center justify-center py-6">
+            <Loader2 className="animate-spin text-[#c9a96e]" size={28} />
           </div>
-        ) : activeVideo ? (
-          <>
-            <div className="aspect-video w-full bg-black">
-              <iframe
-                key={activeVideo}
-                src={`https://www.youtube.com/embed/${activeVideo}?rel=0&modestbranding=1&playsinline=1${
-                  nowPlaying?.videoId === activeVideo ? "&autoplay=1" : ""
-                }`}
-                title={activeEpisode?.title ?? "Podcast episode"}
-                className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-              />
-            </div>
-            {activeEpisode && (
-              <div className="p-4 md:p-5">
-                <p className="text-xs font-bold uppercase tracking-wide text-[#c9a96e] mb-1">
-                  Now playing
-                </p>
-                <h2 className="font-bold text-lg leading-snug" style={{ color: "#2d3b2d" }}>
-                  {activeEpisode.title}
-                </h2>
-                {activeEpisode.publishedAt && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    {formatDate(activeEpisode.publishedAt)}
-                  </p>
-                )}
-                <div className="flex flex-wrap gap-3 mt-3">
-                  {activeEpisode.slug && activeEpisode.hasShowNotes && (
-                    <Link
-                      href={`/midlife-health-podcast/${activeEpisode.slug}`}
-                      className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#2d3b2d] hover:text-[#c9a96e] transition-colors"
-                    >
-                      Read show notes <ExternalLink size={14} />
-                    </Link>
-                  )}
-                  <a
-                    href={`https://www.youtube.com/watch?v=${activeVideo}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#8a9a8a] hover:text-[#2d3b2d] transition-colors"
-                  >
-                    <Youtube size={14} /> Open in YouTube
-                  </a>
-                </div>
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="aspect-video w-full flex flex-col items-center justify-center bg-[#faf5f5] p-6 text-center">
-            <Youtube size={40} className="mb-3 opacity-40" style={{ color: "#2d3b2d" }} />
-            <p className="text-sm text-gray-500 mb-3">
-              Episodes are loading. You can also watch on YouTube.
+        ) : activeEpisode || nowPlaying ? (
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-[#c9a96e] mb-1">
+              {nowPlaying ? "Playing at bottom" : "Ready"}
             </p>
-            <a
-              href={YOUTUBE_CHANNEL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm font-bold underline"
-              style={{ color: "#c9a96e" }}
-            >
-              Open YouTube channel
-            </a>
+            <h2 className="font-bold text-base leading-snug" style={{ color: "#2d3b2d" }}>
+              {nowPlaying?.title || activeEpisode?.title}
+            </h2>
+            {activeEpisode?.publishedAt && (
+              <p className="text-xs text-gray-500 mt-1">
+                {formatDate(activeEpisode.publishedAt)}
+              </p>
+            )}
+            <div className="flex flex-wrap gap-3 mt-3">
+              {activeEpisode?.slug && activeEpisode.hasShowNotes && (
+                <Link
+                  href={`/midlife-health-podcast/${activeEpisode.slug}`}
+                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#2d3b2d] hover:text-[#c9a96e] transition-colors"
+                >
+                  Read show notes <ExternalLink size={14} />
+                </Link>
+              )}
+              {(activeVideo || nowPlaying?.videoId) && (
+                <a
+                  href={`https://www.youtube.com/watch?v=${nowPlaying?.videoId || activeVideo}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#8a9a8a] hover:text-[#2d3b2d] transition-colors"
+                >
+                  <Youtube size={14} /> Open in YouTube
+                </a>
+              )}
+            </div>
+            {!nowPlaying && activeEpisode && (
+              <button
+                type="button"
+                onClick={() =>
+                  play({
+                    videoId: activeEpisode.videoId || activeEpisode.id,
+                    title: activeEpisode.title,
+                    thumbnail: activeEpisode.thumbnail,
+                  })
+                }
+                className="mt-3 w-full py-3 rounded-full font-bold text-sm text-white"
+                style={{ background: "#2d3b2d" }}
+              >
+                Play in bottom player
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="py-4 text-center">
+            <Youtube size={32} className="mx-auto mb-2 opacity-40" style={{ color: "#2d3b2d" }} />
+            <p className="text-sm text-gray-500">
+              Episodes loading… or{" "}
+              <a
+                href={YOUTUBE_CHANNEL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline font-semibold"
+                style={{ color: "#c9a96e" }}
+              >
+                open YouTube
+              </a>
+            </p>
           </div>
         )}
       </div>
