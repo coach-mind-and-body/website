@@ -35,6 +35,13 @@ const PILLARS = [
     href: "/habit-tracker/fitness",
     points: ["Simple workout log", "Video library on-device", "Ties into your habit progress"],
   },
+  {
+    name: "Podcast",
+    title: "Lee Anne's midlife podcast",
+    body: "Listen to Mind and Body Reset episodes right in the app — hormones, food freedom, GLP-1s, and consistency for women 40+.",
+    href: "/habit-tracker/podcasts",
+    points: ["In-app episode player", "Full show archive", "New episodes every other week"],
+  },
 ];
 
 const WHY_US = [

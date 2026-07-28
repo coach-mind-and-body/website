@@ -5,12 +5,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { Check, Info, Calendar as CalendarIcon, Sparkles, Flame, Bell, BellRing, Target, LogOut, Settings, Plus, Megaphone } from "lucide-react";
+import { Check, Info, Calendar as CalendarIcon, Sparkles, Flame, Target, Plus, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format, subDays, addDays } from "date-fns";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import Link from "next/link";
-import { useWebPush } from "@/hooks/useWebPush";
 import { getDeviceId } from "@/lib/deviceId";
 import { todayMountainDateStr, dateToMountainDateStr } from "@/lib/mountainTime";
 import { calendarDateStr, parseCalendarDate, calculateCurrentStreak } from "@/lib/habitStreak";
@@ -37,8 +36,7 @@ export default function HabitTrackerClient() {
     keywords: "habit tracker, daily habits, wellness tracker, mind body reset"
   });
 
-  const { user, isAuthenticated, logout } = useAuth();
-  const { isSupported, isSubscribed, isSubscribing, subscribeToPush } = useWebPush();
+  const { isAuthenticated } = useAuth();
   
   // Data State
   const [localHabits, setLocalHabits] = useState<LocalHabit[]>([]);
@@ -52,7 +50,6 @@ export default function HabitTrackerClient() {
   const [currentDate, setCurrentDate] = useState(() => parseCalendarDate(todayMountainDateStr()));
   const [selectedDate, setSelectedDate] = useState(() => parseCalendarDate(todayMountainDateStr()));
   const [isNotesExpanded, setIsNotesExpanded] = useState(false); // For expanding/collapsing daily notes
-  const [isSettingsExpanded, setIsSettingsExpanded] = useState(false);
   const [optimisticLogs, setOptimisticLogs] = useState<LocalLog[]>([]);
   const numericDebounceRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const [showImportPrompt, setShowImportPrompt] = useState(false);
@@ -117,14 +114,6 @@ export default function HabitTrackerClient() {
     onError: (e) => toast.error(e.message)
   });
 
-  const toggleShareHabitsMutation = trpc.habit.toggleShareHabits.useMutation({
-    onSuccess: () => {
-      toast.success("Privacy settings updated");
-      refetchUserSync();
-    },
-    onError: (e) => toast.error(e.message)
-  });
-  
   // Initialize Local Storage and Mount
   useEffect(() => {
     setIsMounted(true);
@@ -942,104 +931,6 @@ export default function HabitTrackerClient() {
             </AnimatePresence>
           </div>
 
-          {/* Account & Preferences Section */}
-          <div className="mt-4 pt-4 border-t" style={{ borderColor: "#f0e8e4" }}>
-            <button 
-              onClick={() => setIsSettingsExpanded(!isSettingsExpanded)}
-              className="w-full flex items-center justify-between hover:bg-[#faf5f5] p-3 rounded-2xl transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <Settings size={20} style={{ color: "#c9a96e" }} />
-                <h3 className="font-bold text-lg" style={{ color: "#2d3b2d" }}>
-                  Account & Settings
-                </h3>
-              </div>
-              <div className={`transition-transform duration-300 ${isSettingsExpanded ? 'rotate-180' : ''}`} style={{ color: "#8a9a8a" }}>
-                <svg width="14" height="8" viewBox="0 0 14 8" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 1L7 7L13 1"/></svg>
-              </div>
-            </button>
-            
-            <AnimatePresence>
-              {isSettingsExpanded && (
-                <motion.div 
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="overflow-hidden"
-                >
-                  <div className="pt-4 px-3 pb-2 space-y-4">
-                    
-                    {/* Push Notifications Toggle */}
-                    <div className="flex items-center justify-between p-4 rounded-xl border" style={{ borderColor: "#f0e8e4", background: "#fcfaf9" }}>
-                      <div className="flex items-center gap-3">
-                        {isSubscribed ? <BellRing size={20} style={{ color: "#c9a96e" }} /> : <Bell size={20} style={{ color: "#8a9a8a" }} />}
-                        <div>
-                          <p className="font-bold text-sm" style={{ color: "#2d3b2d" }}>Challenge Notifications</p>
-                          <p className="text-xs text-gray-500">Get notified instantly when a new challenge drops.</p>
-                        </div>
-                      </div>
-                      <Button 
-                        size="sm"
-                        variant={isSubscribed ? "outline" : "default"}
-                        disabled={isSubscribed || isSubscribing || !isSupported}
-                        onClick={subscribeToPush}
-                        className="rounded-full"
-                        style={!isSubscribed ? { background: "#c9a96e", color: "white" } : { borderColor: "#c9a96e", color: "#c9a96e" }}
-                      >
-                        {isSubscribed ? "Enabled" : "Enable"}
-                      </Button>
-                    </div>
-
-                    {/* Share Habits Toggle */}
-                    {isAuthenticated && (
-                      <div className="flex items-center justify-between p-4 rounded-xl border" style={{ borderColor: "#f0e8e4", background: "#fcfaf9" }}>
-                        <div className="flex items-center gap-3">
-                          <Target size={20} style={{ color: "#c9a96e" }} />
-                          <div>
-                            <p className="font-bold text-sm" style={{ color: "#2d3b2d" }}>Coach Accountability</p>
-                            <p className="text-xs text-gray-500">Allow coaches to view your progress and notes.</p>
-                          </div>
-                        </div>
-                        <Button 
-                          size="sm"
-                          variant={userSyncData?.shareHabitsWithCoach ? "default" : "outline"}
-                          disabled={toggleShareHabitsMutation.isPending}
-                          onClick={() => toggleShareHabitsMutation.mutate({ share: !userSyncData?.shareHabitsWithCoach })}
-                          className="rounded-full"
-                          style={userSyncData?.shareHabitsWithCoach ? { background: "#c9a96e", color: "white" } : { borderColor: "#c9a96e", color: "#c9a96e" }}
-                        >
-                          {userSyncData?.shareHabitsWithCoach ? "Shared" : "Private"}
-                        </Button>
-                      </div>
-                    )}
-
-                    {/* Account Sync */}
-                    <div className="flex items-center justify-between p-4 rounded-xl border" style={{ borderColor: "#f0e8e4", background: "#fcfaf9" }}>
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-200">
-                          {user?.email ? <span className="font-bold text-gray-600">{user.email.charAt(0).toUpperCase()}</span> : <span className="text-gray-400">?</span>}
-                        </div>
-                        <div>
-                          <p className="font-bold text-sm" style={{ color: "#2d3b2d" }}>{isAuthenticated ? "Cloud Sync Active" : "Local Device Only"}</p>
-                          <p className="text-xs text-gray-500 truncate max-w-[150px] md:max-w-xs">{isAuthenticated ? user?.email : "Sign in to sync across devices"}</p>
-                        </div>
-                      </div>
-                      {isAuthenticated ? (
-                        <Button size="sm" variant="ghost" onClick={logout} className="text-gray-500 hover:text-red-500">
-                          <LogOut size={16} className="mr-1" /> Sign Out
-                        </Button>
-                      ) : (
-                        <Link href="/login?returnTo=/habit-tracker">
-                          <Button size="sm" className="rounded-full" style={{ background: "#2d3b2d", color: "white" }}>Sign In</Button>
-                        </Link>
-                      )}
-                    </div>
-
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
         </div>
         </div>
       )}
