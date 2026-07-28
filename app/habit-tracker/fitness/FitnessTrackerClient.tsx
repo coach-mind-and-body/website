@@ -1,16 +1,74 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import InteractiveVideoPlayer from "@/components/InteractiveVideoPlayer";
 import { motion, AnimatePresence } from "framer-motion";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { Calendar as CalendarIcon, Plus, Trash2, Dumbbell, PlayCircle, Info, ArrowLeft, CheckCircle, Filter } from "lucide-react";
+import {
+  Calendar as CalendarIcon,
+  Trash2,
+  Dumbbell,
+  PlayCircle,
+  Info,
+  ArrowLeft,
+  CheckCircle,
+  Filter,
+  Footprints,
+  Flame,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { format, subDays, addDays, isSameDay } from "date-fns";
+import { format, addDays } from "date-fns";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import Link from "next/link";
+import { todayMountainDateStr } from "@/lib/mountainTime";
+import { calendarDateStr, parseCalendarDate } from "@/lib/habitStreak";
+
+const LOCAL_KEY = "mbr_fitness_logs";
+
+type LocalFitnessLog = {
+  id: number;
+  dateStr: string;
+  exerciseName: string;
+  sets: number;
+  reps: number;
+  weight: number;
+  durationMinutes: number;
+};
+
+const QUICK_CHIPS: {
+  id: string;
+  label: string;
+  name: string;
+  minutes: number;
+  icon: "walk" | "strength" | "stretch" | "other";
+}[] = [
+  { id: "walk10", label: "Walk 10m", name: "Walk", minutes: 10, icon: "walk" },
+  { id: "walk20", label: "Walk 20m", name: "Walk", minutes: 20, icon: "walk" },
+  { id: "strength", label: "Strength", name: "Strength training", minutes: 20, icon: "strength" },
+  { id: "stretch", label: "Stretch / yoga", name: "Stretch / yoga", minutes: 10, icon: "stretch" },
+  { id: "other", label: "Other", name: "Movement", minutes: 15, icon: "other" },
+];
+
+function loadLocalLogs(): LocalFitnessLog[] {
+  try {
+    const raw = localStorage.getItem(LOCAL_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalLogs(logs: LocalFitnessLog[]) {
+  localStorage.setItem(LOCAL_KEY, JSON.stringify(logs));
+}
+
+function addDaysToDateStr(dateStr: string, delta: number): string {
+  return calendarDateStr(addDays(parseCalendarDate(dateStr), delta));
+}
 
 export default function FitnessTrackerClient() {
   usePageTitle({
@@ -20,50 +78,58 @@ export default function FitnessTrackerClient() {
 
   const { isAuthenticated } = useAuth();
   const utils = trpc.useUtils();
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const dateStr = format(currentDate, "yyyy-MM-dd");
 
+  const [dateStr, setDateStr] = useState(todayMountainDateStr);
   const [activeTab, setActiveTab] = useState<"log" | "videos">("log");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [selectedVideo, setSelectedVideo] = useState<any>(null);
-
-  const { data: logs, refetch: refetchLogs } = trpc.fitness.getLogs.useQuery(
-    { dateStr },
-    { enabled: isAuthenticated && activeTab === "log" }
-  );
-
-  const { data: videos } = trpc.fitness.getVideos.useQuery(undefined, {
-    enabled: activeTab === "videos" || !!selectedVideo,
-  });
-
-  const addLogMutation = trpc.fitness.addLog.useMutation({
-    onSuccess: () => {
-      toast.success("Workout logged!");
-      refetchLogs();
-      utils.habit.getUserHabits.invalidate();
-      utils.challenges.getUserChallenges.invalidate();
-      setIsAdding(false);
-      resetForm();
-    },
-    onError: (e) => toast.error(e.message)
-  });
-
-  const deleteLogMutation = trpc.fitness.deleteLog.useMutation({
-    onSuccess: () => {
-      toast.success("Log deleted!");
-      refetchLogs();
-      utils.habit.getUserHabits.invalidate();
-      utils.challenges.getUserChallenges.invalidate();
-    },
-    onError: (e) => toast.error(e.message)
-  });
+  const [localLogs, setLocalLogs] = useState<LocalFitnessLog[]>([]);
+  const [mounted, setMounted] = useState(false);
 
   const [isAdding, setIsAdding] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   const [exerciseName, setExerciseName] = useState("");
   const [sets, setSets] = useState("");
   const [reps, setReps] = useState("");
   const [weight, setWeight] = useState("");
   const [durationMinutes, setDurationMinutes] = useState("");
+
+  useEffect(() => {
+    setMounted(true);
+    setLocalLogs(loadLocalLogs());
+  }, []);
+
+  const { data: serverLogs, refetch: refetchLogs } = trpc.fitness.getLogs.useQuery(
+    { dateStr },
+    { enabled: isAuthenticated && activeTab === "log" }
+  );
+
+  const { data: videos } = trpc.fitness.getVideos.useQuery(undefined, {
+    enabled: activeTab === "videos" || !!selectedVideo || activeTab === "log",
+  });
+
+  const addLogMutation = trpc.fitness.addLog.useMutation({
+    onSuccess: () => {
+      toast.success("Logged — movement counts!");
+      refetchLogs();
+      utils.habit.getUserHabits.invalidate();
+      utils.challenges.getUserChallenges.invalidate();
+      setIsAdding(false);
+      setShowDetails(false);
+      resetForm();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const deleteLogMutation = trpc.fitness.deleteLog.useMutation({
+    onSuccess: () => {
+      toast.success("Removed");
+      refetchLogs();
+      utils.habit.getUserHabits.invalidate();
+      utils.challenges.getUserChallenges.invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
 
   const resetForm = () => {
     setExerciseName("");
@@ -73,25 +139,111 @@ export default function FitnessTrackerClient() {
     setDurationMinutes("");
   };
 
-  const handleSave = () => {
-    if (!exerciseName) return toast.error("Please enter an exercise name");
-    addLogMutation.mutate({
-      dateStr,
-      exerciseName,
-      sets: parseInt(sets) || 1,
-      reps: parseInt(reps) || 0,
-      weight: parseInt(weight) || 0,
-      durationMinutes: parseInt(durationMinutes) || 0,
+  const dayLogs: Array<{
+    id: number;
+    exerciseName: string;
+    sets: number;
+    reps: number;
+    weight: number;
+    durationMinutes: number;
+    local?: boolean;
+  }> = useMemo(() => {
+    if (isAuthenticated) {
+      return (serverLogs || []).map((l) => ({
+        id: l.id,
+        exerciseName: l.exerciseName,
+        sets: l.sets,
+        reps: l.reps,
+        weight: l.weight,
+        durationMinutes: l.durationMinutes,
+      }));
+    }
+    return localLogs
+      .filter((l) => l.dateStr === dateStr)
+      .map((l) => ({ ...l, local: true }));
+  }, [isAuthenticated, serverLogs, localLogs, dateStr]);
+
+  const minutesToday = dayLogs.reduce((s, l) => s + (l.durationMinutes || 0), 0);
+  const isToday = dateStr === todayMountainDateStr();
+
+  const saveLog = useCallback(
+    (payload: {
+      exerciseName: string;
+      sets?: number;
+      reps?: number;
+      weight?: number;
+      durationMinutes?: number;
+    }) => {
+      const body = {
+        dateStr,
+        exerciseName: payload.exerciseName,
+        sets: payload.sets ?? 1,
+        reps: payload.reps ?? 0,
+        weight: payload.weight ?? 0,
+        durationMinutes: payload.durationMinutes ?? 0,
+      };
+
+      if (isAuthenticated) {
+        addLogMutation.mutate(body);
+        return;
+      }
+
+      // Guest: local device log
+      const next: LocalFitnessLog = {
+        id: Date.now(),
+        ...body,
+      };
+      const updated = [next, ...loadLocalLogs()];
+      saveLocalLogs(updated);
+      setLocalLogs(updated);
+      toast.success("Logged on this device — sign in to sync");
+      setIsAdding(false);
+      setShowDetails(false);
+      resetForm();
+    },
+    [dateStr, isAuthenticated, addLogMutation]
+  );
+
+  const handleQuickChip = (chip: (typeof QUICK_CHIPS)[number]) => {
+    if (chip.id === "other") {
+      setIsAdding(true);
+      setShowDetails(false);
+      setExerciseName("");
+      setDurationMinutes("15");
+      return;
+    }
+    saveLog({
+      exerciseName: chip.name,
+      durationMinutes: chip.minutes,
+      sets: 1,
+      reps: 0,
+      weight: 0,
     });
   };
 
-  const handleMarkWorkoutComplete = (video: any) => {
-    if (!isAuthenticated) {
-      toast.error("Please sign in to log workouts.");
+  const handleSaveDetailed = () => {
+    if (!exerciseName.trim()) return toast.error("What did you do?");
+    saveLog({
+      exerciseName: exerciseName.trim(),
+      sets: parseInt(sets, 10) || 1,
+      reps: parseInt(reps, 10) || 0,
+      weight: parseInt(weight, 10) || 0,
+      durationMinutes: parseInt(durationMinutes, 10) || 0,
+    });
+  };
+
+  const handleDelete = (id: number) => {
+    if (isAuthenticated) {
+      deleteLogMutation.mutate({ id, dateStr });
       return;
     }
-    const todayStr = format(new Date(), "yyyy-MM-dd");
-    // Estimate duration from intervals if available
+    const updated = loadLocalLogs().filter((l) => l.id !== id);
+    saveLocalLogs(updated);
+    setLocalLogs(updated);
+    toast.success("Removed");
+  };
+
+  const handleMarkWorkoutComplete = (video: any) => {
     let estimatedDuration = 0;
     try {
       if (video.intervalsJson) {
@@ -101,77 +253,122 @@ export default function FitnessTrackerClient() {
           estimatedDuration = Math.ceil(lastInterval.endTime / 60);
         }
       }
-    } catch {}
+    } catch {
+      /* ignore */
+    }
 
-    addLogMutation.mutate({
-      dateStr: todayStr,
-      exerciseName: `${video.title} (${video.category})`,
-      sets: 1,
-      reps: 0,
-      weight: 0,
-      durationMinutes: estimatedDuration || 30,
-    });
-    toast.success("Workout marked as complete & logged!");
+    const today = todayMountainDateStr();
+    // Temporarily log for today even if browsing a past date
+    const prev = dateStr;
+    if (isAuthenticated) {
+      addLogMutation.mutate({
+        dateStr: today,
+        exerciseName: `${video.title} (${video.category})`,
+        sets: 1,
+        reps: 0,
+        weight: 0,
+        durationMinutes: estimatedDuration || 30,
+      });
+    } else {
+      const next: LocalFitnessLog = {
+        id: Date.now(),
+        dateStr: today,
+        exerciseName: `${video.title} (${video.category})`,
+        sets: 1,
+        reps: 0,
+        weight: 0,
+        durationMinutes: estimatedDuration || 30,
+      };
+      const updated = [next, ...loadLocalLogs()];
+      saveLocalLogs(updated);
+      setLocalLogs(updated);
+      toast.success("Workout logged on this device");
+    }
     setSelectedVideo(null);
     setActiveTab("log");
+    setDateStr(today);
+    void prev;
   };
 
   const extractYouTubeId = (url: string) => {
-    const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+    const match = url.match(
+      /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i
+    );
     return match ? match[1] : null;
   };
 
-  // Get unique categories for filter
-  const categories = Array.from(new Set(videos?.map(v => v.category) || []));
+  const categories = Array.from(new Set(videos?.map((v) => v.category) || []));
+  const filteredVideos =
+    selectedCategory === "All"
+      ? videos || []
+      : (videos || []).filter((v) => v.category === selectedCategory);
+  const featuredVideos = (videos || []).slice(0, 2);
 
-  // Filter videos by selected category
-  const filteredVideos = selectedCategory === "All"
-    ? videos || []
-    : (videos || []).filter(v => v.category === selectedCategory);
+  if (!mounted) {
+    return <div className="min-h-screen bg-[#faf5f5]" />;
+  }
 
   // --- Detailed Video Workout View ---
   if (selectedVideo) {
     return (
-      <div className="min-h-screen text-gray-900 pb-20" style={{ background: "#faf5f5" }}>
-        <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 space-y-6">
-          {/* Back Button */}
+      <div className="min-h-screen text-gray-900 pb-28" style={{ background: "#faf5f5" }}>
+        <div className="max-w-lg mx-auto px-4 py-6 space-y-4">
           <button
             onClick={() => setSelectedVideo(null)}
             className="flex items-center gap-2 text-sm font-bold hover:opacity-70 transition-opacity"
             style={{ color: "#c9a96e" }}
           >
-            <ArrowLeft size={18} /> Back to Video Library
+            <ArrowLeft size={18} /> Back
           </button>
 
-          {/* Video Player */}
-          <div className="bg-white rounded-3xl overflow-hidden shadow-lg border" style={{ borderColor: "#f0e8e4" }}>
-            <InteractiveVideoPlayer videoUrl={selectedVideo.videoUrl} intervalsJson={selectedVideo.intervalsJson} />
+          <div
+            className="bg-white rounded-3xl overflow-hidden shadow-lg border"
+            style={{ borderColor: "#f0e8e4" }}
+          >
+            <InteractiveVideoPlayer
+              videoUrl={selectedVideo.videoUrl}
+              intervalsJson={selectedVideo.intervalsJson}
+            />
           </div>
 
-          {/* Video Info */}
-          <div className="bg-white rounded-3xl p-6 shadow-sm border" style={{ borderColor: "#f0e8e4" }}>
-            <span className="inline-block px-3 py-1 rounded-full text-xs font-bold mb-3" style={{ background: "#f0e8e4", color: "#2d3b2d" }}>
+          <div
+            className="bg-white rounded-3xl p-5 shadow-sm border"
+            style={{ borderColor: "#f0e8e4" }}
+          >
+            <span
+              className="inline-block px-3 py-1 rounded-full text-xs font-bold mb-2"
+              style={{ background: "#f0e8e4", color: "#2d3b2d" }}
+            >
               {selectedVideo.category}
             </span>
-            <h2 className="text-2xl font-bold mb-2" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
+            <h2
+              className="text-xl font-bold mb-2"
+              style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}
+            >
               {selectedVideo.title}
             </h2>
             {selectedVideo.description && (
-              <p className="text-gray-600 leading-relaxed">{selectedVideo.description}</p>
+              <p className="text-gray-600 text-sm leading-relaxed">{selectedVideo.description}</p>
             )}
           </div>
 
-          {/* Mark Complete Button */}
-          {isAuthenticated && (
-            <Button
-              onClick={() => handleMarkWorkoutComplete(selectedVideo)}
-              disabled={addLogMutation.isPending}
-              className="w-full rounded-2xl py-6 text-lg font-bold shadow-lg hover:shadow-xl transition-all"
-              style={{ background: "#2d3b2d", color: "white" }}
-            >
-              <CheckCircle size={24} className="mr-3" />
-              {addLogMutation.isPending ? "Logging..." : "Mark Workout as Complete"}
-            </Button>
+          <Button
+            onClick={() => handleMarkWorkoutComplete(selectedVideo)}
+            disabled={addLogMutation.isPending}
+            className="w-full rounded-2xl py-6 text-base font-bold shadow-lg"
+            style={{ background: "#2d3b2d", color: "white" }}
+          >
+            <CheckCircle size={22} className="mr-2" />
+            {addLogMutation.isPending ? "Logging…" : "Mark complete"}
+          </Button>
+          {!isAuthenticated && (
+            <p className="text-center text-xs text-gray-400">
+              Saves on this device.{" "}
+              <Link href="/login?returnTo=/habit-tracker/fitness" className="underline font-semibold">
+                Sign in
+              </Link>{" "}
+              to sync.
+            </p>
           )}
         </div>
       </div>
@@ -179,185 +376,407 @@ export default function FitnessTrackerClient() {
   }
 
   return (
-    <div className="min-h-screen text-gray-900 pb-20" style={{ background: "#faf5f5" }}>
-      {!isAuthenticated && activeTab === "log" && (
-        <div className="py-2 px-4 text-center text-sm flex items-center justify-center gap-2 relative" style={{ background: "#c9a96e", color: "white" }}>
-          <Info size={16} />
-          <span>You must <Link href="/login?returnTo=/habit-tracker/fitness" className="underline font-bold">Sign in</Link> to log workouts.</span>
+    <div className="min-h-screen text-gray-900 pb-28" style={{ background: "#faf5f5" }}>
+      {!isAuthenticated && (
+        <div
+          className="py-2 px-4 text-center text-xs flex items-center justify-center gap-2"
+          style={{ background: "#f0e8e4", color: "#2d3b2d" }}
+        >
+          <Info size={14} />
+          <span>
+            Tracking on this device.{" "}
+            <Link href="/login?returnTo=/habit-tracker/fitness" className="underline font-bold">
+              Sign in
+            </Link>{" "}
+            to sync &amp; link habits.
+          </span>
         </div>
       )}
 
-      {/* Header */}
-      <div className="pt-8 pb-4 px-6 max-w-4xl mx-auto text-center">
-        <h1 className="text-3xl md:text-4xl font-bold" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
-          Fitness
-        </h1>
-      </div>
-
-      <div className="max-w-4xl mx-auto px-4 md:px-6 space-y-6">
-        
-        {/* Tabs */}
-        <div className="flex bg-white rounded-full p-1 shadow-sm border" style={{ borderColor: "#f0e8e4" }}>
-          <button 
-            onClick={() => setActiveTab("log")}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-full text-sm font-bold transition-all ${activeTab === "log" ? "shadow-md" : "text-gray-500 hover:bg-gray-50"}`}
-            style={{ background: activeTab === "log" ? "#2d3b2d" : "transparent", color: activeTab === "log" ? "white" : undefined }}
+      {/* Compact ritual header */}
+      <div className="pt-5 pb-3 px-4 max-w-lg mx-auto">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#8a9a8a]">
+              {isToday ? "Today" : format(parseCalendarDate(dateStr), "MMM d")} · Fitness
+            </p>
+            <h1
+              className="text-2xl font-bold"
+              style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}
+            >
+              What did you do?
+            </h1>
+          </div>
+          <div
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-bold shrink-0"
+            style={{
+              background: minutesToday > 0 ? "linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%)" : "#fcfaf9",
+              color: minutesToday > 0 ? "#d97706" : "#8a9a8a",
+              border: minutesToday > 0 ? "1px solid #ffda6a" : "1px solid #f0e8e4",
+            }}
           >
-            <Dumbbell size={18} /> My Log
-          </button>
-          <button 
-            onClick={() => setActiveTab("videos")}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-full text-sm font-bold transition-all ${activeTab === "videos" ? "shadow-md" : "text-gray-500 hover:bg-gray-50"}`}
-            style={{ background: activeTab === "videos" ? "#2d3b2d" : "transparent", color: activeTab === "videos" ? "white" : undefined }}
-          >
-            <PlayCircle size={18} /> Video Library
-          </button>
+            <Flame
+              size={16}
+              style={{ fill: minutesToday > 0 ? "#d97706" : "transparent" }}
+            />
+            {minutesToday}m
+          </div>
         </div>
 
+        <div className="flex bg-white rounded-full p-1 shadow-sm border mt-4" style={{ borderColor: "#f0e8e4" }}>
+          <button
+            onClick={() => setActiveTab("log")}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-xs font-bold transition-all ${
+              activeTab === "log" ? "shadow-md" : "text-gray-500"
+            }`}
+            style={{
+              background: activeTab === "log" ? "#2d3b2d" : "transparent",
+              color: activeTab === "log" ? "white" : undefined,
+            }}
+          >
+            <Dumbbell size={16} /> Log
+          </button>
+          <button
+            onClick={() => setActiveTab("videos")}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-xs font-bold transition-all ${
+              activeTab === "videos" ? "shadow-md" : "text-gray-500"
+            }`}
+            style={{
+              background: activeTab === "videos" ? "#2d3b2d" : "transparent",
+              color: activeTab === "videos" ? "white" : undefined,
+            }}
+          >
+            <PlayCircle size={16} /> Videos
+          </button>
+        </div>
+      </div>
+
+      <div className="max-w-lg mx-auto px-4 space-y-4">
         {/* LOG TAB */}
         {activeTab === "log" && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-            
-            {/* Date Navigator */}
-            <div className="flex items-center justify-between bg-white p-4 rounded-3xl shadow-sm border" style={{ borderColor: "#f0e8e4" }}>
-              <Button variant="ghost" onClick={() => setCurrentDate(subDays(currentDate, 1))} className="rounded-full hover:opacity-80 transition-opacity" style={{ color: "#c9a96e" }}>
-                &larr; Prev
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+            {/* Date strip */}
+            <div
+              className="flex items-center justify-between bg-white p-3 rounded-2xl shadow-sm border"
+              style={{ borderColor: "#f0e8e4" }}
+            >
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setDateStr(addDaysToDateStr(dateStr, -1))}
+                className="rounded-full"
+                style={{ color: "#c9a96e" }}
+              >
+                ←
               </Button>
-              <div className="font-bold text-lg flex items-center gap-2" style={{ color: "#2d3b2d" }}>
-                <CalendarIcon size={20} style={{ color: "#c9a96e" }} />
-                {isSameDay(currentDate, new Date()) ? "Today" : format(currentDate, "MMM d, yyyy")}
+              <div className="font-bold text-sm flex items-center gap-2" style={{ color: "#2d3b2d" }}>
+                <CalendarIcon size={16} style={{ color: "#c9a96e" }} />
+                {isToday ? "Today" : format(parseCalendarDate(dateStr), "MMM d, yyyy")}
               </div>
-              <Button variant="ghost" onClick={() => setCurrentDate(addDays(currentDate, 1))} className="rounded-full hover:opacity-80 transition-opacity" style={{ color: "#c9a96e" }}>
-                Next &rarr;
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setDateStr(addDaysToDateStr(dateStr, 1))}
+                className="rounded-full"
+                style={{ color: "#c9a96e" }}
+              >
+                →
               </Button>
             </div>
 
-            {!isAdding && isAuthenticated && (
-              <Button 
-                onClick={() => setIsAdding(true)} 
-                className="w-full rounded-2xl py-6 text-lg font-bold shadow-md hover:shadow-lg transition-all"
-                style={{ background: "#c9a96e", color: "white" }}
+            {/* Quick chips */}
+            <div
+              className="bg-white rounded-3xl p-4 border shadow-sm"
+              style={{ borderColor: "#f0e8e4" }}
+            >
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#8a9a8a] mb-3">
+                One-tap log
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {QUICK_CHIPS.map((chip) => (
+                  <button
+                    key={chip.id}
+                    type="button"
+                    disabled={addLogMutation.isPending}
+                    onClick={() => handleQuickChip(chip)}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-full text-sm font-bold border transition-all active:scale-95 hover:shadow-sm"
+                    style={{
+                      borderColor: "#f0e8e4",
+                      background: "#faf5f5",
+                      color: "#2d3b2d",
+                    }}
+                  >
+                    {chip.icon === "walk" ? (
+                      <Footprints size={14} style={{ color: "#c9a96e" }} />
+                    ) : (
+                      <Dumbbell size={14} style={{ color: "#c9a96e" }} />
+                    )}
+                    {chip.label}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAdding(true);
+                  setShowDetails(true);
+                }}
+                className="mt-3 text-xs font-bold text-[#8a9a8a] hover:text-[#2d3b2d]"
               >
-                <Plus size={24} className="mr-2" /> Log Exercise
-              </Button>
-            )}
+                + More details (sets / reps / custom)
+              </button>
+            </div>
 
             <AnimatePresence>
               {isAdding && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="bg-white rounded-3xl shadow-lg border p-6 overflow-hidden" 
+                  className="bg-white rounded-3xl shadow-lg border p-5 overflow-hidden"
                   style={{ borderColor: "#f0e8e4" }}
                 >
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="font-bold text-xl" style={{ color: "#2d3b2d" }}>Log Exercise</h3>
-                    <button onClick={() => setIsAdding(false)} className="text-gray-400 hover:text-gray-600">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-bold text-lg" style={{ color: "#2d3b2d" }}>
+                      Log movement
+                    </h3>
+                    <button
+                      onClick={() => {
+                        setIsAdding(false);
+                        setShowDetails(false);
+                      }}
+                      className="text-gray-400 hover:text-gray-600 text-sm font-bold"
+                    >
+                      Close
                     </button>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     <div>
-                      <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Exercise Name</label>
-                      <input type="text" value={exerciseName} onChange={e => setExerciseName(e.target.value)} className="w-full p-3 rounded-xl border focus:outline-none focus:ring-1 focus:ring-[#c9a96e]" placeholder="e.g. Back Squat, 30 Min Run" />
+                      <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">
+                        What did you do?
+                      </label>
+                      <input
+                        type="text"
+                        value={exerciseName}
+                        onChange={(e) => setExerciseName(e.target.value)}
+                        className="w-full p-3 rounded-xl border focus:outline-none focus:ring-1 focus:ring-[#c9a96e]"
+                        placeholder="e.g. Walk, pilates, yard work"
+                        autoFocus
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">
+                        Minutes (optional)
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={durationMinutes}
+                        onChange={(e) => setDurationMinutes(e.target.value)}
+                        className="w-full p-3 rounded-xl border focus:outline-none focus:ring-1 focus:ring-[#c9a96e]"
+                        placeholder="15"
+                      />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Sets</label>
-                        <input type="number" value={sets} onChange={e => setSets(e.target.value)} className="w-full p-3 rounded-xl border focus:outline-none focus:ring-1 focus:ring-[#c9a96e]" placeholder="1" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Reps</label>
-                        <input type="number" value={reps} onChange={e => setReps(e.target.value)} className="w-full p-3 rounded-xl border focus:outline-none focus:ring-1 focus:ring-[#c9a96e]" placeholder="0" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Weight (lbs/kg)</label>
-                        <input type="number" value={weight} onChange={e => setWeight(e.target.value)} className="w-full p-3 rounded-xl border focus:outline-none focus:ring-1 focus:ring-[#c9a96e]" placeholder="0" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Duration (min)</label>
-                        <input type="number" value={durationMinutes} onChange={e => setDurationMinutes(e.target.value)} className="w-full p-3 rounded-xl border focus:outline-none focus:ring-1 focus:ring-[#c9a96e]" placeholder="0" />
-                      </div>
-                    </div>
+                    {!showDetails && (
+                      <button
+                        type="button"
+                        onClick={() => setShowDetails(true)}
+                        className="text-xs font-bold text-[#c9a96e]"
+                      >
+                        Add sets / reps / weight
+                      </button>
+                    )}
 
-                    <Button 
-                      onClick={handleSave} 
+                    {showDetails && (
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">
+                            Sets
+                          </label>
+                          <input
+                            type="number"
+                            value={sets}
+                            onChange={(e) => setSets(e.target.value)}
+                            className="w-full p-2.5 rounded-xl border text-sm"
+                            placeholder="—"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">
+                            Reps
+                          </label>
+                          <input
+                            type="number"
+                            value={reps}
+                            onChange={(e) => setReps(e.target.value)}
+                            className="w-full p-2.5 rounded-xl border text-sm"
+                            placeholder="—"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">
+                            Weight
+                          </label>
+                          <input
+                            type="number"
+                            value={weight}
+                            onChange={(e) => setWeight(e.target.value)}
+                            className="w-full p-2.5 rounded-xl border text-sm"
+                            placeholder="—"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <Button
+                      onClick={handleSaveDetailed}
                       disabled={addLogMutation.isPending}
-                      className="w-full rounded-2xl py-6 text-lg font-bold mt-4 shadow-md"
+                      className="w-full rounded-2xl py-5 text-base font-bold"
                       style={{ background: "#2d3b2d", color: "white" }}
                     >
-                      {addLogMutation.isPending ? "Saving..." : "Save Exercise"}
+                      {addLogMutation.isPending ? "Saving…" : "Save"}
                     </Button>
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {logs && logs.length > 0 && (
-              <div className="space-y-4 mt-6">
-                <h3 className="font-bold text-xl mb-4" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
-                  Today's Workout
+            {/* Today's list */}
+            {dayLogs.length > 0 && (
+              <div className="space-y-3">
+                <h3
+                  className="font-bold text-lg"
+                  style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}
+                >
+                  {isToday ? "Today" : format(parseCalendarDate(dateStr), "MMM d")}
                 </h3>
-                
-                {logs.map(log => (
-                  <div key={log.id} className="bg-white p-5 rounded-2xl shadow-sm border flex items-center justify-between" style={{ borderColor: "#f0e8e4" }}>
+                {dayLogs.map((log) => (
+                  <div
+                    key={log.id}
+                    className="bg-white p-4 rounded-2xl shadow-sm border flex items-center justify-between"
+                    style={{ borderColor: "#f0e8e4" }}
+                  >
                     <div>
-                      <h4 className="font-bold text-[#2d3b2d]">{log.exerciseName}</h4>
-                      <div className="text-sm text-gray-500 mt-1 flex flex-wrap gap-x-4 gap-y-1">
-                        {log.sets > 0 && <span><strong>Sets:</strong> {log.sets}</span>}
-                        {log.reps > 0 && <span><strong>Reps:</strong> {log.reps}</span>}
-                        {log.weight > 0 && <span><strong>Weight:</strong> {log.weight}</span>}
-                        {log.durationMinutes > 0 && <span><strong>Duration:</strong> {log.durationMinutes}m</span>}
+                      <h4 className="font-bold text-[#2d3b2d] text-sm">{log.exerciseName}</h4>
+                      <div className="text-xs text-gray-500 mt-1 flex flex-wrap gap-x-3">
+                        {log.durationMinutes > 0 && <span>{log.durationMinutes} min</span>}
+                        {log.sets > 0 && log.reps > 0 && (
+                          <span>
+                            {log.sets}×{log.reps}
+                            {log.weight > 0 ? ` @ ${log.weight}` : ""}
+                          </span>
+                        )}
                       </div>
                     </div>
-                    <button 
-                      onClick={() => deleteLogMutation.mutate({ id: log.id, dateStr })}
-                      className="p-2 text-gray-300 hover:text-red-500 transition-colors flex-shrink-0 ml-2"
+                    <button
+                      onClick={() => handleDelete(log.id)}
+                      className="p-2 text-gray-300 hover:text-red-500 transition-colors shrink-0"
+                      aria-label="Delete"
                     >
-                      <Trash2 size={20} />
+                      <Trash2 size={18} />
                     </button>
                   </div>
                 ))}
               </div>
             )}
-            
-            {logs?.length === 0 && !isAdding && (
-               <div className="text-center py-10">
-                 <Dumbbell size={48} className="mx-auto text-gray-300 mb-4" />
-                 <p className="text-gray-500">No exercises logged for today.</p>
-               </div>
+
+            {/* Empty state → videos + CTA */}
+            {dayLogs.length === 0 && !isAdding && (
+              <div
+                className="rounded-3xl border bg-white p-5 text-center"
+                style={{ borderColor: "#f0e8e4" }}
+              >
+                <Dumbbell size={40} className="mx-auto text-gray-300 mb-3" />
+                <p className="font-bold text-sm mb-1" style={{ color: "#2d3b2d" }}>
+                  Nothing logged yet
+                </p>
+                <p className="text-xs text-gray-500 mb-4">
+                  Tap a chip above, or do a short video — then mark complete.
+                </p>
+
+                {featuredVideos.length > 0 && (
+                  <div className="space-y-2 text-left">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-[#8a9a8a]">
+                      Try a video
+                    </p>
+                    {featuredVideos.map((video) => {
+                      const ytId = extractYouTubeId(video.videoUrl);
+                      const thumb = ytId
+                        ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`
+                        : null;
+                      return (
+                        <button
+                          key={video.id}
+                          type="button"
+                          onClick={() => setSelectedVideo(video)}
+                          className="w-full flex gap-3 p-2 rounded-2xl border hover:shadow-sm transition-all text-left"
+                          style={{ borderColor: "#f0e8e4" }}
+                        >
+                          <div className="w-20 h-14 rounded-xl overflow-hidden bg-gray-100 shrink-0">
+                            {thumb ? (
+                              <img src={thumb} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <PlayCircle size={20} className="text-gray-300" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="min-w-0 py-0.5">
+                            <p className="text-sm font-bold line-clamp-2" style={{ color: "#2d3b2d" }}>
+                              {video.title}
+                            </p>
+                            <p className="text-[11px] text-gray-400">{video.category}</p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                    <Button
+                      variant="outline"
+                      className="w-full rounded-full mt-1"
+                      onClick={() => setActiveTab("videos")}
+                    >
+                      Browse video library
+                    </Button>
+                  </div>
+                )}
+              </div>
             )}
           </motion.div>
         )}
 
-        {/* VIDEOS TAB - Browsable Category List */}
+        {/* VIDEOS TAB */}
         {activeTab === "videos" && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-            
-            {/* Category Filter */}
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
             {categories.length > 0 && (
-              <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-1 px-1 no-scrollbar">
-                <Filter size={16} className="text-gray-400 flex-shrink-0" />
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+                <Filter size={14} className="text-gray-400 shrink-0" />
                 <button
                   onClick={() => setSelectedCategory("All")}
-                  className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-bold transition-all ${
-                    selectedCategory === "All" ? "shadow-md" : "bg-white border hover:bg-gray-50"
+                  className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                    selectedCategory === "All" ? "shadow-md" : "bg-white border"
                   }`}
-                  style={selectedCategory === "All" ? { background: "#2d3b2d", color: "white" } : { borderColor: "#f0e8e4" }}
+                  style={
+                    selectedCategory === "All"
+                      ? { background: "#2d3b2d", color: "white" }
+                      : { borderColor: "#f0e8e4" }
+                  }
                 >
                   All
                 </button>
-                {categories.map(cat => (
+                {categories.map((cat) => (
                   <button
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
-                    className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-bold transition-all ${
-                      selectedCategory === cat ? "shadow-md" : "bg-white border hover:bg-gray-50"
+                    className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                      selectedCategory === cat ? "shadow-md" : "bg-white border"
                     }`}
-                    style={selectedCategory === cat ? { background: "#2d3b2d", color: "white" } : { borderColor: "#f0e8e4" }}
+                    style={
+                      selectedCategory === cat
+                        ? { background: "#2d3b2d", color: "white" }
+                        : { borderColor: "#f0e8e4" }
+                    }
                   >
                     {cat}
                   </button>
@@ -365,15 +784,19 @@ export default function FitnessTrackerClient() {
               </div>
             )}
 
-            {/* Video Cards - Browsable List */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredVideos.map(video => {
+            <div className="grid grid-cols-1 gap-3">
+              {filteredVideos.map((video) => {
                 const ytId = extractYouTubeId(video.videoUrl);
-                const thumbnail = ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : null;
+                const thumbnail = ytId
+                  ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`
+                  : null;
                 let intervalCount = 0;
                 try {
-                  if (video.intervalsJson) intervalCount = JSON.parse(video.intervalsJson).length;
-                } catch {}
+                  if (video.intervalsJson)
+                    intervalCount = JSON.parse(video.intervalsJson).length;
+                } catch {
+                  /* ignore */
+                }
 
                 return (
                   <button
@@ -382,37 +805,41 @@ export default function FitnessTrackerClient() {
                     className="bg-white rounded-3xl overflow-hidden shadow-sm border text-left hover:shadow-md transition-all group"
                     style={{ borderColor: "#f0e8e4" }}
                   >
-                    {/* Thumbnail */}
                     <div className="relative aspect-video bg-gray-100 overflow-hidden">
                       {thumbnail ? (
-                        <img src={thumbnail} alt={video.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                        <img
+                          src={thumbnail}
+                          alt={video.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <PlayCircle size={48} className="text-gray-300" />
+                          <PlayCircle size={40} className="text-gray-300" />
                         </div>
                       )}
-                      {/* Play Overlay */}
-                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
-                          <PlayCircle size={32} style={{ color: "#2d3b2d" }} />
-                        </div>
-                      </div>
-                      {/* Category Badge */}
-                      <span className="absolute top-3 left-3 px-3 py-1 rounded-full text-[11px] font-bold bg-white/90 shadow-sm" style={{ color: "#2d3b2d" }}>
+                      <span
+                        className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/90"
+                        style={{ color: "#2d3b2d" }}
+                      >
                         {video.category}
                       </span>
-                      {/* Intervals Badge */}
                       {intervalCount > 0 && (
-                        <span className="absolute top-3 right-3 px-2 py-1 rounded-full text-[11px] font-bold" style={{ background: "#c9a96e", color: "white" }}>
-                          {intervalCount} exercises
+                        <span
+                          className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-bold"
+                          style={{ background: "#c9a96e", color: "white" }}
+                        >
+                          {intervalCount} moves
                         </span>
                       )}
                     </div>
-                    {/* Info */}
-                    <div className="p-4">
-                      <h4 className="font-bold text-[#2d3b2d] mb-1 line-clamp-1">{video.title}</h4>
+                    <div className="p-3">
+                      <h4 className="font-bold text-sm text-[#2d3b2d] line-clamp-1">
+                        {video.title}
+                      </h4>
                       {video.description && (
-                        <p className="text-sm text-gray-500 line-clamp-2">{video.description}</p>
+                        <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">
+                          {video.description}
+                        </p>
                       )}
                     </div>
                   </button>
@@ -421,18 +848,17 @@ export default function FitnessTrackerClient() {
             </div>
 
             {filteredVideos.length === 0 && (
-              <div className="text-center py-12">
-                <PlayCircle size={48} className="mx-auto text-gray-300 mb-4" />
-                <p className="text-gray-500">
-                  {selectedCategory !== "All" 
-                    ? `No videos in "${selectedCategory}" yet.` 
-                    : "No workout videos available right now. Check back soon!"}
+              <div className="text-center py-10">
+                <PlayCircle size={40} className="mx-auto text-gray-300 mb-3" />
+                <p className="text-sm text-gray-500">
+                  {selectedCategory !== "All"
+                    ? `No videos in “${selectedCategory}” yet.`
+                    : "No videos yet — check back soon."}
                 </p>
               </div>
             )}
           </motion.div>
         )}
-
       </div>
     </div>
   );

@@ -16,26 +16,56 @@ async function syncFitnessToHabits(db: any, userId: number, dateStr: string) {
     totalDuration += log.durationMinutes || 0;
   }
 
-  // 2. Find any habit matching "move body" or similar exercise habits
+  // 2. Find movement-related habits (midlife packs use "Move 10+ minutes", "walk", etc.)
   const habits = await db.select().from(userHabits).where(eq(userHabits.userId, userId));
-  const moveHabit = habits.find((h: any) =>
-    h.title.toLowerCase().includes("move body") ||
-    h.title.toLowerCase().includes("exercise") ||
-    h.title.toLowerCase().includes("workout")
+  const isMoveHabit = (title: string) => {
+    const t = title.toLowerCase();
+    return (
+      t.includes("move") ||
+      t.includes("exercise") ||
+      t.includes("workout") ||
+      t.includes("walk") ||
+      t.includes("fitness") ||
+      t.includes("strength") ||
+      t.includes("stretch") ||
+      t.includes("yoga") ||
+      t.includes("cardio") ||
+      /10\s*\+?\s*min/.test(t)
+    );
+  };
+  // Sync all matching movement habits (e.g. "Move 10+ minutes")
+  const moveHabits = habits.filter(
+    (h: any) => h.isActive !== false && isMoveHabit(h.title || "")
   );
 
-  // 3. Update or insert the habit log
-  if (moveHabit) {
-    const existing = await db.select().from(userHabitLogs)
-      .where(and(
-        eq(userHabitLogs.userId, userId),
-        eq(userHabitLogs.userHabitId, moveHabit.id),
-        eq(userHabitLogs.dateStr, dateStr)
-      )).limit(1);
+  for (const moveHabit of moveHabits) {
+    const existing = await db
+      .select()
+      .from(userHabitLogs)
+      .where(
+        and(
+          eq(userHabitLogs.userId, userId),
+          eq(userHabitLogs.userHabitId, moveHabit.id),
+          eq(userHabitLogs.dateStr, dateStr)
+        )
+      )
+      .limit(1);
+
+    // Numeric: store minutes or log-count; boolean: any movement = complete
+    const numericValue =
+      moveHabit.type === "numeric"
+        ? Math.max(totalDuration || 0, hasExercise ? logs.length : 0)
+        : totalDuration > 0
+          ? totalDuration
+          : null;
 
     if (existing.length > 0) {
-      await db.update(userHabitLogs)
-        .set({ completed: hasExercise, numericValue: totalDuration > 0 ? totalDuration : null })
+      await db
+        .update(userHabitLogs)
+        .set({
+          completed: hasExercise,
+          numericValue,
+        })
         .where(eq(userHabitLogs.id, existing[0].id));
     } else if (hasExercise) {
       await db.insert(userHabitLogs).values({
@@ -43,7 +73,7 @@ async function syncFitnessToHabits(db: any, userId: number, dateStr: string) {
         userHabitId: moveHabit.id,
         dateStr,
         completed: true,
-        numericValue: totalDuration > 0 ? totalDuration : null,
+        numericValue,
       });
     }
   }
@@ -109,10 +139,10 @@ export const fitnessRouter = router({
     .input(z.object({
       dateStr: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
       exerciseName: z.string().min(1),
-      sets: z.number().min(1),
-      reps: z.number().min(0),
-      weight: z.number().min(0),
-      durationMinutes: z.number().min(0),
+      sets: z.number().min(0).default(1),
+      reps: z.number().min(0).default(0),
+      weight: z.number().min(0).default(0),
+      durationMinutes: z.number().min(0).default(0),
       caloriesBurned: z.number().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
