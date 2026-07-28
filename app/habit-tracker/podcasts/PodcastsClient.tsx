@@ -2,10 +2,18 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Headphones, Play, Youtube, ExternalLink, Loader2 } from "lucide-react";
+import {
+  Headphones,
+  Play,
+  Youtube,
+  ExternalLink,
+  Loader2,
+  Smartphone,
+} from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import Link from "next/link";
+import { useHabitPodcastPlayer } from "@/contexts/HabitPodcastPlayerContext";
 
 const YOUTUBE_CHANNEL = "https://www.youtube.com/@MindandBodyResetCoach";
 const YOUTUBE_PLAYLIST =
@@ -39,6 +47,7 @@ export default function PodcastsClient() {
   });
 
   const playerRef = useRef<HTMLDivElement>(null);
+  const { nowPlaying, play } = useHabitPodcastPlayer();
   const [activeVideo, setActiveVideo] = useState<string | null>(null);
 
   const { data: podcastData, isLoading: loading } = trpc.podcast.getEpisodes.useQuery(
@@ -48,12 +57,25 @@ export default function PodcastsClient() {
   const episodes: Episode[] = (podcastData?.episodes ?? []) as Episode[];
 
   useEffect(() => {
-    if (episodes.length > 0 && !activeVideo) {
-      setActiveVideo(episodes[0].id);
+    if (nowPlaying?.videoId) {
+      setActiveVideo(nowPlaying.videoId);
+      return;
     }
-  }, [episodes, activeVideo]);
+    if (episodes.length > 0 && !activeVideo) {
+      setActiveVideo(episodes[0].videoId || episodes[0].id);
+    }
+  }, [episodes, activeVideo, nowPlaying]);
 
-  const activeEpisode = episodes.find((e) => e.id === activeVideo) ?? episodes[0];
+  const activeEpisode =
+    episodes.find((e) => e.videoId === activeVideo || e.id === activeVideo) ??
+    episodes[0];
+
+  const selectEpisode = (ep: Episode) => {
+    const videoId = ep.videoId || ep.id;
+    setActiveVideo(videoId);
+    play({ videoId, title: ep.title, thumbnail: ep.thumbnail });
+    playerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   return (
     <div className="max-w-2xl mx-auto px-4 pt-8 pb-4">
@@ -84,7 +106,7 @@ export default function PodcastsClient() {
       {/* Player */}
       <div
         ref={playerRef}
-        className="bg-white rounded-3xl shadow-xl overflow-hidden mb-6"
+        className="bg-white rounded-3xl shadow-xl overflow-hidden mb-4"
         style={{ border: "1px solid #f0e8e4" }}
       >
         {loading ? (
@@ -95,10 +117,13 @@ export default function PodcastsClient() {
           <>
             <div className="aspect-video w-full bg-black">
               <iframe
-                src={`https://www.youtube.com/embed/${activeVideo}?rel=0&modestbranding=1`}
+                key={activeVideo}
+                src={`https://www.youtube.com/embed/${activeVideo}?rel=0&modestbranding=1&playsinline=1${
+                  nowPlaying?.videoId === activeVideo ? "&autoplay=1" : ""
+                }`}
                 title={activeEpisode?.title ?? "Podcast episode"}
                 className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
               />
             </div>
@@ -115,14 +140,24 @@ export default function PodcastsClient() {
                     {formatDate(activeEpisode.publishedAt)}
                   </p>
                 )}
-                {activeEpisode.slug && activeEpisode.hasShowNotes && (
-                  <Link
-                    href={`/midlife-health-podcast/${activeEpisode.slug}`}
-                    className="inline-flex items-center gap-1.5 mt-3 text-sm font-semibold text-[#2d3b2d] hover:text-[#c9a96e] transition-colors"
+                <div className="flex flex-wrap gap-3 mt-3">
+                  {activeEpisode.slug && activeEpisode.hasShowNotes && (
+                    <Link
+                      href={`/midlife-health-podcast/${activeEpisode.slug}`}
+                      className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#2d3b2d] hover:text-[#c9a96e] transition-colors"
+                    >
+                      Read show notes <ExternalLink size={14} />
+                    </Link>
+                  )}
+                  <a
+                    href={`https://www.youtube.com/watch?v=${activeVideo}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#8a9a8a] hover:text-[#2d3b2d] transition-colors"
                   >
-                    Read show notes <ExternalLink size={14} />
-                  </Link>
-                )}
+                    <Youtube size={14} /> Open in YouTube
+                  </a>
+                </div>
               </div>
             )}
           </>
@@ -143,6 +178,24 @@ export default function PodcastsClient() {
             </a>
           </div>
         )}
+      </div>
+
+      {/* Background listening tip */}
+      <div
+        className="flex gap-3 p-3.5 rounded-2xl mb-6 text-left"
+        style={{ background: "#faf5f5", border: "1px solid #f0e8e4" }}
+      >
+        <Smartphone size={18} className="shrink-0 mt-0.5 text-[#c9a96e]" />
+        <div>
+          <p className="text-sm font-bold" style={{ color: "#2d3b2d" }}>
+            Keep listening while you track
+          </p>
+          <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
+            Play an episode, then switch to Habits, Macros, or Fitness — the mini player keeps
+            going inside the app. For lock screen or true background play, tap{" "}
+            <strong>Open in YouTube</strong> (phones handle that best).
+          </p>
+        </div>
       </div>
 
       {/* Episode list */}
@@ -177,15 +230,13 @@ export default function PodcastsClient() {
       ) : (
         <div className="space-y-3">
           {episodes.map((ep) => {
-            const isActive = activeVideo === ep.id;
+            const videoId = ep.videoId || ep.id;
+            const isActive = activeVideo === videoId || activeVideo === ep.id;
             return (
               <button
                 key={ep.id}
                 type="button"
-                onClick={() => {
-                  setActiveVideo(ep.id);
-                  playerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }}
+                onClick={() => selectEpisode(ep)}
                 className="w-full text-left flex gap-3 p-3 rounded-2xl transition-all bg-white hover:shadow-md"
                 style={{
                   border: `2px solid ${isActive ? "#c9a96e" : "#f0e8e4"}`,
@@ -225,6 +276,9 @@ export default function PodcastsClient() {
                     {ep.title}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">{formatDate(ep.publishedAt)}</p>
+                  {ep.slug && ep.hasShowNotes && (
+                    <span className="text-[10px] font-semibold text-[#8a9a8a]">Show notes</span>
+                  )}
                 </div>
               </button>
             );

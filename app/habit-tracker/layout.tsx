@@ -10,11 +10,14 @@ import {
   UserRound,
 } from "lucide-react";
 import HabitTrackerInstallPrompt from "@/components/HabitTrackerInstallPrompt";
+import HabitPodcastMiniPlayer from "@/components/HabitPodcastMiniPlayer";
+import { HabitPodcastPlayerProvider } from "@/contexts/HabitPodcastPlayerContext";
 
+/** Light frosted glass with soft rose tint so it reads against the cream app */
 const glassStyle = {
-  background: "rgba(255, 255, 255, 0.72)",
-  backdropFilter: "blur(20px) saturate(1.4)",
-  WebkitBackdropFilter: "blur(20px) saturate(1.4)",
+  background: "rgba(245, 228, 224, 0.55)",
+  backdropFilter: "blur(22px) saturate(1.5)",
+  WebkitBackdropFilter: "blur(22px) saturate(1.5)",
 } as const;
 
 export default function HabitTrackerLayout({
@@ -58,7 +61,7 @@ export default function HabitTrackerLayout({
     item.exact ? pathname === item.href : pathname?.startsWith(item.href);
 
   return (
-    <>
+    <HabitPodcastPlayerProvider>
       <style jsx global>{`
         .habit-tracker-top-nav {
           display: none;
@@ -84,7 +87,7 @@ export default function HabitTrackerLayout({
         <nav className="habit-tracker-top-nav fixed top-0 left-0 right-0 z-50 px-3 py-2">
           <div className="max-w-md mx-auto flex items-center gap-2">
             <div
-              className="flex-1 flex items-center justify-around gap-0.5 px-2 py-1.5 rounded-full border border-white/60 shadow-[0_4px_20px_rgba(45,59,45,0.08)]"
+              className="flex-1 flex items-center justify-around gap-0.5 px-2 py-1.5 rounded-full border border-white/40 shadow-[0_4px_20px_rgba(45,59,45,0.08)]"
               style={glassStyle}
             >
               {navItems.map((item) => {
@@ -99,7 +102,7 @@ export default function HabitTrackerLayout({
                     className={`flex items-center justify-center w-10 h-9 rounded-full transition-all ${
                       active
                         ? "bg-[#2d3b2d] text-white shadow-sm"
-                        : "text-[#8a9a8a] hover:bg-white/50 hover:text-[#2d3b2d]"
+                        : "text-[#6b7a6b] hover:bg-white/40 hover:text-[#2d3b2d]"
                     }`}
                   >
                     <Icon size={18} strokeWidth={active ? 2.5 : 2} />
@@ -111,10 +114,10 @@ export default function HabitTrackerLayout({
               href={podcastHref}
               aria-label="Podcast"
               aria-current={podcastActive ? "page" : undefined}
-              className={`flex items-center justify-center w-11 h-11 rounded-full border border-white/60 shadow-[0_4px_20px_rgba(45,59,45,0.08)] transition-all ${
+              className={`flex items-center justify-center w-11 h-11 rounded-full border border-white/40 shadow-[0_4px_20px_rgba(45,59,45,0.08)] transition-all ${
                 podcastActive
                   ? "bg-[#2d3b2d] text-white"
-                  : "text-[#8a9a8a] hover:text-[#2d3b2d]"
+                  : "text-[#6b7a6b] hover:text-[#2d3b2d]"
               }`}
               style={podcastActive ? undefined : glassStyle}
             >
@@ -123,12 +126,13 @@ export default function HabitTrackerLayout({
           </div>
         </nav>
 
-        {/* Main Content — room for floating glass bar + podcast circle */}
-        <div className="habit-tracker-content pb-28">{children}</div>
+        {/* Extra bottom padding for glass bar + optional mini player */}
+        <div className="habit-tracker-content pb-36">{children}</div>
 
         <HabitTrackerInstallPrompt variant="auto" />
+        <HabitPodcastMiniPlayer />
 
-        {/* Bottom Navigation — light glass pill + separate podcast circle */}
+        {/* Bottom Navigation — light rose glass pill + separate podcast circle */}
         <nav
           className="habit-tracker-nav fixed bottom-0 left-0 right-0 z-50 flex justify-center pointer-events-none"
           style={{
@@ -138,9 +142,8 @@ export default function HabitTrackerLayout({
           }}
         >
           <div className="pointer-events-auto w-full max-w-md flex items-center gap-2.5">
-            {/* Main light-glass pill — Habits, Macros, Fitness, Profile */}
             <div
-              className="flex-1 flex items-center justify-around px-1.5 py-1.5 rounded-full border border-white/70 shadow-[0_8px_32px_rgba(45,59,45,0.12)]"
+              className="flex-1 flex items-center justify-around px-1.5 py-1.5 rounded-full border border-white/45 shadow-[0_8px_32px_rgba(45,59,45,0.12)]"
               style={glassStyle}
             >
               {navItems.map((item) => {
@@ -159,7 +162,7 @@ export default function HabitTrackerLayout({
                       className={`flex items-center justify-center w-12 h-10 rounded-full transition-all duration-300 ${
                         active
                           ? "bg-[#2d3b2d] text-white shadow-md scale-105"
-                          : "text-[#8a9a8a] group-hover:bg-white/55 group-hover:text-[#2d3b2d]"
+                          : "text-[#6b7a6b] group-hover:bg-white/45 group-hover:text-[#2d3b2d]"
                       }`}
                     >
                       <Icon size={22} strokeWidth={active ? 2.4 : 2} />
@@ -169,15 +172,14 @@ export default function HabitTrackerLayout({
               })}
             </div>
 
-            {/* Podcast — its own circular light-glass control */}
             <Link
               href={podcastHref}
               aria-label="Podcast"
               aria-current={podcastActive ? "page" : undefined}
-              className={`flex items-center justify-center w-[3.25rem] h-[3.25rem] shrink-0 rounded-full border border-white/70 shadow-[0_8px_32px_rgba(45,59,45,0.12)] transition-all duration-300 ${
+              className={`flex items-center justify-center w-[3.25rem] h-[3.25rem] shrink-0 rounded-full border border-white/45 shadow-[0_8px_32px_rgba(45,59,45,0.12)] transition-all duration-300 ${
                 podcastActive
                   ? "bg-[#2d3b2d] text-white scale-105 shadow-md"
-                  : "text-[#8a9a8a] hover:text-[#2d3b2d] hover:scale-105"
+                  : "text-[#6b7a6b] hover:text-[#2d3b2d] hover:scale-105"
               }`}
               style={podcastActive ? undefined : glassStyle}
             >
@@ -186,6 +188,6 @@ export default function HabitTrackerLayout({
           </div>
         </nav>
       </div>
-    </>
+    </HabitPodcastPlayerProvider>
   );
 }

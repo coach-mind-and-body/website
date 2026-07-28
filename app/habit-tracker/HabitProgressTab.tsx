@@ -156,41 +156,61 @@ export function HabitProgressTab({
 
   return (
     <div className="max-w-4xl mx-auto px-4 md:px-6 space-y-8 animate-in fade-in duration-500 pb-12">
-      {/* Current Progress Summary */}
+      {/* Current + best streak */}
       <div
-        className="bg-white p-6 md:p-8 rounded-3xl border shadow-sm flex flex-col md:flex-row items-center gap-6"
+        className="bg-white p-6 md:p-8 rounded-3xl border shadow-sm"
         style={{ borderColor: "#f0e8e4" }}
       >
-        <div
-          className="w-32 h-32 rounded-full border-[6px] flex flex-col items-center justify-center shadow-inner"
-          style={{
-            borderColor: currentStreak > 0 ? "#c9a96e" : "#f0e8e4",
-            background: "#fcfaf9",
-          }}
-        >
-          <span className="text-4xl font-bold" style={{ color: "#2d3b2d" }}>
-            {currentStreak}
-          </span>
-          <span className="text-xs font-bold uppercase tracking-widest text-gray-500 mt-1">
-            Days
-          </span>
-        </div>
-        <div className="text-center md:text-left flex-1">
-          <h2
-            className="text-2xl font-bold mb-2"
-            style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}
+        <div className="flex flex-col sm:flex-row items-center gap-6">
+          <div
+            className="w-32 h-32 rounded-full border-[6px] flex flex-col items-center justify-center shadow-inner shrink-0"
+            style={{
+              borderColor: currentStreak > 0 ? "#c9a96e" : "#f0e8e4",
+              background: "#fcfaf9",
+            }}
           >
-            {currentStreak > 0 ? "You're on fire!" : "Time to start a new streak!"}
-          </h2>
-          <p className="text-gray-600">
-            Every day you complete at least one habit, your streak grows. Consistency is the key to
-            lasting change.
-          </p>
-          {bestStreak > currentStreak && (
-            <p className="text-sm text-gray-500 mt-2">
-              Best streak ever: <span className="font-bold text-[#2d3b2d]">{bestStreak} days</span>
+            <span className="text-4xl font-bold" style={{ color: "#2d3b2d" }}>
+              {currentStreak}
+            </span>
+            <span className="text-xs font-bold uppercase tracking-widest text-gray-500 mt-1">
+              Current
+            </span>
+          </div>
+          <div className="text-center sm:text-left flex-1 w-full">
+            <h2
+              className="text-2xl font-bold mb-2"
+              style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}
+            >
+              {currentStreak > 0 ? "You're on fire!" : "Time to start a new streak!"}
+            </h2>
+            <p className="text-gray-600 mb-4">
+              Every day you complete at least one habit, your streak grows. Consistency is the key
+              to lasting change.
             </p>
-          )}
+            <div
+              className="inline-flex items-center gap-3 px-4 py-3 rounded-2xl border"
+              style={{
+                background: bestStreak > 0 ? "linear-gradient(135deg, #fff8f0 0%, #faf5f5 100%)" : "#fcfaf9",
+                borderColor: "#f0e8e4",
+              }}
+            >
+              <Trophy
+                size={22}
+                className={bestStreak > 0 ? "text-[#c9a96e]" : "text-gray-300"}
+              />
+              <div className="text-left">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                  Best streak
+                </p>
+                <p className="text-xl font-bold leading-none" style={{ color: "#2d3b2d" }}>
+                  {bestStreak}{" "}
+                  <span className="text-sm font-semibold text-gray-500">
+                    {bestStreak === 1 ? "day" : "days"}
+                  </span>
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
