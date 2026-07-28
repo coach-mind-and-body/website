@@ -1,5 +1,12 @@
 import { getDb } from "./db";
-import { pushSubscriptions, userHabits, userHabitLogs, habitReminderRuns } from "../drizzle/schema";
+import {
+  pushSubscriptions,
+  userHabits,
+  userHabitLogs,
+  habitReminderRuns,
+  habitNotificationPrefs,
+  userVictoryLists,
+} from "../drizzle/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { todayMountainDateStr, nowMountain } from "../lib/mountainTime";
 import webpush from "web-push";
@@ -166,22 +173,63 @@ export async function processHabitReminders(options?: { force?: boolean }) {
     todayLogsByUser.get(l.userId)!.push(l.userHabitId);
   }
 
-  const payload = JSON.stringify({
-    title: "Quick habit check-in",
-    body: "Take 30 seconds to log today's habits when you're ready. Small steps add up.",
-    url: "/habit-tracker",
-    icon: "/favicon.ico",
-  });
+  // Prefs + victories for smarter branches
+  const allPrefs = await db.select().from(habitNotificationPrefs);
+  const prefsByUser = new Map(allPrefs.map((p) => [p.userId, p]));
+  const todayVictories = await db
+    .select()
+    .from(userVictoryLists)
+    .where(eq(userVictoryLists.dateStr, todayStr));
+  const victoryUserIds = new Set(
+    todayVictories
+      .filter((v) => v.userId != null && (v.win1 || v.win2 || v.win3).trim())
+      .map((v) => v.userId as number)
+  );
 
   for (const [userId, subs] of Array.from(subsByUser.entries())) {
     const activeIds = activeHabitsByUser.get(userId) || [];
     if (activeIds.length === 0) continue;
 
-    const completedIds = todayLogsByUser.get(userId) || [];
-    const hasCompletedAnyActiveHabit = activeIds.some((id) => completedIds.includes(id));
-    if (hasCompletedAnyActiveHabit) continue;
+    const prefs = prefsByUser.get(userId);
+    const eveningOn = prefs?.eveningNudgeEnabled !== false;
+    const victoryOn = prefs?.victoryPromptEnabled !== false;
 
-    // One notification per user (first healthy subscription), not one per device spam
+    const completedIds = todayLogsByUser.get(userId) || [];
+    const completedActive = activeIds.filter((id) => completedIds.includes(id));
+    const hasCompletedAny = completedActive.length > 0;
+    const allDone = completedActive.length >= activeIds.length;
+    const hasVictory = victoryUserIds.has(userId);
+
+    // Branch selection (quiet by default when fully done + victory logged)
+    let payload: string | null = null;
+    if (!hasCompletedAny && eveningOn) {
+      payload = JSON.stringify({
+        title: "Quick habit check-in",
+        body: "Take 30 seconds to log today's habits. Small steps add up.",
+        url: "/habit-tracker",
+        icon: "/favicon.ico",
+      });
+    } else if (hasCompletedAny && !allDone && eveningOn) {
+      const left = activeIds.length - completedActive.length;
+      payload = JSON.stringify({
+        title: "Almost there",
+        body: `${left} habit${left === 1 ? "" : "s"} left today. One more vote for future you.`,
+        url: "/habit-tracker",
+        icon: "/favicon.ico",
+      });
+    } else if (hasCompletedAny && !hasVictory && victoryOn) {
+      payload = JSON.stringify({
+        title: "Capture 3 wins",
+        body: "Before bed: what went right today? Your brain needs evidence.",
+        url: "/habit-tracker?focus=victories",
+        icon: "/favicon.ico",
+      });
+    } else {
+      // All done + victory (or prefs off) → skip (no celebration spam)
+      continue;
+    }
+
+    // One notification per user (first healthy subscription)
     let userSent = false;
     for (const sub of subs) {
       if (userSent) break;

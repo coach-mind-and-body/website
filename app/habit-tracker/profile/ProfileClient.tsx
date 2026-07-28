@@ -12,6 +12,7 @@ import {
   Headphones,
   ExternalLink,
   ChevronRight,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
@@ -19,6 +20,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useWebPush } from "@/hooks/useWebPush";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { toast } from "sonner";
+import { getDeviceId } from "@/lib/deviceId";
 
 export default function ProfileClient() {
   usePageTitle({
@@ -34,6 +36,21 @@ export default function ProfileClient() {
     { enabled: isAuthenticated }
   );
 
+  const { data: prefs, refetch: refetchPrefs } = trpc.habit.getNotificationPrefs.useQuery(
+    undefined,
+    { enabled: isAuthenticated }
+  );
+
+  const setPrefs = trpc.habit.setNotificationPrefs.useMutation({
+    onSuccess: () => {
+      toast.success("Notification preferences saved");
+      refetchPrefs();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const trackFunnel = trpc.habit.trackFunnelEvent.useMutation();
+
   const toggleShareHabitsMutation = trpc.habit.toggleShareHabits.useMutation({
     onSuccess: () => {
       toast.success("Privacy settings updated");
@@ -47,6 +64,10 @@ export default function ProfileClient() {
     (user?.email ? user.email.split("@")[0] : null) ||
     "Guest";
   const initial = (displayName.charAt(0) || "?").toUpperCase();
+
+  const togglePref = (key: keyof NonNullable<typeof prefs>, value: boolean) => {
+    setPrefs.mutate({ [key]: value });
+  };
 
   return (
     <div className="max-w-lg mx-auto px-4 pt-8 pb-4">
@@ -80,7 +101,6 @@ export default function ProfileClient() {
       </motion.div>
 
       <div className="space-y-4">
-        {/* Account card */}
         <section
           className="bg-white rounded-3xl p-5 shadow-sm"
           style={{ border: "1px solid #f0e8e4" }}
@@ -130,15 +150,15 @@ export default function ProfileClient() {
           </div>
         </section>
 
-        {/* Notifications */}
+        {/* Push enable */}
         <section
           className="bg-white rounded-3xl p-5 shadow-sm"
           style={{ border: "1px solid #f0e8e4" }}
         >
           <h2 className="font-bold text-sm uppercase tracking-wide text-[#8a9a8a] mb-4">
-            Notifications
+            Push delivery
           </h2>
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-3">
               {isSubscribed ? (
                 <BellRing size={20} style={{ color: "#c9a96e" }} />
@@ -147,10 +167,10 @@ export default function ProfileClient() {
               )}
               <div>
                 <p className="font-bold text-sm" style={{ color: "#2d3b2d" }}>
-                  Challenge Notifications
+                  Device notifications
                 </p>
                 <p className="text-xs text-gray-500">
-                  Get notified when a new challenge drops.
+                  Required for evening check-ins and challenge alerts.
                 </p>
               </div>
             </div>
@@ -158,7 +178,13 @@ export default function ProfileClient() {
               size="sm"
               variant={isSubscribed ? "outline" : "default"}
               disabled={isSubscribed || isSubscribing || !isSupported}
-              onClick={subscribeToPush}
+              onClick={() => {
+                subscribeToPush();
+                trackFunnel.mutate({
+                  eventType: "push_enabled",
+                  deviceId: getDeviceId(),
+                });
+              }}
               className="rounded-full shrink-0"
               style={
                 !isSubscribed
@@ -175,9 +201,76 @@ export default function ProfileClient() {
                     : "Enable"}
             </Button>
           </div>
+
+          {isAuthenticated && prefs && (
+            <div className="space-y-3 pt-2 border-t" style={{ borderColor: "#f0e8e4" }}>
+              <p className="text-xs font-bold uppercase tracking-wide text-[#8a9a8a] pt-2">
+                What we can send
+              </p>
+              {(
+                [
+                  {
+                    key: "eveningNudgeEnabled" as const,
+                    label: "Evening habit check-in",
+                    desc: "If you have habits left today",
+                  },
+                  {
+                    key: "victoryPromptEnabled" as const,
+                    label: "Victory list prompt",
+                    desc: "Remind you to log 3 wins",
+                  },
+                  {
+                    key: "challengePushEnabled" as const,
+                    label: "Challenge announcements",
+                    desc: "New global challenges from Lee Anne",
+                  },
+                  {
+                    key: "day1Day3Enabled" as const,
+                    label: "Getting-started tips",
+                    desc: "Gentle day-3 re-engage if you go quiet",
+                  },
+                  {
+                    key: "weeklyInsightEmailEnabled" as const,
+                    label: "Weekly pattern email",
+                    desc: "Optional summary (when available)",
+                  },
+                ] as const
+              ).map((row) => (
+                <div
+                  key={row.key}
+                  className="flex items-center justify-between gap-3"
+                >
+                  <div>
+                    <p className="text-sm font-semibold" style={{ color: "#2d3b2d" }}>
+                      {row.label}
+                    </p>
+                    <p className="text-xs text-gray-500">{row.desc}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => togglePref(row.key, !prefs[row.key])}
+                    className={`relative w-11 h-6 rounded-full transition-colors ${
+                      prefs[row.key] ? "bg-[#c9a96e]" : "bg-gray-200"
+                    }`}
+                    aria-label={row.label}
+                  >
+                    <span
+                      className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                        prefs[row.key] ? "translate-x-5" : ""
+                      }`}
+                    />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          {!isAuthenticated && (
+            <p className="text-xs text-gray-500">
+              Sign in to customize which reminders you receive.
+            </p>
+          )}
         </section>
 
-        {/* Privacy — signed-in only */}
         {isAuthenticated && (
           <section
             className="bg-white rounded-3xl p-5 shadow-sm"
@@ -194,7 +287,7 @@ export default function ProfileClient() {
                     Coach Accountability
                   </p>
                   <p className="text-xs text-gray-500">
-                    Allow coaches to view your progress and notes.
+                    Allow coaches to view habits, wins, and notes.
                   </p>
                 </div>
               </div>
@@ -220,7 +313,6 @@ export default function ProfileClient() {
           </section>
         )}
 
-        {/* Quick links */}
         <section
           className="bg-white rounded-3xl overflow-hidden shadow-sm"
           style={{ border: "1px solid #f0e8e4" }}
@@ -228,6 +320,17 @@ export default function ProfileClient() {
           <h2 className="font-bold text-sm uppercase tracking-wide text-[#8a9a8a] px-5 pt-5 pb-2">
             More
           </h2>
+          <Link
+            href="/habit-tracker?focus=victories"
+            className="flex items-center justify-between px-5 py-4 hover:bg-[#faf5f5] transition-colors border-t"
+            style={{ borderColor: "#f0e8e4" }}
+          >
+            <span className="flex items-center gap-3 font-semibold text-sm" style={{ color: "#2d3b2d" }}>
+              <Sparkles size={18} style={{ color: "#c9a96e" }} />
+              Victory list
+            </span>
+            <ChevronRight size={18} className="text-gray-400" />
+          </Link>
           <Link
             href="/habit-tracker/podcasts"
             className="flex items-center justify-between px-5 py-4 hover:bg-[#faf5f5] transition-colors border-t"

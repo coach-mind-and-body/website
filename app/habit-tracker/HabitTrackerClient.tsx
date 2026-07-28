@@ -10,10 +10,16 @@ import { Button } from "@/components/ui/button";
 import { format, subDays, addDays } from "date-fns";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { getDeviceId } from "@/lib/deviceId";
 import { todayMountainDateStr, dateToMountainDateStr } from "@/lib/mountainTime";
 import { calendarDateStr, parseCalendarDate, calculateCurrentStreak } from "@/lib/habitStreak";
 import { HabitProgressTab } from "./HabitProgressTab";
+import { VictoryListCard } from "@/components/habit/VictoryListCard";
+import { OnboardingPackModal } from "@/components/habit/OnboardingPackModal";
+import { PatternInsightCard } from "@/components/habit/PatternInsightCard";
+import HabitTrackerInstallPrompt from "@/components/HabitTrackerInstallPrompt";
+import { useWebPush } from "@/hooks/useWebPush";
 
 type LocalHabit = { id: number; title: string; description?: string | null; type: "boolean" | "numeric"; targetValue: number | null; unit: string | null; isActive: boolean; };
 
@@ -37,6 +43,9 @@ export default function HabitTrackerClient() {
   });
 
   const { isAuthenticated } = useAuth();
+  const searchParams = useSearchParams();
+  const focusVictories = searchParams?.get("focus") === "victories";
+  const { isSupported, isSubscribed, isSubscribing, subscribeToPush } = useWebPush();
   
   // Data State
   const [localHabits, setLocalHabits] = useState<LocalHabit[]>([]);
@@ -49,28 +58,40 @@ export default function HabitTrackerClient() {
   // Week / selection anchored to America/Denver calendar days
   const [currentDate, setCurrentDate] = useState(() => parseCalendarDate(todayMountainDateStr()));
   const [selectedDate, setSelectedDate] = useState(() => parseCalendarDate(todayMountainDateStr()));
-  const [isNotesExpanded, setIsNotesExpanded] = useState(false); // For expanding/collapsing daily notes
+  const [isNotesExpanded, setIsNotesExpanded] = useState(false);
+  const [showChallenges, setShowChallenges] = useState(false);
+  const [showUpdates, setShowUpdates] = useState(false);
+  const [showPastDays, setShowPastDays] = useState(false);
+  const [showDay1Modal, setShowDay1Modal] = useState(false);
   const [optimisticLogs, setOptimisticLogs] = useState<LocalLog[]>([]);
   const numericDebounceRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const [showImportPrompt, setShowImportPrompt] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
 
-  // TRPC
+  // TRPC — short window for daily; long history only on Progress
   const { data: templates } = trpc.habit.getTemplates.useQuery(undefined, { enabled: !isAuthenticated });
-  // Load ~1 year of logs so Progress calendar + long streaks / trophies have history
   const habitLogsFromDate = (() => {
     const d = new Date();
-    d.setDate(d.getDate() - 400);
+    d.setDate(d.getDate() - (mainTab === "progress" ? 400 : 21));
     return dateToMountainDateStr(d);
   })();
   const { data: userSyncData, refetch: refetchUserSync } = trpc.habit.getUserHabits.useQuery(
     { fromDate: habitLogsFromDate },
     { enabled: isAuthenticated }
   );
+
+  const { data: weeklyInsight } = trpc.habit.getWeeklyInsight.useQuery(undefined, {
+    enabled: isAuthenticated && (mainTab === "progress" || mainTab === "daily"),
+  });
   
   const { data: activeChallengesData } = trpc.challenges.getActiveChallenges.useQuery();
   const { data: userChallengesData, refetch: refetchUserChallenges } = trpc.challenges.getUserChallenges.useQuery({ deviceId: getDeviceId() });
-  const { data: updatesData } = trpc.appUpdates.getUpdates.useQuery();
+  const { data: updatesData } = trpc.appUpdates.getUpdates.useQuery(undefined, {
+    enabled: showUpdates || mainTab === "daily",
+  });
+
+  const trackFunnel = trpc.habit.trackFunnelEvent.useMutation();
+  const mergeVictories = trpc.habit.mergeGuestVictories.useMutation();
   
   const [dismissedUpdates, setDismissedUpdates] = useState<number[]>([]);
 
@@ -127,6 +148,18 @@ export default function HabitTrackerClient() {
       }
     } catch {}
 
+    // Funnel: first open
+    try {
+      if (!localStorage.getItem("mbr_funnel_first_open")) {
+        localStorage.setItem("mbr_funnel_first_open", new Date().toISOString());
+        trackFunnel.mutate({ eventType: "first_open", deviceId: getDeviceId() });
+      }
+    } catch {}
+
+    if (focusVictories) {
+      setMainTab("daily");
+    }
+
     if (!isAuthenticated) {
       const storedHabits = localStorage.getItem("mbr_habits");
       const storedLogs = localStorage.getItem("mbr_habit_logs");
@@ -154,6 +187,7 @@ export default function HabitTrackerClient() {
   useEffect(() => {
     if (!isAuthenticated) return;
     mergeGuestDataMutation.mutate({ deviceId: getDeviceId() });
+    mergeVictories.mutate({ deviceId: getDeviceId() });
   }, [isAuthenticated]);
 
   // Offer to import local data after login
@@ -309,6 +343,21 @@ export default function HabitTrackerClient() {
     }, 300);
   };
 
+  const maybeDay1Celebrate = (completed: boolean) => {
+    if (!completed) return;
+    try {
+      if (!localStorage.getItem("mbr_day1_complete")) {
+        localStorage.setItem("mbr_day1_complete", "1");
+        trackFunnel.mutate({ eventType: "day1_complete", deviceId: getDeviceId() });
+        if (!localStorage.getItem("mbr_day1_modal_seen")) {
+          setShowDay1Modal(true);
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  };
+
   const toggleLog = (habitId: number, dateStr: string) => {
     const isCompleted = isLogCompleted(habitId, dateStr);
     const newCompleted = !isCompleted;
@@ -335,6 +384,7 @@ export default function HabitTrackerClient() {
       setLocalLogs(newLogs);
       localStorage.setItem("mbr_habit_logs", JSON.stringify(newLogs));
     }
+    maybeDay1Celebrate(newCompleted);
   };
 
   const isLogCompleted = (habitId: number, dateStr: string) => {
@@ -415,46 +465,109 @@ export default function HabitTrackerClient() {
         </div>
       )}
 
-      {/* Header */}
-      <div className="pt-8 pb-8 px-6 max-w-4xl mx-auto text-center relative">
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-          <Link href="/" className="inline-block mb-6 transition-transform hover:scale-105">
-            <img src="/logo-new.jpg" alt="Mind & Body Reset Coaches" className="h-16 md:h-20 mx-auto object-contain rounded-xl shadow-sm" />
-          </Link>
-          <h1 className="text-4xl md:text-5xl font-bold mb-4" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
-            My Daily Reset
-          </h1>
-          <p className="text-gray-600 max-w-2xl mx-auto text-lg">
-            Track your habits, celebrate your wins, and build momentum. Small daily shifts lead to massive transformations.
-          </p>
-          <div className="flex justify-center mt-6">
-            <div className="flex items-center gap-2 px-5 py-2 rounded-full shadow-sm transition-all" style={{ background: currentStreak >= 3 ? "linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%)" : "#fcfaf9", color: currentStreak >= 3 ? "#d97706" : "#8a9a8a", border: currentStreak >= 3 ? "1px solid #ffda6a" : "1px solid #f0e8e4", fontWeight: "bold" }}>
-              <Flame size={20} className={currentStreak >= 3 ? "animate-pulse" : ""} style={{ fill: currentStreak >= 3 ? "#d97706" : "transparent" }} />
-              {currentStreak} Day Streak
-            </div>
+      {/* Compact ritual header */}
+      <div className="pt-5 pb-3 px-4 max-w-lg mx-auto">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#8a9a8a]">
+              Today · {format(parseCalendarDate(todayMountainDateStr()), "MMM d")}
+            </p>
+            <h1 className="text-2xl font-bold" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
+              My Daily Reset
+            </h1>
           </div>
-        </motion.div>
-      </div>
-
-      <div className="max-w-4xl mx-auto px-4 md:px-6 space-y-6 mb-8">
-        <div className="flex justify-center">
-          <div className="bg-white p-1.5 rounded-full flex gap-1 shadow-sm border border-slate-100">
-            <button onClick={() => setMainTab("daily")} className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${mainTab === "daily" ? "bg-[#2d3b2d] text-white shadow-md" : "text-gray-500 hover:text-gray-700 hover:bg-slate-50"}`}>
-              Daily Tracking
+          <div
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-bold shrink-0"
+            style={{
+              background: currentStreak >= 3 ? "linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%)" : "#fcfaf9",
+              color: currentStreak >= 3 ? "#d97706" : "#8a9a8a",
+              border: currentStreak >= 3 ? "1px solid #ffda6a" : "1px solid #f0e8e4",
+            }}
+          >
+            <Flame size={16} className={currentStreak >= 3 ? "animate-pulse" : ""} style={{ fill: currentStreak >= 3 ? "#d97706" : "transparent" }} />
+            {currentStreak}
+          </div>
+        </div>
+        <div className="flex justify-center mt-4">
+          <div className="bg-white p-1 rounded-full flex gap-1 shadow-sm border border-slate-100">
+            <button onClick={() => setMainTab("daily")} className={`px-5 py-1.5 rounded-full text-xs font-bold transition-all ${mainTab === "daily" ? "bg-[#2d3b2d] text-white shadow-md" : "text-gray-500 hover:bg-slate-50"}`}>
+              Today
             </button>
-            <button onClick={() => setMainTab("progress")} className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${mainTab === "progress" ? "bg-[#2d3b2d] text-white shadow-md" : "text-gray-500 hover:text-gray-700 hover:bg-slate-50"}`}>
-              My Progress
+            <button onClick={() => setMainTab("progress")} className={`px-5 py-1.5 rounded-full text-xs font-bold transition-all ${mainTab === "progress" ? "bg-[#2d3b2d] text-white shadow-md" : "text-gray-500 hover:bg-slate-50"}`}>
+              Progress
             </button>
           </div>
         </div>
       </div>
 
+      <OnboardingPackModal isAuthenticated={isAuthenticated} onApplied={() => refetchUserSync()} />
+
+      {/* Day-1 install / push modal */}
+      {showDay1Modal && (
+        <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-4 bg-black/40">
+          <div className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl" style={{ border: "1px solid #f0e8e4" }}>
+            <h2 className="text-xl font-bold mb-2" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
+              First win logged 🎉
+            </h2>
+            <p className="text-sm text-gray-600 mb-4">
+              Want this to stick? Add the app icon and enable gentle reminders — so future you shows up tomorrow.
+            </p>
+            <div className="space-y-3 mb-4">
+              <HabitTrackerInstallPrompt variant="button" />
+              {isSupported && !isSubscribed && (
+                <Button
+                  className="w-full rounded-full"
+                  style={{ background: "#c9a96e", color: "white" }}
+                  disabled={isSubscribing}
+                  onClick={() => {
+                    subscribeToPush();
+                    trackFunnel.mutate({ eventType: "push_enabled", deviceId: getDeviceId() });
+                  }}
+                >
+                  {isSubscribing ? "Enabling…" : "Enable reminders"}
+                </Button>
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              className="w-full text-gray-500"
+              onClick={() => {
+                localStorage.setItem("mbr_day1_modal_seen", "1");
+                setShowDay1Modal(false);
+              }}
+            >
+              Not now
+            </Button>
+          </div>
+        </div>
+      )}
+
       {mainTab === "daily" && (
-        <div className="max-w-4xl mx-auto px-4 md:px-6 space-y-6">
-          
-          {/* Coach Updates Section */}
+        <div className="max-w-lg mx-auto px-4 space-y-4">
+          {isAuthenticated && weeklyInsight && (
+            <PatternInsightCard insight={weeklyInsight} compact />
+          )}
+
+          {/* Collapsed coach updates */}
         {updatesData && updatesData.length > 0 && (
-          <div className="space-y-4 mb-8">
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={() => setShowUpdates(!showUpdates)}
+              className="w-full flex justify-between items-center p-3 rounded-2xl bg-white border"
+              style={{ borderColor: "#f0e8e4" }}
+            >
+              <h3 className="font-bold text-sm flex items-center gap-2" style={{ color: "#2d3b2d" }}>
+                <Megaphone size={16} style={{ color: "#c9a96e" }} />
+                From Lee Anne
+                <span className="text-xs font-normal text-gray-400">
+                  ({updatesData.filter(u => !dismissedUpdates.includes(u.id)).length})
+                </span>
+              </h3>
+              <span className="text-[#8a9a8a] text-sm font-bold">{showUpdates ? "−" : "+"}</span>
+            </button>
+          {showUpdates && (
+          <div className="space-y-4">
             <div className="flex justify-between items-center">
               <h3 className="font-bold text-xl flex items-center gap-2" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
                 <Megaphone size={24} style={{ color: "#c9a96e" }} />
@@ -543,10 +656,26 @@ export default function HabitTrackerClient() {
               })}
             </div>
           </div>
+          )}
+          </div>
         )}
 
-        {/* Active Challenges Section */}
+        {/* Challenges — collapsed by default; joined chip always visible */}
         {activeChallengesData && activeChallengesData.length > 0 && (
+          <>
+            <button
+              type="button"
+              onClick={() => setShowChallenges(!showChallenges)}
+              className="w-full flex justify-between items-center p-3 rounded-2xl bg-white border"
+              style={{ borderColor: "#f0e8e4" }}
+            >
+              <span className="font-bold text-sm flex items-center gap-2" style={{ color: "#2d3b2d" }}>
+                <Target size={16} style={{ color: "#c9a96e" }} />
+                Challenges
+              </span>
+              <span className="text-[#8a9a8a] text-sm font-bold">{showChallenges ? "−" : "+"}</span>
+            </button>
+          {showChallenges && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white rounded-3xl shadow-xl overflow-hidden p-6 md:p-8" style={{ border: "1px solid #f0e8e4" }}>
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
               <h3 className="font-bold text-xl flex items-center gap-2" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
@@ -667,13 +796,28 @@ export default function HabitTrackerClient() {
               <p className="text-gray-500 text-sm text-center py-6">You've completed all active challenges! 🎉</p>
             )}
           </motion.div>
+          )}
+          </>
         )}
 
-        {/* Main Tracker Card */}
-        <div className="bg-white rounded-3xl shadow-xl overflow-hidden p-6 md:p-8" style={{ border: "1px solid #f0e8e4" }}>
+        {/* Main Tracker Card — today first */}
+        <div className="bg-white rounded-3xl shadow-xl overflow-hidden p-5 md:p-6" style={{ border: "1px solid #f0e8e4" }}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-lg" style={{ color: "#2d3b2d" }}>
+              Today&apos;s habits
+            </h3>
+            <button
+              type="button"
+              onClick={() => setShowPastDays(!showPastDays)}
+              className="text-xs font-bold text-[#8a9a8a] hover:text-[#2d3b2d]"
+            >
+              {showPastDays ? "Hide calendar" : "Edit past days"}
+            </button>
+          </div>
           
-          {/* Date Navigator */}
-          <div className="flex items-center justify-between mb-8 pb-6 border-b" style={{ borderColor: "#f0e8e4" }}>
+          {/* Date Navigator — collapsed unless past-days mode */}
+          {showPastDays && (
+          <div className="flex items-center justify-between mb-6 pb-4 border-b" style={{ borderColor: "#f0e8e4" }}>
             <Button variant="ghost" onClick={() => setCurrentDate(subDays(currentDate, 7))} className="rounded-full hover:opacity-80 transition-opacity" style={{ color: "#c9a96e" }}>
               &larr; <span className="hidden md:inline ml-1">Prev Week</span>
             </Button>
@@ -685,9 +829,11 @@ export default function HabitTrackerClient() {
               <span className="hidden md:inline mr-1">Next Week</span> &rarr;
             </Button>
           </div>
+          )}
 
-          {/* Desktop Weekly Grid View */}
-          <div className="hidden md:block overflow-x-auto">
+          {/* Desktop Weekly Grid View — only in past-days mode */}
+          {showPastDays && (
+          <div className="hidden md:block overflow-x-auto mb-4">
             <div className="min-w-[600px]">
               {/* Header Row */}
               <div className="grid grid-cols-8 gap-2 mb-4">
@@ -779,11 +925,11 @@ export default function HabitTrackerClient() {
               </div>
             </div>
           </div>
+          )}
 
-          {/* Mobile Daily List View */}
-          <div className="md:hidden">
-            {/* Horizontal scroll for days */}
-            <div className="flex overflow-x-auto gap-2 mb-6 pb-2 snap-x scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
+          {/* Day strip when editing past days */}
+          {showPastDays && (
+            <div className="flex overflow-x-auto gap-2 mb-4 pb-2 snap-x scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
               {days.map(day => {
                 const isSelected = isSelectedDate(day);
                 const isToday = calendarDateStr(day) === todayMountainDateStr();
@@ -804,12 +950,15 @@ export default function HabitTrackerClient() {
                 )
               })}
             </div>
+          )}
 
-            {/* Vertical habits list for selected date */}
-            <div className="space-y-3">
-              <h3 className="font-bold text-lg mb-4 text-center" style={{ color: "#2d3b2d" }}>
+          {/* Vertical habits list for selected date (today by default) */}
+          <div className="space-y-3">
+              {showPastDays && (
+              <h3 className="font-bold text-sm mb-2 text-center text-gray-500">
                 Habits for {format(selectedDate, "MMM d")}
               </h3>
+              )}
               {activeHabits.map((habit, index) => {
                 const completed = isLogCompleted(habit.id, currentNoteDateStr);
                 
@@ -878,10 +1027,9 @@ export default function HabitTrackerClient() {
                 )
               })}
             </div>
-          </div>
 
           {/* Daily Notes Section (Both Mobile & Desktop) */}
-          <div className="mt-8 pt-6 border-t" style={{ borderColor: "#f0e8e4" }}>
+          <div className="mt-6 pt-4 border-t" style={{ borderColor: "#f0e8e4" }}>
             <button 
               onClick={() => setIsNotesExpanded(!isNotesExpanded)}
               className="w-full flex items-center justify-between hover:bg-[#faf5f5] p-3 rounded-2xl transition-colors"
@@ -890,7 +1038,7 @@ export default function HabitTrackerClient() {
                 <h3 className="font-bold text-xl" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
                   Daily Notes
                 </h3>
-                <p className="text-sm text-gray-500 mt-1">Reflect on your day, track your wins, or jot down thoughts for {format(selectedDate, "MMM d")}.</p>
+                <p className="text-sm text-gray-500 mt-1">Reflect on your day for {format(selectedDate, "MMM d")}.</p>
               </div>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform duration-300 ${isNotesExpanded ? 'rotate-180' : ''}`} style={{ background: "#f0e8e4", color: "#2d3b2d" }}>
                 <svg width="14" height="8" viewBox="0 0 14 8" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -932,37 +1080,38 @@ export default function HabitTrackerClient() {
           </div>
 
         </div>
+
+          <VictoryListCard
+            dateStr={currentNoteDateStr}
+            isAuthenticated={isAuthenticated}
+            autoFocus={focusVictories}
+          />
         </div>
       )}
 
       {mainTab === "progress" && (
-        <HabitProgressTab
-          logs={logs}
-          activeHabits={activeHabits}
-          notes={notes}
-          currentStreak={currentStreak}
-          isAuthenticated={isAuthenticated}
-        />
+        <div className="max-w-4xl mx-auto px-4 space-y-6">
+          {isAuthenticated && weeklyInsight && (
+            <PatternInsightCard insight={weeklyInsight} />
+          )}
+          <HabitProgressTab
+            logs={logs}
+            activeHabits={activeHabits}
+            notes={notes}
+            currentStreak={currentStreak}
+            isAuthenticated={isAuthenticated}
+          />
+        </div>
       )}
 
-      {/* CTA Section */}
-      <div className="mt-20 max-w-3xl mx-auto text-center px-4">
-        <div className="rounded-3xl p-8 md:p-12 shadow-2xl relative overflow-hidden" style={{ background: "linear-gradient(135deg, #fbeee9 0%, #faf5f5 100%)", border: "1px solid #f0e8e4" }}>
-          <div className="absolute top-0 right-0 p-8 opacity-20" style={{ color: "#c9a96e" }}>
-            <Sparkles size={120} />
-          </div>
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 relative z-10" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
-            Ready for a Deeper Reset?
-          </h2>
-          <p className="mb-8 max-w-xl mx-auto text-lg relative z-10" style={{ color: "#5a6b5a" }}>
-            Habits are just the beginning. Book a free discovery call to uncover what's really holding you back and learn how to rewire your mind for lasting change.
-          </p>
-          <div className="relative z-10">
-            <Link href="/book" className="inline-block rounded-full px-8 py-4 text-lg font-bold shadow-lg hover:shadow-xl transition-all hover:scale-105" style={{ background: "#c9a96e", color: "white" }}>
-              Book Free Discovery Call
-            </Link>
-          </div>
-        </div>
+      {/* Compact CTA */}
+      <div className="mt-10 mb-4 max-w-lg mx-auto text-center px-4">
+        <p className="text-xs text-gray-400">
+          Want coaching support?{" "}
+          <Link href="/book" className="font-bold underline" style={{ color: "#c9a96e" }}>
+            Book a free call
+          </Link>
+        </p>
       </div>
     </div>
   );

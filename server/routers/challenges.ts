@@ -2,7 +2,7 @@ import { z } from "zod";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { challenges, userChallenges, userChallengeLogs } from "../../drizzle/schema";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, desc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { format } from "date-fns";
 
@@ -137,11 +137,21 @@ export const challengesRouter = router({
 
   // Admin Actions
   createChallenge: adminProcedure
-    .input(z.object({
-      title: z.string(),
-      description: z.string().optional(),
-      durationDays: z.number().default(7)
-    }))
+    .input(
+      z.object({
+        title: z.string(),
+        description: z.string().optional(),
+        durationDays: z.number().default(7),
+        startDate: z.string().optional().nullable(),
+        endDate: z.string().optional().nullable(),
+        linkedPodcastSlug: z.string().optional().nullable(),
+        linkedBlogSlug: z.string().optional().nullable(),
+        themeTag: z.string().optional().nullable(),
+        isFeatured: z.boolean().default(false),
+        featuredOrder: z.number().default(0),
+        isActive: z.boolean().default(true),
+      })
+    )
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("DB Error");
@@ -150,9 +160,68 @@ export const challengesRouter = router({
         title: input.title,
         description: input.description,
         durationDays: input.durationDays,
-        isActive: true,
+        startDate: input.startDate || null,
+        endDate: input.endDate || null,
+        linkedPodcastSlug: input.linkedPodcastSlug || null,
+        linkedBlogSlug: input.linkedBlogSlug || null,
+        themeTag: input.themeTag || null,
+        isFeatured: input.isFeatured,
+        featuredOrder: input.featuredOrder,
+        isActive: input.isActive,
       });
 
       return { success: true, challengeId: res.insertId };
     }),
+
+  updateChallenge: adminProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        title: z.string().optional(),
+        description: z.string().optional().nullable(),
+        durationDays: z.number().optional(),
+        startDate: z.string().optional().nullable(),
+        endDate: z.string().optional().nullable(),
+        linkedPodcastSlug: z.string().optional().nullable(),
+        linkedBlogSlug: z.string().optional().nullable(),
+        themeTag: z.string().optional().nullable(),
+        isFeatured: z.boolean().optional(),
+        featuredOrder: z.number().optional(),
+        isActive: z.boolean().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("DB Error");
+      const { id, ...rest } = input;
+      await db.update(challenges).set(rest).where(eq(challenges.id, id));
+      return { success: true };
+    }),
+
+  adminListChallenges: adminProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return [];
+    const all = await db.select().from(challenges).orderBy(desc(challenges.createdAt));
+    const result = [];
+    for (const c of all) {
+      const enrollments = await db
+        .select()
+        .from(userChallenges)
+        .where(eq(userChallenges.challengeId, c.id));
+      let completedCount = 0;
+      for (const e of enrollments) {
+        const logs = await db
+          .select()
+          .from(userChallengeLogs)
+          .where(eq(userChallengeLogs.userChallengeId, e.id));
+        if (logs.length >= c.durationDays) completedCount++;
+      }
+      result.push({
+        ...c,
+        joinCount: enrollments.length,
+        completedCount,
+      });
+    }
+    return result;
+  }),
 });

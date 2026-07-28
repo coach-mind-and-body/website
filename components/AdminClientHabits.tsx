@@ -35,7 +35,7 @@ export default function AdminClientHabits({ userId }: { userId: number }) {
   if (error) return <div className="text-xs py-4 text-gray-500">Client has not shared habit progress.</div>;
   if (!data) return null;
 
-  const { habits, logs, notes, calorieLogs, fitnessLogs, stats } = data as any;
+  const { habits, logs, notes, calorieLogs, fitnessLogs, stats, victories, insight, challengeProgress } = data as any;
   const activeHabits = habits.filter((h: any) => h.isActive);
 
   // 30 day heatmap
@@ -62,9 +62,20 @@ export default function AdminClientHabits({ userId }: { userId: number }) {
             <Flame className={stats?.streak >= 3 ? "text-orange-500 fill-orange-500" : "text-gray-400"} size={24} />
             <h3 className="font-bold text-xl" style={{ color: "oklch(0.20 0.015 50)" }}>
               {stats?.streak || 0} Day Streak
+              <span className="text-sm font-normal text-gray-400 ml-2">
+                best {stats?.maxStreak || 0}
+              </span>
             </h3>
           </div>
         </div>
+
+        {insight && (
+          <div className="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-100 text-sm">
+            <p className="font-bold text-amber-900">{insight.headline}</p>
+            <p className="text-amber-800/80 text-xs mt-1">{insight.body}</p>
+            <p className="text-amber-900 text-xs font-semibold mt-1">{insight.tip}</p>
+          </div>
+        )}
         
         <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">30-Day Activity Heatmap</p>
         <div className="flex flex-wrap gap-1.5">
@@ -221,11 +232,48 @@ export default function AdminClientHabits({ userId }: { userId: number }) {
         </div>
       </div>
 
-      {/* Legacy Notes & Health Data */}
+      {/* Victories */}
+      <div>
+        <p className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-3">Recent Victories</p>
+        <div className="space-y-2">
+          {(victories || []).slice(0, 14).map((v: any) => (
+            <div key={v.id} className="p-4 rounded-xl border bg-white shadow-sm">
+              <p className="text-[10px] font-bold uppercase tracking-widest mb-1 text-gray-400">{v.dateStr}</p>
+              <ul className="text-sm text-gray-700 space-y-0.5 list-disc pl-4">
+                {v.win1 && <li>{v.win1}</li>}
+                {v.win2 && <li>{v.win2}</li>}
+                {v.win3 && <li>{v.win3}</li>}
+              </ul>
+            </div>
+          ))}
+          {(!victories || victories.length === 0) && (
+            <p className="text-xs text-gray-400">No victory lists yet.</p>
+          )}
+        </div>
+      </div>
+
+      {/* Challenges */}
+      {(challengeProgress || []).length > 0 && (
+        <div>
+          <p className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-3">Challenges</p>
+          <div className="space-y-2">
+            {challengeProgress.map((cp: any) => (
+              <div key={cp.enrollment.id} className="p-3 rounded-xl border bg-white text-sm">
+                <span className="font-bold">{cp.challenge?.title || "Challenge"}</span>
+                <span className="text-gray-500 ml-2">
+                  {cp.completedDays}/{cp.challenge?.durationDays || "?"} days
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Notes */}
       <div>
         <p className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-3">Recent Notes</p>
         <div className="space-y-2">
-          {notes.slice(-5).map((note: any) => (
+          {notes.slice(-14).reverse().map((note: any) => (
             <div key={note.id} className="p-4 rounded-xl border bg-white shadow-sm">
               <p className="text-[10px] font-bold uppercase tracking-widest mb-1 text-gray-400">{note.dateStr}</p>
               <p className="text-sm text-gray-700 whitespace-pre-wrap">{note.note}</p>

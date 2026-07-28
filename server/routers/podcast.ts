@@ -162,6 +162,8 @@ export const podcastRouter = router({
             videoId: podcastEpisodes.videoId,
             slug: podcastEpisodes.slug,
             status: podcastEpisodes.status,
+            habitActionsJson: podcastEpisodes.habitActionsJson,
+            linkedBlogSlug: podcastEpisodes.linkedBlogSlug,
           })
           .from(podcastEpisodes);
 
@@ -171,6 +173,8 @@ export const podcastRouter = router({
           if (n?.status === "published") {
             ep.slug = n.slug;
             ep.hasShowNotes = true;
+            (ep as any).habitActionsJson = n.habitActionsJson;
+            (ep as any).linkedBlogSlug = n.linkedBlogSlug;
           }
         }
       }
@@ -232,6 +236,9 @@ export const podcastRouter = router({
         seoTitle: z.string().optional(),
         seoDescription: z.string().optional(),
         transcript: z.string().optional(),
+        habitActionsJson: z.string().optional().nullable(),
+        linkedChallengeId: z.number().optional().nullable(),
+        linkedBlogSlug: z.string().optional().nullable(),
         status: z.enum(["draft", "published"]).default("draft"),
       })
     )
@@ -257,6 +264,9 @@ export const podcastRouter = router({
         seoTitle: input.seoTitle,
         seoDescription: input.seoDescription,
         transcript: input.transcript,
+        habitActionsJson: input.habitActionsJson ?? null,
+        linkedChallengeId: input.linkedChallengeId ?? null,
+        linkedBlogSlug: input.linkedBlogSlug ?? null,
         status: input.status,
       };
 

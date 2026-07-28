@@ -269,6 +269,14 @@ export const challenges = mysqlTable("challenges", {
   description: text("description"),
   durationDays: int("durationDays").notNull().default(7),
   isActive: boolean("isActive").notNull().default(true),
+  /** Optional campaign window (America/Denver calendar dates as YYYY-MM-DD strings). */
+  startDate: date("startDate", { mode: "string" }),
+  endDate: date("endDate", { mode: "string" }),
+  linkedPodcastSlug: varchar("linkedPodcastSlug", { length: 255 }),
+  linkedBlogSlug: varchar("linkedBlogSlug", { length: 255 }),
+  themeTag: varchar("themeTag", { length: 100 }),
+  featuredOrder: int("featuredOrder").default(0).notNull(),
+  isFeatured: boolean("isFeatured").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -329,6 +337,10 @@ export const podcastEpisodes = mysqlTable("podcast_episodes", {
   seoTitle: varchar("seoTitle", { length: 500 }),
   seoDescription: text("seoDescription"),
   transcript: text("transcript"),
+  /** JSON array: [{ title, type?, targetValue?, unit?, description? }] */
+  habitActionsJson: text("habitActionsJson"),
+  linkedChallengeId: int("linkedChallengeId"),
+  linkedBlogSlug: varchar("linkedBlogSlug", { length: 255 }),
   status: mysqlEnum("status", ["draft", "published"]).default("draft").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -503,6 +515,92 @@ export const habitReminderRuns = mysqlTable("habit_reminder_runs", {
 
 export type HabitReminderRun = typeof habitReminderRuns.$inferSelect;
 export type InsertHabitReminderRun = typeof habitReminderRuns.$inferInsert;
+
+/** Structured daily victory list (3 wins) — brand "scoreboard" of what went right. */
+export const userVictoryLists = mysqlTable("user_victory_lists", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId"),
+  deviceId: varchar("deviceId", { length: 64 }),
+  dateStr: varchar("dateStr", { length: 10 }).notNull(),
+  win1: varchar("win1", { length: 280 }).notNull().default(""),
+  win2: varchar("win2", { length: 280 }).notNull().default(""),
+  win3: varchar("win3", { length: 280 }).notNull().default(""),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type UserVictoryList = typeof userVictoryLists.$inferSelect;
+export type InsertUserVictoryList = typeof userVictoryLists.$inferInsert;
+
+/** Per-user push preferences for habit tracker (defaults: all on). */
+export const habitNotificationPrefs = mysqlTable("habit_notification_prefs", {
+  userId: int("userId").primaryKey(),
+  eveningNudgeEnabled: boolean("eveningNudgeEnabled").default(true).notNull(),
+  victoryPromptEnabled: boolean("victoryPromptEnabled").default(true).notNull(),
+  challengePushEnabled: boolean("challengePushEnabled").default(true).notNull(),
+  day1Day3Enabled: boolean("day1Day3Enabled").default(true).notNull(),
+  weeklyInsightEmailEnabled: boolean("weeklyInsightEmailEnabled").default(true).notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type HabitNotificationPref = typeof habitNotificationPrefs.$inferSelect;
+export type InsertHabitNotificationPref = typeof habitNotificationPrefs.$inferInsert;
+
+/** Lightweight funnel / lifecycle events for habit tracker. */
+export const habitFunnelEvents = mysqlTable("habit_funnel_events", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId"),
+  deviceId: varchar("deviceId", { length: 64 }),
+  eventType: varchar("eventType", { length: 64 }).notNull(),
+  dateStr: varchar("dateStr", { length: 10 }).notNull(),
+  meta: text("meta"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type HabitFunnelEvent = typeof habitFunnelEvents.$inferSelect;
+export type InsertHabitFunnelEvent = typeof habitFunnelEvents.$inferInsert;
+
+/** Soft onboarding packs (e.g. Craving week, Energy week). */
+export const habitPacks = mysqlTable("habit_packs", {
+  id: int("id").autoincrement().primaryKey(),
+  slug: varchar("slug", { length: 100 }).notNull().unique(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  isActive: boolean("isActive").default(true).notNull(),
+  isDefault: boolean("isDefault").default(false).notNull(),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type HabitPack = typeof habitPacks.$inferSelect;
+export type InsertHabitPack = typeof habitPacks.$inferInsert;
+
+export const habitPackItems = mysqlTable("habit_pack_items", {
+  id: int("id").autoincrement().primaryKey(),
+  packId: int("packId").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  type: mysqlEnum("type", ["boolean", "numeric"]).default("boolean").notNull(),
+  targetValue: int("targetValue"),
+  unit: varchar("unit", { length: 50 }),
+  sortOrder: int("sortOrder").default(0).notNull(),
+});
+
+export type HabitPackItem = typeof habitPackItems.$inferSelect;
+export type InsertHabitPackItem = typeof habitPackItems.$inferInsert;
+
+/** Dedupe locks for multi-kind habit crons: evening_nudge | day3 | weekly_insight_email */
+export const habitCronRuns = mysqlTable("habit_cron_runs", {
+  id: int("id").autoincrement().primaryKey(),
+  kind: varchar("kind", { length: 64 }).notNull(),
+  dateStr: varchar("dateStr", { length: 10 }).notNull(),
+  sentCount: int("sentCount").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type HabitCronRun = typeof habitCronRuns.$inferSelect;
+export type InsertHabitCronRun = typeof habitCronRuns.$inferInsert;
 
 // ─── CRM Conversations (Unified Inbox) ───────────────────────────────────────
 export const conversations = mysqlTable("conversations", {

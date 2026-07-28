@@ -2,7 +2,7 @@ import { z } from "zod";
 import webpush from "web-push";
 import { adminProcedure, publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { challenges, pushSubscriptions, users } from "../../drizzle/schema";
+import { challenges, pushSubscriptions, users, habitNotificationPrefs } from "../../drizzle/schema";
 import { eq, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
@@ -210,7 +210,7 @@ export const pushRouter = router({
 
   // Admin: broadcast a challenge push to all subscribed devices
   broadcastChallenge: adminProcedure
-    .input(z.object({ challengeId: z.number() }))
+    .input(z.object({ challengeId: z.number(), forceAll: z.boolean().optional() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
@@ -226,6 +226,11 @@ export const pushRouter = router({
       }
 
       const subs = await db.select().from(pushSubscriptions);
+      const prefs = await db.select().from(habitNotificationPrefs);
+      const optedOut = new Set(
+        prefs.filter((p) => p.challengePushEnabled === false).map((p) => p.userId)
+      );
+
       const payload = JSON.stringify({
         title: `New Challenge: ${challenge.title}`,
         body: challenge.description || "Join the challenge in the Habit Tracker!",
@@ -234,6 +239,13 @@ export const pushRouter = router({
 
       let sentCount = 0;
       const promises = subs.map(async (sub) => {
+        if (
+          !input.forceAll &&
+          sub.userId != null &&
+          optedOut.has(sub.userId)
+        ) {
+          return;
+        }
         try {
           await webpush.sendNotification(
             {

@@ -14,6 +14,9 @@ import { trpc } from "@/lib/trpc";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import Link from "next/link";
 import { useHabitPodcastPlayer } from "@/contexts/HabitPodcastPlayerContext";
+import { useAuth } from "@/hooks/use-auth";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 const YOUTUBE_CHANNEL = "https://www.youtube.com/@MindandBodyResetCoach";
 const YOUTUBE_PLAYLIST =
@@ -28,7 +31,17 @@ interface Episode {
   videoId: string;
   slug?: string | null;
   hasShowNotes?: boolean;
+  habitActionsJson?: string | null;
+  linkedBlogSlug?: string | null;
 }
+
+type HabitAction = {
+  title: string;
+  type?: "boolean" | "numeric";
+  targetValue?: number | null;
+  unit?: string | null;
+  description?: string | null;
+};
 
 function formatDate(iso: string) {
   if (!iso) return "";
@@ -48,7 +61,44 @@ export default function PodcastsClient() {
 
   const playerRef = useRef<HTMLDivElement>(null);
   const { nowPlaying, play } = useHabitPodcastPlayer();
+  const { isAuthenticated } = useAuth();
   const [activeVideo, setActiveVideo] = useState<string | null>(null);
+  const syncHabit = trpc.habit.syncHabit.useMutation({
+    onSuccess: () => toast.success("Added to your habits"),
+    onError: (e) => toast.error(e.message),
+  });
+
+  const addActionAsHabit = (action: HabitAction) => {
+    if (isAuthenticated) {
+      syncHabit.mutate({
+        title: action.title,
+        description: action.description || undefined,
+        type: action.type || "boolean",
+        targetValue: action.targetValue ?? null,
+        unit: action.unit ?? null,
+        order: 99,
+        isActive: true,
+      });
+    } else {
+      try {
+        const raw = localStorage.getItem("mbr_habits");
+        const habits = raw ? JSON.parse(raw) : [];
+        habits.push({
+          id: Date.now(),
+          title: action.title,
+          description: action.description || null,
+          type: action.type || "boolean",
+          targetValue: action.targetValue ?? null,
+          unit: action.unit ?? null,
+          isActive: true,
+        });
+        localStorage.setItem("mbr_habits", JSON.stringify(habits));
+        toast.success("Added to your habits on this device");
+      } catch {
+        toast.error("Could not save habit");
+      }
+    }
+  };
 
   const { data: podcastData, isLoading: loading } = trpc.podcast.getEpisodes.useQuery(
     undefined,
@@ -69,6 +119,15 @@ export default function PodcastsClient() {
   const activeEpisode =
     episodes.find((e) => e.videoId === activeVideo || e.id === activeVideo) ??
     episodes[0];
+
+  let episodeActions: HabitAction[] = [];
+  if (activeEpisode?.habitActionsJson) {
+    try {
+      episodeActions = JSON.parse(activeEpisode.habitActionsJson);
+    } catch {
+      episodeActions = [];
+    }
+  }
 
   const selectEpisode = (ep: Episode) => {
     const videoId = ep.videoId || ep.id;
@@ -179,6 +238,38 @@ export default function PodcastsClient() {
           </div>
         )}
       </div>
+
+      {episodeActions.length > 0 && (
+        <div
+          className="mb-6 p-4 rounded-3xl bg-white border space-y-3"
+          style={{ borderColor: "#f0e8e4" }}
+        >
+          <h3 className="font-bold text-sm" style={{ color: "#2d3b2d" }}>
+            This episode&apos;s actions
+          </h3>
+          {episodeActions.map((a, i) => (
+            <div key={i} className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold" style={{ color: "#2d3b2d" }}>
+                  {a.title}
+                </p>
+                {a.description && (
+                  <p className="text-xs text-gray-500">{a.description}</p>
+                )}
+              </div>
+              <Button
+                size="sm"
+                className="rounded-full shrink-0"
+                style={{ background: "#c9a96e", color: "white" }}
+                disabled={syncHabit.isPending}
+                onClick={() => addActionAsHabit(a)}
+              >
+                Add habit
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Background listening tip */}
       <div

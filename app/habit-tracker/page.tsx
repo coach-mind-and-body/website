@@ -1,4 +1,5 @@
-import HabitTrackerClient from './HabitTrackerClient';
+import { Suspense } from "react";
+import HabitTrackerClient from "./HabitTrackerClient";
 
 export const metadata = {
   title: "Free Habit Tracker for Midlife Wellness",
@@ -30,5 +31,9 @@ export const metadata = {
 };
 
 export default function Page() {
-  return <HabitTrackerClient  />;
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#faf5f5]" />}>
+      <HabitTrackerClient />
+    </Suspense>
+  );
 }
