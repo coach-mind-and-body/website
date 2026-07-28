@@ -244,43 +244,49 @@ function CtaCard({
         ))}
       </ul>
 
-      {/* Primary for warm RT who need a conversation first */}
-      <Link
-        href={bookHref}
-        onClick={onBookClick}
-        className="flex w-full min-h-[52px] sm:min-h-[56px] items-center justify-center px-4 text-center text-base sm:text-lg font-bold bg-[#3a5a3a] hover:bg-[#2d4a2d] text-white rounded-full transition-colors shadow-md mb-2"
-      >
-        Book a Free Fit Call
-      </Link>
-      <p className="text-center text-xs text-gray-500 mb-4 leading-relaxed px-1">
-        30 minutes · no pressure · honest fit conversation
-      </p>
-
+      {/* Primary goal = paid enroll */}
       <button
         type="button"
         onClick={() => startCheckout("full")}
         disabled={isPending}
-        className="flex w-full min-h-[48px] items-center justify-center px-4 text-center text-base font-bold bg-[#c9a96e] hover:bg-[#b09055] active:bg-[#a08048] disabled:opacity-60 text-white rounded-full transition-colors shadow-md mb-2"
+        className="flex w-full min-h-[52px] sm:min-h-[56px] items-center justify-center px-4 text-center text-base sm:text-lg font-bold bg-[#c9a96e] hover:bg-[#b09055] active:bg-[#a08048] disabled:opacity-60 text-white rounded-full transition-colors shadow-md mb-2"
       >
         {isPending && pendingPlan === "full"
           ? "Opening secure checkout…"
-          : `Or lock intro spot — $${PROGRAM.fullPrice}`}
+          : `Yes — Lock My Intro Spot ($${PROGRAM.fullPrice})`}
       </button>
-      <p className="text-center text-xs text-gray-500 mb-2 leading-relaxed px-1">
-        Secure Stripe checkout · email collected there
+      <p className="text-center text-xs text-gray-500 mb-3 leading-relaxed px-1">
+        Secure Stripe checkout opens next · email collected there
+      </p>
+      <p className="text-center text-xs text-gray-500 mb-1 leading-relaxed px-1">
+        Or hold your seat with ${PROGRAM.depositPrice} today — balance before session one.
       </p>
       <button
         type="button"
         onClick={() => startCheckout("deposit")}
         disabled={isPending}
-        className="flex w-full min-h-[40px] items-center justify-center px-4 text-sm font-semibold text-[#3a5a3a] underline underline-offset-2 hover:text-[#c9a96e] disabled:opacity-60 mb-4"
+        className="flex w-full min-h-[44px] items-center justify-center px-4 text-sm font-semibold text-[#3a5a3a] underline underline-offset-2 hover:text-[#c9a96e] disabled:opacity-60 mb-5"
       >
         {isPending && pendingPlan === "deposit"
           ? "Opening checkout…"
           : `Start with $${PROGRAM.depositPrice} deposit →`}
       </button>
 
-      <ul className="mt-2 space-y-2 text-xs sm:text-sm text-gray-500 border-t border-gray-100 pt-4">
+      <div className="border-t border-gray-100 pt-5">
+        <p className="text-center text-sm text-gray-600 mb-2">Not ready to enroll today?</p>
+        <Link
+          href={bookHref}
+          onClick={onBookClick}
+          className="flex w-full min-h-[48px] sm:min-h-[52px] items-center justify-center px-4 text-base font-bold border-2 border-[#3a5a3a] text-[#3a5a3a] hover:bg-[#f4f8f4] active:bg-[#eaf2ea] rounded-full transition-colors"
+        >
+          Book a Free Fit Call
+        </Link>
+        <p className="text-center text-xs text-gray-500 mt-2 leading-relaxed px-1">
+          30 minutes. If it&apos;s not the right fit, Lee Anne will tell you — no pressure pitch.
+        </p>
+      </div>
+
+      <ul className="mt-5 space-y-2 text-xs sm:text-sm text-gray-500">
         {[
           "1-on-1 with Lee Anne (not a group program)",
           "Mindset + habits — practical tools that fit real life",
@@ -358,25 +364,25 @@ export default function ReclaimInviteClient() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FDFBF7]">
-      {/* Mobile sticky: book first (warm traffic), enroll second */}
-      <div className="fixed bottom-0 inset-x-0 z-50 md:hidden border-t border-gray-200 bg-white/95 backdrop-blur-sm px-3 py-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.08)] space-y-2">
-        <Link
-          href={bookHref}
-          onClick={onBookClick}
-          className="flex w-full min-h-[46px] items-center justify-center text-sm font-bold bg-[#3a5a3a] text-white rounded-full shadow-md px-3 text-center"
-        >
-          Book Free Fit Call
-        </Link>
+      {/* Mobile sticky: paid enroll primary */}
+      <div className="fixed bottom-0 inset-x-0 z-50 md:hidden border-t border-gray-200 bg-white/95 backdrop-blur-sm px-3 py-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.08)] space-y-1.5">
         <button
           type="button"
           onClick={() => checkout.startCheckout("full")}
           disabled={checkout.isPending}
-          className="flex w-full min-h-[40px] items-center justify-center text-xs font-bold bg-[#c9a96e] hover:bg-[#b09055] disabled:opacity-60 text-white rounded-full px-3 text-center"
+          className="flex w-full min-h-[48px] items-center justify-center text-sm font-bold bg-[#c9a96e] hover:bg-[#b09055] disabled:opacity-60 text-white rounded-full shadow-md px-3 text-center"
         >
           {checkout.isPending && checkout.pendingPlan === "full"
             ? "Opening checkout…"
-            : `Or enroll — $${PROGRAM.fullPrice}`}
+            : `Lock Intro Spot — $${PROGRAM.fullPrice}`}
         </button>
+        <Link
+          href={bookHref}
+          onClick={onBookClick}
+          className="flex w-full min-h-[36px] items-center justify-center text-xs font-semibold text-[#3a5a3a] underline underline-offset-2"
+        >
+          Or book a free fit call
+        </Link>
       </div>
 
       <main className="flex-1 pt-6 sm:pt-10 md:pt-14 pb-28 md:pb-16 px-4 sm:px-6 md:px-12 relative overflow-hidden">
