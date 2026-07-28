@@ -117,9 +117,21 @@ export function OnboardingPackModal({
               {pack.description && (
                 <p className="text-xs text-gray-500 mt-1">{pack.description}</p>
               )}
-              <p className="text-[11px] text-gray-400 mt-2">
-                {pack.items?.length || 0} habits
-              </p>
+              <ul className="mt-2 space-y-1">
+                {(pack.items || []).map((it, idx) => (
+                  <li key={idx} className="text-[11px] text-gray-600 leading-snug">
+                    <span className="font-semibold" style={{ color: "#2d3b2d" }}>
+                      {it.title}
+                      {it.type === "numeric" && it.targetValue != null
+                        ? ` · ${it.targetValue}${it.unit ? ` ${it.unit}` : ""}`
+                        : ""}
+                    </span>
+                    {it.description ? (
+                      <span className="text-gray-400"> — {it.description}</span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
             </button>
           ))}
           <Button

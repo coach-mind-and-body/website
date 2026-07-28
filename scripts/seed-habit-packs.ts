@@ -11,10 +11,36 @@ const PACKS = [
     isDefault: true,
     sortOrder: 0,
     items: [
-      { title: "Drink water", type: "boolean" as const, sortOrder: 0 },
-      { title: "Hit protein goal", type: "boolean" as const, sortOrder: 1 },
-      { title: "Move 10+ minutes", type: "boolean" as const, sortOrder: 2 },
-      { title: "Write 3 wins", type: "boolean" as const, description: "Victory list before bed", sortOrder: 3 },
+      {
+        title: "Water",
+        type: "numeric" as const,
+        targetValue: 8,
+        unit: "glasses",
+        description: "About 8 glasses (~64 oz). Close enough counts.",
+        sortOrder: 0,
+      },
+      {
+        // Title includes "protein" so Macros logging can auto-tally toward the target
+        title: "Protein",
+        type: "numeric" as const,
+        targetValue: 100,
+        unit: "g",
+        description:
+          "Default goal: 100g/day (a solid midlife starting point). Log meals in Macros or type your total here. Your coach may set a different number.",
+        sortOrder: 1,
+      },
+      {
+        title: "Move 10+ minutes",
+        type: "boolean" as const,
+        description: "Walk, strength, or exercise snacks — anything that gets you moving.",
+        sortOrder: 2,
+      },
+      {
+        title: "Write 3 wins",
+        type: "boolean" as const,
+        description: "Victory list before bed — what went right today?",
+        sortOrder: 3,
+      },
     ],
   },
   {
@@ -24,10 +50,30 @@ const PACKS = [
     isDefault: false,
     sortOrder: 1,
     items: [
-      { title: "Protein at dinner", type: "boolean" as const, sortOrder: 0 },
-      { title: "Pause before pantry", type: "boolean" as const, description: "Who is driving?", sortOrder: 1 },
-      { title: "Evening walk or stretch", type: "boolean" as const, sortOrder: 2 },
-      { title: "No kitchen after wind-down", type: "boolean" as const, sortOrder: 3 },
+      {
+        title: "Protein at dinner",
+        type: "boolean" as const,
+        description: "Palm-sized protein on the plate — steadies evening cravings.",
+        sortOrder: 0,
+      },
+      {
+        title: "Pause before pantry",
+        type: "boolean" as const,
+        description: "One breath: who is driving — future you or craving you?",
+        sortOrder: 1,
+      },
+      {
+        title: "Evening walk or stretch",
+        type: "boolean" as const,
+        description: "5–15 minutes. Movement instead of the kitchen loop.",
+        sortOrder: 2,
+      },
+      {
+        title: "No kitchen after wind-down",
+        type: "boolean" as const,
+        description: "Kitchen closed after your evening wind-down starts.",
+        sortOrder: 3,
+      },
     ],
   },
   {
@@ -37,10 +83,32 @@ const PACKS = [
     isDefault: false,
     sortOrder: 2,
     items: [
-      { title: "3 exercise snacks", type: "numeric" as const, targetValue: 3, unit: "snacks", sortOrder: 0 },
-      { title: "Morning light / walk", type: "boolean" as const, sortOrder: 1 },
-      { title: "Screens off before bed", type: "boolean" as const, sortOrder: 2 },
-      { title: "Balanced breakfast", type: "boolean" as const, sortOrder: 3 },
+      {
+        title: "Exercise snacks",
+        type: "numeric" as const,
+        targetValue: 3,
+        unit: "snacks",
+        description: "2–3 minute movement bursts (stairs, squats, walk). Aim for 3 today.",
+        sortOrder: 0,
+      },
+      {
+        title: "Morning light / walk",
+        type: "boolean" as const,
+        description: "Daylight + a short walk if you can — helps energy and sleep.",
+        sortOrder: 1,
+      },
+      {
+        title: "Screens off before bed",
+        type: "boolean" as const,
+        description: "Screens down ~30–60 min before sleep.",
+        sortOrder: 2,
+      },
+      {
+        title: "Balanced breakfast",
+        type: "boolean" as const,
+        description: "Protein + fiber/fat — not coffee alone.",
+        sortOrder: 3,
+      },
     ],
   },
 ];
