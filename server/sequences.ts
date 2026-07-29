@@ -8,10 +8,16 @@ import {
   SNACK_HACK_DAY_OFFSETS,
 } from "./emails/snackHackSequence";
 import { FOOD_QUIZ_NURTURE_EMAILS } from "./emails/foodQuizNurture";
-import { sendTransactionalEmail } from "./notifications";
+import {
+  SNACK_HACK_RECLAIM_OFFER_EMAILS,
+  SNACK_HACK_RECLAIM_OFFER_DAY_OFFSETS,
+  SNACK_HACK_RECLAIM_OFFER_SEQUENCE_ID,
+} from "./emails/snackHackReclaimOffer";
+import { sendMarketingEmail, isEmailOptedOut } from "./emailMarketing";
 
 export const SNACK_HACK_SEQUENCE_ID = "snack_hack_nurture";
 export const FOOD_QUIZ_SEQUENCE_ID = "food_quiz_nurture";
+export { SNACK_HACK_RECLAIM_OFFER_SEQUENCE_ID };
 
 type EmailGenerator = (name: string) => { subject: string; html: string };
 
@@ -44,6 +50,12 @@ const SEQUENCE_CONFIG: Record<string, SequenceConfig> = {
     type: "interval",
     emails: FOOD_QUIZ_NURTURE_EMAILS,
     delayDays: 2,
+  },
+  // Manual/batch enroll only — Snack Hack list → RECLAIM offer (not auto on leadgen)
+  [SNACK_HACK_RECLAIM_OFFER_SEQUENCE_ID]: {
+    type: "absolute_days",
+    emails: [...SNACK_HACK_RECLAIM_OFFER_EMAILS],
+    dayOffsets: SNACK_HACK_RECLAIM_OFFER_DAY_OFFSETS,
   },
 };
 
@@ -83,11 +95,29 @@ async function sendSequenceStep(
 
   const emailContent = getEmailContent(subscriber.firstName || "Friend");
 
+  if (isEmailOptedOut(subscriber.segments)) {
+    console.log(
+      `[Sequences] Skip ${enrollment.sequenceId} — opted out: ${subscriber.email}`
+    );
+    return false;
+  }
+
   console.log(
     `[Sequences] Sending ${enrollment.sequenceId} step ${stepIndex + 1} to ${subscriber.email}`
   );
 
-  return sendTransactionalEmail({
+  const reasonBySequence: Record<string, string> = {
+    [SNACK_HACK_SEQUENCE_ID]:
+      "You're receiving this because you downloaded the Midlife Mindset Snack Hack.",
+    [SNACK_HACK_RECLAIM_OFFER_SEQUENCE_ID]:
+      "You're receiving this because you downloaded the Midlife Mindset Snack Hack.",
+    [FOOD_QUIZ_SEQUENCE_ID]:
+      "You're receiving this because you took the Food Freedom Quiz.",
+    reclaim_6_week: "You're receiving this as part of your R.E.C.L.A.I.M. program.",
+    fpu_babystep_1: "You're receiving this as part of your Financial Peace journey.",
+  };
+
+  return sendMarketingEmail({
     to: subscriber.email,
     toName:
       `${subscriber.firstName || ""} ${subscriber.lastName || ""}`.trim() ||
@@ -95,6 +125,7 @@ async function sendSequenceStep(
     subject: emailContent.subject,
     htmlBody: emailContent.html,
     textBody: "Please view this email in an HTML-compatible client.",
+    reasonLine: reasonBySequence[enrollment.sequenceId],
   });
 }
 
@@ -118,6 +149,15 @@ export async function processEmailSequences() {
     const config = getSequenceConfig(enrollment.sequenceId);
     if (!config) {
       console.warn(`[Sequences] Unknown sequence: ${enrollment.sequenceId}`);
+      continue;
+    }
+
+    // Honor marketing opt-out (Resend + local segment)
+    if (isEmailOptedOut(subscriber.segments)) {
+      await db
+        .update(sequenceEnrollments)
+        .set({ status: "cancelled", updatedAt: new Date() })
+        .where(eq(sequenceEnrollments.id, enrollment.id));
       continue;
     }
 

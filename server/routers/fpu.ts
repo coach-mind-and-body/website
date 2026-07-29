@@ -47,7 +47,7 @@ export const fpuRouter = router({
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      payment_method_types: ["card"],
+      // Omit payment_method_types so Stripe dynamic methods can show Apple Pay, Google Pay, Link, etc.
       phone_number_collection: { enabled: true },
       customer_email: ctx.user?.email ?? undefined,
       allow_promotion_codes: true,
@@ -104,7 +104,7 @@ export const fpuRouter = router({
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      payment_method_types: ["card"],
+      // Omit payment_method_types so Stripe dynamic methods can show Apple Pay, Google Pay, Link, etc.
       phone_number_collection: { enabled: true },
       customer_email: ctx.user?.email ?? undefined,
       allow_promotion_codes: true,
