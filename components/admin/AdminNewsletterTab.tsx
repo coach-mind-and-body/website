@@ -557,6 +557,7 @@ export function AdminNewsletterTab() {
 
   // ── Analytics ─────────────────────────────────────────────────────────────
   if (view === "analytics") {
+    const l30 = analytics?.last30Days;
     return (
       <div>
         <h2
@@ -565,16 +566,39 @@ export function AdminNewsletterTab() {
         >
           Newsletter analytics
         </h2>
-        <p className="mb-4" style={{ color: "oklch(0.52 0.015 50)" }}>
-          Delivery stats from your sends (opens/clicks need Resend webhooks later).
+        <p className="mb-4 max-w-2xl" style={{ color: "oklch(0.52 0.015 50)" }}>
+          Live from your database + Resend webhooks (delivered, opens, clicks, bounces).
+          Opens/clicks require tracking enabled on your Resend domain and the webhook configured.
         </p>
         {subNav}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+          {[
+            { label: "Sent (30d)", value: l30?.sent ?? "—" },
+            { label: "Delivered", value: l30?.delivered ?? "—", sub: l30 ? `${l30.deliveryRate}%` : undefined },
+            { label: "Opened", value: l30?.opened ?? "—", sub: l30 ? `${l30.openRate}%` : undefined },
+            { label: "Clicked", value: l30?.clicked ?? "—", sub: l30 ? `${l30.clickRate}%` : undefined },
+          ].map((c) => (
+            <div key={c.label} className="bg-white rounded-xl border border-slate-100 p-4 shadow-sm">
+              <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "oklch(0.55 0.015 50)" }}>
+                {c.label}
+              </p>
+              <p className="text-2xl font-bold mt-1" style={{ color: "oklch(0.22 0.015 50)" }}>
+                {c.value}
+              </p>
+              {c.sub && (
+                <p className="text-xs font-semibold mt-0.5" style={{ color: "oklch(0.72 0.12 75)" }}>
+                  {c.sub} rate
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           {[
-            { label: "Emails sent (30d)", value: analytics?.last30Days.sent ?? "—" },
-            { label: "Campaigns (30d)", value: analytics?.last30Days.campaigns ?? "—" },
-            { label: "Failed", value: analytics?.last30Days.failed ?? "—" },
-            { label: "Skipped (opt-out)", value: analytics?.last30Days.skipped ?? "—" },
+            { label: "Campaigns (30d)", value: l30?.campaigns ?? "—" },
+            { label: "Bounced", value: l30?.bounced ?? "—" },
+            { label: "Failed (API)", value: l30?.failed ?? "—" },
+            { label: "Skipped (opt-out)", value: l30?.skipped ?? "—" },
           ].map((c) => (
             <div key={c.label} className="bg-white rounded-xl border border-slate-100 p-4 shadow-sm">
               <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "oklch(0.55 0.015 50)" }}>
@@ -593,10 +617,11 @@ export function AdminNewsletterTab() {
             </p>
             <div className="space-y-2">
               {analytics.byAudience.map((a) => (
-                <div key={a.audience} className="flex justify-between text-sm">
+                <div key={a.audience} className="flex justify-between text-sm gap-2 flex-wrap">
                   <span className="font-semibold capitalize">{AUDIENCE_LABELS[a.audience as AudienceGroup] ?? a.audience}</span>
                   <span style={{ color: "oklch(0.45 0.015 50)" }}>
-                    {a.sent} sent · {a.campaigns} campaign{a.campaigns === 1 ? "" : "s"}
+                    {a.sent} sent · {a.opened} opened · {a.clicked} clicked · {a.campaigns} campaign
+                    {a.campaigns === 1 ? "" : "s"}
                   </span>
                 </div>
               ))}
@@ -605,7 +630,7 @@ export function AdminNewsletterTab() {
         )}
         <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
           <div className="px-5 py-3 border-b text-xs font-bold uppercase" style={{ color: "oklch(0.52 0.015 50)" }}>
-            Recent sent campaigns — click for recipient log
+            Recent campaigns — click for per-person log
           </div>
           <div className="divide-y">
             {(analytics?.recent ?? []).map((n) => (
@@ -620,7 +645,11 @@ export function AdminNewsletterTab() {
                 <span className="font-semibold text-sm">{n.subject}</span>
                 <span className="text-xs" style={{ color: "oklch(0.52 0.015 50)" }}>
                   {n.sentCount} sent
-                  {n.failedCount ? ` · ${n.failedCount} failed` : ""}
+                  {" · "}
+                  {n.openRate}% open
+                  {" · "}
+                  {n.clickRate}% click
+                  {n.bounced ? ` · ${n.bounced} bounce` : ""}
                   {n.sentAt ? ` · ${new Date(n.sentAt).toLocaleDateString()}` : ""}
                 </span>
               </button>
@@ -640,22 +669,28 @@ export function AdminNewsletterTab() {
                 Close
               </button>
             </div>
-            <div className="max-h-72 overflow-auto text-sm">
+            <div className="max-h-80 overflow-auto text-sm">
               <table className="w-full text-left">
                 <thead>
                   <tr className="text-xs uppercase" style={{ color: "oklch(0.55 0.015 50)" }}>
                     <th className="py-1 pr-2">Email</th>
                     <th className="py-1 pr-2">Name</th>
-                    <th className="py-1 pr-2">Status</th>
+                    <th className="py-1 pr-2">API</th>
+                    <th className="py-1 pr-2">Delivery</th>
+                    <th className="py-1 pr-2">Opens</th>
+                    <th className="py-1 pr-2">Clicks</th>
                     <th className="py-1">When</th>
                   </tr>
                 </thead>
                 <tbody>
                   {sendLog.map((r) => (
                     <tr key={r.id} className="border-t">
-                      <td className="py-1.5 pr-2">{r.email}</td>
+                      <td className="py-1.5 pr-2 text-xs">{r.email}</td>
                       <td className="py-1.5 pr-2">{r.firstName}</td>
-                      <td className="py-1.5 pr-2">{r.status}</td>
+                      <td className="py-1.5 pr-2 text-xs">{r.status}</td>
+                      <td className="py-1.5 pr-2 text-xs">{r.deliveryStatus ?? "—"}</td>
+                      <td className="py-1.5 pr-2">{r.openCount ?? 0}</td>
+                      <td className="py-1.5 pr-2">{r.clickCount ?? 0}</td>
                       <td className="py-1.5 text-xs text-slate-500">
                         {new Date(r.sentAt).toLocaleString()}
                       </td>
@@ -725,7 +760,12 @@ export function AdminNewsletterTab() {
                     <td className="px-4 py-2 capitalize">
                       {AUDIENCE_LABELS[r.audienceGroup as AudienceGroup] ?? r.audienceGroup}
                     </td>
-                    <td className="px-4 py-2">{r.status}</td>
+                    <td className="px-4 py-2 text-xs">
+                      {r.status}
+                      {r.deliveryStatus ? ` · ${r.deliveryStatus}` : ""}
+                      {(r.openCount ?? 0) > 0 ? ` · ${r.openCount} open` : ""}
+                      {(r.clickCount ?? 0) > 0 ? ` · ${r.clickCount} click` : ""}
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -147,9 +147,18 @@ export function marketingEmailFooter(unsubUrl: string, reasonLine: string): stri
     </div>`;
 }
 
+export type MarketingSendResult = {
+  ok: boolean;
+  /** True when contact is opted out or Resend is not configured */
+  skipped?: boolean;
+  resendEmailId?: string | null;
+  error?: string;
+};
+
 /**
  * Send a marketing email via Resend with List-Unsubscribe (RFC 8058 one-click).
  * Skips send if the contact is opted out in our DB.
+ * Returns Resend email id for webhook analytics matching.
  */
 export async function sendMarketingEmail(params: {
   to: string;
@@ -159,10 +168,12 @@ export async function sendMarketingEmail(params: {
   textBody?: string;
   /** Shown above the unsubscribe link */
   reasonLine?: string;
-}): Promise<boolean> {
+  /** Tags stored on Resend (ASCII letters/numbers/_/- only) */
+  tags?: { name: string; value: string }[];
+}): Promise<MarketingSendResult> {
   if (!ENV.resendApiKey) {
     console.warn("[Email] Resend not configured — skipping marketing email to", params.to);
-    return false;
+    return { ok: false, skipped: true, error: "Resend not configured" };
   }
 
   const to = params.to.toLowerCase().trim();
@@ -175,7 +186,7 @@ export async function sendMarketingEmail(params: {
       .limit(1);
     if (sub && isEmailOptedOut(sub.segments)) {
       console.log(`[Email] Skip marketing to opted-out ${to}`);
-      return false;
+      return { ok: false, skipped: true, error: "Opted out" };
     }
   }
 
@@ -197,7 +208,7 @@ export async function sendMarketingEmail(params: {
 
   try {
     const resend = new Resend(ENV.resendApiKey);
-    const { error } = await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: `Lee Anne — Mind and Body Reset Coaching <${ENV.resendFromEmail}>`,
       to: [to],
       subject: params.subject,
@@ -207,15 +218,25 @@ export async function sendMarketingEmail(params: {
         "List-Unsubscribe": `<${unsubUrl}>`,
         "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
       },
+      tags: params.tags,
     });
     if (error) {
       console.error(`[Email] Resend marketing error for ${to}:`, error);
-      return false;
+      return {
+        ok: false,
+        error: typeof error === "object" && error && "message" in error
+          ? String((error as { message?: string }).message)
+          : "Resend error",
+      };
     }
-    console.log(`[Email] Marketing sent via Resend to ${to}`);
-    return true;
+    const resendEmailId = data?.id ?? null;
+    console.log(`[Email] Marketing sent via Resend to ${to}${resendEmailId ? ` id=${resendEmailId}` : ""}`);
+    return { ok: true, resendEmailId };
   } catch (err) {
     console.error("[Email] Marketing send failed:", err);
-    return false;
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Send failed",
+    };
   }
 }

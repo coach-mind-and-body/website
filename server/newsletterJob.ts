@@ -104,26 +104,40 @@ async function processOneNewsletter(
 
     let outcome: "sent" | "failed" | "skipped" = "failed";
     let errorMessage: string | null = null;
+    let resendEmailId: string | null = null;
+    let deliveryStatus: "unknown" | "sent" | "failed" = "unknown";
 
     try {
-      const ok = await sendMarketingEmail({
+      const result = await sendMarketingEmail({
         to: recipient.email,
         toName: recipient.firstName,
         subject: personalizeNewsletterText(row.subject, first),
         htmlBody,
         reasonLine,
+        tags: [
+          { name: "type", value: "newsletter" },
+          { name: "newsletter_id", value: String(row.id) },
+        ],
       });
-      if (ok) {
+      resendEmailId = result.resendEmailId ?? null;
+      if (result.ok) {
         sentCount++;
         outcome = "sent";
-      } else {
+        deliveryStatus = "sent";
+      } else if (result.skipped) {
         skippedCount++;
         outcome = "skipped";
-        errorMessage = "Opted out or Resend skipped";
+        errorMessage = result.error || "Opted out or Resend skipped";
+      } else {
+        failedCount++;
+        outcome = "failed";
+        deliveryStatus = "failed";
+        errorMessage = result.error || "Resend failed";
       }
     } catch (err) {
       failedCount++;
       outcome = "failed";
+      deliveryStatus = "failed";
       errorMessage = err instanceof Error ? err.message.slice(0, 480) : "Send failed";
       console.error(
         `[Newsletter] Failed to send #${row.id} to ${recipient.email}:`,
@@ -136,7 +150,9 @@ async function processOneNewsletter(
         newsletterId: row.id,
         email: recipient.email,
         firstName: recipient.firstName,
+        resendEmailId,
         status: outcome,
+        deliveryStatus,
         errorMessage,
       });
     } catch (logErr) {

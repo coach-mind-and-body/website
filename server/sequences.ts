@@ -117,7 +117,7 @@ async function sendSequenceStep(
     fpu_babystep_1: "You're receiving this as part of your Financial Peace journey.",
   };
 
-  return sendMarketingEmail({
+  const result = await sendMarketingEmail({
     to: subscriber.email,
     toName:
       `${subscriber.firstName || ""} ${subscriber.lastName || ""}`.trim() ||
@@ -126,7 +126,15 @@ async function sendSequenceStep(
     htmlBody: emailContent.html,
     textBody: "Please view this email in an HTML-compatible client.",
     reasonLine: reasonBySequence[enrollment.sequenceId],
+    tags: [
+      { name: "type", value: "sequence" },
+      {
+        name: "sequence_id",
+        value: String(enrollment.sequenceId).replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 50),
+      },
+    ],
   });
+  return result.ok;
 }
 
 export async function processEmailSequences() {

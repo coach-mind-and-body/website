@@ -18,6 +18,8 @@ export const ENV = {
   resendApiKey: process.env.RESEND_API_KEY ?? "",
   resendFromEmail: process.env.RESEND_FROM_EMAIL ?? "coach@mindandbodyresetcoach.com",
   resendAudienceId: process.env.RESEND_AUDIENCE_ID ?? "",
+  /** Svix signing secret from Resend webhook details (whsec_…) */
+  resendWebhookSecret: process.env.RESEND_WEBHOOK_SECRET ?? "",
   ownerEmail: process.env.OWNER_EMAIL ?? "coach@mindandbodyresetcoach.com",
   metaConversionsApiToken: process.env.META_CONVERSIONS_API_TOKEN ?? "",
   metaPixelId: "1256633739205867",

@@ -865,18 +865,55 @@ export const emailNewsletters = mysqlTable("email_newsletters", {
 export type EmailNewsletter = typeof emailNewsletters.$inferSelect;
 export type InsertEmailNewsletter = typeof emailNewsletters.$inferInsert;
 
-/** Per-recipient delivery log (history + analytics) */
+/** Per-recipient delivery log (history + Resend engagement analytics) */
 export const emailNewsletterSends = mysqlTable("email_newsletter_sends", {
   id: int("id").autoincrement().primaryKey(),
   newsletterId: int("newsletterId").notNull(),
   email: varchar("email", { length: 320 }).notNull(),
   firstName: varchar("firstName", { length: 255 }),
+  /** Resend message id — used to match webhooks */
+  resendEmailId: varchar("resendEmailId", { length: 64 }),
+  /** API accept outcome */
   status: mysqlEnum("status", ["sent", "failed", "skipped"]).notNull(),
+  /** Lifecycle from Resend webhooks */
+  deliveryStatus: mysqlEnum("deliveryStatus", [
+    "unknown",
+    "sent",
+    "delivered",
+    "delivery_delayed",
+    "bounced",
+    "complained",
+    "failed",
+  ])
+    .default("unknown")
+    .notNull(),
   errorMessage: varchar("errorMessage", { length: 500 }),
+  openCount: int("openCount").default(0).notNull(),
+  clickCount: int("clickCount").default(0).notNull(),
+  deliveredAt: timestamp("deliveredAt"),
+  firstOpenedAt: timestamp("firstOpenedAt"),
+  lastOpenedAt: timestamp("lastOpenedAt"),
+  firstClickedAt: timestamp("firstClickedAt"),
+  lastClickedAt: timestamp("lastClickedAt"),
+  bouncedAt: timestamp("bouncedAt"),
+  complainedAt: timestamp("complainedAt"),
   sentAt: timestamp("sentAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
 export type EmailNewsletterSend = typeof emailNewsletterSends.$inferSelect;
+
+/** Idempotent log of raw Resend webhook events */
+export const resendWebhookEvents = mysqlTable("resend_webhook_events", {
+  id: int("id").autoincrement().primaryKey(),
+  svixId: varchar("svixId", { length: 128 }).notNull().unique(),
+  eventType: varchar("eventType", { length: 64 }).notNull(),
+  resendEmailId: varchar("resendEmailId", { length: 64 }),
+  payloadJson: text("payloadJson"),
+  processedAt: timestamp("processedAt").defaultNow().notNull(),
+});
+
+export type ResendWebhookEvent = typeof resendWebhookEvents.$inferSelect;
 
 /** Saved reusable content blocks for the newsletter composer */
 export const emailNewsletterSnippets = mysqlTable("email_newsletter_snippets", {

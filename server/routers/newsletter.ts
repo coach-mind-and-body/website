@@ -236,21 +236,27 @@ export const newsletterRouter = router({
         ? rawSubject
         : `[TEST] ${rawSubject}`;
 
-      const ok = await sendMarketingEmail({
+      const result = await sendMarketingEmail({
         to,
         toName: firstName,
         subject,
         htmlBody,
         reasonLine: "This is a test newsletter from the admin portal.",
+        tags: [{ name: "type", value: "newsletter_test" }],
       });
 
-      if (!ok) {
+      if (!result.ok) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "Test email failed to send. Check Resend configuration.",
+          message: result.error || "Test email failed to send. Check Resend configuration.",
         });
       }
-      return { success: true, to, personalizedAs: firstName };
+      return {
+        success: true,
+        to,
+        personalizedAs: firstName,
+        resendEmailId: result.resendEmailId ?? null,
+      };
     }),
 
   /** Immediate or scheduled bulk send */
@@ -551,24 +557,50 @@ export const newsletterRouter = router({
 
   // ── Analytics & history ───────────────────────────────────────────────────
   analytics: adminProcedure.query(async () => {
+    const empty = {
+      last30Days: {
+        sent: 0,
+        failed: 0,
+        skipped: 0,
+        campaigns: 0,
+        delivered: 0,
+        opened: 0,
+        clicked: 0,
+        bounced: 0,
+        deliveryRate: 0,
+        openRate: 0,
+        clickRate: 0,
+      },
+      byAudience: [] as {
+        audience: string;
+        sent: number;
+        campaigns: number;
+        opened: number;
+        clicked: number;
+      }[],
+      recent: [] as {
+        id: number;
+        subject: string;
+        audienceGroup: string;
+        status: string;
+        sentCount: number;
+        failedCount: number;
+        skippedCount: number;
+        recipientCount: number;
+        sentAt: Date | null;
+        delivered: number;
+        opened: number;
+        clicked: number;
+        bounced: number;
+        deliveryRate: number;
+        openRate: number;
+        clickRate: number;
+      }[],
+      trackingReady: false,
+    };
+
     const db = await getDb();
-    if (!db) {
-      return {
-        last30Days: { sent: 0, failed: 0, skipped: 0, campaigns: 0 },
-        byAudience: [] as { audience: string; sent: number; campaigns: number }[],
-        recent: [] as {
-          id: number;
-          subject: string;
-          audienceGroup: string;
-          status: string;
-          sentCount: number;
-          failedCount: number;
-          skippedCount: number;
-          recipientCount: number;
-          sentAt: Date | null;
-        }[],
-      };
-    }
+    if (!db) return empty;
 
     const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const recentCampaigns = await db
@@ -585,20 +617,85 @@ export const newsletterRouter = router({
     let sent = 0;
     let failed = 0;
     let skipped = 0;
-    const byAudienceMap = new Map<string, { sent: number; campaigns: number }>();
+    const byAudienceMap = new Map<
+      string,
+      { sent: number; campaigns: number; opened: number; clicked: number }
+    >();
 
     for (const c of recentCampaigns) {
       sent += c.sentCount ?? 0;
       failed += c.failedCount ?? 0;
       skipped += c.skippedCount ?? 0;
       const key = c.audienceGroup;
-      const cur = byAudienceMap.get(key) ?? { sent: 0, campaigns: 0 };
+      const cur = byAudienceMap.get(key) ?? {
+        sent: 0,
+        campaigns: 0,
+        opened: 0,
+        clicked: 0,
+      };
       cur.sent += c.sentCount ?? 0;
       cur.campaigns += 1;
       byAudienceMap.set(key, cur);
     }
 
-    const recent = await db
+    // Aggregate engagement for last 30 days from send log
+    const engagementRows = await db
+      .select({
+        newsletterId: emailNewsletterSends.newsletterId,
+        delivered: sql<number>`SUM(CASE WHEN ${emailNewsletterSends.deliveryStatus} = 'delivered' OR ${emailNewsletterSends.openCount} > 0 OR ${emailNewsletterSends.clickCount} > 0 THEN 1 ELSE 0 END)`,
+        opened: sql<number>`SUM(CASE WHEN ${emailNewsletterSends.openCount} > 0 THEN 1 ELSE 0 END)`,
+        clicked: sql<number>`SUM(CASE WHEN ${emailNewsletterSends.clickCount} > 0 THEN 1 ELSE 0 END)`,
+        bounced: sql<number>`SUM(CASE WHEN ${emailNewsletterSends.deliveryStatus} = 'bounced' THEN 1 ELSE 0 END)`,
+        withResendId: sql<number>`SUM(CASE WHEN ${emailNewsletterSends.resendEmailId} IS NOT NULL THEN 1 ELSE 0 END)`,
+      })
+      .from(emailNewsletterSends)
+      .innerJoin(
+        emailNewsletters,
+        eq(emailNewsletters.id, emailNewsletterSends.newsletterId)
+      )
+      .where(
+        and(
+          eq(emailNewsletterSends.status, "sent"),
+          gte(emailNewsletterSends.sentAt, since)
+        )
+      )
+      .groupBy(emailNewsletterSends.newsletterId);
+
+    let delivered = 0;
+    let opened = 0;
+    let clicked = 0;
+    let bounced = 0;
+    let withResendId = 0;
+    const engByNl = new Map<
+      number,
+      { delivered: number; opened: number; clicked: number; bounced: number }
+    >();
+
+    for (const r of engagementRows) {
+      const d = Number(r.delivered) || 0;
+      const o = Number(r.opened) || 0;
+      const c = Number(r.clicked) || 0;
+      const b = Number(r.bounced) || 0;
+      delivered += d;
+      opened += o;
+      clicked += c;
+      bounced += b;
+      withResendId += Number(r.withResendId) || 0;
+      engByNl.set(r.newsletterId, { delivered: d, opened: o, clicked: c, bounced: b });
+    }
+
+    // Roll engagement into audience map
+    for (const c of recentCampaigns) {
+      const eng = engByNl.get(c.id);
+      if (!eng) continue;
+      const cur = byAudienceMap.get(c.audienceGroup);
+      if (cur) {
+        cur.opened += eng.opened;
+        cur.clicked += eng.clicked;
+      }
+    }
+
+    const recentRaw = await db
       .select({
         id: emailNewsletters.id,
         subject: emailNewsletters.subject,
@@ -615,22 +712,81 @@ export const newsletterRouter = router({
       .orderBy(desc(emailNewsletters.sentAt))
       .limit(15);
 
+    const recent = recentRaw.map((n) => {
+      const eng = engByNl.get(n.id) ?? {
+        delivered: 0,
+        opened: 0,
+        clicked: 0,
+        bounced: 0,
+      };
+      // For campaigns outside 30d window, eng may be empty — fetch not needed for list; rates 0 is ok
+      // Re-query would be heavy; for recent list we use eng when available
+      const denom = n.sentCount || 0;
+      return {
+        ...n,
+        delivered: eng.delivered,
+        opened: eng.opened,
+        clicked: eng.clicked,
+        bounced: eng.bounced,
+        deliveryRate: denom ? Math.round((eng.delivered / denom) * 1000) / 10 : 0,
+        openRate: denom ? Math.round((eng.opened / denom) * 1000) / 10 : 0,
+        clickRate: denom ? Math.round((eng.clicked / denom) * 1000) / 10 : 0,
+      };
+    });
+
+    // Fill engagement for recent campaigns not in 30d agg (older than 30d)
+    for (const n of recent) {
+      if (n.delivered || n.opened || n.clicked || !n.id) continue;
+      const [row] = await db
+        .select({
+          delivered: sql<number>`SUM(CASE WHEN ${emailNewsletterSends.deliveryStatus} = 'delivered' OR ${emailNewsletterSends.openCount} > 0 OR ${emailNewsletterSends.clickCount} > 0 THEN 1 ELSE 0 END)`,
+          opened: sql<number>`SUM(CASE WHEN ${emailNewsletterSends.openCount} > 0 THEN 1 ELSE 0 END)`,
+          clicked: sql<number>`SUM(CASE WHEN ${emailNewsletterSends.clickCount} > 0 THEN 1 ELSE 0 END)`,
+          bounced: sql<number>`SUM(CASE WHEN ${emailNewsletterSends.deliveryStatus} = 'bounced' THEN 1 ELSE 0 END)`,
+        })
+        .from(emailNewsletterSends)
+        .where(
+          and(
+            eq(emailNewsletterSends.newsletterId, n.id),
+            eq(emailNewsletterSends.status, "sent")
+          )
+        );
+      if (row) {
+        n.delivered = Number(row.delivered) || 0;
+        n.opened = Number(row.opened) || 0;
+        n.clicked = Number(row.clicked) || 0;
+        n.bounced = Number(row.bounced) || 0;
+        const denom = n.sentCount || 0;
+        n.deliveryRate = denom ? Math.round((n.delivered / denom) * 1000) / 10 : 0;
+        n.openRate = denom ? Math.round((n.opened / denom) * 1000) / 10 : 0;
+        n.clickRate = denom ? Math.round((n.clicked / denom) * 1000) / 10 : 0;
+      }
+    }
+
     return {
       last30Days: {
         sent,
         failed,
         skipped,
         campaigns: recentCampaigns.length,
+        delivered,
+        opened,
+        clicked,
+        bounced,
+        deliveryRate: sent ? Math.round((delivered / sent) * 1000) / 10 : 0,
+        openRate: sent ? Math.round((opened / sent) * 1000) / 10 : 0,
+        clickRate: sent ? Math.round((clicked / sent) * 1000) / 10 : 0,
       },
       byAudience: Array.from(byAudienceMap.entries()).map(([audience, v]) => ({
         audience,
         ...v,
       })),
       recent,
+      trackingReady: withResendId > 0,
     };
   }),
 
-  /** Who received a specific newsletter */
+  /** Who received a specific newsletter (+ Resend engagement) */
   sendLog: adminProcedure
     .input(
       z.object({
@@ -652,6 +808,55 @@ export const newsletterRouter = router({
         .limit(input.limit);
     }),
 
+  /** Campaign-level Resend stats for one newsletter */
+  campaignStats: adminProcedure
+    .input(z.object({ newsletterId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) {
+        return {
+          sent: 0,
+          delivered: 0,
+          opened: 0,
+          clicked: 0,
+          bounced: 0,
+          complained: 0,
+          deliveryRate: 0,
+          openRate: 0,
+          clickRate: 0,
+        };
+      }
+      const [row] = await db
+        .select({
+          sent: sql<number>`SUM(CASE WHEN ${emailNewsletterSends.status} = 'sent' THEN 1 ELSE 0 END)`,
+          delivered: sql<number>`SUM(CASE WHEN ${emailNewsletterSends.deliveryStatus} = 'delivered' OR ${emailNewsletterSends.openCount} > 0 OR ${emailNewsletterSends.clickCount} > 0 THEN 1 ELSE 0 END)`,
+          opened: sql<number>`SUM(CASE WHEN ${emailNewsletterSends.openCount} > 0 THEN 1 ELSE 0 END)`,
+          clicked: sql<number>`SUM(CASE WHEN ${emailNewsletterSends.clickCount} > 0 THEN 1 ELSE 0 END)`,
+          bounced: sql<number>`SUM(CASE WHEN ${emailNewsletterSends.deliveryStatus} = 'bounced' THEN 1 ELSE 0 END)`,
+          complained: sql<number>`SUM(CASE WHEN ${emailNewsletterSends.deliveryStatus} = 'complained' THEN 1 ELSE 0 END)`,
+        })
+        .from(emailNewsletterSends)
+        .where(eq(emailNewsletterSends.newsletterId, input.newsletterId));
+
+      const sent = Number(row?.sent) || 0;
+      const delivered = Number(row?.delivered) || 0;
+      const opened = Number(row?.opened) || 0;
+      const clicked = Number(row?.clicked) || 0;
+      const bounced = Number(row?.bounced) || 0;
+      const complained = Number(row?.complained) || 0;
+      return {
+        sent,
+        delivered,
+        opened,
+        clicked,
+        bounced,
+        complained,
+        deliveryRate: sent ? Math.round((delivered / sent) * 1000) / 10 : 0,
+        openRate: sent ? Math.round((opened / sent) * 1000) / 10 : 0,
+        clickRate: sent ? Math.round((clicked / sent) * 1000) / 10 : 0,
+      };
+    }),
+
   /** History for one person across all newsletters */
   personHistory: adminProcedure
     .input(z.object({ query: z.string().min(2).max(320) }))
@@ -665,8 +870,13 @@ export const newsletterRouter = router({
           email: emailNewsletterSends.email,
           firstName: emailNewsletterSends.firstName,
           status: emailNewsletterSends.status,
+          deliveryStatus: emailNewsletterSends.deliveryStatus,
+          openCount: emailNewsletterSends.openCount,
+          clickCount: emailNewsletterSends.clickCount,
           errorMessage: emailNewsletterSends.errorMessage,
           sentAt: emailNewsletterSends.sentAt,
+          firstOpenedAt: emailNewsletterSends.firstOpenedAt,
+          firstClickedAt: emailNewsletterSends.firstClickedAt,
           newsletterId: emailNewsletters.id,
           subject: emailNewsletters.subject,
           audienceGroup: emailNewsletters.audienceGroup,
