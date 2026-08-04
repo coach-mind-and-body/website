@@ -16,6 +16,7 @@ import { AdminFpuGroupTab } from "@/components/admin/tabs/AdminFpuGroupTab";
 import { AdminBlogTab } from "@/components/admin/tabs/AdminBlogTab";
 import { AdminCommonFilesTab } from "@/components/admin/tabs/AdminCommonFilesTab";
 import { AdminManualEnrollModal } from "@/components/admin/tabs/AdminManualEnrollModal";
+import { AdminNewsletterTab } from "@/components/admin/AdminNewsletterTab";
 import { ADMIN_TAB_IDS, TABS, type AdminTab } from "@/components/admin/tabs/adminTypes";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/use-auth";
@@ -134,7 +135,11 @@ export default function Admin() {
         </div>
       </header>
 
-      <div className="container max-w-6xl mx-auto px-4 md:px-6 lg:px-8 py-8">
+      <div
+        className={`container mx-auto px-4 md:px-6 lg:px-8 py-8 ${
+          tab === "newsletters" ? "max-w-7xl" : "max-w-6xl"
+        }`}
+      >
         <div className="flex flex-wrap gap-3 mb-8 pb-1">
           {TABS.map((t) => {
             const Icon = t.icon;
@@ -184,6 +189,7 @@ export default function Admin() {
           <AdminMessagingSettingsTab gcalStatus={gcalStatus} disconnectGcal={disconnectGcal} />
         )}
         {tab === "crm-automations" && <AdminCrmAutomationsTab />}
+        {tab === "newsletters" && <AdminNewsletterTab />}
         {tab === "deposits" && <AdminPaymentsTab />}
         {tab === "filelibrary" && <AdminCommonFilesTab />}
       </div>

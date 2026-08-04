@@ -818,6 +818,37 @@ export const workoutVideos = mysqlTable("workout_videos", {
 export type WorkoutVideo = typeof workoutVideos.$inferSelect;
 export type InsertWorkoutVideo = typeof workoutVideos.$inferInsert;
 
+// ── Email Newsletters (admin bulk send via Resend) ────────────────────────────
+export const emailNewsletters = mysqlTable("email_newsletters", {
+  id: int("id").autoincrement().primaryKey(),
+  subject: varchar("subject", { length: 500 }).notNull(),
+  previewText: varchar("previewText", { length: 500 }),
+  headline: varchar("headline", { length: 500 }),
+  subheadline: varchar("subheadline", { length: 500 }),
+  bodyHtml: text("bodyHtml").notNull(),
+  ctaLabel: varchar("ctaLabel", { length: 255 }),
+  ctaUrl: varchar("ctaUrl", { length: 1000 }),
+  audienceGroup: mysqlEnum("audienceGroup", ["finance", "health", "all"])
+    .default("health")
+    .notNull(),
+  excludeEnrolled: boolean("excludeEnrolled").default(false).notNull(),
+  excludeEmails: text("excludeEmails"), // JSON string array of emails
+  status: mysqlEnum("status", ["draft", "sending", "sent", "failed", "cancelled"])
+    .default("draft")
+    .notNull(),
+  recipientCount: int("recipientCount").default(0).notNull(),
+  sentCount: int("sentCount").default(0).notNull(),
+  failedCount: int("failedCount").default(0).notNull(),
+  skippedCount: int("skippedCount").default(0).notNull(),
+  createdByUserId: int("createdByUserId"),
+  sentAt: timestamp("sentAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type EmailNewsletter = typeof emailNewsletters.$inferSelect;
+export type InsertEmailNewsletter = typeof emailNewsletters.$inferInsert;
+
 // --- DUMMY EXPORTS TO BYPASS STATIC WEBPACK ERRORS FOR LEGACY CRM CODE ---
 export const vacationQuotes = mysqlTable("dummy_vq", { id: int("id") });
 export const flightDeals = mysqlTable("dummy_fd", { id: int("id") });

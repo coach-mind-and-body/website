@@ -28,6 +28,7 @@ import { aiTrainingRouter } from "./routers/aiTraining";
 import { pushNotificationsRouter } from "./routers/pushNotifications";
 import { caloriesRouter } from "./routers/calories";
 import { fitnessRouter } from "./routers/fitness";
+import { newsletterRouter } from "./routers/newsletter";
 
 export const appRouter = router({
   system: systemRouter,
@@ -64,6 +65,7 @@ export const appRouter = router({
   pushNotifications: pushNotificationsRouter,
   calories: caloriesRouter,
   fitness: fitnessRouter,
+  newsletter: newsletterRouter,
 });
 
 export type AppRouter = typeof appRouter;

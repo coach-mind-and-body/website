@@ -5,6 +5,7 @@ import { startYoutubePoller } from "./youtubePoller";
 import { startSequencePoller } from "./sequencePoller";
 import { startHabitReminderPoller } from "./habitReminderPoller";
 import { processScheduledCampaigns } from "./crm/campaignJob";
+import { processSendingNewsletters } from "./newsletterJob";
 
 console.log("Starting background worker pollers...");
 
@@ -32,6 +33,16 @@ setInterval(() => {
     console.error("[Campaign Job] Error on interval run:", err)
   );
 }, 60_000);
+
+// Process admin email newsletters (status=sending) every 30 seconds
+processSendingNewsletters().catch((err) =>
+  console.error("[Newsletter Job] Error on initial run:", err)
+);
+setInterval(() => {
+  processSendingNewsletters().catch((err) =>
+    console.error("[Newsletter Job] Error on interval run:", err)
+  );
+}, 30_000);
 
 // Keep the process running
 process.on("SIGTERM", () => {

@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS `email_newsletters` (
+  `id` int AUTO_INCREMENT NOT NULL,
+  `subject` varchar(500) NOT NULL,
+  `previewText` varchar(500),
+  `headline` varchar(500),
+  `subheadline` varchar(500),
+  `bodyHtml` text NOT NULL,
+  `ctaLabel` varchar(255),
+  `ctaUrl` varchar(1000),
+  `audienceGroup` enum('finance','health','all') NOT NULL DEFAULT 'health',
+  `excludeEnrolled` boolean NOT NULL DEFAULT false,
+  `excludeEmails` text,
+  `status` enum('draft','sending','sent','failed','cancelled') NOT NULL DEFAULT 'draft',
+  `recipientCount` int NOT NULL DEFAULT 0,
+  `sentCount` int NOT NULL DEFAULT 0,
+  `failedCount` int NOT NULL DEFAULT 0,
+  `skippedCount` int NOT NULL DEFAULT 0,
+  `createdByUserId` int,
+  `sentAt` timestamp,
+  `createdAt` timestamp NOT NULL DEFAULT (now()),
+  `updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT `email_newsletters_id` PRIMARY KEY(`id`)
+);

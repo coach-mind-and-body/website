@@ -9,6 +9,7 @@ import {
   FolderOpen,
   Layers,
   Link2,
+  Mail,
   Megaphone,
   Target,
   UserPlus,
@@ -20,6 +21,7 @@ export type AdminTab =
   | "overview"
   | "contacts"
   | "crm-automations"
+  | "newsletters"
   | "snackhack"
   | "fpu"
   | "fpugroup"
@@ -35,6 +37,7 @@ export const ADMIN_TAB_IDS: AdminTab[] = [
   "overview",
   "contacts",
   "crm-automations",
+  "newsletters",
   "snackhack",
   "fpu",
   "fpugroup",
@@ -51,6 +54,7 @@ export const TABS: { id: AdminTab; label: string; icon: LucideIcon }[] = [
   { id: "overview", label: "Overview", icon: BarChart3 },
   { id: "contacts", label: "Contacts", icon: Users },
   { id: "crm-automations", label: "CRM & AI", icon: Megaphone },
+  { id: "newsletters", label: "Newsletters", icon: Mail },
   { id: "snackhack", label: "Snack Hack Leads", icon: Cookie },
   { id: "fpu", label: "FPU Coaching", icon: Video },
   { id: "fpugroup", label: "FPU Sign-Ups", icon: UserPlus },
