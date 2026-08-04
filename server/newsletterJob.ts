@@ -6,7 +6,10 @@ import { eq } from "drizzle-orm";
 import { emailNewsletters } from "../drizzle/schema";
 import { getDb } from "./db";
 import { sendMarketingEmail } from "./emailMarketing";
-import { buildNewsletterHtml } from "./emails/newsletterShell";
+import {
+  buildNewsletterHtml,
+  personalizeNewsletterText,
+} from "./emails/newsletterShell";
 import {
   resolveNewsletterAudience,
   type NewsletterAudienceGroup,
@@ -71,13 +74,22 @@ async function processOneNewsletter(
       break;
     }
 
+    const first = recipient.firstName;
     const htmlBody = buildNewsletterHtml({
-      firstName: recipient.firstName,
-      previewText: row.previewText,
-      headline: row.headline,
-      subheadline: row.subheadline,
+      firstName: first,
+      previewText: row.previewText
+        ? personalizeNewsletterText(row.previewText, first)
+        : row.previewText,
+      headline: row.headline
+        ? personalizeNewsletterText(row.headline, first)
+        : row.headline,
+      subheadline: row.subheadline
+        ? personalizeNewsletterText(row.subheadline, first)
+        : row.subheadline,
       bodyHtml: row.bodyHtml,
-      ctaLabel: row.ctaLabel,
+      ctaLabel: row.ctaLabel
+        ? personalizeNewsletterText(row.ctaLabel, first)
+        : row.ctaLabel,
       ctaUrl: row.ctaUrl,
     });
 
@@ -85,7 +97,7 @@ async function processOneNewsletter(
       const ok = await sendMarketingEmail({
         to: recipient.email,
         toName: recipient.firstName,
-        subject: row.subject,
+        subject: personalizeNewsletterText(row.subject, first),
         htmlBody,
         reasonLine,
       });

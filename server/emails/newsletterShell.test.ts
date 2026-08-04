@@ -30,6 +30,11 @@ describe("newsletterShell", () => {
     expect(html).toContain("Keep going, Mia!");
   });
 
+  it("personalizes plain-text subjects", async () => {
+    const { personalizeNewsletterText } = await import("./newsletterShell");
+    expect(personalizeNewsletterText("{{firstName}}, hello", "Sarah")).toBe("Sarah, hello");
+  });
+
   it("converts YouTube iframes to thumbnail links", () => {
     const out = prepareBodyHtmlForEmail(
       `<div data-youtube-video><iframe src="https://www.youtube.com/watch?v=dQw4w9WgXcQ"></iframe></div>`

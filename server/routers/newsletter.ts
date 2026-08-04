@@ -11,6 +11,7 @@ import { sendMarketingEmail } from "../emailMarketing";
 import {
   buildNewsletterHtml,
   buildNewsletterPreviewDocument,
+  personalizeNewsletterText,
 } from "../emails/newsletterShell";
 import { processSendingNewsletters } from "../newsletterJob";
 import {
@@ -182,17 +183,26 @@ export const newsletterRouter = router({
         ctx.user.name?.trim().split(/\s+/)[0] || "Lee Anne";
       const htmlBody = buildNewsletterHtml({
         firstName,
-        previewText: input.previewText,
-        headline: input.headline,
-        subheadline: input.subheadline,
+        previewText: input.previewText
+          ? personalizeNewsletterText(input.previewText, firstName)
+          : input.previewText,
+        headline: input.headline
+          ? personalizeNewsletterText(input.headline, firstName)
+          : input.headline,
+        subheadline: input.subheadline
+          ? personalizeNewsletterText(input.subheadline, firstName)
+          : input.subheadline,
         bodyHtml: sanitizeHtml(input.bodyHtml),
-        ctaLabel: input.ctaLabel,
+        ctaLabel: input.ctaLabel
+          ? personalizeNewsletterText(input.ctaLabel, firstName)
+          : input.ctaLabel,
         ctaUrl: input.ctaUrl,
       });
 
-      const subject = input.subject.trim().startsWith("[TEST]")
-        ? input.subject.trim()
-        : `[TEST] ${input.subject.trim()}`;
+      const rawSubject = personalizeNewsletterText(input.subject.trim(), firstName);
+      const subject = rawSubject.startsWith("[TEST]")
+        ? rawSubject
+        : `[TEST] ${rawSubject}`;
 
       const ok = await sendMarketingEmail({
         to,

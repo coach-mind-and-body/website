@@ -5,7 +5,9 @@ import { keepPreviousData } from "@tanstack/react-query";
 import {
   ArrowLeft,
   CheckCircle2,
+  Copy,
   Eye,
+  Image as ImageIcon,
   Loader2,
   Mail,
   Plus,
@@ -48,9 +50,7 @@ function statusBadge(status: string) {
 }
 
 function emptyBody() {
-  return `<p>Write your message here…</p>
-<p>You can add <strong>bold text</strong>, links, images, and YouTube videos with the toolbar.</p>
-<p>Tip: use <code>{{firstName}}</code> anywhere if you want their name again later in the email.</p>`;
+  return `<p></p>`;
 }
 
 export function AdminNewsletterTab() {
@@ -226,14 +226,11 @@ export function AdminNewsletterTab() {
     setView("compose");
   };
 
-  const openDraft = (id: number) => {
-    const row = newsletters.find((n) => n.id === id);
-    if (!row) return;
-    if (row.status !== "draft" && row.status !== "failed" && row.status !== "cancelled") {
-      toast.message("Open a draft to edit. Sent newsletters are read-only history.");
-      return;
-    }
-    setEditingId(row.id);
+  const loadRowIntoComposer = (
+    row: (typeof newsletters)[number],
+    opts?: { asNewDraft?: boolean }
+  ) => {
+    setEditingId(opts?.asNewDraft ? undefined : row.id);
     setSubject(row.subject);
     setPreviewText(row.previewText ?? "");
     setHeadline(row.headline ?? "");
@@ -250,6 +247,36 @@ export function AdminNewsletterTab() {
       setExcludeEmails([]);
     }
     setView("compose");
+  };
+
+  const openDraft = (id: number) => {
+    const row = newsletters.find((n) => n.id === id);
+    if (!row) return;
+    if (row.status !== "draft" && row.status !== "failed" && row.status !== "cancelled") {
+      toast.message("Use “Duplicate” to edit a copy of a sent newsletter.");
+      return;
+    }
+    loadRowIntoComposer(row);
+  };
+
+  const duplicateAsDraft = (id: number) => {
+    const row = newsletters.find((n) => n.id === id);
+    if (!row) return;
+    loadRowIntoComposer(row, { asNewDraft: true });
+    toast.success("Copied — edit freely, then save or send");
+  };
+
+  const insertFirstName = (target: "subject" | "preview" | "headline" | "body" | "cta") => {
+    const tag = "{{firstName}}";
+    if (target === "body") {
+      editorRef.current?.insertText(tag);
+      toast.message("Inserted {{firstName}} — becomes each person’s real name when sent");
+      return;
+    }
+    if (target === "subject") setSubject((s) => s + (s && !s.endsWith(" ") ? " " : "") + tag);
+    if (target === "preview") setPreviewText((s) => s + tag);
+    if (target === "headline") setHeadline((s) => s + (s && !s.endsWith(" ") ? " " : "") + tag);
+    if (target === "cta") setCtaLabel((s) => s + (s && !s.endsWith(" ") ? " " : "") + tag);
   };
 
   const composePayload = () => ({
@@ -327,8 +354,8 @@ export function AdminNewsletterTab() {
         { fileName: file.name, mimeType: file.type, base64Data: base64 },
         {
           onSuccess: (data) => {
-            editorRef.current?.insertImage(data.url, "");
-            toast.success("Image added");
+            editorRef.current?.insertImage(data.url, "", "100%");
+            toast.success("Image added — click it to resize (S / M / L / Full)");
             setUploadingImage(false);
           },
           onError: (e) => {
@@ -451,6 +478,14 @@ export function AdminNewsletterTab() {
                             Edit
                           </button>
                         )}
+                        <button
+                          onClick={() => duplicateAsDraft(n.id)}
+                          className="text-xs font-bold px-3 py-1.5 rounded-full inline-flex items-center gap-1"
+                          style={{ background: "oklch(0.97 0.03 75)", color: "oklch(0.40 0.06 60)" }}
+                          title="Start a new draft from this one"
+                        >
+                          <Copy size={12} /> Duplicate
+                        </button>
                         {n.status === "sending" && (
                           <button
                             onClick={() => {
@@ -529,21 +564,45 @@ export function AdminNewsletterTab() {
         <div className="space-y-4">
           <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-5 space-y-4">
             <div>
-              <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: "oklch(0.52 0.015 50)" }}>
-                Subject line *
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wide" style={{ color: "oklch(0.52 0.015 50)" }}>
+                  Subject line *
+                </label>
+                <button
+                  type="button"
+                  onClick={() => insertFirstName("subject")}
+                  className="text-[11px] font-bold px-2 py-0.5 rounded-full"
+                  style={{ background: "oklch(0.97 0.03 75)", color: "oklch(0.45 0.08 60)" }}
+                  title="Insert {{firstName}} into the subject"
+                >
+                  + Name
+                </button>
+              </div>
               <input
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                placeholder="What should the email subject say?"
+                placeholder='e.g. {{firstName}}, a quick note for you'
                 className="w-full rounded-lg px-3.5 py-2.5 text-sm border outline-none focus:ring-2"
                 style={{ borderColor: "oklch(0.90 0.015 80)", color: "oklch(0.20 0.015 50)" }}
               />
+              <p className="text-[11px] mt-1" style={{ color: "oklch(0.55 0.015 50)" }}>
+                Tip: click <strong>+ Name</strong> to personalize — each person sees their own name.
+              </p>
             </div>
             <div>
-              <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: "oklch(0.52 0.015 50)" }}>
-                Inbox preview text
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wide" style={{ color: "oklch(0.52 0.015 50)" }}>
+                  Inbox preview text
+                </label>
+                <button
+                  type="button"
+                  onClick={() => insertFirstName("preview")}
+                  className="text-[11px] font-bold px-2 py-0.5 rounded-full"
+                  style={{ background: "oklch(0.97 0.03 75)", color: "oklch(0.45 0.08 60)" }}
+                >
+                  + Name
+                </button>
+              </div>
               <input
                 value={previewText}
                 onChange={(e) => setPreviewText(e.target.value)}
@@ -554,9 +613,19 @@ export function AdminNewsletterTab() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: "oklch(0.52 0.015 50)" }}>
-                  Banner headline
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold uppercase tracking-wide" style={{ color: "oklch(0.52 0.015 50)" }}>
+                    Banner headline
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => insertFirstName("headline")}
+                    className="text-[11px] font-bold px-2 py-0.5 rounded-full"
+                    style={{ background: "oklch(0.97 0.03 75)", color: "oklch(0.45 0.08 60)" }}
+                  >
+                    + Name
+                  </button>
+                </div>
                 <input
                   value={headline}
                   onChange={(e) => setHeadline(e.target.value)}
@@ -581,15 +650,33 @@ export function AdminNewsletterTab() {
           </div>
 
           <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
-            <div className="px-4 py-3 border-b flex items-center justify-between" style={{ borderColor: "oklch(0.94 0.01 80)" }}>
+            <div className="px-4 py-3 border-b flex flex-wrap items-center justify-between gap-2" style={{ borderColor: "oklch(0.94 0.01 80)" }}>
               <span className="text-xs font-bold uppercase tracking-wide" style={{ color: "oklch(0.52 0.015 50)" }}>
                 Email body
               </span>
-              {uploadingImage && (
-                <span className="text-xs flex items-center gap-1" style={{ color: "oklch(0.72 0.12 75)" }}>
-                  <Loader2 size={12} className="animate-spin" /> Uploading image…
-                </span>
-              )}
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => insertFirstName("body")}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full"
+                  style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}
+                >
+                  {"{ }"} Insert name
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full"
+                  style={{ background: "oklch(0.96 0.025 50)", color: "oklch(0.35 0.02 50)" }}
+                >
+                  <ImageIcon size={12} /> Add image
+                </button>
+                {uploadingImage && (
+                  <span className="text-xs flex items-center gap-1" style={{ color: "oklch(0.72 0.12 75)" }}>
+                    <Loader2 size={12} className="animate-spin" /> Uploading…
+                  </span>
+                )}
+              </div>
             </div>
             <input
               ref={fileInputRef}
@@ -608,19 +695,39 @@ export function AdminNewsletterTab() {
                 value={bodyHtml}
                 onChange={setBodyHtml}
                 onImageInsert={() => fileInputRef.current?.click()}
-                placeholder="Type your newsletter…"
+                placeholder="Type your message… Use “Insert name” for {{firstName}}"
                 className="min-h-[320px]"
+                showMergeTags
               />
             </div>
-            <p className="px-4 py-2 text-xs border-t" style={{ color: "oklch(0.55 0.015 50)", borderColor: "oklch(0.94 0.01 80)" }}>
-              Toolbar: bold, links, images, YouTube, lists. Greeting &quot;Hi …&quot; and Lee Anne&apos;s sign-off are added automatically.
-            </p>
+            <div
+              className="px-4 py-2.5 text-xs border-t space-y-1"
+              style={{ color: "oklch(0.52 0.015 50)", borderColor: "oklch(0.94 0.01 80)", background: "oklch(0.99 0.005 80)" }}
+            >
+              <p>
+                <strong>Easy wins:</strong> “Hi …” and Lee Anne&apos;s sign-off are added automatically.
+                Click an image to resize (S / M / L / Full) or align it.
+              </p>
+              <p>
+                YouTube videos become a nice photo + “Watch” button in the inbox (email apps block embedded video).
+              </p>
+            </div>
           </div>
 
           <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-5 space-y-3">
-            <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "oklch(0.52 0.015 50)" }}>
-              Optional button
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "oklch(0.52 0.015 50)" }}>
+                Optional gold button
+              </p>
+              <button
+                type="button"
+                onClick={() => insertFirstName("cta")}
+                className="text-[11px] font-bold px-2 py-0.5 rounded-full"
+                style={{ background: "oklch(0.97 0.03 75)", color: "oklch(0.45 0.08 60)" }}
+              >
+                + Name
+              </button>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <input
                 value={ctaLabel}

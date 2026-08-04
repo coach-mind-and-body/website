@@ -149,11 +149,24 @@ function ctaBlock(label: string, href: string): string {
     </div>`;
 }
 
-function personalize(html: string, firstName: string): string {
-  const name = firstName.trim() || "friend";
+/** Replace {{firstName}} / {{name}} — HTML-escaped for body content. */
+export function personalizeNewsletterHtml(html: string, firstName: string): string {
+  const name = escapeHtml(firstName.trim() || "friend");
   return html
-    .replace(/\{\{\s*firstName\s*\}\}/gi, escapeHtml(name))
-    .replace(/\{\{\s*name\s*\}\}/gi, escapeHtml(name));
+    .replace(/\{\{\s*firstName\s*\}\}/gi, name)
+    .replace(/\{\{\s*name\s*\}\}/gi, name);
+}
+
+/** Plain-text personalization for subject lines (no HTML entities). */
+export function personalizeNewsletterText(text: string, firstName: string): string {
+  const name = (firstName.trim() || "friend").replace(/[\r\n]/g, "");
+  return text
+    .replace(/\{\{\s*firstName\s*\}\}/gi, name)
+    .replace(/\{\{\s*name\s*\}\}/gi, name);
+}
+
+function personalize(html: string, firstName: string): string {
+  return personalizeNewsletterHtml(html, firstName);
 }
 
 /**

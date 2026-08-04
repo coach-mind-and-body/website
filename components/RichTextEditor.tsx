@@ -52,7 +52,11 @@ import {
 } from "lucide-react";
 
 export interface RichTextEditorHandle {
-  insertImage: (url: string, alt?: string) => void;
+  insertImage: (url: string, alt?: string, width?: string) => void;
+  /** Insert plain text at the cursor (e.g. {{firstName}}) */
+  insertText: (text: string) => void;
+  /** Insert HTML at the cursor */
+  insertContent: (html: string) => void;
   getEditor: () => Editor | null;
 }
 
@@ -63,7 +67,64 @@ interface RichTextEditorProps {
   placeholder?: string;
   className?: string;
   viewMode?: "edit" | "split" | "preview";
+  /** Show one-click personalization / merge-tag buttons (newsletter-friendly) */
+  showMergeTags?: boolean;
 }
+
+/** Image extension: width presets + left/center/right alignment (email-friendly). */
+const ResizableImage = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      width: {
+        default: "100%",
+        parseHTML: (element) => {
+          const styleWidth = (element as HTMLElement).style?.width;
+          if (styleWidth) return styleWidth;
+          const attr = element.getAttribute("width");
+          if (attr) return attr.includes("%") ? attr : `${attr}px`;
+          return "100%";
+        },
+        renderHTML: (attributes) => {
+          // Kept on the node; final style assembled in renderHTML
+          return attributes.width ? { "data-width": attributes.width } : {};
+        },
+      },
+      align: {
+        default: "center",
+        parseHTML: (element) => element.getAttribute("data-align") || "center",
+        renderHTML: (attributes) =>
+          attributes.align ? { "data-align": attributes.align } : {},
+      },
+    };
+  },
+  renderHTML({ node, HTMLAttributes }) {
+    const width = (node.attrs.width as string) || "100%";
+    const align = (node.attrs.align as string) || "center";
+    let margin = "16px auto";
+    if (align === "left") margin = "16px auto 16px 0";
+    if (align === "right") margin = "16px 0 16px auto";
+
+    // Strip helper attrs that shouldn't land raw on the img
+    const {
+      width: _w,
+      align: _a,
+      style: _s,
+      "data-width": _dw,
+      ...rest
+    } = HTMLAttributes as Record<string, unknown>;
+
+    return [
+      "img",
+      {
+        ...rest,
+        "data-align": align,
+        "data-width": width,
+        style: `width:${width};max-width:100%;height:auto;border-radius:10px;display:block;margin:${margin};`,
+      },
+    ];
+  },
+});
 
 function ToolbarButton({
   onClick,
@@ -463,12 +524,14 @@ function Toolbar({
   onYoutube,
   onInstagram,
   onLink,
+  showMergeTags,
 }: {
   editor: Editor | null;
   onImageInsert?: () => void;
   onYoutube: () => void;
   onInstagram: () => void;
   onLink: () => void;
+  showMergeTags?: boolean;
 }) {
   if (!editor) return null;
 
@@ -480,6 +543,29 @@ function Toolbar({
         background: "oklch(0.20 0.025 160)",
       }}
     >
+      {showMergeTags && (
+        <>
+          <button
+            type="button"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              editor.chain().focus().insertContent("{{firstName}}").run();
+            }}
+            title="Insert their first name — becomes Sarah, Mia, etc. when sent"
+            className="flex items-center gap-1 px-2 py-1 rounded text-xs font-bold transition-colors"
+            style={{
+              background: "oklch(0.72 0.12 75)",
+              color: "oklch(1 0 0)",
+            }}
+          >
+            {"{ }"} Name
+          </button>
+          <div
+            className="w-px h-5 mx-1"
+            style={{ background: "oklch(0.30 0.02 160)" }}
+          />
+        </>
+      )}
       {/* History */}
       <ToolbarButton
         onClick={() => editor.chain().focus().undo().run()}
@@ -661,6 +747,89 @@ function Toolbar({
   );
 }
 
+const IMAGE_SIZES: { label: string; width: string; title: string }[] = [
+  { label: "S", width: "40%", title: "Small (40%)" },
+  { label: "M", width: "60%", title: "Medium (60%)" },
+  { label: "L", width: "80%", title: "Large (80%)" },
+  { label: "Full", width: "100%", title: "Full width" },
+];
+
+/** Floating controls when an image is selected — size + alignment */
+function ImageBubbleToolbar({ editor }: { editor: Editor }) {
+  return (
+    <BubbleMenu
+      editor={editor}
+      options={{ placement: "top", offset: 8 }}
+      shouldShow={({ editor: ed }) => ed.isActive("image")}
+      className="image-bubble-toolbar"
+    >
+      <div
+        className="flex items-center gap-0.5 px-1.5 py-1 rounded-lg shadow-xl"
+        style={{
+          background: "oklch(0.18 0.025 160)",
+          border: "1px solid oklch(0.32 0.02 160)",
+        }}
+      >
+        <span
+          className="text-[10px] font-bold uppercase tracking-wide px-1.5"
+          style={{ color: "oklch(0.60 0.02 160)" }}
+        >
+          Size
+        </span>
+        {IMAGE_SIZES.map((s) => (
+          <button
+            key={s.width}
+            type="button"
+            title={s.title}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              editor.chain().focus().updateAttributes("image", { width: s.width }).run();
+            }}
+            className="px-2 py-1 rounded text-xs font-bold transition-colors"
+            style={{
+              color: "oklch(0.92 0.01 160)",
+              background:
+                editor.getAttributes("image").width === s.width
+                  ? "oklch(0.72 0.12 75)"
+                  : "transparent",
+            }}
+          >
+            {s.label}
+          </button>
+        ))}
+        <div className="w-px h-4 mx-0.5" style={{ background: "oklch(0.32 0.02 160)" }} />
+        {(
+          [
+            { align: "left", icon: <AlignLeft size={14} />, title: "Align left" },
+            { align: "center", icon: <AlignCenter size={14} />, title: "Align center" },
+            { align: "right", icon: <AlignRight size={14} />, title: "Align right" },
+          ] as const
+        ).map((a) => (
+          <ToolbarButton
+            key={a.align}
+            onClick={() =>
+              editor.chain().focus().updateAttributes("image", { align: a.align }).run()
+            }
+            active={editor.getAttributes("image").align === a.align}
+            title={a.title}
+            size="small"
+          >
+            {a.icon}
+          </ToolbarButton>
+        ))}
+        <div className="w-px h-4 mx-0.5" style={{ background: "oklch(0.32 0.02 160)" }} />
+        <ToolbarButton
+          onClick={() => editor.chain().focus().deleteSelection().run()}
+          title="Remove image"
+          size="small"
+        >
+          <Trash2 size={14} />
+        </ToolbarButton>
+      </div>
+    </BubbleMenu>
+  );
+}
+
 // ── Floating Bubble Toolbar ─────────────────────────────────────────────────
 function FloatingBubbleToolbar({
   editor,
@@ -675,6 +844,12 @@ function FloatingBubbleToolbar({
       options={{
         placement: "top",
         offset: 8,
+      }}
+      shouldShow={({ editor: ed, state }) => {
+        // Hide text formatting bubble when an image is selected
+        if (ed.isActive("image")) return false;
+        const { from, to } = state.selection;
+        return from !== to;
       }}
       className="bubble-toolbar"
     >
@@ -808,7 +983,15 @@ export const RichTextEditor = forwardRef<
   RichTextEditorHandle,
   RichTextEditorProps
 >(function RichTextEditor(
-  { value, onChange, onImageInsert, placeholder, className, viewMode = "edit" },
+  {
+    value,
+    onChange,
+    onImageInsert,
+    placeholder,
+    className,
+    viewMode = "edit",
+    showMergeTags = false,
+  },
   ref
 ) {
   const [embedDialog, setEmbedDialog] = useState<{
@@ -826,7 +1009,7 @@ export const RichTextEditor = forwardRef<
         openOnClick: false,
         HTMLAttributes: { target: "_blank", rel: "noopener noreferrer" },
       }),
-      Image.configure({ inline: false }),
+      ResizableImage.configure({ inline: false }),
       Placeholder.configure({
         placeholder: placeholder ?? "Write your post content here...",
       }),
@@ -859,8 +1042,31 @@ export const RichTextEditor = forwardRef<
   }, [value, editor]);
 
   const insertImage = useCallback(
-    (url: string, alt?: string) => {
-      editor?.chain().focus().setImage({ src: url, alt: alt ?? "" }).run();
+    (url: string, alt?: string, width?: string) => {
+      editor
+        ?.chain()
+        .focus()
+        .setImage({
+          src: url,
+          alt: alt ?? "",
+          width: width ?? "100%",
+          align: "center",
+        } as never)
+        .run();
+    },
+    [editor]
+  );
+
+  const insertText = useCallback(
+    (text: string) => {
+      editor?.chain().focus().insertContent(text).run();
+    },
+    [editor]
+  );
+
+  const insertContent = useCallback(
+    (html: string) => {
+      editor?.chain().focus().insertContent(html).run();
     },
     [editor]
   );
@@ -870,9 +1076,11 @@ export const RichTextEditor = forwardRef<
     ref,
     () => ({
       insertImage,
+      insertText,
+      insertContent,
       getEditor: () => editor,
     }),
-    [editor, insertImage]
+    [editor, insertImage, insertText, insertContent]
   );
 
   const handleEmbedInsert = useCallback(
@@ -917,6 +1125,7 @@ export const RichTextEditor = forwardRef<
             onYoutube={() => setEmbedDialog({ open: true, type: "youtube" })}
             onInstagram={() => setEmbedDialog({ open: true, type: "instagram" })}
             onLink={() => setEmbedDialog({ open: true, type: "link" })}
+            showMergeTags={showMergeTags}
           />
         )}
         <div
@@ -942,6 +1151,8 @@ export const RichTextEditor = forwardRef<
                   onLink={() => setEmbedDialog({ open: true, type: "link" })}
                 />
               )}
+              {/* Image size / align when an image is clicked */}
+              {editor && <ImageBubbleToolbar editor={editor} />}
             </div>
           )}
           {showPreview && <PreviewPane html={value} />}

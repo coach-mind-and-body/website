@@ -585,6 +585,13 @@
   height: auto;
   border-radius: 0.5rem;
   margin: 0.75rem 0;
+  cursor: pointer;
+}
+
+.rich-text-editor-content .tiptap img.ProseMirror-selectednode,
+.rich-text-editor-content .tiptap .ProseMirror-selectednode img {
+  outline: 2px solid oklch(0.72 0.12 75);
+  outline-offset: 2px;
 }
 
 .rich-text-editor-content .tiptap code {
