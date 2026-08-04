@@ -11,7 +11,7 @@ export function absoluteUrl(path = "/"): string {
 }
 
 export const BRAND = {
-  name: "Mind & Body Reset Coaches",
+  name: "Mind and Body Reset Coaching",
   tagline: "Reclaim Your Body. Rewire Your Mind. Reset Your Life.",
   coachName: "Lee Anne",
   coachFullName: "Lee Anne Chapman",

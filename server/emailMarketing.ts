@@ -142,7 +142,7 @@ export function marketingEmailFooter(unsubUrl: string, reasonLine: string): stri
         <a href="${(ENV.appPublicUrl || SITE_URL).replace(/\/$/, "")}/privacy" style="color:#8a7060;text-decoration:underline;">Privacy</a>
       </p>
       <p style="margin:12px 0 0;color:#b0b8b0;font-size:11px;">
-        Mind &amp; Body Reset Coaches · mindandbodyresetcoach.com
+        Mind and Body Reset Coaching · mindandbodyresetcoach.com
       </p>
     </div>`;
 }
@@ -198,7 +198,7 @@ export async function sendMarketingEmail(params: {
   try {
     const resend = new Resend(ENV.resendApiKey);
     const { error } = await resend.emails.send({
-      from: `Lee Anne — Mind & Body Reset Coaches <${ENV.resendFromEmail}>`,
+      from: `Lee Anne — Mind and Body Reset Coaching <${ENV.resendFromEmail}>`,
       to: [to],
       subject: params.subject,
       html,

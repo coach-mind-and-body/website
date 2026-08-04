@@ -831,7 +831,7 @@ export const emailNewsletters = mysqlTable("email_newsletters", {
   signOffClosing: varchar("signOffClosing", { length: 255 }).default("With love,"),
   signOffName: varchar("signOffName", { length: 255 }).default("Lee Anne"),
   signOffTitle: varchar("signOffTitle", { length: 500 }).default(
-    "Certified Life & Health Coach · Mind & Body Reset Coaches"
+    "Certified Life & Health Coach · Mind and Body Reset Coaching"
   ),
   bodyHtml: text("bodyHtml").notNull(),
   ctaLabel: varchar("ctaLabel", { length: 255 }),

@@ -38,7 +38,7 @@ const AUDIENCE_LABELS: Record<AudienceGroup, string> = {
 const DEFAULT_GREETING = "Hi {{firstName}},";
 const DEFAULT_SIGN_OFF_CLOSING = "With love,";
 const DEFAULT_SIGN_OFF_NAME = "Lee Anne";
-const DEFAULT_SIGN_OFF_TITLE = "Certified Life & Health Coach · Mind & Body Reset Coaches";
+const DEFAULT_SIGN_OFF_TITLE = `Certified Life & Health Coach · ${BRAND.name}`;
 
 function statusBadge(status: string) {
   const styles: Record<string, { bg: string; color: string }> = {
@@ -194,6 +194,7 @@ export function AdminNewsletterTab() {
   <div class="footer">
     <p style="margin:0 0 10px;">You're receiving this because you joined our email list.</p>
     <p style="margin:0;"><span style="text-decoration:underline;color:#8a7060;">Unsubscribe</span> · Privacy</p>
+    <p style="margin:12px 0 0;color:#b0b8b0;font-size:11px;">${BRAND.name} · mindandbodyresetcoach.com</p>
   </div>
 </div>
 </body></html>`;

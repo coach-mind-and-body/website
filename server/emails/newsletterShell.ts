@@ -237,7 +237,7 @@ export function buildNewsletterPreviewDocument(input: NewsletterShellInput): str
         <span style="text-decoration:underline;color:#8a7060;">Privacy</span>
       </p>
       <p style="margin:12px 0 0;color:#b0b8b0;font-size:11px;">
-        Mind &amp; Body Reset Coaches · mindandbodyresetcoach.com
+        Mind and Body Reset Coaching · mindandbodyresetcoach.com
       </p>
     </div>`
   );
