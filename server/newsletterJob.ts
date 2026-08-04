@@ -1,9 +1,8 @@
 /**
- * Process email newsletters that are in "sending" status.
- * Mirrors SMS campaign job: worker polls and delivers via Resend.
+ * Process email newsletters: due schedules → sending → Resend delivery + send log.
  */
-import { eq } from "drizzle-orm";
-import { emailNewsletters } from "../drizzle/schema";
+import { and, eq, lte } from "drizzle-orm";
+import { emailNewsletters, emailNewsletterSends } from "../drizzle/schema";
 import { getDb } from "./db";
 import { sendMarketingEmail } from "./emailMarketing";
 import {
@@ -33,6 +32,19 @@ function parseExcludeEmails(raw: string | null | undefined): string[] {
   }
 }
 
+function reasonForAudience(group: string): string {
+  if (group === "finance") {
+    return "You're receiving this because you joined our Financial Peace list at mindandbodyresetcoach.com.";
+  }
+  if (group === "snack_hack") {
+    return "You're receiving this because you downloaded The Midlife Mindset Snack Hack at mindandbodyresetcoach.com.";
+  }
+  if (group === "health") {
+    return "You're receiving this because you joined our health & wellness list at mindandbodyresetcoach.com.";
+  }
+  return "You're receiving this because you joined our email list at mindandbodyresetcoach.com.";
+}
+
 async function processOneNewsletter(
   db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
   row: typeof emailNewsletters.$inferSelect
@@ -54,16 +66,9 @@ async function processOneNewsletter(
   let sentCount = 0;
   let failedCount = 0;
   let skippedCount = 0;
-
-  const reasonLine =
-    row.audienceGroup === "finance"
-      ? "You're receiving this because you joined our Financial Peace list at mindandbodyresetcoach.com."
-      : row.audienceGroup === "health"
-        ? "You're receiving this because you joined our health & wellness list at mindandbodyresetcoach.com."
-        : "You're receiving this because you joined our email list at mindandbodyresetcoach.com.";
+  const reasonLine = reasonForAudience(row.audienceGroup);
 
   for (const recipient of recipients) {
-    // Re-check status in case cancelled mid-send
     const [current] = await db
       .select({ status: emailNewsletters.status })
       .from(emailNewsletters)
@@ -86,12 +91,19 @@ async function processOneNewsletter(
       subheadline: row.subheadline
         ? personalizeNewsletterText(row.subheadline, first)
         : row.subheadline,
+      greetingTemplate: row.greetingTemplate,
+      signOffClosing: row.signOffClosing,
+      signOffName: row.signOffName,
+      signOffTitle: row.signOffTitle,
       bodyHtml: row.bodyHtml,
       ctaLabel: row.ctaLabel
         ? personalizeNewsletterText(row.ctaLabel, first)
         : row.ctaLabel,
       ctaUrl: row.ctaUrl,
     });
+
+    let outcome: "sent" | "failed" | "skipped" = "failed";
+    let errorMessage: string | null = null;
 
     try {
       const ok = await sendMarketingEmail({
@@ -101,20 +113,38 @@ async function processOneNewsletter(
         htmlBody,
         reasonLine,
       });
-      if (ok) sentCount++;
-      else skippedCount++; // opted out or resend misconfigured
+      if (ok) {
+        sentCount++;
+        outcome = "sent";
+      } else {
+        skippedCount++;
+        outcome = "skipped";
+        errorMessage = "Opted out or Resend skipped";
+      }
     } catch (err) {
       failedCount++;
+      outcome = "failed";
+      errorMessage = err instanceof Error ? err.message.slice(0, 480) : "Send failed";
       console.error(
         `[Newsletter] Failed to send #${row.id} to ${recipient.email}:`,
         err
       );
     }
 
-    // Gentle pacing for Resend rate limits (~2/sec max on free tiers)
+    try {
+      await db.insert(emailNewsletterSends).values({
+        newsletterId: row.id,
+        email: recipient.email,
+        firstName: recipient.firstName,
+        status: outcome,
+        errorMessage,
+      });
+    } catch (logErr) {
+      console.warn("[Newsletter] Failed to log send:", logErr);
+    }
+
     await sleep(350);
 
-    // Periodic progress updates every 10 sends
     if ((sentCount + failedCount + skippedCount) % 10 === 0) {
       await db
         .update(emailNewsletters)
@@ -138,7 +168,13 @@ async function processOneNewsletter(
   }
 
   const finalStatus =
-    sentCount > 0 ? "sent" : recipients.length === 0 ? "failed" : failedCount === recipients.length ? "failed" : "sent";
+    sentCount > 0
+      ? "sent"
+      : recipients.length === 0
+        ? "failed"
+        : failedCount === recipients.length
+          ? "failed"
+          : "sent";
 
   await db
     .update(emailNewsletters)
@@ -157,12 +193,32 @@ async function processOneNewsletter(
   );
 }
 
+/** Promote due scheduled newsletters to sending, then process all sending. */
 export async function processSendingNewsletters() {
   if (processing) return;
   processing = true;
   try {
     const db = await getDb();
     if (!db) return;
+
+    const now = new Date();
+    const dueScheduled = await db
+      .select()
+      .from(emailNewsletters)
+      .where(
+        and(
+          eq(emailNewsletters.status, "scheduled"),
+          lte(emailNewsletters.scheduledAt, now)
+        )
+      );
+
+    for (const row of dueScheduled) {
+      await db
+        .update(emailNewsletters)
+        .set({ status: "sending" })
+        .where(eq(emailNewsletters.id, row.id));
+      console.log(`[Newsletter] #${row.id} scheduled time reached — starting send`);
+    }
 
     const due = await db
       .select()

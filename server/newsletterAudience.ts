@@ -1,5 +1,5 @@
 /**
- * Resolve newsletter recipients for finance / health / all audiences.
+ * Resolve newsletter recipients for finance / health / snack_hack / all audiences.
  */
 import { and, eq, inArray, isNotNull, ne } from "drizzle-orm";
 import {
@@ -14,7 +14,10 @@ import { isEmailOptedOut, parseSegments } from "./emailMarketing";
 
 type Db = NonNullable<Awaited<ReturnType<typeof getDb>>>;
 
-export type NewsletterAudienceGroup = "finance" | "health" | "all";
+/** Segment flag for manually managed finance newsletter list */
+export const NEWSLETTER_FINANCE_SEGMENT = "newsletter_finance";
+
+export type NewsletterAudienceGroup = "finance" | "health" | "all" | "snack_hack";
 
 export type NewsletterRecipient = {
   email: string;
@@ -47,16 +50,28 @@ function isFinanceSegment(segments: string[]): boolean {
   return segments.some(
     (s) =>
       s === "fpu" ||
+      s === NEWSLETTER_FINANCE_SEGMENT ||
       s.startsWith("fpu_") ||
       s.includes("financial") ||
       s === "fpu_interest"
   );
 }
 
+function isSnackHackSegment(segments: string[]): boolean {
+  return segments.some(
+    (s) =>
+      s === "leadgen_snack_hack" ||
+      s.includes("snack_hack") ||
+      s.includes("snack-hack")
+  );
+}
+
 function isHealthSegment(segments: string[]): boolean {
-  if (segments.length === 0) return true; // generic list → health by default
-  // Health if any non-finance marketing segment, or pure finance-only is false
-  if (isFinanceSegment(segments) && segments.every((s) => isFinanceSegment([s]) || s === "email_opt_out")) {
+  if (segments.length === 0) return true;
+  if (
+    isFinanceSegment(segments) &&
+    segments.every((s) => isFinanceSegment([s]) || s === "email_opt_out")
+  ) {
     return false;
   }
   return true;
@@ -93,7 +108,6 @@ export async function resolveNewsletterAudience(
     );
   }
 
-  // Map email → best recipient record
   const map = new Map<string, NewsletterRecipient>();
 
   const add = (
@@ -108,10 +122,12 @@ export async function resolveNewsletterAudience(
     if (excludeSet.has(email)) return;
     if (opts.excludeEnrolled && enrolledEmails.has(email)) return;
     if (map.has(email)) {
-      // Prefer a better first name if we only had email local-part
       const existing = map.get(email)!;
       const next = firstNameFrom(name, email);
-      if (existing.firstName.toLowerCase() === email.split("@")[0].toLowerCase() && name?.trim()) {
+      if (
+        existing.firstName.toLowerCase() === email.split("@")[0].toLowerCase() &&
+        name?.trim()
+      ) {
         existing.firstName = next;
       }
       return;
@@ -135,15 +151,18 @@ export async function resolveNewsletterAudience(
 
   const group = opts.audienceGroup;
 
-  // Subscribers
   for (const sub of allSubs) {
     if (isEmailOptedOut(sub.segments)) continue;
     const segs = parseSegments(sub.segments);
-    const name = [sub.firstName, sub.lastName].filter(Boolean).join(" ") || sub.firstName;
+    const name =
+      [sub.firstName, sub.lastName].filter(Boolean).join(" ") || sub.firstName;
+
     if (group === "all") {
       add(sub.email, name, "subscriber", true);
     } else if (group === "finance") {
-      add(sub.email, name, "subscriber:fpu", isFinanceSegment(segs));
+      add(sub.email, name, "subscriber:finance", isFinanceSegment(segs));
+    } else if (group === "snack_hack") {
+      add(sub.email, name, "subscriber:snack_hack", isSnackHackSegment(segs));
     } else {
       add(sub.email, name, "subscriber:health", isHealthSegment(segs));
     }
@@ -156,14 +175,14 @@ export async function resolveNewsletterAudience(
     }
   }
 
-  // Discovery / health leads → health (+ all)
+  // Discovery leads → health (+ all), not snack_hack-only
   if (group === "health" || group === "all") {
     for (const lead of allLeads) {
       add(lead.email, lead.name, "lead", true);
     }
   }
 
-  // Platform users (non-admin) → health or all (not finance-only unless they appear elsewhere)
+  // Platform users → health / all
   if (group === "health" || group === "all") {
     for (const u of allUsers) {
       if (u.role === "admin") continue;
@@ -183,4 +202,83 @@ export async function countNewsletterAudience(
     total: recipients.length,
     sample: recipients.slice(0, 8),
   };
+}
+
+/** List people on the finance newsletter list (segment + FPU leads). */
+export async function listFinanceContacts(db: Db): Promise<
+  { email: string; firstName: string; source: string; canRemove: boolean }[]
+> {
+  const rows = await resolveNewsletterAudience(db, {
+    audienceGroup: "finance",
+    excludeEnrolled: false,
+    excludeEmails: [],
+  });
+  return rows.map((r) => ({
+    email: r.email,
+    firstName: r.firstName,
+    source: r.source,
+    // Manual newsletter_finance segment contacts can be removed; fpu leads stay
+    canRemove: r.source === "subscriber:finance",
+  }));
+}
+
+/** Add email to finance list via subscribers.newsletter_finance segment. */
+export async function addFinanceContact(
+  db: Db,
+  emailRaw: string,
+  firstName?: string
+): Promise<{ email: string }> {
+  const email = normalizeEmail(emailRaw);
+  if (!EMAIL_RE.test(email)) throw new Error("Invalid email");
+
+  const [existing] = await db
+    .select()
+    .from(subscribers)
+    .where(eq(subscribers.email, email))
+    .limit(1);
+
+  if (existing) {
+    const segs = parseSegments(existing.segments);
+    if (!segs.includes(NEWSLETTER_FINANCE_SEGMENT)) {
+      segs.push(NEWSLETTER_FINANCE_SEGMENT);
+      await db
+        .update(subscribers)
+        .set({
+          segments: JSON.stringify(segs),
+          firstName: firstName?.trim() || existing.firstName,
+          updatedAt: new Date(),
+        })
+        .where(eq(subscribers.id, existing.id));
+    } else if (firstName?.trim()) {
+      await db
+        .update(subscribers)
+        .set({ firstName: firstName.trim(), updatedAt: new Date() })
+        .where(eq(subscribers.id, existing.id));
+    }
+  } else {
+    await db.insert(subscribers).values({
+      email,
+      firstName: firstName?.trim() || firstNameFrom(null, email),
+      segments: JSON.stringify([NEWSLETTER_FINANCE_SEGMENT]),
+    });
+  }
+  return { email };
+}
+
+/** Remove newsletter_finance segment (does not delete FPU site leads). */
+export async function removeFinanceContact(db: Db, emailRaw: string): Promise<void> {
+  const email = normalizeEmail(emailRaw);
+  const [existing] = await db
+    .select()
+    .from(subscribers)
+    .where(eq(subscribers.email, email))
+    .limit(1);
+  if (!existing) return;
+  const segs = parseSegments(existing.segments).filter(
+    (s) => s !== NEWSLETTER_FINANCE_SEGMENT
+  );
+  await db
+    .update(subscribers)
+    .set({ segments: JSON.stringify(segs), updatedAt: new Date() })
+    .where(eq(subscribers.id, existing.id));
 }

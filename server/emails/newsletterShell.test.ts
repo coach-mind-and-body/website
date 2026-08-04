@@ -13,13 +13,28 @@ describe("newsletterShell", () => {
       ctaLabel: "Learn more",
       ctaUrl: "https://mindandbodyresetcoach.com/reclaim",
     });
-    expect(html).toContain("Hi Sarah");
+    expect(html).toContain("Hi Sarah,");
     expect(html).toContain("This week’s tip");
     expect(html).toContain("Stay consistent.");
     expect(html).toContain("Learn more");
     expect(html).toContain("logo-wide.jpg");
     expect(html).toContain("<!--UNSUB_FOOTER-->");
     expect(html).toContain("Lee Anne");
+  });
+
+  it("supports custom greeting and sign-off", () => {
+    const html = buildNewsletterHtml({
+      firstName: "Mia",
+      greetingTemplate: "Hey {{firstName}}!",
+      signOffClosing: "Hugs,",
+      signOffName: "Coach L",
+      signOffTitle: "Your coach",
+      bodyHtml: "<p>Body</p>",
+    });
+    expect(html).toContain("Hey Mia!");
+    expect(html).toContain("Hugs,");
+    expect(html).toContain("Coach L");
+    expect(html).toContain("Your coach");
   });
 
   it("personalizes {{firstName}} placeholders", () => {

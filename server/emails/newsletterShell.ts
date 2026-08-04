@@ -10,6 +10,11 @@ import { escapeHtml } from "../../lib/htmlEscape";
 const base = (ENV.appPublicUrl || SITE_URL).replace(/\/$/, "");
 const LOGO = `${base}/logo-wide.jpg`;
 
+export const DEFAULT_GREETING = "Hi {{firstName}},";
+export const DEFAULT_SIGN_OFF_CLOSING = "With love,";
+export const DEFAULT_SIGN_OFF_NAME = BRAND.coachName;
+export const DEFAULT_SIGN_OFF_TITLE = `Certified Life & Health Coach · ${BRAND.name}`;
+
 const shell = {
   wrap: `font-family:'Nunito Sans',Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);`,
   logoBar: `background:#FDFBF7;padding:24px;text-align:center;border-bottom:1px solid #f0e8e4;`,
@@ -39,18 +44,20 @@ const shell = {
 
 export type NewsletterShellInput = {
   firstName?: string;
-  /** Hidden inbox preview line (Gmail preheader) */
   previewText?: string | null;
   headline?: string | null;
   subheadline?: string | null;
+  /** e.g. "Hi {{firstName}}," or "Hello friend," — empty string hides greeting */
+  greetingTemplate?: string | null;
+  signOffClosing?: string | null;
+  signOffName?: string | null;
+  signOffTitle?: string | null;
   bodyHtml: string;
   ctaLabel?: string | null;
   ctaUrl?: string | null;
-  /** When true, skip personalizing {{firstName}} (preview mode uses "there") */
   previewMode?: boolean;
 };
 
-/** Extract YouTube video id from common URL shapes. */
 function youtubeIdFromUrl(url: string): string | null {
   const m = url.match(
     /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{6,})/
@@ -58,29 +65,20 @@ function youtubeIdFromUrl(url: string): string | null {
   return m?.[1] ?? null;
 }
 
-/**
- * Make TipTap HTML email-safe:
- * - YouTube iframes → clickable thumbnail with play overlay (most clients block iframes)
- * - Instagram embeds → simple linked cards
- * - Ensure images are responsive
- */
 export function prepareBodyHtmlForEmail(html: string): string {
   if (!html) return "";
   let out = html;
 
-  // TipTap YouTube: <div data-youtube-video><iframe src="..."></iframe></div>
   out = out.replace(
     /<div[^>]*data-youtube-video[^>]*>[\s\S]*?<iframe[^>]+src=["']([^"']+)["'][^>]*>[\s\S]*?<\/iframe>[\s\S]*?<\/div>/gi,
     (_full, src: string) => youtubeThumbnailBlock(src)
   );
 
-  // Bare youtube iframes
   out = out.replace(
     /<iframe[^>]+src=["']([^"']*youtube[^"']*)["'][^>]*>[\s\S]*?<\/iframe>/gi,
     (_full, src: string) => youtubeThumbnailBlock(src)
   );
 
-  // Instagram oembed-ish or plain links left as-is; convert instagram iframes
   out = out.replace(
     /<iframe[^>]+src=["']([^"']*instagram\.com[^"']*)["'][^>]*>[\s\S]*?<\/iframe>/gi,
     (_full, src: string) => {
@@ -92,7 +90,6 @@ export function prepareBodyHtmlForEmail(html: string): string {
     }
   );
 
-  // Images without max-width
   out = out.replace(/<img\b([^>]*)>/gi, (_full, attrs: string) => {
     if (/style\s*=/i.test(attrs)) {
       if (!/max-width/i.test(attrs)) {
@@ -135,11 +132,18 @@ function logoHeader(): string {
     </div>`;
 }
 
-function signOff(): string {
+function buildSignOff(input: NewsletterShellInput): string {
+  const closing = (input.signOffClosing ?? DEFAULT_SIGN_OFF_CLOSING).trim();
+  const name = (input.signOffName ?? DEFAULT_SIGN_OFF_NAME).trim();
+  const title = (input.signOffTitle ?? DEFAULT_SIGN_OFF_TITLE).trim();
+  if (!closing && !name && !title) return "";
   return `
-    <p style="margin-top:28px;margin-bottom:8px;">With love,<br/>
-    <strong>${escapeHtml(BRAND.coachName)}</strong><br/>
-    <span style="color:#8a9a8a;font-size:13px;">Certified Life &amp; Health Coach · ${escapeHtml(BRAND.name)}</span></p>`;
+    <p style="margin-top:28px;margin-bottom:8px;">
+      ${closing ? `${escapeHtml(closing)}<br/>` : ""}
+      ${name ? `<strong>${escapeHtml(name)}</strong>` : ""}
+      ${name && title ? `<br/>` : ""}
+      ${title ? `<span style="color:#8a9a8a;font-size:13px;">${escapeHtml(title)}</span>` : ""}
+    </p>`;
 }
 
 function ctaBlock(label: string, href: string): string {
@@ -149,7 +153,6 @@ function ctaBlock(label: string, href: string): string {
     </div>`;
 }
 
-/** Replace {{firstName}} / {{name}} — HTML-escaped for body content. */
 export function personalizeNewsletterHtml(html: string, firstName: string): string {
   const name = escapeHtml(firstName.trim() || "friend");
   return html
@@ -157,7 +160,6 @@ export function personalizeNewsletterHtml(html: string, firstName: string): stri
     .replace(/\{\{\s*name\s*\}\}/gi, name);
 }
 
-/** Plain-text personalization for subject lines (no HTML entities). */
 export function personalizeNewsletterText(text: string, firstName: string): string {
   const name = (firstName.trim() || "friend").replace(/[\r\n]/g, "");
   return text
@@ -165,17 +167,24 @@ export function personalizeNewsletterText(text: string, firstName: string): stri
     .replace(/\{\{\s*name\s*\}\}/gi, name);
 }
 
-function personalize(html: string, firstName: string): string {
-  return personalizeNewsletterHtml(html, firstName);
-}
-
 /**
  * Wrap editor body HTML in the branded newsletter shell.
  */
 export function buildNewsletterHtml(input: NewsletterShellInput): string {
-  const firstName = input.firstName?.trim() || (input.previewMode ? "there" : "friend");
+  const firstName =
+    input.firstName?.trim() || (input.previewMode ? "there" : "friend");
   const prepared = prepareBodyHtmlForEmail(input.bodyHtml);
-  const body = personalize(prepared, firstName);
+  const body = personalizeNewsletterHtml(prepared, firstName);
+
+  const greetingRaw =
+    input.greetingTemplate === null || input.greetingTemplate === undefined
+      ? DEFAULT_GREETING
+      : input.greetingTemplate;
+  const greetingHtml = (() => {
+    if (!greetingRaw.trim()) return "";
+    const withName = personalizeNewsletterText(greetingRaw.trim(), firstName);
+    return `<p>${escapeHtml(withName)}</p>`;
+  })();
 
   const hasHero = !!(input.headline && input.headline.trim());
   const hero = hasHero
@@ -195,7 +204,6 @@ export function buildNewsletterHtml(input: NewsletterShellInput): string {
       ? ctaBlock(input.ctaLabel.trim(), input.ctaUrl.trim())
       : "";
 
-  // Hidden preheader — shows after subject in many inbox clients
   const preheader = input.previewText?.trim()
     ? `<div style="display:none;font-size:1px;color:#fff;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">${escapeHtml(input.previewText.trim())}</div>`
     : "";
@@ -206,19 +214,17 @@ export function buildNewsletterHtml(input: NewsletterShellInput): string {
       ${logoHeader()}
       ${hero}
       <div style="${shell.body}" class="nl-content">
-        <p>Hi ${escapeHtml(firstName)},</p>
+        ${greetingHtml}
         ${body}
         ${cta}
-        ${signOff()}
+        ${buildSignOff(input)}
       </div>
       <!--UNSUB_FOOTER-->
     </div>`;
 }
 
-/** Full HTML document for iframe preview in admin UI. */
 export function buildNewsletterPreviewDocument(input: NewsletterShellInput): string {
   const inner = buildNewsletterHtml({ ...input, previewMode: true });
-  // Preview footer placeholder (real unsub is per-recipient on send)
   const withFooter = inner.replace(
     "<!--UNSUB_FOOTER-->",
     `<div style="padding:28px 40px 36px;border-top:1px solid #f0e8e4;text-align:center;">

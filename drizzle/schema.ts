@@ -825,17 +825,33 @@ export const emailNewsletters = mysqlTable("email_newsletters", {
   previewText: varchar("previewText", { length: 500 }),
   headline: varchar("headline", { length: 500 }),
   subheadline: varchar("subheadline", { length: 500 }),
+  /** Editable opening line; supports {{firstName}} — e.g. "Hi {{firstName}}," */
+  greetingTemplate: varchar("greetingTemplate", { length: 500 }).default("Hi {{firstName}},"),
+  /** Sign-off lines (editable) */
+  signOffClosing: varchar("signOffClosing", { length: 255 }).default("With love,"),
+  signOffName: varchar("signOffName", { length: 255 }).default("Lee Anne"),
+  signOffTitle: varchar("signOffTitle", { length: 500 }).default(
+    "Certified Life & Health Coach · Mind & Body Reset Coaches"
+  ),
   bodyHtml: text("bodyHtml").notNull(),
   ctaLabel: varchar("ctaLabel", { length: 255 }),
   ctaUrl: varchar("ctaUrl", { length: 1000 }),
-  audienceGroup: mysqlEnum("audienceGroup", ["finance", "health", "all"])
+  audienceGroup: mysqlEnum("audienceGroup", ["finance", "health", "all", "snack_hack"])
     .default("health")
     .notNull(),
   excludeEnrolled: boolean("excludeEnrolled").default(false).notNull(),
   excludeEmails: text("excludeEmails"), // JSON string array of emails
-  status: mysqlEnum("status", ["draft", "sending", "sent", "failed", "cancelled"])
+  status: mysqlEnum("status", [
+    "draft",
+    "scheduled",
+    "sending",
+    "sent",
+    "failed",
+    "cancelled",
+  ])
     .default("draft")
     .notNull(),
+  scheduledAt: timestamp("scheduledAt"),
   recipientCount: int("recipientCount").default(0).notNull(),
   sentCount: int("sentCount").default(0).notNull(),
   failedCount: int("failedCount").default(0).notNull(),
@@ -848,6 +864,32 @@ export const emailNewsletters = mysqlTable("email_newsletters", {
 
 export type EmailNewsletter = typeof emailNewsletters.$inferSelect;
 export type InsertEmailNewsletter = typeof emailNewsletters.$inferInsert;
+
+/** Per-recipient delivery log (history + analytics) */
+export const emailNewsletterSends = mysqlTable("email_newsletter_sends", {
+  id: int("id").autoincrement().primaryKey(),
+  newsletterId: int("newsletterId").notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  firstName: varchar("firstName", { length: 255 }),
+  status: mysqlEnum("status", ["sent", "failed", "skipped"]).notNull(),
+  errorMessage: varchar("errorMessage", { length: 500 }),
+  sentAt: timestamp("sentAt").defaultNow().notNull(),
+});
+
+export type EmailNewsletterSend = typeof emailNewsletterSends.$inferSelect;
+
+/** Saved reusable content blocks for the newsletter composer */
+export const emailNewsletterSnippets = mysqlTable("email_newsletter_snippets", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  bodyHtml: text("bodyHtml").notNull(),
+  createdByUserId: int("createdByUserId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type EmailNewsletterSnippet = typeof emailNewsletterSnippets.$inferSelect;
+export type InsertEmailNewsletterSnippet = typeof emailNewsletterSnippets.$inferInsert;
 
 // --- DUMMY EXPORTS TO BYPASS STATIC WEBPACK ERRORS FOR LEGACY CRM CODE ---
 export const vacationQuotes = mysqlTable("dummy_vq", { id: int("id") });
