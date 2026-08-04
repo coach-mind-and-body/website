@@ -227,7 +227,7 @@ export async function addFinanceContact(
   db: Db,
   emailRaw: string,
   firstName?: string
-): Promise<{ email: string }> {
+): Promise<{ email: string; created: boolean; alreadyOnList: boolean }> {
   const email = normalizeEmail(emailRaw);
   if (!EMAIL_RE.test(email)) throw new Error("Invalid email");
 
@@ -239,7 +239,8 @@ export async function addFinanceContact(
 
   if (existing) {
     const segs = parseSegments(existing.segments);
-    if (!segs.includes(NEWSLETTER_FINANCE_SEGMENT)) {
+    const alreadyOnList = segs.includes(NEWSLETTER_FINANCE_SEGMENT);
+    if (!alreadyOnList) {
       segs.push(NEWSLETTER_FINANCE_SEGMENT);
       await db
         .update(subscribers)
@@ -249,20 +250,53 @@ export async function addFinanceContact(
           updatedAt: new Date(),
         })
         .where(eq(subscribers.id, existing.id));
-    } else if (firstName?.trim()) {
+    } else if (firstName?.trim() && !existing.firstName) {
       await db
         .update(subscribers)
         .set({ firstName: firstName.trim(), updatedAt: new Date() })
         .where(eq(subscribers.id, existing.id));
     }
-  } else {
-    await db.insert(subscribers).values({
-      email,
-      firstName: firstName?.trim() || firstNameFrom(null, email),
-      segments: JSON.stringify([NEWSLETTER_FINANCE_SEGMENT]),
-    });
+    return { email, created: false, alreadyOnList };
   }
-  return { email };
+
+  await db.insert(subscribers).values({
+    email,
+    firstName: firstName?.trim() || firstNameFrom(null, email),
+    segments: JSON.stringify([NEWSLETTER_FINANCE_SEGMENT]),
+  });
+  return { email, created: true, alreadyOnList: false };
+}
+
+export async function bulkAddFinanceContacts(
+  db: Db,
+  contacts: { email: string; firstName?: string }[]
+): Promise<{
+  added: number;
+  alreadyOnList: number;
+  failed: number;
+  errors: string[];
+}> {
+  let added = 0;
+  let alreadyOnList = 0;
+  let failed = 0;
+  const errors: string[] = [];
+
+  for (const c of contacts) {
+    try {
+      const result = await addFinanceContact(db, c.email, c.firstName);
+      if (result.alreadyOnList) alreadyOnList++;
+      else added++;
+    } catch (e) {
+      failed++;
+      if (errors.length < 10) {
+        errors.push(
+          `${c.email}: ${e instanceof Error ? e.message : "failed"}`
+        );
+      }
+    }
+  }
+
+  return { added, alreadyOnList, failed, errors };
 }
 
 /** Remove newsletter_finance segment (does not delete FPU site leads). */

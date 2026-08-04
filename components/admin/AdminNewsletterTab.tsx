@@ -110,6 +110,14 @@ export function AdminNewsletterTab() {
   const [logNewsletterId, setLogNewsletterId] = useState<number | null>(null);
   const [financeEmail, setFinanceEmail] = useState("");
   const [financeFirstName, setFinanceFirstName] = useState("");
+  const [financePaste, setFinancePaste] = useState("");
+  const [financeParsed, setFinanceParsed] = useState<
+    { email: string; firstName: string }[] | null
+  >(null);
+  const [financeParseMeta, setFinanceParseMeta] = useState<{
+    skippedLines: number;
+    duplicateEmails: number;
+  } | null>(null);
 
   const editorRef = useRef<RichTextEditorHandle>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -292,6 +300,34 @@ export function AdminNewsletterTab() {
       toast.success("Added to finance list");
       setFinanceEmail("");
       setFinanceFirstName("");
+      utils.newsletter.listFinance.invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const parseFinancePaste = trpc.newsletter.parseFinancePaste.useMutation({
+    onSuccess: (data) => {
+      setFinanceParsed(data.contacts);
+      setFinanceParseMeta({
+        skippedLines: data.skippedLines,
+        duplicateEmails: data.duplicateEmails,
+      });
+      if (data.total === 0) {
+        toast.error("No emails found in that paste — check the text and try again");
+      } else {
+        toast.success(`Found ${data.total} contact${data.total === 1 ? "" : "s"}`);
+      }
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const bulkAddFinance = trpc.newsletter.bulkAddFinance.useMutation({
+    onSuccess: (data) => {
+      toast.success(
+        `Imported ${data.added} new · ${data.alreadyOnList} already on list` +
+          (data.failed ? ` · ${data.failed} failed` : "")
+      );
+      setFinancePaste("");
+      setFinanceParsed(null);
+      setFinanceParseMeta(null);
       utils.newsletter.listFinance.invalidate();
     },
     onError: (e) => toast.error(e.message),
@@ -711,13 +747,158 @@ export function AdminNewsletterTab() {
           Finance email list
         </h2>
         <p className="mb-4 max-w-2xl" style={{ color: "oklch(0.52 0.015 50)" }}>
-          Dave Ramsey’s site doesn’t sync here automatically. Add people manually so they get{" "}
-          <strong>Finance</strong> newsletters. FPU form sign-ups on your site are already included.
+          Dave Ramsey’s site doesn’t sync here. <strong>Copy/paste a whole list</strong> (names + emails)
+          and we’ll extract them. Site FPU sign-ups are already included.
         </p>
         {subNav}
+
+        {/* Bulk paste importer */}
+        <div
+          className="bg-white rounded-xl border shadow-sm p-5 mb-4"
+          style={{ borderColor: "oklch(0.90 0.04 75)" }}
+        >
+          <p className="text-xs font-bold uppercase mb-1" style={{ color: "oklch(0.45 0.06 60)" }}>
+            Bulk import from Dave Ramsey / Excel
+          </p>
+          <p className="text-xs mb-3" style={{ color: "oklch(0.52 0.015 50)" }}>
+            Paste anything: spreadsheet rows, “Jane Doe jane@email.com”, “Name &lt;email&gt;”, CSV, or a
+            list of emails. Click <strong>Extract</strong> to preview, then <strong>Import all</strong>.
+          </p>
+          <textarea
+            value={financePaste}
+            onChange={(e) => {
+              setFinancePaste(e.target.value);
+              setFinanceParsed(null);
+              setFinanceParseMeta(null);
+            }}
+            rows={8}
+            placeholder={`Examples (any mix is fine):\nSarah Johnson  sarah@example.com\nMia Lee <mia@example.com>\nDoe, Jane\tjane@school.org\nbob@gmail.com`}
+            className="w-full rounded-lg px-3.5 py-3 text-sm border outline-none font-mono mb-3"
+            style={{ borderColor: "oklch(0.90 0.015 80)", background: "oklch(0.99 0.005 80)" }}
+          />
+          <div className="flex flex-wrap gap-2 mb-3">
+            <button
+              type="button"
+              onClick={() => {
+                if (!financePaste.trim()) {
+                  toast.error("Paste a list first");
+                  return;
+                }
+                parseFinancePaste.mutate({ text: financePaste });
+              }}
+              disabled={parseFinancePaste.isPending}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold"
+              style={{ background: "oklch(0.25 0.02 50)", color: "white" }}
+            >
+              {parseFinancePaste.isPending ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : null}
+              Extract names &amp; emails
+            </button>
+            {financeParsed && financeParsed.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  bulkAddFinance.mutate({ contacts: financeParsed });
+                }}
+                disabled={bulkAddFinance.isPending}
+                className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold"
+                style={{ background: "oklch(0.72 0.12 75)", color: "white" }}
+              >
+                {bulkAddFinance.isPending ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Plus size={14} />
+                )}
+                Import all ({financeParsed.length})
+              </button>
+            )}
+            {(financePaste || financeParsed) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setFinancePaste("");
+                  setFinanceParsed(null);
+                  setFinanceParseMeta(null);
+                }}
+                className="px-3 py-2 rounded-full text-sm font-bold text-slate-500"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          {financeParsed && (
+            <div className="rounded-xl border overflow-hidden" style={{ borderColor: "oklch(0.92 0.02 80)" }}>
+              <div
+                className="px-4 py-2 text-xs font-bold flex flex-wrap gap-3"
+                style={{ background: "oklch(0.97 0.02 75)", color: "oklch(0.35 0.04 50)" }}
+              >
+                <span>{financeParsed.length} ready to import</span>
+                {financeParseMeta && financeParseMeta.duplicateEmails > 0 && (
+                  <span>{financeParseMeta.duplicateEmails} duplicate email(s) removed</span>
+                )}
+                {financeParseMeta && financeParseMeta.skippedLines > 0 && (
+                  <span>{financeParseMeta.skippedLines} line(s) skipped (no email)</span>
+                )}
+              </div>
+              <div className="max-h-56 overflow-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="sticky top-0 bg-white text-xs uppercase text-slate-500 border-b">
+                    <tr>
+                      <th className="px-4 py-2">First name</th>
+                      <th className="px-4 py-2">Email</th>
+                      <th className="px-4 py-2 w-10"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {financeParsed.map((c, i) => (
+                      <tr key={`${c.email}-${i}`} className="border-t">
+                        <td className="px-4 py-1.5">
+                          <input
+                            value={c.firstName}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setFinanceParsed((prev) =>
+                                prev
+                                  ? prev.map((row, idx) =>
+                                      idx === i ? { ...row, firstName: v } : row
+                                    )
+                                  : prev
+                              );
+                            }}
+                            className="w-full rounded px-2 py-1 text-sm border outline-none"
+                            style={{ borderColor: "oklch(0.92 0.01 80)" }}
+                          />
+                        </td>
+                        <td className="px-4 py-1.5 font-mono text-xs">{c.email}</td>
+                        <td className="px-2 py-1.5">
+                          <button
+                            type="button"
+                            title="Remove from import"
+                            onClick={() =>
+                              setFinanceParsed((prev) =>
+                                prev ? prev.filter((_, idx) => idx !== i) : prev
+                              )
+                            }
+                            className="text-slate-400 hover:text-red-500"
+                          >
+                            <X size={14} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Single add */}
         <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-5 mb-4">
           <p className="text-xs font-bold uppercase mb-3" style={{ color: "oklch(0.52 0.015 50)" }}>
-            Add someone
+            Or add one person
           </p>
           <div className="flex flex-wrap gap-2">
             <input
@@ -755,6 +936,9 @@ export function AdminNewsletterTab() {
           </div>
         </div>
         <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+          <div className="px-4 py-2 text-xs font-bold uppercase border-b text-slate-500">
+            Current finance list ({financeList.length})
+          </div>
           {financeLoading ? (
             <div className="flex justify-center py-12">
               <Loader2 className="animate-spin" style={{ color: "oklch(0.72 0.12 75)" }} />

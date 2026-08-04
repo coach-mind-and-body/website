@@ -23,11 +23,13 @@ import {
 import { processSendingNewsletters } from "../newsletterJob";
 import {
   addFinanceContact,
+  bulkAddFinanceContacts,
   countNewsletterAudience,
   listFinanceContacts,
   removeFinanceContact,
   type NewsletterAudienceGroup,
 } from "../newsletterAudience";
+import { parseContactPaste } from "../parseContactPaste";
 import { storagePut } from "../storage";
 import { adminProcedure, router } from "../_core/trpc";
 
@@ -481,6 +483,61 @@ export const newsletterRouter = router({
           message: e instanceof Error ? e.message : "Could not add contact",
         });
       }
+    }),
+
+  /** Preview parse only — no DB writes. Paste from Dave Ramsey / Excel / etc. */
+  parseFinancePaste: adminProcedure
+    .input(z.object({ text: z.string().max(500_000) }))
+    .mutation(({ input }) => {
+      const result = parseContactPaste(input.text);
+      return {
+        contacts: result.contacts.map((c) => ({
+          email: c.email,
+          firstName: c.firstName,
+        })),
+        skippedLines: result.skippedLines,
+        duplicateEmails: result.duplicateEmails,
+        total: result.contacts.length,
+      };
+    }),
+
+  /** Bulk import after review (or direct from paste text). */
+  bulkAddFinance: adminProcedure
+    .input(
+      z.object({
+        contacts: z
+          .array(
+            z.object({
+              email: z.string().email(),
+              firstName: z.string().max(255).optional(),
+            })
+          )
+          .max(2000)
+          .optional(),
+        /** Optional: raw paste — server will parse if contacts not provided */
+        text: z.string().max(500_000).optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      let contacts = input.contacts ?? [];
+      if ((!contacts.length) && input.text?.trim()) {
+        contacts = parseContactPaste(input.text).contacts.map((c) => ({
+          email: c.email,
+          firstName: c.firstName,
+        }));
+      }
+      if (!contacts.length) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No valid emails found to import.",
+        });
+      }
+
+      const result = await bulkAddFinanceContacts(db, contacts);
+      return { ...result, total: contacts.length };
     }),
 
   removeFinance: adminProcedure
