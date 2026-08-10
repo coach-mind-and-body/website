@@ -18,7 +18,7 @@ export const FPU_CONTENT: Record<string, string> = {
 
   "hero-cohort-date": [
     '<span style="font-size:0.875rem;font-weight:bold;color:oklch(0.72 0.11 78);">',
-    'Next cohort starts May 12, 2026</span>',
+    'Next cohort: Tuesdays 6:30 PM MT · Orientation Aug 25 · Class starts Sep 1 · Ends Oct 27, 2026</span>',
   ].join(""),
 
   "relate-heading": [
@@ -137,7 +137,7 @@ export const FPU_CONTENT: Record<string, string> = {
 
   "cohort-heading": [
     "<h2 style=\"font-family:'Cormorant Garamond',serif;font-size:clamp(1.6rem,3.5vw,2.2rem);",
-    "color:oklch(1 0 0);font-weight:bold;margin-bottom:32px;\">May 2026 Cohort Details</h2>",
+    "color:oklch(1 0 0);font-weight:bold;margin-bottom:32px;\">Fall 2026 Cohort Details</h2>",
   ].join(""),
 
   "coaching-heading": [

@@ -370,9 +370,9 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
           />
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {[
-              { icon: <Calendar size={24} />, label: "Starts", value: "May 12, 2026", sub: "Every Tuesday 6:30 PM to 7:15 PM" },
-              { icon: <Clock size={24} />, label: "Duration", value: "9 Weeks", sub: "" },
-              { icon: <Users size={24} />, label: "Format", value: "Live Group Sessions", sub: "" },
+              { icon: <Calendar size={24} />, label: "Orientation", value: "Aug 25, 2026", sub: "First lesson Sep 1 · Ends Oct 27" },
+              { icon: <Clock size={24} />, label: "When", value: "Tuesdays 6:30 PM MT", sub: "About 45–60 minutes" },
+              { icon: <Users size={24} />, label: "Format", value: "Virtual class", sub: "Discussion + activities" },
             ].map((item) => (
               <div
                 key={item.label}
