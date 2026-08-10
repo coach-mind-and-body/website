@@ -115,6 +115,9 @@ export default function Home() {
                 Rewire Your Mind.<br />
                 Reset Your Life.
               </h1>
+              <p className="text-base font-semibold mb-3" style={{ color: "oklch(0.35 0.04 148)", maxWidth: "420px" }}>
+                Mind and body coach for women over 40 — hormones, food noise, and habits that last.
+              </p>
               <p className="text-lg leading-relaxed mb-8" style={{ color: "oklch(0.35 0.015 50)", maxWidth: "420px" }}>
                 Take this <strong style={{ color: "oklch(0.20 0.015 50)" }}>60 second quiz</strong> to understand where you're stuck with food and what to do about it!
               </p>
@@ -124,6 +127,16 @@ export default function Home() {
               >
                 Take Quiz Now
               </Link>
+              <p className="text-sm mt-4" style={{ color: "oklch(0.45 0.02 50)" }}>
+                Or browse free guides:{" "}
+                <Link href="/midlife-weight-loss-after-40" className="font-semibold underline" style={{ color: "oklch(0.38 0.10 148)" }}>
+                  midlife weight loss after 40
+                </Link>
+                {" · "}
+                <Link href="/health-wellness-blog/calming-food-noise-drop-the-food-courtroom" className="font-semibold underline" style={{ color: "oklch(0.38 0.10 148)" }}>
+                  how to calm food noise
+                </Link>
+              </p>
               <div className="flex flex-wrap gap-5 mt-8 justify-center">
                 {["Certified Life Coach", "Certified Health Coach", "Women 40+"].map((tag) => (
                   <div key={tag} className="flex items-center gap-1.5">

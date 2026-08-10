@@ -45,6 +45,14 @@ const FAQ = [
 
 const BRIDGE_CARDS = [
   {
+    icon: Brain,
+    title: "Calm food noise when the quiet ends",
+    desc: "Many women notice food chatter return when GLP-1 effects lessen. Skills beat shame — on or off medication.",
+    link: "/health-wellness-blog/food-noise-after-stopping-ozempic-or-wegovy",
+    linkText: "Food noise after Ozempic/Wegovy",
+    image: `${CDN}/calming-food-noise-drop-the-food-courtroom-calm-evening.jpg`,
+  },
+  {
     icon: Activity,
     title: "Address insulin resistance patterns",
     desc: "Steady meals, fiber, protein, and movement support blood sugar stability — the context many midlife women were missing before the shot.",

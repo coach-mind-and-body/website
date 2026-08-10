@@ -24,12 +24,12 @@ const STATIC_PAGES: Array<{
   priority: string;
   lastmod: string;
 }> = [
-  { path: "/", changefreq: "weekly", priority: "1.0", lastmod: "2026-07-14" },
+  { path: "/", changefreq: "weekly", priority: "1.0", lastmod: "2026-08-10" },
   { path: "/about", changefreq: "monthly", priority: "0.9", lastmod: "2026-07-10" },
-  { path: "/reclaim", changefreq: "monthly", priority: "0.9", lastmod: "2026-07-10" },
+  { path: "/reclaim", changefreq: "monthly", priority: "0.9", lastmod: "2026-08-10" },
   { path: "/book", changefreq: "monthly", priority: "0.85", lastmod: "2026-07-01" },
-  { path: "/midlife-health-podcast", changefreq: "weekly", priority: "0.85", lastmod: "2026-07-10" },
-  { path: "/health-wellness-blog", changefreq: "weekly", priority: "0.9", lastmod: "2026-07-10" },
+  { path: "/midlife-health-podcast", changefreq: "weekly", priority: "0.85", lastmod: "2026-08-07" },
+  { path: "/health-wellness-blog", changefreq: "weekly", priority: "0.9", lastmod: "2026-08-10" },
   { path: "/food-quiz", changefreq: "monthly", priority: "0.8", lastmod: "2026-06-15" },
   { path: "/snack-hack", changefreq: "monthly", priority: "0.8", lastmod: "2026-06-20" },
   // Free product pages — worth indexing (habits / macros / midlife keywords)
@@ -37,9 +37,17 @@ const STATIC_PAGES: Array<{
   { path: "/habit-tracker", changefreq: "weekly", priority: "0.85", lastmod: "2026-07-15" },
   { path: "/holistic-health-and-wellness", changefreq: "monthly", priority: "0.85", lastmod: "2026-07-01" },
   { path: "/life-after-glp-1", changefreq: "monthly", priority: "0.85", lastmod: "2026-07-01" },
-  { path: "/insulin-resistance-after-40", changefreq: "monthly", priority: "0.9", lastmod: "2026-07-01" },
+  { path: "/insulin-resistance-after-40", changefreq: "monthly", priority: "0.9", lastmod: "2026-08-10" },
+  { path: "/life-after-glp-1", changefreq: "monthly", priority: "0.85", lastmod: "2026-08-10" },
+  {
+    path: "/midlife-weight-loss-after-40",
+    changefreq: "weekly",
+    priority: "0.95",
+    lastmod: "2026-08-10",
+  },
   { path: "/financial-peace", changefreq: "monthly", priority: "0.75", lastmod: "2026-06-01" },
-  { path: "/unicity", changefreq: "monthly", priority: "0.75", lastmod: "2026-06-01" },
+  // Top GSC impressions page — keep lastmod fresh when we strengthen SEO copy
+  { path: "/unicity", changefreq: "weekly", priority: "0.9", lastmod: "2026-08-10" },
   // Still omitted: /enroll, /join (thin conversion), /terms, /privacy, /disclaimer (legal + noindex)
   // Note: /feel-great-system redirects to /unicity — not listed
   // Note: /fpu-may-12 is a dated event landing — omit from sitemap after event

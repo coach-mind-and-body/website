@@ -35,16 +35,16 @@ const FAQ = [
 
 const RELATED = [
   {
-    href: "/health-wellness-blog/stop-food-shame-healing-midlife-insulin-resistance",
-    title: "Stop Food Shame: Healing Midlife Insulin Resistance",
-    blurb: "Mindset and biochemistry — why shame makes metabolic change harder.",
-    image: `${CDN}/stop-food-shame-healing-midlife-insulin-resistance.png`,
+    href: "/midlife-weight-loss-after-40",
+    title: "Midlife Weight Loss After 40 (Full Hub)",
+    blurb: "All guides: belly, food noise, cravings, GLP-1s, sleep — one map.",
+    image: `${CDN}/patterns-not-the-belly-unlocking-weight-loss-success-after-40.jpg`,
   },
   {
-    href: "/health-wellness-blog/mastering-insulin-fueling-fat-burning-and-energy-after-40",
-    title: "Mastering Insulin: Fueling Energy After 40",
-    blurb: "Practical midlife fueling concepts for steadier energy.",
-    image: `${CDN}/mastering-insulin-fueling-fat-burning-and-energy-after-40.png`,
+    href: "/health-wellness-blog/calming-food-noise-drop-the-food-courtroom",
+    title: "How to Calm Food Noise After 40",
+    blurb: "Definitive guide — quiet the mental food fight without more restriction.",
+    image: `${CDN}/calming-food-noise-drop-the-food-courtroom-calm-evening.jpg`,
   },
   {
     href: "/health-wellness-blog/how-to-stop-sugar-cravings-at-night-a-midlife-strategy-that-actually-works",
@@ -53,16 +53,28 @@ const RELATED = [
     image: `${CDN}/how-to-stop-sugar-cravings-at-night-a-midlife-strategy-that-actually-works.png`,
   },
   {
-    href: "/health-wellness-blog/calming-food-noise-drop-the-food-courtroom",
-    title: "How to Calm Food Noise",
-    blurb: "Quiet the mental food fight without more restriction.",
-    image: `${CDN}/calming-food-noise-drop-the-food-courtroom.jpg`,
+    href: "/health-wellness-blog/menopause-belly-why-it-shows-up-and-what-actually-helps",
+    title: "Menopause Belly: What Actually Helps",
+    blurb: "Why the midsection changes — and what is not just “do more crunches.”",
+    image: `${CDN}/patterns-not-the-belly-unlocking-weight-loss-success-after-40-walk.jpg`,
   },
   {
     href: "/life-after-glp-1",
     title: "Life After GLP-1",
     blurb: "Maintain progress when medication support changes.",
-    image: "/healing_balance_hormones_1780339100250.png",
+    image: `${CDN}/when-your-body-stops-responding-finding-the-balance.png`,
+  },
+  {
+    href: "/health-wellness-blog/food-noise-after-stopping-ozempic-or-wegovy",
+    title: "Food Noise After Stopping Ozempic or Wegovy",
+    blurb: "When the quiet ends — skills for the return of food chatter.",
+    image: `${CDN}/calming-food-noise-drop-the-food-courtroom-balanced-plate.jpg`,
+  },
+  {
+    href: "/health-wellness-blog/mastering-insulin-fueling-fat-burning-and-energy-after-40",
+    title: "Mastering Insulin: Fueling Energy After 40",
+    blurb: "Practical midlife fueling concepts for steadier energy.",
+    image: `${CDN}/mastering-insulin-fueling-fat-burning-and-energy-after-40.png`,
   },
   {
     href: "/food-quiz",

@@ -48,12 +48,26 @@ const nextConfig = {
         destination: '/health-wellness-blog/calming-food-noise-drop-the-food-courtroom',
         permanent: true,
       },
-      // Broken/legacy disclaimer paths
+      // Broken/legacy disclaimer paths (incl. encoded-slash form from old host)
       { source: '/health/financial-disclaim', destination: '/disclaimer', permanent: true },
       { source: '/health/financial-disclaim/', destination: '/disclaimer', permanent: true },
       { source: '/health/financial-disclaimer', destination: '/disclaimer', permanent: true },
       { source: '/financial-disclaim', destination: '/disclaimer', permanent: true },
       { source: '/financial-disclaimer', destination: '/disclaimer', permanent: true },
+      // GSC shows this as one path segment: health%2Ffinancial-disclaim
+      {
+        source: '/health%2Ffinancial-disclaim',
+        destination: '/disclaimer',
+        permanent: true,
+      },
+      {
+        source: '/health%2Ffinancial-disclaimer',
+        destination: '/disclaimer',
+        permanent: true,
+      },
+      // Literal dollar-sign path Google crawled (soft 404 junk)
+      { source: '/$', destination: '/', permanent: true },
+      { source: '/%24', destination: '/', permanent: true },
       // Legacy blog index ONLY. Never redirect /blog/* files — static assets live under public/blog/
       // and covers also live on Cloudflare R2 (cdn.mindandbodyresetcoach.com).
       { source: '/blog', destination: '/health-wellness-blog', permanent: true },

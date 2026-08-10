@@ -3,18 +3,22 @@ import ReclaimClient from "./ReclaimClient";
 import { absoluteUrl, PROGRAM, SITE_URL } from "@shared/brand";
 
 export const metadata: Metadata = {
-  title: { absolute: "R.E.C.L.A.I.M. Coaching for Women Over 40 | Mind and Body Reset" },
+  title: {
+    absolute: "1:1 Health Coaching for Women Over 40 | R.E.C.L.A.I.M.",
+  },
   description:
-    "6-session 1:1 coaching for women 40+ ready to break free from diet culture, balance hormones, and build lasting habits. Enroll in R.E.C.L.A.I.M. or book a free discovery call.",
+    "1:1 health coaching for women over 40: break free from diet culture, calm food noise, support hormones and insulin resistance, and build lasting habits. Book a free discovery call.",
   keywords: [
     "health coaching for women over 40",
     "midlife health coach",
+    "1:1 health coach women 40",
     "RECLAIM coaching program",
     "insulin resistance coaching",
     "food freedom coaching",
+    "mind body coach",
   ],
   openGraph: {
-    title: "R.E.C.L.A.I.M. Coaching for Women Over 40",
+    title: "1:1 Health Coaching for Women Over 40 | R.E.C.L.A.I.M.",
     description:
       "6 private sessions to reclaim your body, rewire your mind, and reset your life — without another diet plan.",
     url: "/reclaim",
@@ -22,7 +26,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "R.E.C.L.A.I.M. Coaching for Women Over 40",
+    title: "1:1 Health Coaching for Women Over 40 | R.E.C.L.A.I.M.",
     description:
       "6-session 1:1 coaching for midlife health, hormones, and food freedom with Lee Anne Chapman.",
   },

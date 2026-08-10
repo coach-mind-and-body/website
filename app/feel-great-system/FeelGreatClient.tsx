@@ -40,6 +40,9 @@ export default function FeelGreat() {
               >
                 The Feel Great System
               </h1>
+              <p className="text-lg leading-relaxed mb-4" style={{ color: "oklch(0.40 0.02 160)", maxWidth: "500px" }}>
+                Looking for the <strong>Unicity Feel Great System</strong> (Unimate + Balance)? This page explains how the system works — and how midlife coaching helps women 40+ actually stick with it.
+              </p>
               <p className="text-lg leading-relaxed mb-8" style={{ color: "oklch(0.40 0.02 160)", maxWidth: "500px" }}>
                 Bridge the gap between where you are and where you want to be. Achieve the results of time-based eating without the struggle.
               </p>
@@ -363,6 +366,85 @@ export default function FeelGreat() {
         </div>
       </section>
 
+      {/* ── SEO / education block ── */}
+      <section className="py-16 md:py-20" style={{ background: "#ffffff", borderTop: "1px solid oklch(0.92 0.01 160)" }}>
+        <div className="container" style={{ maxWidth: "760px" }}>
+          <h2
+            className="font-bold mb-6"
+            style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: "clamp(1.75rem, 3.5vw, 2.25rem)",
+              color: "oklch(0.22 0.02 160)",
+            }}
+          >
+            What is the Feel Great System?
+          </h2>
+          <div className="space-y-4 text-base leading-relaxed" style={{ color: "oklch(0.40 0.02 160)" }}>
+            <p>
+              The <strong>Feel Great System</strong> is Unicity&apos;s simple two-product protocol:
+              <strong> Unimate</strong> (a yerba mate drink often used in the morning) and{" "}
+              <strong>Balance</strong> (a fiber blend typically taken before meals). People search for
+              &ldquo;feel great system,&rdquo; &ldquo;the feel great system,&rdquo; and &ldquo;feel great protocol&rdquo;
+              because they want clearer energy, fewer crashes, and an easier path into intermittent fasting — without white-knuckling hunger all day.
+            </p>
+            <p>
+              For women over 40, products are only half the story. Hormones, stress, sleep, and{" "}
+              <Link href="/health-wellness-blog/calming-food-noise-drop-the-food-courtroom" className="font-semibold underline" style={{ color: "oklch(0.38 0.10 148)" }}>
+                food noise
+              </Link>{" "}
+              still drive evening snacking and all-or-nothing thinking. That is why Mind and Body Reset pairs Feel Great System education with coaching — so metabolic support and mindset support work together.
+            </p>
+            <p>
+              Learn more about midlife metabolism on our{" "}
+              <Link href="/insulin-resistance-after-40" className="font-semibold underline" style={{ color: "oklch(0.38 0.10 148)" }}>
+                insulin resistance after 40
+              </Link>{" "}
+              guide, or explore{" "}
+              <Link href="/reclaim" className="font-semibold underline" style={{ color: "oklch(0.38 0.10 148)" }}>
+                R.E.C.L.A.I.M. 1:1 coaching
+              </Link>{" "}
+              when you want personalized habits — not another plan you abandon by Monday.
+            </p>
+          </div>
+
+          <h2
+            className="font-bold mt-12 mb-6"
+            style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: "clamp(1.5rem, 3vw, 1.85rem)",
+              color: "oklch(0.22 0.02 160)",
+            }}
+          >
+            Feel Great System FAQs
+          </h2>
+          <div className="space-y-6">
+            {[
+              {
+                q: "What is the Feel Great System?",
+                a: "Unimate + Balance used as a simple daily practice to support satiety, blood sugar response, and consistency with time-based eating. It is not a calorie-counting diet.",
+              },
+              {
+                q: "Is the Feel Great System the same as Unimate?",
+                a: "Unimate is one product in the system. The full Feel Great System pairs Unimate with Balance for morning support and pre-meal support.",
+              },
+              {
+                q: "Who should talk to a doctor first?",
+                a: "Anyone with medical conditions, who is pregnant or nursing, or who takes medications should check with their clinician before starting supplements or changing fasting habits.",
+              },
+            ].map((item) => (
+              <div key={item.q}>
+                <h3 className="font-bold text-lg mb-2" style={{ color: "oklch(0.22 0.02 160)" }}>
+                  {item.q}
+                </h3>
+                <p className="text-base leading-relaxed" style={{ color: "oklch(0.40 0.02 160)" }}>
+                  {item.a}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── Legal Disclaimer ── */}
       <div className="py-10 px-6 text-center text-sm" style={{ background: "oklch(0.92 0.01 160)", color: "oklch(0.50 0.02 160)" }}>
         <div className="mx-auto" style={{ maxWidth: "900px" }}>
@@ -370,7 +452,7 @@ export default function FeelGreat() {
             *These statements have not been evaluated by the Food and Drug Administration. This product is not intended to diagnose, treat, cure, or prevent any disease.
           </p>
           <p className="font-semibold" style={{ color: "oklch(0.35 0.02 160)" }}>
-            The Feel Great Money-Back Guarantee: We stand behind our science. If you don't feel the difference, we've got you covered.
+            The Feel Great Money-Back Guarantee: We stand behind our science. If you don&apos;t feel the difference, we&apos;ve got you covered.
           </p>
         </div>
       </div>

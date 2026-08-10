@@ -3,27 +3,32 @@ import FeelGreatClient from "../feel-great-system/FeelGreatClient";
 import { absoluteUrl, SITE_URL } from "@shared/brand";
 
 export const metadata: Metadata = {
-  title: { absolute: "Unicity Feel Great System with Coaching Support | Mind and Body Reset" },
+  // Primary GSC query: "feel great system" (impressions exist; avg position ~33)
+  title: {
+    absolute: "Feel Great System (Unicity Unimate + Balance) | Mind and Body Reset",
+  },
   description:
-    "Unimate + Balance (Feel Great System) paired with midlife coaching for women 40+ — support insulin response, food noise, and sustainable habits with Lee Anne Chapman.",
+    "What is the Feel Great System? Unimate + Balance (Unicity) to support intermittent fasting, satiety, and metabolic health — plus midlife coaching for women over 40 with Lee Anne Chapman.",
   keywords: [
-    "Feel Great System",
+    "feel great system",
+    "the feel great system",
     "Unicity Feel Great System",
     "Unimate",
     "Balance Unicity",
+    "feel great protocol",
     "intermittent fasting women over 40",
     "metabolic health coaching",
   ],
   openGraph: {
-    title: "Unicity Feel Great System with Coaching Support",
+    title: "Feel Great System by Unicity | Unimate + Balance",
     description:
-      "Feel Great System products plus midlife coaching — metabolic health support for women 40+.",
+      "Learn how the Feel Great System (Unimate + Balance) supports fasting and metabolic health — with coaching for women 40+.",
     url: "/unicity",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Unicity Feel Great System with Coaching Support",
+    title: "Feel Great System by Unicity | Unimate + Balance",
     description:
       "Unimate, Balance, and coaching support for midlife metabolic health — Mind and Body Reset.",
   },
@@ -60,10 +65,18 @@ const faqJsonLd = {
   mainEntity: [
     {
       "@type": "Question",
-      name: "What is the Unicity Feel Great System?",
+      name: "What is the Feel Great System?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "The Feel Great System is a simple approach using Unimate (before your eating window) and Balance (before meals) to support blood sugar response, satiety, and intermittent fasting consistency.",
+        text: "The Feel Great System is Unicity’s two-product approach: Unimate (often used in the morning / before your eating window) and Balance (before meals). Together they are designed to support satiety, blood sugar response, and consistency with intermittent fasting — not a meal plan or calorie-counting diet.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "What is the difference between Unimate and Balance?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Unimate is a yerba mate drink commonly used for morning focus and to support the fasting window. Balance is a fiber blend typically taken before meals to support fullness and a steadier post-meal response. The Feel Great System uses both as a simple daily practice.",
       },
     },
     {
@@ -76,10 +89,18 @@ const faqJsonLd = {
     },
     {
       "@type": "Question",
-      name: "Who is this for?",
+      name: "Who is the Feel Great System for?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Women in midlife who want better energy, fewer cravings, and metabolic support alongside mindset and lifestyle coaching — not a one-size-fits-all plan.",
+        text: "Women in midlife who want better energy, fewer cravings, and metabolic support alongside mindset and lifestyle coaching — not a one-size-fits-all plan. Always check with your clinician if you have medical conditions or take medications.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Can coaching help with the Feel Great System after 40?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Yes. Products alone rarely fix food noise, stress eating, or identity patterns. Lee Anne pairs Feel Great System education with midlife coaching so habits stick beyond the first week of motivation.",
       },
     },
   ],

@@ -20,6 +20,30 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url, 301);
   }
 
+  // GSC junk: literal "/$" (and %24) — never a real page
+  if (path === "/$" || path === "/%24") {
+    url.pathname = "/";
+    url.search = "";
+    return NextResponse.redirect(url, 301);
+  }
+
+  // GSC: encoded-slash path as one segment (/health%2Ffinancial-disclaim)
+  // next.config matches /health/financial-disclaim; this catches the encoded form.
+  let decodedPath = path;
+  try {
+    decodedPath = decodeURIComponent(path);
+  } catch {
+    /* keep path */
+  }
+  if (
+    path.includes("financial-disclaim") ||
+    decodedPath.includes("/health/financial-disclaim")
+  ) {
+    url.pathname = "/disclaimer";
+    url.search = "";
+    return NextResponse.redirect(url, 301);
+  }
+
   // Don't set marketing cookies for crawlers or pure SEO assets — keeps
   // responses cache-friendly and avoids Set-Cookie on every Googlebot hit.
   const ua = request.headers.get("user-agent") ?? "";

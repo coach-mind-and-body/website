@@ -6,26 +6,30 @@ import { desc, eq } from "drizzle-orm";
 import { SITE_URL } from "@shared/brand";
 
 export const metadata: Metadata = {
-  title: "Health & Wellness Blog for Women Over 40",
+  title: {
+    absolute: "Midlife Health Blog for Women Over 40 | Mind and Body Reset",
+  },
   description:
-    "Articles on midlife wellness, nutrition, hormones, perimenopause, insulin resistance, body image, mindset, and food freedom — by certified coach Lee Anne Chapman.",
+    "Midlife health blog for women over 40: how to calm food noise, stop sugar cravings at night, insulin resistance, perimenopause, weight loss mindset, and habits that stick.",
   keywords: [
     "midlife health blog",
-    "perimenopause articles",
+    "how to calm food noise",
+    "perimenopause weight loss",
     "insulin resistance women over 40",
+    "sugar cravings at night",
     "food freedom blog",
   ],
   alternates: { canonical: "/health-wellness-blog" },
   openGraph: {
-    title: "Health & Wellness Blog for Women Over 40",
+    title: "Midlife Health Blog for Women Over 40",
     description:
-      "Midlife wellness, hormones, mindset, and food freedom — practical articles from Mind and Body Reset.",
+      "Food noise, hormones, insulin resistance, and mindset — practical articles from Mind and Body Reset.",
     url: "/health-wellness-blog",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Health & Wellness Blog for Women Over 40",
+    title: "Midlife Health Blog for Women Over 40",
     description:
       "Hormones, food noise, body image, and lasting change — blog for women 40+.",
   },

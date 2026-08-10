@@ -1,103 +1,71 @@
-/** Pillar content: how to calm food noise */
+/** Pillar content: how to calm food noise after 40 (definitive guide) */
 export const FOOD_NOISE_PILLAR = {
   slug: "calming-food-noise-drop-the-food-courtroom",
-  title: "How to Calm Food Noise: Drop the Mental Food Courtroom",
+  title: "How to Calm Food Noise After 40 (Without Another Diet)",
   category: "Mindful Eating & Nutrition",
   excerpt:
-    "Food noise is the constant mental chatter about food, rules, and body guilt. Learn how to calm food noise in midlife — without more restriction — by dropping the internal food courtroom.",
-  seoTitle: "How to Calm Food Noise (Midlife Guide)",
+    "If your brain will not stop negotiating about food — especially after 40 — that is food noise. Here is how to calm it without more restriction, willpower lectures, or another diet that backfires.",
+  seoTitle: "How to Calm Food Noise After 40 (Without Another Diet)",
   seoDescription:
-    "Learn how to calm food noise after 40: what it is, why restriction makes it louder, and practical strategies to quiet the mental food fight — without another diet.",
+    "How to calm food noise after 40: what food noise is, why restriction and midlife amplify it, what GLP-1s often change, and practical skills to quiet the mental food fight — without another diet.",
   coverImage:
-    "https://cdn.mindandbodyresetcoach.com/blog-images/calming-food-noise-drop-the-food-courtroom.jpg",
-  coverImageAlt: "Calm midlife woman stepping out of mental food noise",
-  schemaTypes: "Article,FAQ",
+    "https://cdn.mindandbodyresetcoach.com/blog-images/calming-food-noise-drop-the-food-courtroom-calm-evening.jpg",
+  coverImageAlt:
+    "Calm midlife woman at dusk with tea — quieter evenings after learning how to calm food noise",
+  schemaTypes: "Article,FAQ,HowTo",
+  // Full HTML lives in DB via scripts/publish-food-noise-definitive.ts
+  // Keep FAQ schema here for reference / re-seed
   schemaFaqJson: JSON.stringify([
     {
       question: "What is food noise?",
       answer:
-        "Food noise is persistent, intrusive mental chatter about food — what you should eat, what you already ate, calories, guilt, and body rules — that crowds out mental bandwidth.",
+        "Food noise is persistent, often unwanted mental chatter about food — planning, craving, negotiating, and guilt — that takes up bandwidth even when you are not clearly hungry. It is a lived experience term, not a formal medical diagnosis.",
     },
     {
-      question: "How do I calm food noise without dieting harder?",
+      question: "Is food noise the same as being hungry?",
       answer:
-        "Eat enough on purpose, name urges without moralizing, drop good/bad food labels, stabilize blood sugar with balanced meals, and reduce chronic stress. Restriction usually amplifies noise.",
+        "No. Hunger is a physical need that usually eases after eating. Food noise can show up after a meal and feel urgent, emotional, or looping rather than purely physical.",
     },
     {
-      question: "Does food noise get worse in perimenopause?",
+      question: "Why is food noise louder after 40?",
       answer:
-        "Many women report louder hunger cues and mental preoccupation with food during midlife hormonal shifts, especially when sleep and stress are off. It is common — and workable with the right approach.",
+        "Midlife often stacks sleep disruption, stress, years of dieting history, and shifting hormones that can change how hunger and fullness feel. Louder noise does not mean you failed — it means your system is working overtime.",
     },
     {
-      question: "Is food noise the same as sugar addiction?",
+      question: "Does restriction make food noise worse?",
       answer:
-        "Not exactly. Sugar cravings can be one expression of food noise, biology, and habit. Treating yourself as an addict often increases shame and noise. A midlife strategy focuses on safety, satisfaction, and skills.",
+        "Often yes. When intake is too low or foods are heavily forbidden, the brain can treat food as scarce and turn up preoccupation. Adequate, consistent meals usually lower noise more than white-knuckle willpower.",
+    },
+    {
+      question: "Do GLP-1 medications quiet food noise?",
+      answer:
+        "Many people report a big drop in food chatter and cravings while on GLP-1 medications. Experiences vary. These are medical treatments — whether they are right for you is a decision with your prescribing clinician.",
+    },
+    {
+      question: "Will food noise come back if I stop a GLP-1?",
+      answer:
+        "Often appetite and food preoccupation return after stopping for many people. That is commonly described as biology and habit patterns reasserting — not a character flaw. Plan support with your care team if treatment changes.",
+    },
+    {
+      question: "Can I calm food noise without medication?",
+      answer:
+        "Many women lower the volume with regular balanced meals, enough food (not chronic restriction), sleep, stress care, fewer good/bad food rules, and skills for evening urges. Results vary; some still need clinical care.",
+    },
+    {
+      question: "Is food noise just emotional eating?",
+      answer:
+        "Emotions can trigger it, but so can under-fueling, sleep debt, stress, food cues, and diet history. Treating it as “only emotions” misses the full picture.",
+    },
+    {
+      question: "When should I get professional help for food thoughts?",
+      answer:
+        "If food thoughts dominate your day, drive distress or secrecy, disrupt work or relationships, or pair with binge/restrict cycles, talk with a clinician and consider a therapist or dietitian experienced with midlife and disordered eating.",
+    },
+    {
+      question: "How do I calm food noise tonight?",
+      answer:
+        "Eat a real dinner with protein and fiber, pause and name the urge, ask “Who is driving — future me or craving me?”, and use one off-ramp (walk, tea, brush teeth, leave the kitchen). One skill beats another empty promise to “be good tomorrow.”",
     },
   ]),
-  content: `
-<p>If you have been searching <strong>how to calm food noise</strong>, you already know the soundtrack: counting, negotiating, regretting, planning the next “be good” day. Food noise is not a personal failure. It is a nervous-system and habit problem that gets louder with restriction — and often intensifies in midlife.</p>
-<p>This guide shows you how to quiet the mental food fight so you can get your brain back.</p>
-<p><em>Coaching education only — not medical or dietetic advice.</em></p>
-
-<h2>What food noise actually is</h2>
-<p>Food noise is the background hum of diet culture living in your head:</p>
-<ul>
-  <li>“I shouldn’t…”</li>
-  <li>“I’ll start Monday…”</li>
-  <li>“Why am I thinking about that again?”</li>
-  <li>“I ruined it.”</li>
-</ul>
-<p>It steals focus from work, relationships, and rest. For many women over 40, it is exhausting precisely because they have been “trying harder” for decades.</p>
-
-<h2>Why restriction makes the noise louder</h2>
-<p>When your brain detects scarcity — fewer calories, banned foods, rigid rules — it often turns up obsession. That is not weakness. That is a survival response. More rules can mean more panic, more planning, and more nighttime battles (see <a href="/health-wellness-blog/how-to-stop-sugar-cravings-at-night-a-midlife-strategy-that-actually-works">how to stop sugar cravings at night</a>).</p>
-
-<h2>The midlife amplifiers</h2>
-<ul>
-  <li>Hormonal shifts affecting hunger and sleep</li>
-  <li>Higher stress load and less recovery</li>
-  <li>Years of diet identity (“I am someone who is always starting over”)</li>
-  <li>Metabolic context like <a href="/insulin-resistance-after-40">insulin resistance after 40</a></li>
-</ul>
-<p>If you are also navigating medications or life after GLP-1s, food noise can roar back when appetite returns. Our <a href="/life-after-glp-1">life after GLP-1 guide</a> covers that transition with compassion and structure.</p>
-
-<h2>Seven ways to calm food noise (that are not “try harder”)</h2>
-
-<h3>1. Eat enough on purpose</h3>
-<p>Under-eating is rocket fuel for obsession. Prioritize real meals with protein and fiber. Satisfaction is a nervous-system signal of safety.</p>
-
-<h3>2. Name the urge</h3>
-<p>Say it out loud or on paper: “This is stress.” “This is habit.” “This is true hunger.” Naming creates a pause between stimulus and response.</p>
-
-<h3>3. Drop the food courtroom</h3>
-<p>Stop putting cookies on trial. When foods lose their forbidden charge, they often lose their grip. Neutrality is advanced work — and it is learnable.</p>
-
-<h3>4. Reduce all-day grazing chaos</h3>
-<p>Constant mini-decisions keep food on the mental desktop. Structured meals can lower decision load without becoming a rigid “plan cult.”</p>
-
-<h3>5. Build an off-ramp for nights</h3>
-<p>Evenings are when food noise peaks for many women. Use a wind-down ritual and tools from the free <a href="/snack-hack">Snack Hack guide</a>.</p>
-
-<h3>6. Sleep and stress are food strategies</h3>
-<p>Chronic stress and poor sleep increase craving intensity. Midlife health is whole-person: nervous system regulation is not optional fluff.</p>
-
-<h3>7. Change the identity story</h3>
-<p>As long as you identify as “someone who is always on a diet,” food stays center stage. Coaching helps you become someone who trusts her body again — the core of <a href="/reclaim">R.E.C.L.A.I.M.</a>.</p>
-
-<div style="padding:1.25rem 1.5rem;border-radius:12px;background:oklch(0.96 0.02 148);border:1px solid oklch(0.90 0.03 148);margin:1.5rem 0;">
-  <p style="margin:0 0 0.5rem;font-weight:700;">Not sure what is keeping you stuck?</p>
-  <p style="margin:0;">Take the free <a href="/food-quiz">60-second food &amp; mindset quiz</a> — then come back to these tools with more clarity.</p>
-</div>
-
-<h2>What success feels like</h2>
-<p>Quieter evenings. Fewer debates. More presence at the table. The goal is not perfect eating. The goal is mental freedom — so food is food again, not a full-time job.</p>
-<p>If you want support rewriting the deeper patterns, <a href="/book">book a free discovery call</a> with Lee Anne.</p>
-
-<h2>Key takeaways</h2>
-<ul>
-  <li>Food noise is mental preoccupation with food rules and guilt — amplified by restriction.</li>
-  <li>Calm comes from safety, satisfaction, skills, and self-talk — not harsher diets.</li>
-  <li>Link food noise work to night cravings, insulin context, and midlife coaching when ready.</li>
-</ul>
-`.trim(),
+  content: `<!-- Canonical HTML is published via scripts/publish-food-noise-definitive.ts -->`,
 };

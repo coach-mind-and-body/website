@@ -6,14 +6,15 @@ import { eq } from "drizzle-orm";
 import { getDb } from "../server/db";
 import { blogPosts } from "../drizzle/schema";
 
-const slug = "patterns-not-the-belly-unlocking-weight-loss-success-after-40";
-const podcastSlug = "patterns-not-the-belly-weight-loss-after-40";
-const videoId = "5Lnsf3gQLUc";
+const slug = "why-am-i-gaining-weight-after-40-even-when-i-eat-less";
+const podcastSlug = "why-am-i-gaining-weight-after-40-even-when-i-eat-less";
+const videoId = "HKDt7qWLv3g";
+const episodeTitle = "Why Am I Gaining Weight After 40 Even When I Eat Less?";
 
 const watchBox = `
 <div style="padding:1.25rem 1.5rem;border-radius:12px;background:oklch(0.96 0.02 148);border:1px solid oklch(0.90 0.03 148);margin:1.75rem 0;">
   <p style="margin:0 0 0.5rem;font-weight:700;">Watch / listen to the episode</p>
-  <p style="margin:0 0 0.75rem;">Prefer Lee Anne&apos;s voice? Full show notes and player: <a href="/midlife-health-podcast/${podcastSlug}"><em>Patterns, Not the Belly: Unlocking Weight Loss Success After 40</em></a>.</p>
+  <p style="margin:0 0 0.75rem;">Prefer Lee Anne&apos;s voice? Full show notes and player: <a href="/midlife-health-podcast/${podcastSlug}"><em>${episodeTitle}</em></a>.</p>
   <p style="margin:0;"><a href="https://youtu.be/${videoId}" target="_blank" rel="noopener noreferrer">Watch on YouTube</a> · also in the free <a href="/habit-tracker/podcasts">habit tracker podcast tab</a>.</p>
 </div>
 `.trim();
@@ -61,7 +62,7 @@ async function main() {
       schemaTypes: "Article,FAQ,HowTo,VideoObject",
       schemaVideoUrl: `https://www.youtube.com/watch?v=${videoId}`,
       schemaVideoDescription:
-        "Patterns, Not the Belly: Unlocking Weight Loss Success After 40 — menopause belly as a pattern symptom, one-percenters, and the right discomfort after 40.",
+        "Why am I gaining weight after 40 even when I eat less? Menopause belly as a pattern symptom, one-percenters, and the right discomfort after 40.",
       updatedAt: new Date(),
     })
     .where(eq(blogPosts.id, post.id));

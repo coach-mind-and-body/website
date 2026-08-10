@@ -112,9 +112,12 @@ const jsonLd = {
         latitude: 40.7608,
         longitude: -111.891,
       },
-      sameAs: ["https://www.instagram.com/mindandbodyresetcoach/"],
+      sameAs: [
+        "https://www.instagram.com/mindandbodyresetcoach/",
+        "https://www.youtube.com/@MindandBodyResetCoach",
+      ],
       description:
-        "Mind and Body Reset helps women over 40 reclaim their health, balance hormones, and reverse insulin resistance through coaching with Lee Anne Chapman.",
+        "Mind and Body Reset is a mind body coaching practice for women over 40 — hormones, insulin resistance, food noise, and lasting habits with Lee Anne Chapman.",
       founder: { "@id": `${SITE_URL}/#person` },
       areaServed: {
         "@type": "Country",
