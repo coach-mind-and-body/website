@@ -7,11 +7,12 @@
 **Ends:** Oct 27, 2026  
 **Format:** Virtual (Zoom-style class)  
 **Kits:** $99 FPU (workbook + access) · $129 All Access (best value)  
-**Landing (ad destination):** https://mindandbodyresetcoach.com/financial-peace  
+**Ad landing (use this in Meta):** https://mindandbodyresetcoach.com/fpu-class  
+**Evergreen overview (SEO / organic):** https://mindandbodyresetcoach.com/financial-peace  
 **Checkout / join (Ramsey class page):** https://www.financialpeace.com/app/classes/833B7A  
 
-**Funnel (high converting):** Meta ad → **your** landing page (story + trust) → class page (buy kit + join).  
-Do **not** send cold ads straight to Ramsey for most traffic.  
+**Funnel (high converting):** Meta ad → **`/fpu-class`** (dedicated conversion page) → class page 833B7A (buy kit + join).  
+Do **not** send cold ads straight to Ramsey. Do **not** use long `/financial-peace` for paid ads.  
 
 ---
 
@@ -32,8 +33,7 @@ Kits start at **$99** (includes physical workbook) · All Access **$129**.
 
 No shame. No perfection. Just a clear plan and a coach who’s been there.
 
-→ Join the class: link in ad  
-→ Details: mindandbodyresetcoach.com/financial-peace
+→ Join from the ad: mindandbodyresetcoach.com/fpu-class
 
 ---
 
@@ -89,8 +89,8 @@ Join us. Your future self will thank you.
 
 ## CTA buttons
 - **Sign up** / **Learn more** / **Get offer**  
-- Destination for cold/warm Meta: **https://mindandbodyresetcoach.com/financial-peace** only  
-- Class page is the on-page CTA after they trust you (not the ad click URL)
+- Destination for **all Meta ads:** **https://mindandbodyresetcoach.com/fpu-class**  
+- Ramsey class URL is only the button on that page (not the ad click URL)
 
 ---
 
