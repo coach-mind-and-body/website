@@ -10,6 +10,13 @@ import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
 /** Official class page: buy kit + join this cohort */
 export const FPU_CLASS_URL = "https://www.financialpeace.com/app/classes/833B7A";
 
+/**
+ * Brand palette (logo + site):
+ * - Cream page: #FDFBF7
+ * - Blush pink (logo bg / sections): #fbeee9 · softer #f8d8d8
+ * - Gold CTA: #c9a96e
+ * - Sage green text: #3a5a3a
+ */
 const LEEANNE_IMG =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/3542web-rigeljackson(2)_83b0d4af.webp";
 
@@ -60,7 +67,7 @@ const FAQS = [
   },
 ];
 
-function Check({ className = "text-[#d4a0a8]" }: { className?: string }) {
+function Check({ className = "text-[#c9a96e]" }: { className?: string }) {
   return (
     <svg
       className={`w-5 h-5 sm:w-6 sm:h-6 mr-3 shrink-0 mt-0.5 ${className}`}
@@ -110,7 +117,7 @@ function PrimaryCta({
       target="_blank"
       rel="noopener noreferrer"
       onClick={onClick}
-      className={`flex w-full min-h-[52px] sm:min-h-[56px] items-center justify-center px-4 text-center text-base sm:text-lg font-bold bg-[#d4a0a8] hover:bg-[#c48a94] active:bg-[#b87a86] text-[#1a2e1e] rounded-full transition-colors shadow-md ${className}`}
+      className={`flex w-full min-h-[52px] sm:min-h-[56px] items-center justify-center px-4 text-center text-base sm:text-lg font-bold bg-[#c9a96e] hover:bg-[#b09055] active:bg-[#a08048] text-white rounded-full transition-colors shadow-md ${className}`}
     >
       {label}
     </a>
@@ -119,9 +126,9 @@ function PrimaryCta({
 
 function CtaCard() {
   return (
-    <div className="bg-white p-5 sm:p-8 rounded-2xl shadow-xl border border-[#f0d4c8] w-full max-w-md mx-auto">
+    <div className="bg-white p-5 sm:p-8 rounded-2xl shadow-xl border border-[#f0e4dc] w-full max-w-md mx-auto">
       <div className="text-center mb-4">
-        <span className="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide bg-[#fbeee9] text-[#8a5040] border border-[#f0d4c8]">
+        <span className="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide bg-[#fbeee9] text-[#3a5a3a] border border-[#f0d8d0]">
           Fall 2026 · Virtual
         </span>
       </div>
@@ -141,14 +148,14 @@ function CtaCard() {
       </div>
 
       <div className="grid grid-cols-2 gap-3 mb-5">
-        <div className="rounded-xl border-2 border-[#d4a0a8] bg-[#fdf0ee] p-3 text-center">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[#8a5a62] mb-0.5">
+        <div className="rounded-xl border-2 border-[#c9a96e] bg-[#fbeee9] p-3 text-center">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[#3a5a3a]/80 mb-0.5">
             Best value
           </p>
           <p className="text-2xl font-playfair font-bold text-[#3a5a3a]">$129</p>
           <p className="text-[11px] text-gray-600 mt-0.5 leading-tight">All Access</p>
         </div>
-        <div className="rounded-xl border border-gray-200 bg-[#fdfbf7] p-3 text-center">
+        <div className="rounded-xl border border-[#f0e4dc] bg-[#FDFBF7] p-3 text-center">
           <p className="text-[10px] font-bold uppercase tracking-wide text-gray-500 mb-0.5">
             Standard
           </p>
@@ -157,14 +164,14 @@ function CtaCard() {
         </div>
       </div>
 
-      <ul className="mb-5 space-y-1.5 text-left text-xs sm:text-sm text-gray-600 bg-[#fdfbf7] rounded-xl px-3 py-3 border border-[#f0d4c8]">
+      <ul className="mb-5 space-y-1.5 text-left text-xs sm:text-sm text-gray-600 bg-[#fbeee9]/60 rounded-xl px-3 py-3 border border-[#f0d8d0]">
         {[
           "Workbook included (physical + digital)",
           "Join Lee Anne’s Tuesday class",
           "One link: buy kit + enroll",
         ].map((o) => (
           <li key={o} className="flex gap-2">
-            <span className="text-[#d4a0a8] font-bold shrink-0">→</span>
+            <span className="text-[#c9a96e] font-bold shrink-0">→</span>
             <span>{o}</span>
           </li>
         ))}
@@ -182,7 +189,7 @@ function CtaCard() {
           "No shame · progress over perfection",
         ].map((line) => (
           <li key={line} className="flex items-start gap-2">
-            <span className="text-[#d4a0a8] font-bold shrink-0">✓</span>
+            <span className="text-[#c9a96e] font-bold shrink-0">✓</span>
             <span>{line}</span>
           </li>
         ))}
@@ -220,15 +227,16 @@ export default function FpuClassClient() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#fdf0ee]">
+    <div className="min-h-screen flex flex-col bg-[#FDFBF7]">
       {/* Mobile sticky CTA */}
-      <div className="fixed bottom-0 inset-x-0 z-50 md:hidden border-t border-[#f0d4c8] bg-[#fdf8f6]/95 backdrop-blur-sm px-3 py-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(180,100,110,0.12)]">
+      <div className="fixed bottom-0 inset-x-0 z-50 md:hidden border-t border-[#f0e4dc] bg-white/95 backdrop-blur-sm px-3 py-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
         <PrimaryCta label="Join Class — From $99 →" className="min-h-[48px] text-sm" />
       </div>
 
       <main className="flex-1 pt-6 sm:pt-10 md:pt-14 pb-28 md:pb-16 px-4 sm:px-6 md:px-12 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-72 sm:w-96 h-72 sm:h-96 bg-[#e8b4b8]/35 rounded-full blur-3xl -z-10 translate-x-1/2 -translate-y-1/2" />
-        <div className="absolute bottom-0 left-0 w-64 sm:w-80 h-64 sm:h-80 bg-[#f8d8d8]/50 rounded-full blur-3xl -z-10 -translate-x-1/2 translate-y-1/2" />
+        {/* Soft logo-blush glows (not dusty rose) */}
+        <div className="absolute top-0 right-0 w-72 sm:w-96 h-72 sm:h-96 bg-[#f8d8d8]/50 rounded-full blur-3xl -z-10 translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute bottom-0 left-0 w-64 sm:w-80 h-64 sm:h-80 bg-[#fbeee9]/80 rounded-full blur-3xl -z-10 -translate-x-1/2 translate-y-1/2" />
 
         <div className="max-w-6xl mx-auto w-full">
           <div className="flex justify-center md:justify-start mb-6 sm:mb-8">
@@ -239,15 +247,15 @@ export default function FpuClassClient() {
             />
           </div>
 
-          {/* Hero */}
+          {/* Hero — blush wash behind copy */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-16 items-start mb-16 md:mb-20">
             <div className="text-center md:text-left max-w-xl mx-auto md:mx-0">
-              <div className="inline-block px-4 py-1.5 rounded-full bg-[#fbeee9] border border-[#f0d4c8] text-[#8a5040] text-xs sm:text-sm font-semibold tracking-wide uppercase mb-5 shadow-sm">
+              <div className="inline-block px-4 py-1.5 rounded-full bg-[#fbeee9] border border-[#f0d8d0] text-[#3a5a3a] text-xs sm:text-sm font-semibold tracking-wide uppercase mb-5 shadow-sm">
                 Dave Ramsey&apos;s FPU · Live with Lee Anne
               </div>
               <h1 className="text-3xl sm:text-4xl md:text-5xl font-playfair font-bold text-[#3a5a3a] mb-5 leading-tight">
                 Stop dreading your{" "}
-                <span className="text-[#c47a7a] italic">bank account</span>
+                <span className="text-[#c9a96e] italic">bank account</span>
               </h1>
               <p className="text-base sm:text-lg text-gray-700 mb-4 leading-relaxed">
                 Virtual <strong>Financial Peace University</strong> — Tuesdays at{" "}
@@ -283,25 +291,27 @@ export default function FpuClassClient() {
             </div>
           </div>
 
-          {/* Pain */}
-          <section className="mb-16 md:mb-20 max-w-3xl mx-auto">
-            <h2 className="text-2xl sm:text-3xl font-playfair font-bold text-[#3a5a3a] text-center mb-3">
-              Be honest. Nobody&apos;s watching.
-            </h2>
-            <p className="text-center text-gray-600 mb-8 text-sm sm:text-base">
-              If any of these hit home, you&apos;re in the right place.
-            </p>
-            <ul className="space-y-3">
-              {PAIN.map((p) => (
-                <li
-                  key={p}
-                  className="flex items-start gap-3 bg-white/90 rounded-xl px-4 py-3.5 border border-[#f0d4c8] shadow-sm"
-                >
-                  <span className="text-[#d4a0a8] font-bold shrink-0">→</span>
-                  <span className="text-gray-700 text-sm sm:text-base">{p}</span>
-                </li>
-              ))}
-            </ul>
+          {/* Pain — on soft blush band */}
+          <section className="mb-16 md:mb-20 -mx-4 sm:-mx-6 md:mx-0 px-4 sm:px-6 md:px-10 py-10 md:py-12 rounded-none md:rounded-3xl bg-[#fbeee9]">
+            <div className="max-w-3xl mx-auto">
+              <h2 className="text-2xl sm:text-3xl font-playfair font-bold text-[#3a5a3a] text-center mb-3">
+                Be honest. Nobody&apos;s watching.
+              </h2>
+              <p className="text-center text-gray-600 mb-8 text-sm sm:text-base">
+                If any of these hit home, you&apos;re in the right place.
+              </p>
+              <ul className="space-y-3">
+                {PAIN.map((p) => (
+                  <li
+                    key={p}
+                    className="flex items-start gap-3 bg-white rounded-xl px-4 py-3.5 border border-[#f0d8d0] shadow-sm"
+                  >
+                    <span className="text-[#c9a96e] font-bold shrink-0">→</span>
+                    <span className="text-gray-700 text-sm sm:text-base">{p}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </section>
 
           {/* Story */}
@@ -310,7 +320,7 @@ export default function FpuClassClient() {
               <img
                 src={LEEANNE_IMG}
                 alt="Lee Anne Chapman — Financial Peace coordinator"
-                className="rounded-2xl shadow-lg w-full max-w-md mx-auto object-cover object-top aspect-[4/5]"
+                className="rounded-2xl shadow-lg w-full max-w-md mx-auto object-cover object-top aspect-[4/5] ring-4 ring-[#fbeee9]"
               />
             </div>
             <div className="order-1 md:order-2 text-center md:text-left">
@@ -341,13 +351,13 @@ export default function FpuClassClient() {
             <h2 className="text-2xl sm:text-3xl font-playfair font-bold text-[#3a5a3a] text-center mb-8">
               Class schedule
             </h2>
-            <div className="bg-white rounded-2xl border border-[#f0d4c8] shadow-sm overflow-hidden divide-y divide-[#fbeee9]">
+            <div className="bg-white rounded-2xl border border-[#f0d8d0] shadow-sm overflow-hidden divide-y divide-[#fbeee9]">
               {SCHEDULE.map((row) => (
                 <div
                   key={row.label}
                   className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 px-5 py-4"
                 >
-                  <span className="text-xs font-bold uppercase tracking-wide text-[#c47a7a]">
+                  <span className="text-xs font-bold uppercase tracking-wide text-[#c9a96e]">
                     {row.label}
                   </span>
                   <span className="text-sm sm:text-base font-semibold text-[#3a5a3a] sm:text-right">
@@ -363,7 +373,7 @@ export default function FpuClassClient() {
           </section>
 
           {/* What you get */}
-          <section className="mb-16 md:mb-20 max-w-3xl mx-auto">
+          <section className="mb-16 md:mb-20 max-w-3xl mx-auto rounded-3xl bg-[#fbeee9] px-6 sm:px-10 py-10">
             <h2 className="text-2xl sm:text-3xl font-playfair font-bold text-[#3a5a3a] text-center mb-8">
               What you walk away with
             </h2>
@@ -391,7 +401,7 @@ export default function FpuClassClient() {
               {FAQS.map((f) => (
                 <div
                   key={f.q}
-                  className="bg-white rounded-xl border border-[#f0d4c8] shadow-sm px-5 py-4"
+                  className="bg-white rounded-xl border border-[#f0d8d0] shadow-sm px-5 py-4"
                 >
                   <h3 className="font-bold text-[#3a5a3a] text-sm sm:text-base mb-2">{f.q}</h3>
                   <p className="text-gray-600 text-sm leading-relaxed">{f.a}</p>
@@ -401,7 +411,7 @@ export default function FpuClassClient() {
           </section>
 
           {/* Final CTA */}
-          <section className="max-w-xl mx-auto text-center pb-8">
+          <section className="max-w-xl mx-auto text-center pb-8 rounded-3xl bg-[#fbeee9] px-6 py-10">
             <h2 className="text-2xl sm:text-3xl font-playfair font-bold text-[#3a5a3a] mb-3">
               This is your year for financial peace
             </h2>
