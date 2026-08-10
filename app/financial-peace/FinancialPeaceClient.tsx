@@ -29,6 +29,9 @@ const PHOTO_LEEANNE_VEGGIES =
 const LEEANNE_PHOTO =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/3542web-rigeljackson(2)_83b0d4af.webp";
 
+/** Fall 2026 virtual class — buy kit + join Lee Anne's group (Ramsey class page) */
+export const FPU_CLASS_URL = "https://www.financialpeace.com/app/classes/833B7A";
+
 // â”€â”€ FPU Group Sign-Up Form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function CoachingCheckoutButton({
   label = "Add 1:1 Coaching — $249 ?",
@@ -178,23 +181,32 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
               </div>
               <div className="flex flex-col items-start gap-4">
                 <a
-                  href="https://www.financialpeace.com/app/classes/299D07"
+                  href={FPU_CLASS_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-full font-bold text-sm transition-all hover:opacity-80"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full font-bold text-base transition-all hover:shadow-xl hover:-translate-y-0.5"
                   style={{
-                    background: "transparent",
-                    color: "oklch(0.72 0.09 145)",
-                    border: "2px solid oklch(0.72 0.09 145)",
+                    background: "oklch(0.72 0.11 78)",
+                    color: "oklch(0.20 0.015 50)",
                   }}
                 >
-                  Sign Up for Class ?
+                  Buy Kit &amp; Join My Class →
+                </a>
+                <a
+                  href="#how-to-join"
+                  className="text-sm font-semibold underline underline-offset-4 transition-opacity hover:opacity-80"
+                  style={{ color: "oklch(0.85 0.04 148)" }}
+                >
+                  How it works (2 minutes)
                 </a>
               </div>
               <p className="text-sm mt-4" style={{ color: "oklch(0.75 0.015 148)" }}>
-                FPU kits start at{" "}
-                <strong style={{ color: "oklch(0.72 0.11 78)" }}>$99</strong> Â· <a href="#fpu-coaching" className="underline transition-colors hover:opacity-80" style={{ color: "oklch(0.72 0.11 78)" }}>Optional 1:1
-                coaching add-on available</a>
+                Kits from{" "}
+                <strong style={{ color: "oklch(0.72 0.11 78)" }}>$99</strong>
+                {" "}· workbook included · virtual ·{" "}
+                <a href="#fpu-coaching" className="underline transition-colors hover:opacity-80" style={{ color: "oklch(0.72 0.11 78)" }}>
+                  optional 1:1 coaching
+                </a>
               </p>
             </div>
 
@@ -430,12 +442,12 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
               <E k="for-you-heading" />
               <E k="for-you-list" />
               <a
-                href="https://www.financialpeace.com/app/classes/299D07"
+                href={FPU_CLASS_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full font-bold text-lg transition-all bg-[#d4a017] text-[#1a2e1e] shadow-[0_4px_20px_rgba(212,160,23,0.35)] hover:-translate-y-1 hover:shadow-[0_8px_28px_rgba(212,160,23,0.45)]"
               >
-                Sign Up for Class ?
+                Buy Kit &amp; Join My Class →
               </a>
             </div>
           </div>
@@ -531,7 +543,7 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
       </section>
 
       {/* â”€â”€ PRICING & SIGN-UP â”€â”€ */}
-      <section className="py-20" style={{ background: "oklch(1 0 0)" }}>
+      <section id="how-to-join" className="py-20" style={{ background: "oklch(1 0 0)" }}>
         <div className="container max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <span className="badge-gold mb-3 inline-block">Get Started</span>
@@ -543,20 +555,20 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
                 color: "oklch(0.20 0.015 50)",
               }}
             >
-              Two Simple Steps to Join
+              How to Join (One Link)
             </h2>
             <p className="text-base" style={{ color: "oklch(0.52 0.015 50)", maxWidth: "600px", margin: "0 auto" }}>
-              Purchase your FPU kit from the Dave Ramsey Store, then sign up for my class using the link below.
+              Choose your kit on Lee Anne&apos;s official class page — that same page enrolls you in this Tuesday cohort. No separate store hunt.
             </p>
           </div>
 
-          {/* Step 1: Buy Kit */}
+          {/* Kit options */}
           <div className="mb-10">
             <h3
               className="font-bold text-lg mb-6 text-center"
               style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.20 0.015 50)" }}
             >
-              Step 1: Purchase Your Kit
+              Pick your kit
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* All Access */}
@@ -607,13 +619,13 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
                   </li>
                 </ul>
                 <a
-                  href="https://www.ramseysolutions.com/store"
+                  href={FPU_CLASS_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full font-bold text-sm transition-all hover:shadow-lg hover:-translate-y-0.5 w-full"
                   style={{ background: "oklch(0.72 0.11 78)", color: "oklch(0.20 0.015 50)" }}
                 >
-                  Buy on Dave Ramsey Store
+                  Buy All Access &amp; Join Class →
                 </a>
               </div>
 
@@ -655,19 +667,22 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
                   </li>
                 </ul>
                 <a
-                  href="https://www.ramseysolutions.com/store"
+                  href={FPU_CLASS_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full font-bold text-sm transition-all hover:shadow-md w-full border"
                   style={{ borderColor: "oklch(0.38 0.09 148)", color: "oklch(0.38 0.09 148)", background: "transparent" }}
                 >
-                  Buy on Dave Ramsey Store
+                  Buy FPU &amp; Join Class →
                 </a>
               </div>
             </div>
+            <p className="text-center text-sm mt-6" style={{ color: "oklch(0.50 0.02 50)" }}>
+              Both options open on <strong>Lee Anne&apos;s class page</strong> so you buy the kit and join this cohort in one place.
+            </p>
           </div>
 
-          {/* Step 2: Sign Up for Class */}
+          {/* One-step join reminder */}
           <div
             className="rounded-3xl p-8 md:p-10 text-center"
             style={{
@@ -679,19 +694,19 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
               className="font-bold text-lg mb-3"
               style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(1 0 0)", fontSize: "clamp(1.4rem, 2.5vw, 1.8rem)" }}
             >
-              Step 2: Sign Up for My Class
+              Ready? One link does both.
             </h3>
             <p className="text-sm mb-6" style={{ color: "oklch(0.85 0.015 148)", maxWidth: "480px", margin: "0 auto 24px" }}>
-              Once you have your kit, sign up for my class using the link below.
+              Pick $99 or $129 on the next page — you&apos;ll get your workbook access <em>and</em> a seat in Lee Anne&apos;s virtual class (Tuesdays 6:30 PM MT).
             </p>
             <a
-              href="https://www.financialpeace.com/app/classes/299D07"
+              href={FPU_CLASS_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 px-10 py-4 rounded-full font-bold text-base transition-all hover:shadow-xl hover:-translate-y-1"
               style={{ background: "oklch(0.72 0.11 78)", color: "oklch(0.20 0.015 50)" }}
             >
-              Sign Up for Lee Anne's Class ?
+              Open Class Page &amp; Enroll →
             </a>
           </div>
         </div>
@@ -714,13 +729,13 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
           <E k="cta-body" />
           <div className="flex flex-col items-center gap-4 mb-6">
             <a
-              href="https://www.financialpeace.com/app/classes/299D07"
+              href={FPU_CLASS_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-full font-bold text-base transition-all hover:shadow-xl hover:-translate-y-1"
               style={{ background: "oklch(0.72 0.11 78)", color: "oklch(0.20 0.015 50)" }}
             >
-              Sign Up for Class ?
+              Buy Kit &amp; Join My Class →
             </a>
             <CoachingCheckoutButton label="Add 1:1 Coaching — $249" />
           </div>

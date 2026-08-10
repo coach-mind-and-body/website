@@ -7,8 +7,11 @@
 **Ends:** Oct 27, 2026  
 **Format:** Virtual (Zoom-style class)  
 **Kits:** $99 FPU (workbook + access) · $129 All Access (best value)  
-**Landing:** https://mindandbodyresetcoach.com/financial-peace  
-**Class signup (Ramsey):** https://www.financialpeace.com/app/classes/299D07  
+**Landing (ad destination):** https://mindandbodyresetcoach.com/financial-peace  
+**Checkout / join (Ramsey class page):** https://www.financialpeace.com/app/classes/833B7A  
+
+**Funnel (high converting):** Meta ad → **your** landing page (story + trust) → class page (buy kit + join).  
+Do **not** send cold ads straight to Ramsey for most traffic.  
 
 ---
 
@@ -86,7 +89,8 @@ Join us. Your future self will thank you.
 
 ## CTA buttons
 - **Sign up** / **Learn more** / **Get offer**  
-- Destination: class link **or** `/financial-peace` (prefer class link if ready to buy; landing if cold traffic)
+- Destination for cold/warm Meta: **https://mindandbodyresetcoach.com/financial-peace** only  
+- Class page is the on-page CTA after they trust you (not the ad click URL)
 
 ---
 
