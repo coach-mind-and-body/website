@@ -60,7 +60,7 @@ const FAQS = [
   },
 ];
 
-function Check({ className = "text-[#c9a96e]" }: { className?: string }) {
+function Check({ className = "text-[#d4a0a8]" }: { className?: string }) {
   return (
     <svg
       className={`w-5 h-5 sm:w-6 sm:h-6 mr-3 shrink-0 mt-0.5 ${className}`}
@@ -110,7 +110,7 @@ function PrimaryCta({
       target="_blank"
       rel="noopener noreferrer"
       onClick={onClick}
-      className={`flex w-full min-h-[52px] sm:min-h-[56px] items-center justify-center px-4 text-center text-base sm:text-lg font-bold bg-[#c9a96e] hover:bg-[#b09055] active:bg-[#a08048] text-[#1a2e1e] rounded-full transition-colors shadow-md ${className}`}
+      className={`flex w-full min-h-[52px] sm:min-h-[56px] items-center justify-center px-4 text-center text-base sm:text-lg font-bold bg-[#d4a0a8] hover:bg-[#c48a94] active:bg-[#b87a86] text-[#1a2e1e] rounded-full transition-colors shadow-md ${className}`}
     >
       {label}
     </a>
@@ -119,9 +119,9 @@ function PrimaryCta({
 
 function CtaCard() {
   return (
-    <div className="bg-white p-5 sm:p-8 rounded-2xl shadow-xl border border-gray-100 w-full max-w-md mx-auto">
+    <div className="bg-white p-5 sm:p-8 rounded-2xl shadow-xl border border-[#f0d4c8] w-full max-w-md mx-auto">
       <div className="text-center mb-4">
-        <span className="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide bg-[#f4f8f4] text-[#3a5a3a] border border-[#c8dcc8]">
+        <span className="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide bg-[#fbeee9] text-[#8a5040] border border-[#f0d4c8]">
           Fall 2026 · Virtual
         </span>
       </div>
@@ -141,8 +141,8 @@ function CtaCard() {
       </div>
 
       <div className="grid grid-cols-2 gap-3 mb-5">
-        <div className="rounded-xl border-2 border-[#c9a96e] bg-[#fdf8f0] p-3 text-center">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[#8a7040] mb-0.5">
+        <div className="rounded-xl border-2 border-[#d4a0a8] bg-[#fdf0ee] p-3 text-center">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[#8a5a62] mb-0.5">
             Best value
           </p>
           <p className="text-2xl font-playfair font-bold text-[#3a5a3a]">$129</p>
@@ -157,14 +157,14 @@ function CtaCard() {
         </div>
       </div>
 
-      <ul className="mb-5 space-y-1.5 text-left text-xs sm:text-sm text-gray-600 bg-[#fdfbf7] rounded-xl px-3 py-3 border border-[#f0e8e0]">
+      <ul className="mb-5 space-y-1.5 text-left text-xs sm:text-sm text-gray-600 bg-[#fdfbf7] rounded-xl px-3 py-3 border border-[#f0d4c8]">
         {[
           "Workbook included (physical + digital)",
           "Join Lee Anne’s Tuesday class",
           "One link: buy kit + enroll",
         ].map((o) => (
           <li key={o} className="flex gap-2">
-            <span className="text-[#c9a96e] font-bold shrink-0">→</span>
+            <span className="text-[#d4a0a8] font-bold shrink-0">→</span>
             <span>{o}</span>
           </li>
         ))}
@@ -182,7 +182,7 @@ function CtaCard() {
           "No shame · progress over perfection",
         ].map((line) => (
           <li key={line} className="flex items-start gap-2">
-            <span className="text-[#c9a96e] font-bold shrink-0">✓</span>
+            <span className="text-[#d4a0a8] font-bold shrink-0">✓</span>
             <span>{line}</span>
           </li>
         ))}
@@ -220,15 +220,15 @@ export default function FpuClassClient() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#FDFBF7]">
+    <div className="min-h-screen flex flex-col bg-[#fdf0ee]">
       {/* Mobile sticky CTA */}
-      <div className="fixed bottom-0 inset-x-0 z-50 md:hidden border-t border-gray-200 bg-white/95 backdrop-blur-sm px-3 py-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+      <div className="fixed bottom-0 inset-x-0 z-50 md:hidden border-t border-[#f0d4c8] bg-[#fdf8f6]/95 backdrop-blur-sm px-3 py-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(180,100,110,0.12)]">
         <PrimaryCta label="Join Class — From $99 →" className="min-h-[48px] text-sm" />
       </div>
 
       <main className="flex-1 pt-6 sm:pt-10 md:pt-14 pb-28 md:pb-16 px-4 sm:px-6 md:px-12 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-72 sm:w-96 h-72 sm:h-96 bg-[#c9a96e]/10 rounded-full blur-3xl -z-10 translate-x-1/2 -translate-y-1/2" />
-        <div className="absolute bottom-0 left-0 w-64 sm:w-80 h-64 sm:h-80 bg-[#3a5a3a]/5 rounded-full blur-3xl -z-10 -translate-x-1/2 translate-y-1/2" />
+        <div className="absolute top-0 right-0 w-72 sm:w-96 h-72 sm:h-96 bg-[#e8b4b8]/35 rounded-full blur-3xl -z-10 translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute bottom-0 left-0 w-64 sm:w-80 h-64 sm:h-80 bg-[#f8d8d8]/50 rounded-full blur-3xl -z-10 -translate-x-1/2 translate-y-1/2" />
 
         <div className="max-w-6xl mx-auto w-full">
           <div className="flex justify-center md:justify-start mb-6 sm:mb-8">
@@ -242,12 +242,12 @@ export default function FpuClassClient() {
           {/* Hero */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-16 items-start mb-16 md:mb-20">
             <div className="text-center md:text-left max-w-xl mx-auto md:mx-0">
-              <div className="inline-block px-4 py-1.5 rounded-full bg-[#f4f8f4] border border-[#c8dcc8] text-[#3a5a3a] text-xs sm:text-sm font-semibold tracking-wide uppercase mb-5 shadow-sm">
+              <div className="inline-block px-4 py-1.5 rounded-full bg-[#fbeee9] border border-[#f0d4c8] text-[#8a5040] text-xs sm:text-sm font-semibold tracking-wide uppercase mb-5 shadow-sm">
                 Dave Ramsey&apos;s FPU · Live with Lee Anne
               </div>
               <h1 className="text-3xl sm:text-4xl md:text-5xl font-playfair font-bold text-[#3a5a3a] mb-5 leading-tight">
                 Stop dreading your{" "}
-                <span className="text-[#c9a96e] italic">bank account</span>
+                <span className="text-[#c47a7a] italic">bank account</span>
               </h1>
               <p className="text-base sm:text-lg text-gray-700 mb-4 leading-relaxed">
                 Virtual <strong>Financial Peace University</strong> — Tuesdays at{" "}
@@ -295,9 +295,9 @@ export default function FpuClassClient() {
               {PAIN.map((p) => (
                 <li
                   key={p}
-                  className="flex items-start gap-3 bg-white rounded-xl px-4 py-3.5 border border-[#f0e8e0] shadow-sm"
+                  className="flex items-start gap-3 bg-white/90 rounded-xl px-4 py-3.5 border border-[#f0d4c8] shadow-sm"
                 >
-                  <span className="text-[#c9a96e] font-bold shrink-0">→</span>
+                  <span className="text-[#d4a0a8] font-bold shrink-0">→</span>
                   <span className="text-gray-700 text-sm sm:text-base">{p}</span>
                 </li>
               ))}
@@ -341,13 +341,13 @@ export default function FpuClassClient() {
             <h2 className="text-2xl sm:text-3xl font-playfair font-bold text-[#3a5a3a] text-center mb-8">
               Class schedule
             </h2>
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden divide-y divide-gray-100">
+            <div className="bg-white rounded-2xl border border-[#f0d4c8] shadow-sm overflow-hidden divide-y divide-[#fbeee9]">
               {SCHEDULE.map((row) => (
                 <div
                   key={row.label}
                   className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 px-5 py-4"
                 >
-                  <span className="text-xs font-bold uppercase tracking-wide text-[#c9a96e]">
+                  <span className="text-xs font-bold uppercase tracking-wide text-[#c47a7a]">
                     {row.label}
                   </span>
                   <span className="text-sm sm:text-base font-semibold text-[#3a5a3a] sm:text-right">
@@ -391,7 +391,7 @@ export default function FpuClassClient() {
               {FAQS.map((f) => (
                 <div
                   key={f.q}
-                  className="bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-4"
+                  className="bg-white rounded-xl border border-[#f0d4c8] shadow-sm px-5 py-4"
                 >
                   <h3 className="font-bold text-[#3a5a3a] text-sm sm:text-base mb-2">{f.q}</h3>
                   <p className="text-gray-600 text-sm leading-relaxed">{f.a}</p>
