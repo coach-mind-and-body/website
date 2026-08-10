@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FPU Fall 2026 Ad Creatives</title>
+  <title>FPU Fall 2026 Ad Creatives — Brand</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
@@ -34,48 +34,56 @@
       flex-direction: column;
       justify-content: space-between;
     }
-    .sq {
-      width: 1080px;
-      height: 1080px;
-      padding: 72px;
+    .sq { width: 1080px; height: 1080px; padding: 72px; }
+    .story { width: 1080px; height: 1920px; padding: 96px 72px; }
+
+    /* Brand: cream / blush / sage / gold */
+    .blush {
+      background: linear-gradient(160deg, #fbeee9 0%, #f8d8d8 45%, #fdf0ee 100%);
+      color: #3a5a3a;
     }
-    .story {
-      width: 1080px;
-      height: 1920px;
-      padding: 96px 72px;
+    .cream {
+      background: linear-gradient(160deg, #FDFBF7 0%, #fbeee9 55%, #f8d8d8 100%);
+      color: #3a5a3a;
     }
     .green {
-      background: linear-gradient(155deg, #2d4a32 0%, #3a5a3a 45%, #4a6b4a 100%);
-      color: #faf6f0;
+      background: linear-gradient(155deg, #2d4a32 0%, #3a5a3a 50%, #4a6b4a 100%);
+      color: #fdfbf7;
     }
-    .peach {
-      background: linear-gradient(155deg, #f3e6dc 0%, #f8ebe3 50%, #efe0d4 100%);
-      color: #2a3d2c;
-    }
+
     .badge {
       display: inline-block;
       font-size: 22px;
       font-weight: 700;
-      letter-spacing: 0.14em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
       padding: 12px 22px;
       border-radius: 999px;
-      border: 2px solid currentColor;
-      opacity: 0.95;
+      border: 2px solid #c9a96e;
+      color: #3a5a3a;
+      background: rgba(255,255,255,0.55);
       align-self: flex-start;
     }
-    .green .badge { color: #e8c49a; border-color: #e8c49a; }
-    .peach .badge { color: #3a5a3a; border-color: #3a5a3a; }
+    .green .badge {
+      color: #fbeee9;
+      border-color: #c9a96e;
+      background: rgba(201,169,110,0.18);
+    }
+
     .headline {
       font-family: "Cormorant Garamond", Georgia, serif;
       font-weight: 700;
       line-height: 1.08;
       margin-top: 36px;
+      color: #3a5a3a;
     }
-    .sq .headline { font-size: 78px; }
-    .story .headline { font-size: 92px; margin-top: 56px; }
-    .highlight { color: #e8c49a; font-style: italic; }
-    .peach .highlight { color: #3a5a3a; }
+    .green .headline { color: #fdfbf7; }
+    .sq .headline { font-size: 72px; }
+    .story .headline { font-size: 88px; margin-top: 56px; }
+
+    .gold { color: #c9a96e; font-style: italic; }
+    .green .gold { color: #e8c49a; }
+
     .meta {
       margin-top: 28px;
       font-size: 28px;
@@ -83,15 +91,16 @@
       font-weight: 600;
       max-width: 900px;
     }
-    .story .meta { font-size: 34px; margin-top: 40px; }
-    .meta strong { font-weight: 700; }
+    .story .meta { font-size: 32px; margin-top: 40px; }
+
     .details {
       margin-top: 24px;
       font-size: 24px;
       line-height: 1.5;
-      opacity: 0.95;
+      opacity: 0.92;
     }
-    .story .details { font-size: 30px; margin-top: 36px; }
+    .story .details { font-size: 28px; margin-top: 36px; }
+
     .footer {
       display: flex;
       align-items: center;
@@ -101,8 +110,8 @@
       padding-top: 40px;
     }
     .cta {
-      background: #e8c49a;
-      color: #2a3d2c;
+      background: #c9a96e;
+      color: #fff;
       font-weight: 700;
       font-size: 28px;
       letter-spacing: 0.04em;
@@ -110,15 +119,20 @@
       padding: 22px 40px;
       border-radius: 999px;
       white-space: nowrap;
+      box-shadow: 0 8px 24px rgba(201,169,110,0.35);
     }
     .story .cta { font-size: 32px; padding: 26px 48px; }
+
     .price {
       font-size: 24px;
       font-weight: 600;
       text-align: right;
       line-height: 1.4;
+      color: #3a5a3a;
     }
+    .green .price { color: #fbeee9; }
     .story .price { font-size: 28px; }
+
     .logo-row {
       display: flex;
       align-items: center;
@@ -130,63 +144,71 @@
       height: 72px;
       border-radius: 50%;
       object-fit: cover;
-      border: 3px solid rgba(255,255,255,0.35);
+      border: 3px solid rgba(201,169,110,0.45);
+      background: #fbeee9;
     }
-    .peach .logo-row img { border-color: rgba(58,90,58,0.25); }
     .brand {
       font-size: 20px;
       font-weight: 600;
       line-height: 1.3;
+      color: #3a5a3a;
     }
+    .green .brand { color: #fdfbf7; }
     .story .brand { font-size: 24px; }
     .story .logo-row img { width: 88px; height: 88px; }
+
     .quote {
       font-family: "Cormorant Garamond", Georgia, serif;
       font-style: italic;
-      font-size: 42px;
+      font-size: 40px;
       line-height: 1.25;
-      margin-top: 48px;
+      margin-top: 40px;
       max-width: 920px;
+      color: #3a5a3a;
     }
-    .story .quote { font-size: 52px; margin-top: 72px; }
+    .story .quote { font-size: 48px; margin-top: 64px; color: #fdfbf7; }
   </style>
 </head>
 <body>
-  <!-- SQUARE 1: Hero green -->
-  <h2 class="page-label">Square 1 — Hero (1080×1080)</h2>
-  <div class="ad sq green" id="ad-sq-hero">
+  <!-- SQUARE 1: Blush hero -->
+  <h2 class="page-label">Square 1 — Blush hero (1080×1080)</h2>
+  <div class="ad sq blush" id="ad-sq-hero">
     <div>
-      <span class="badge">Virtual class</span>
+      <span class="badge">Virtual FPU class</span>
       <h1 class="headline">Financial Peace<br />University</h1>
       <p class="meta">
         <strong>Tuesdays · 6:30 PM MT</strong><br />
-        Orientation Aug 25 · First lesson Sep 1<br />
-        Ends Oct 27, 2026
+        Orientation <strong>Aug 25</strong> · First lesson <strong>Sep 1</strong><br />
+        Ends <strong>Oct 27, 2026</strong>
       </p>
       <p class="details">
-        Led by Lee Anne Chapman · Dave Ramsey’s FPU<br />
-        Watch lessons on your own · Meet for discussion
+        Led by Lee Anne Chapman<br />
+        Watch lessons on your own · Meet for discussion<br />
+        Kits from $99 · Workbook included
       </p>
     </div>
     <div>
       <div class="footer">
         <div class="cta">Join the class</div>
-        <div class="price">Kits from $99<br /><span style="font-size:0.85em;opacity:0.9">Workbook included</span></div>
+        <div class="price">From $99<br /><span style="font-size:0.85em;opacity:0.85">Buy kit + join</span></div>
       </div>
       <div class="logo-row">
         <img src="../../public/logo-circular.png" alt="" />
-        <div class="brand">Mind and Body Reset Coaching<br /><span style="opacity:0.85;font-weight:500">mindandbodyresetcoach.com/fpu-class</span></div>
+        <div class="brand">Mind and Body Reset Coaching<br /><span style="opacity:0.8;font-weight:500">mindandbodyresetcoach.com/fpu-class</span></div>
       </div>
     </div>
   </div>
 
-  <!-- SQUARE 2: Story peach -->
+  <!-- SQUARE 2: Story on cream/blush -->
   <h2 class="page-label">Square 2 — Story hook (1080×1080)</h2>
-  <div class="ad sq peach" id="ad-sq-story">
+  <div class="ad sq cream" id="ad-sq-story">
     <div>
       <span class="badge">I’ve been there</span>
       <p class="quote">I looked for free food boxes &amp; cried over a $10 lunch.</p>
-      <h1 class="headline" style="font-size:64px;margin-top:40px;">Now I lead FPU.<br /><span class="highlight">You’re next.</span></h1>
+      <h1 class="headline" style="font-size:58px;margin-top:36px;">
+        Now I lead FPU.<br />
+        <span class="gold">You’re next.</span>
+      </h1>
       <p class="meta">
         <strong>Tuesdays 6:30 PM MT</strong> · Virtual<br />
         Aug 25 orientation · Sep 1 start · Oct 27 end
@@ -199,17 +221,17 @@
       </div>
       <div class="logo-row">
         <img src="../../public/logo-circular.png" alt="" />
-        <div class="brand">Lee Anne Chapman · Financial Peace Coordinator<br /><span style="opacity:0.8;font-weight:500">Sandy, UT · mindandbodyresetcoach.com</span></div>
+        <div class="brand">Lee Anne Chapman · FPU Coordinator<br /><span style="opacity:0.8;font-weight:500">mindandbodyresetcoach.com/fpu-class</span></div>
       </div>
     </div>
   </div>
 
-  <!-- STORY 9:16 -->
+  <!-- STORY 9:16 green with gold CTA -->
   <h2 class="page-label">Story / Reels — 9:16 (1080×1920)</h2>
   <div class="ad story green" id="ad-story">
     <div>
       <span class="badge">Fall 2026 cohort</span>
-      <h1 class="headline">Stop dreading<br />your bank<br />account.</h1>
+      <h1 class="headline">Stop dreading<br />your bank<br /><span class="gold">account.</span></h1>
       <p class="meta">
         <strong>Financial Peace University</strong><br />
         with Lee Anne Chapman
@@ -219,7 +241,7 @@
         Optional orientation: <strong>Aug 25</strong><br />
         First lesson: <strong>Sep 1</strong><br />
         Ends: <strong>Oct 27, 2026</strong><br /><br />
-        Virtual class · 45–60 min discussions<br />
+        Virtual · 45–60 min discussions<br />
         Kits from <strong>$99</strong> (workbook included)<br />
         All Access <strong>$129</strong>
       </p>
