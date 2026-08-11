@@ -17,5 +17,15 @@ export async function register() {
       );
     runSync();
     setInterval(runSync, 10 * 60 * 1000); // every 10 minutes
+
+    // Scheduled admin newsletters. Production Docker only runs `next start`,
+    // not `pnpm worker` — so due sends would sit as "scheduled" forever without this.
+    const { processSendingNewsletters } = await import("./server/newsletterJob");
+    const runNewsletters = () =>
+      processSendingNewsletters().catch((err) =>
+        console.error("[Instrumentation] Newsletter job error:", err)
+      );
+    runNewsletters();
+    setInterval(runNewsletters, 30_000);
   }
 }
