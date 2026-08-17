@@ -1,6 +1,8 @@
 import Foundation
 import Observation
+import PhotosUI
 import SwiftUI
+import UIKit
 
 @MainActor
 @Observable
@@ -15,6 +17,7 @@ final class CoachViewModel {
     var recipeHits: [Recipe] = []
     var recipesLoading = false
     var notifyEnabled = false
+    var uploading = false
     private var lastSeenMessageId: Int?
     private let auth: AuthStore
 
@@ -86,11 +89,27 @@ final class CoachViewModel {
     func enableNotifications() async {
         notifyEnabled = await NotificationService.requestAuthorization()
     }
+
+    func sendPhoto(_ image: UIImage) async {
+        guard let data = image.jpegData(compressionQuality: 0.7) else { return }
+        uploading = true
+        defer { uploading = false }
+        do {
+            let result: CoachPhotoResult = try await auth.client.mutate(
+                "coach.uploadPhoto",
+                input: CoachPhotoInput(mimeType: "image/jpeg", base64Data: data.base64EncodedString())
+            )
+            await send(mediaUrl: result.url)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
 }
 
 struct CoachView: View {
     @Bindable var model: CoachViewModel
     @Bindable var auth: AuthStore
+    @State private var photoItem: PhotosPickerItem?
 
     var body: some View {
         NavigationStack {
@@ -148,24 +167,52 @@ struct CoachView: View {
             .sheet(isPresented: $model.showRecipePicker) {
                 recipePicker
             }
+            .onChange(of: photoItem) { _, item in
+                guard let item else { return }
+                Task {
+                    if let data = try? await item.loadTransferable(type: Data.self),
+                       let image = UIImage(data: data) {
+                        await model.sendPhoto(image)
+                    }
+                    photoItem = nil
+                }
+            }
         }
     }
 
     private var composer: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Button {
-                model.showRecipePicker = true
-                Task { await model.searchRecipes() }
-            } label: {
-                Label("Recipe", systemImage: "book")
-                    .font(.caption.weight(.bold))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(Color.white)
-                    .clipShape(Capsule())
-                    .overlay(Capsule().stroke(HTTheme.roseBorder))
+            HStack(spacing: 8) {
+                Button {
+                    model.showRecipePicker = true
+                    Task { await model.searchRecipes() }
+                } label: {
+                    Label("Recipe", systemImage: "book")
+                        .font(.caption.weight(.bold))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color.white)
+                        .clipShape(Capsule())
+                        .overlay(Capsule().stroke(HTTheme.roseBorder))
+                }
+                .foregroundStyle(HTTheme.forest)
+
+                PhotosPicker(selection: $photoItem, matching: .images) {
+                    Label(model.uploading ? "Sending…" : "Photo", systemImage: "photo")
+                        .font(.caption.weight(.bold))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color.white)
+                        .clipShape(Capsule())
+                        .overlay(Capsule().stroke(HTTheme.roseBorder))
+                }
+                .disabled(model.uploading)
+                .foregroundStyle(HTTheme.forest)
             }
-            .foregroundStyle(HTTheme.forest)
+
+            if let err = model.errorMessage {
+                Text(err).font(.caption).foregroundStyle(.red)
+            }
 
             HStack(alignment: .bottom) {
                 TextField("Write to Lee Anne…", text: $model.draft, axis: .vertical)

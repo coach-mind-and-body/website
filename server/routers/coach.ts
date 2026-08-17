@@ -5,6 +5,7 @@ import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { conversations, messages } from "../../drizzle/schema";
 import { notifyAdmins } from "./push";
+import { storagePut } from "../storage";
 
 const COACH_NAME = "Lee Anne";
 
@@ -111,6 +112,31 @@ export const coachRouter = router({
       })),
     };
   }),
+
+  uploadPhoto: protectedProcedure
+    .input(
+      z.object({
+        mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+        base64Data: z.string().min(20),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const raw = input.base64Data.replace(/^data:image\/\w+;base64,/, "");
+      const buffer = Buffer.from(raw, "base64");
+      if (!buffer.length) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Empty image" });
+      }
+      if (buffer.length > 6 * 1024 * 1024) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Photo must be under 6 MB" });
+      }
+      const ext = input.mimeType === "image/png" ? "png" : input.mimeType === "image/webp" ? "webp" : "jpg";
+      const { url } = await storagePut(
+        `coach-chat/${ctx.user.id}/${Date.now()}.${ext}`,
+        buffer,
+        input.mimeType
+      );
+      return { url };
+    }),
 
   send: protectedProcedure
     .input(

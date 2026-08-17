@@ -216,6 +216,15 @@ struct SendCoachInput: Encodable {
     var mediaUrl: String?
 }
 
+struct CoachPhotoInput: Encodable {
+    let mimeType: String
+    let base64Data: String
+}
+
+struct CoachPhotoResult: Decodable {
+    let url: String
+}
+
 struct FavoriteInput: Encodable {
     let recipeId: Int
 }

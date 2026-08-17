@@ -8,6 +8,7 @@ struct HabitsView: View {
     @State private var mindfulMinutes = 2
     @State private var mindfulRemaining = 0
     @State private var mindfulRunning = false
+    @State private var showForYou = false
 
     var body: some View {
         NavigationStack {
@@ -43,6 +44,9 @@ struct HabitsView: View {
             }
             .sheet(isPresented: $showMindful) {
                 mindfulSheet
+            }
+            .sheet(isPresented: $showForYou) {
+                forYouSheet
             }
         }
     }
@@ -121,16 +125,7 @@ struct HabitsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 healthStrip
-                if let insight = model.insight, let headline = insight.headline {
-                    HTCard {
-                        Text("This week").font(.caption2.weight(.bold)).foregroundStyle(HTTheme.gold).textCase(.uppercase)
-                        Text(headline).font(.headline).foregroundStyle(HTTheme.forest)
-                        if let body = insight.body { Text(body).font(.subheadline).foregroundStyle(HTTheme.muted) }
-                    }
-                }
-                updatesSection
-                challengeChips
-                challengesSection
+                forYouRow
                 habitsCard
                 victoriesCard
             }
@@ -160,6 +155,95 @@ struct HabitsView: View {
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(HTTheme.roseBorder))
+    }
+
+    private var forYouRow: some View {
+        let unread = model.unreadUpdateCount
+        let featured = model.featuredChallenges.first
+        let done = featured.map { model.challengeDoneToday($0) } ?? false
+        let show = unread > 0 || featured != nil || !model.challenges.isEmpty
+        return Group {
+            if show {
+                Button {
+                    model.showUpdates = model.unreadUpdateCount > 0
+                    model.showChallenges = true
+                    showForYou = true
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: unread > 0 ? "megaphone.fill" : "target")
+                            .foregroundStyle(HTTheme.gold)
+                        VStack(alignment: .leading, spacing: 2) {
+                            if unread > 0 {
+                                Text("From Lee Anne")
+                                    .font(.subheadline.weight(.bold))
+                                    .foregroundStyle(HTTheme.forest)
+                                Text(unread == 1 ? "1 new note" : "\(unread) new notes")
+                                    .font(.caption)
+                                    .foregroundStyle(HTTheme.muted)
+                            } else if let featured {
+                                Text(featured.title)
+                                    .font(.subheadline.weight(.bold))
+                                    .foregroundStyle(HTTheme.forest)
+                                Text(done ? "Done today" : "Challenge")
+                                    .font(.caption)
+                                    .foregroundStyle(HTTheme.muted)
+                            } else {
+                                Text("Challenges & notes")
+                                    .font(.subheadline.weight(.bold))
+                                    .foregroundStyle(HTTheme.forest)
+                            }
+                        }
+                        Spacer()
+                        if unread > 0 {
+                            Text("\(unread)")
+                                .font(.caption2.weight(.bold))
+                                .padding(.horizontal, 7)
+                                .padding(.vertical, 3)
+                                .background(HTTheme.gold)
+                                .foregroundStyle(.white)
+                                .clipShape(Capsule())
+                        }
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(HTTheme.muted)
+                    }
+                    .padding(14)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 18))
+                    .overlay(RoundedRectangle(cornerRadius: 18).stroke(HTTheme.roseBorder))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private var forYouSheet: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    if let insight = model.insight, let headline = insight.headline {
+                        HTCard {
+                            Text("This week").font(.caption2.weight(.bold)).foregroundStyle(HTTheme.gold).textCase(.uppercase)
+                            Text(headline).font(.headline).foregroundStyle(HTTheme.forest)
+                            if let body = insight.body { Text(body).font(.subheadline).foregroundStyle(HTTheme.muted) }
+                        }
+                    }
+                    updatesSection
+                    challengeChips
+                    challengesSection
+                }
+                .padding(16)
+            }
+            .background(HTTheme.cream.ignoresSafeArea())
+            .navigationTitle("For you")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { showForYou = false }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
     }
 
     private var updatesSection: some View {
