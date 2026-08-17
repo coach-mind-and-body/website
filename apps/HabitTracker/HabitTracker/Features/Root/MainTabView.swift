@@ -26,7 +26,7 @@ struct MainTabView: View {
     }
 
     var body: some View {
-        ZStack {
+        ZStack(alignment: .bottom) {
             HTTheme.cream.ignoresSafeArea()
             Group {
                 switch tab {
@@ -60,12 +60,9 @@ struct MainTabView: View {
                     .safeAreaPadding(.top)
                 }
             }
-            .safeAreaPadding(.bottom)
             .padding(.bottom, HTTheme.bottomBarClearance)
-            .overlay(alignment: .bottom) {
-                tabBar
-                    .safeAreaPadding(.bottom)
-            }
+            tabBar
+                .padding(.bottom, 10)
         }
         .environment(\.openProfile) { tab = .profile }
         .tint(HTTheme.forest)

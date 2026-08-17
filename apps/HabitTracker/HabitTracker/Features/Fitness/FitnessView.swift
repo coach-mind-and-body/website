@@ -153,15 +153,48 @@ struct FitnessView: View {
                     chip("Stretch", 10)
                 }
 
-                HStack {
+                VStack(alignment: .leading, spacing: 10) {
                     TextField("What did you do?", text: $model.name)
                         .padding(10)
                         .background(Color.white)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
-                    Stepper("\(model.minutes)m", value: $model.minutes, in: 5...120, step: 5)
-                    Button("Log") { Task { await model.add(name: model.name, minutes: model.minutes); model.name = "" } }
+                    HStack(spacing: 10) {
+                        Button {
+                            model.minutes = max(1, model.minutes - 5)
+                        } label: {
+                            Image(systemName: "minus.circle.fill")
+                                .font(.title2)
+                                .foregroundStyle(HTTheme.forest)
+                        }
+                        TextField("", value: $model.minutes, format: .number)
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.center)
+                            .font(.headline)
+                            .foregroundStyle(HTTheme.forest)
+                            .padding(.vertical, 8)
+                            .frame(width: 56)
+                            .background(Color.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(HTTheme.roseBorder))
+                        Text("min")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(HTTheme.muted)
+                        Button {
+                            model.minutes = min(300, model.minutes + 5)
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.title2)
+                                .foregroundStyle(HTTheme.forest)
+                        }
+                        Spacer()
+                        Button("Log") {
+                            let mins = min(300, max(1, model.minutes))
+                            model.minutes = mins
+                            Task { await model.add(name: model.name, minutes: mins); model.name = "" }
+                        }
                         .font(.headline)
                         .foregroundStyle(HTTheme.forest)
+                    }
                 }
 
                 ForEach(model.logs) { log in
