@@ -132,7 +132,10 @@ final class FoodViewModel {
 
     func favorite(_ recipe: Recipe) async {
         guard auth.isSignedIn else { return }
-        _ = try? await auth.client.mutate("food.toggleFavorite", input: FavoriteInput(recipeId: recipe.id))
+        _ = try? await auth.client.mutate(
+            "food.toggleFavorite",
+            input: FavoriteInput(recipeId: recipe.id)
+        ) as FavoriteResult
         await loadRecipes()
     }
 }
