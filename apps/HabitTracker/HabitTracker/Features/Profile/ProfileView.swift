@@ -52,7 +52,10 @@ struct ProfileView: View {
                     Toggle("Share habits with Lee Anne", isOn: $shareWithCoach)
                         .onChange(of: shareWithCoach) { _, on in
                             Task {
-                                _ = try? await auth.client.mutate("habit.toggleShareHabits", input: ShareInput(share: on))
+                                _ = try? await auth.client.mutate(
+                                    "habit.toggleShareHabits",
+                                    input: ShareInput(share: on)
+                                ) as SuccessFlag
                             }
                         }
                 }
