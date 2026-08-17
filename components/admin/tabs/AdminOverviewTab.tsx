@@ -356,7 +356,7 @@ export function AdminOverviewTab() {
             </button>
           </div>
           <div className="space-y-2">
-            {(activeConversations ?? []).slice(0, 5).map((conv) => (
+            {(activeConversations ?? []).slice(0, 12).map((conv) => (
               <button
                 key={conv.id}
                 onClick={() =>
@@ -364,16 +364,26 @@ export function AdminOverviewTab() {
                     conversationId: conv.id,
                     userId: conv.userId,
                     contactPhone: conv.contactPhone,
-                    userName: conv.userName || conv.contactPhone,
+                    userName: conv.userName || conv.contactEmail || conv.contactPhone,
                   })
                 }
                 className="w-full flex items-center justify-between p-4 rounded-xl shadow-sm text-left hover:-translate-y-0.5 transition-transform"
                 style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.015 80)" }}
               >
                 <div className="min-w-0 flex-1 pr-4">
-                  <p className="font-semibold text-sm truncate" style={{ color: "oklch(0.20 0.015 50)" }}>
-                    {conv.userName || conv.contactPhone}
-                  </p>
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <p className="font-semibold text-sm truncate" style={{ color: "oklch(0.20 0.015 50)" }}>
+                      {conv.userName || conv.contactEmail || conv.contactPhone || "In-app client"}
+                    </p>
+                    {conv.platform === "webchat" && (
+                      <span
+                        className="shrink-0 text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full"
+                        style={{ background: "oklch(0.93 0.04 148)", color: "oklch(0.38 0.10 148)" }}
+                      >
+                        In-app
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs truncate" style={{ color: "oklch(0.52 0.015 50)" }}>
                     {conv.lastMessagePreview || "No messages"}
                   </p>

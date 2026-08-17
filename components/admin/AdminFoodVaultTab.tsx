@@ -33,7 +33,8 @@ export function AdminFoodVaultTab() {
         Food Vault
       </h2>
       <p className="mb-8" style={{ color: "oklch(0.52 0.015 50)" }}>
-        Coach recipes, weekly meal plans, client assignments, and FatSecret import.
+        Recipes and weeks live here. Assign a plan under Assign. In-app coach messages show on Overview → Recent
+        Messages (green &quot;In-app&quot; badge) — click one to reply.
       </p>
 
       <div

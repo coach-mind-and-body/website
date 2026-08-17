@@ -34,7 +34,8 @@ export default function CoachChatClient() {
   const { isAuthenticated, loading: authLoading, user } = useAuth();
   const utils = trpc.useUtils();
   const [draft, setDraft] = useState("");
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const didInitScroll = useRef(false);
 
   const { data, isLoading, refetch } = trpc.coach.getThread.useQuery(undefined, {
     enabled: isAuthenticated,
@@ -64,7 +65,18 @@ export default function CoachChatClient() {
   }, [isAuthenticated, data?.conversationId, data?.messages.length]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el || !data?.messages.length) return;
+    if (!didInitScroll.current) {
+      didInitScroll.current = true;
+      el.scrollTop = 0;
+      return;
+    }
+    el.scrollTop = el.scrollHeight;
   }, [data?.messages.length]);
 
   const onSend = () => {
@@ -131,7 +143,7 @@ export default function CoachChatClient() {
           className="bg-white rounded-3xl border overflow-hidden flex flex-col"
           style={{ borderColor: BORDER, minHeight: "22rem" }}
         >
-          <div className="flex-1 px-4 py-4 space-y-3 max-h-[55vh] overflow-y-auto">
+          <div ref={listRef} className="flex-1 px-4 py-4 space-y-3 max-h-[55vh] overflow-y-auto">
             {isLoading ? (
               <div className="flex justify-center py-12">
                 <Loader2 className="animate-spin" style={{ color: GOLD }} />
@@ -164,7 +176,6 @@ export default function CoachChatClient() {
                 );
               })
             )}
-            <div ref={bottomRef} />
           </div>
 
           <div className="border-t p-3 flex gap-2 items-end" style={{ borderColor: BORDER }}>
