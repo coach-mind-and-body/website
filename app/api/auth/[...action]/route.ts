@@ -19,7 +19,7 @@ function generateToken(bytes = 32): string {
   return crypto.randomBytes(bytes).toString("hex");
 }
 
-function makeOpenId(provider: "email" | "google", identifier: string): string {
+function makeOpenId(provider: "email" | "google" | "apple", identifier: string): string {
   return `${provider}:${identifier}`;
 }
 
@@ -218,6 +218,48 @@ export async function POST(req: Request, { params }: { params: Promise<{ action:
     }
   }
 
+  if (actionPath === "apple") {
+    try {
+      const { identityToken, name } = await req.json();
+      if (!identityToken || typeof identityToken !== "string") {
+        return NextResponse.json({ error: "Missing Apple identity token" }, { status: 400 });
+      }
+      const { createRemoteJWKSet, jwtVerify } = await import("jose");
+      const jwks = createRemoteJWKSet(new URL("https://appleid.apple.com/auth/keys"));
+      const { payload } = await jwtVerify(identityToken, jwks, {
+        issuer: "https://appleid.apple.com",
+        audience: [
+          "com.mindandbodyreset.habittracker",
+          ENV.appId,
+        ].filter(Boolean),
+      });
+      const sub = typeof payload.sub === "string" ? payload.sub : "";
+      const email = typeof payload.email === "string" ? payload.email : "";
+      if (!sub) return NextResponse.json({ error: "Invalid Apple token" }, { status: 401 });
+
+      const openId = makeOpenId("apple", sub);
+      const displayName =
+        (typeof name === "string" && name.trim()) ||
+        (email ? email.split("@")[0] : "Apple user");
+      const user = await upsertLocalUser({
+        openId,
+        name: displayName,
+        email: email || `apple-${sub.slice(0, 12)}@privaterelay.appleid.com`,
+        loginMethod: "apple",
+        emailVerified: true,
+      });
+      const sessionToken = await issueSession(user.openId, user.name || displayName);
+      return NextResponse.json({
+        success: true,
+        sessionToken,
+        user: { id: user.id, name: user.name, email: user.email, role: user.role },
+      });
+    } catch (err) {
+      console.error("[Auth] Apple sign-in error", err);
+      return NextResponse.json({ error: "Apple sign-in failed" }, { status: 401 });
+    }
+  }
+
   return NextResponse.json({ error: "Not found" }, { status: 404 });
 }
 
@@ -252,7 +294,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ action: 
     const rawReturn =
       url.searchParams.get("returnTo") || url.searchParams.get("redirect") || "";
     let postLoginRedirect: string | undefined;
-    if (
+    let mobileRedirect: string | undefined;
+    if (rawReturn.startsWith("habittracker://")) {
+      mobileRedirect = rawReturn;
+    } else if (
       rawReturn.startsWith("/") &&
       !rawReturn.startsWith("//") &&
       !rawReturn.includes("://")
@@ -260,7 +305,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ action: 
       postLoginRedirect = rawReturn;
     }
     const state = Buffer.from(
-      JSON.stringify({ redirectUri, postLoginRedirect })
+      JSON.stringify({ redirectUri, postLoginRedirect, mobileRedirect })
     ).toString("base64url");
 
     const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
@@ -286,10 +331,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ action: 
 
       let redirectUri = `${origin}/api/auth/google/callback`;
       let statePostLoginRedirect = undefined;
+      let mobileRedirect: string | undefined;
       try {
         const stateData = JSON.parse(Buffer.from(stateParam || '', "base64url").toString());
         if (stateData.redirectUri) redirectUri = stateData.redirectUri;
         if (stateData.postLoginRedirect) statePostLoginRedirect = stateData.postLoginRedirect;
+        if (typeof stateData.mobileRedirect === "string" && stateData.mobileRedirect.startsWith("habittracker://")) {
+          mobileRedirect = stateData.mobileRedirect;
+        }
       } catch (_) {}
 
       const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
@@ -331,7 +380,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ action: 
           ? statePostLoginRedirect
           : null) || (user.role === "admin" ? "/admin" : "/portal");
       if (user.role === "admin") postLoginRedirect = "/admin";
-      await issueSession(user.openId, user.name || googleUser.name || "");
+      const sessionToken = await issueSession(user.openId, user.name || googleUser.name || "");
+
+      if (mobileRedirect) {
+        const appUrl = new URL(mobileRedirect);
+        appUrl.searchParams.set("token", sessionToken);
+        return NextResponse.redirect(appUrl.toString());
+      }
 
       const resUrl = new URL(postLoginRedirect, origin);
       return NextResponse.redirect(resUrl);

@@ -74,6 +74,23 @@ actor TRPCClient {
         return try JSONDecoder().decode(AuthResponse.self, from: data)
     }
 
+    func apple(identityToken: String, name: String?) async throws -> AuthResponse {
+        var request = URLRequest(url: AppConfig.apiRoot.appending(path: "api/auth/apple"))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        struct Body: Encodable { let identityToken: String; let name: String? }
+        request.httpBody = try JSONEncoder().encode(Body(identityToken: identityToken, name: name))
+        let (data, response) = try await URLSession.shared.data(for: request)
+        let http = response as? HTTPURLResponse
+        if let code = http?.statusCode, code >= 400 {
+            if let obj = try? JSONDecoder().decode(ErrorBody.self, from: data) {
+                throw APIError.server(obj.error)
+            }
+            throw APIError.http(code, String(data: data, encoding: .utf8) ?? "")
+        }
+        return try JSONDecoder().decode(AuthResponse.self, from: data)
+    }
+
     func signup(name: String, email: String, password: String) async throws -> AuthResponse {
         var request = URLRequest(url: AppConfig.signupURL)
         request.httpMethod = "POST"

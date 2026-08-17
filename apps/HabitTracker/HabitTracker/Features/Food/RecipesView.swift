@@ -120,8 +120,7 @@ struct RecipeDetailView: View {
                         }
                     }
 
-                    if auth.isSignedIn {
-                        Picker("Meal", selection: $meal) {
+                    Picker("Meal", selection: $meal) {
                             Text("Breakfast").tag("breakfast")
                             Text("Lunch").tag("lunch")
                             Text("Dinner").tag("dinner")
@@ -138,8 +137,10 @@ struct RecipeDetailView: View {
                         .buttonStyle(.borderedProminent)
                         .tint(HTTheme.forest)
                         .disabled(logged)
-                    } else {
-                        Text("Sign in to log this meal.").font(.caption).foregroundStyle(HTTheme.muted)
+                    if !auth.isSignedIn {
+                        Text("Saved on this iPhone. Sign in under You to sync.")
+                            .font(.caption)
+                            .foregroundStyle(HTTheme.muted)
                     }
                 }
                 .padding(16)

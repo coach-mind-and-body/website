@@ -12,6 +12,7 @@
 		A3EBF0BEC6DA8F413074753C /* HabitTracker/Core/AppGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23CF8436392F6B6EE543D238 /* HabitTracker/Core/AppGroup.swift */; };
 		03FFD4BE053B197D4159D3B6 /* HabitTracker/Core/Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C58044D3B055E28F45FD56D4 /* HabitTracker/Core/Theme.swift */; };
 		2973E27B5DACCDA261C7F1B4 /* HabitTracker/Core/KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E7C70699A277E64749959D0 /* HabitTracker/Core/KeychainStore.swift */; };
+		ECEB72280CA7224BC1D98F07 /* HabitTracker/Core/GuestLocalStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E5A85FE1EB9073BCED1396D /* HabitTracker/Core/GuestLocalStore.swift */; };
 		42CBBFFE0375886BBD7DBD09 /* HabitTracker/Core/Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3BC2B1B669EA2FB0EC7B4E9 /* HabitTracker/Core/Models.swift */; };
 		BEE3C5B09A97FC4212E50F06 /* HabitTracker/Core/API/SuperJSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75C8E276C97768BA12D7AD95 /* HabitTracker/Core/API/SuperJSON.swift */; };
 		DB7041E67AF6C061D709E83E /* HabitTracker/Core/API/APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94B7771742CB5F2D33E8006E /* HabitTracker/Core/API/APIError.swift */; };
@@ -61,6 +62,7 @@
 		23CF8436392F6B6EE543D238 /* HabitTracker/Core/AppGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Core/AppGroup.swift; sourceTree = "<group>"; };
 		C58044D3B055E28F45FD56D4 /* HabitTracker/Core/Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Core/Theme.swift; sourceTree = "<group>"; };
 		8E7C70699A277E64749959D0 /* HabitTracker/Core/KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Core/KeychainStore.swift; sourceTree = "<group>"; };
+		1E5A85FE1EB9073BCED1396D /* HabitTracker/Core/GuestLocalStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Core/GuestLocalStore.swift; sourceTree = "<group>"; };
 		F3BC2B1B669EA2FB0EC7B4E9 /* HabitTracker/Core/Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Core/Models.swift; sourceTree = "<group>"; };
 		75C8E276C97768BA12D7AD95 /* HabitTracker/Core/API/SuperJSON.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Core/API/SuperJSON.swift; sourceTree = "<group>"; };
 		94B7771742CB5F2D33E8006E /* HabitTracker/Core/API/APIError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Core/API/APIError.swift; sourceTree = "<group>"; };
@@ -121,6 +123,7 @@
 				23CF8436392F6B6EE543D238 /* HabitTracker/Core/AppGroup.swift */,
 				C58044D3B055E28F45FD56D4 /* HabitTracker/Core/Theme.swift */,
 				8E7C70699A277E64749959D0 /* HabitTracker/Core/KeychainStore.swift */,
+				1E5A85FE1EB9073BCED1396D /* HabitTracker/Core/GuestLocalStore.swift */,
 				F3BC2B1B669EA2FB0EC7B4E9 /* HabitTracker/Core/Models.swift */,
 				75C8E276C97768BA12D7AD95 /* HabitTracker/Core/API/SuperJSON.swift */,
 				94B7771742CB5F2D33E8006E /* HabitTracker/Core/API/APIError.swift */,
@@ -255,6 +258,7 @@
 				A3EBF0BEC6DA8F413074753C /* HabitTracker/Core/AppGroup.swift in Sources */,
 				03FFD4BE053B197D4159D3B6 /* HabitTracker/Core/Theme.swift in Sources */,
 				2973E27B5DACCDA261C7F1B4 /* HabitTracker/Core/KeychainStore.swift in Sources */,
+				ECEB72280CA7224BC1D98F07 /* HabitTracker/Core/GuestLocalStore.swift in Sources */,
 				42CBBFFE0375886BBD7DBD09 /* HabitTracker/Core/Models.swift in Sources */,
 				BEE3C5B09A97FC4212E50F06 /* HabitTracker/Core/API/SuperJSON.swift in Sources */,
 				DB7041E67AF6C061D709E83E /* HabitTracker/Core/API/APIError.swift in Sources */,
@@ -344,8 +348,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HabitTracker/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Habit Tracker";
-				INFOPLIST_KEY_UIBackgroundModes = "remote-notification fetch";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Take a photo of a meal so we can estimate protein and extras. You can always type it instead.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Habit Tracker reads steps, sleep, and weight from Apple Health to fill in your day. This is a coaching tool, not medical advice. We do not sell Health data.";
@@ -372,8 +376,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HabitTracker/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Habit Tracker";
-				INFOPLIST_KEY_UIBackgroundModes = "remote-notification fetch";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Take a photo of a meal so we can estimate protein and extras. You can always type it instead.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Habit Tracker reads steps, sleep, and weight from Apple Health to fill in your day. This is a coaching tool, not medical advice. We do not sell Health data.";
@@ -399,7 +403,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = HabitTrackerWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Today";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
@@ -418,7 +421,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = HabitTrackerWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Today";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";

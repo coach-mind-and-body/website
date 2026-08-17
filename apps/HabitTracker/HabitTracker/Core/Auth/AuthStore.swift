@@ -76,6 +76,34 @@ final class AuthStore {
         }
     }
 
+    func signInWithApple(identityToken: String, name: String?) async {
+        errorMessage = nil
+        do {
+            let res = try await client.apple(identityToken: identityToken, name: name)
+            guard let tok = res.sessionToken, let u = res.user else {
+                errorMessage = "Apple sign-in did not return a session."
+                return
+            }
+            apply(token: tok, user: u)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func applyTokenOnly(_ token: String) async {
+        errorMessage = nil
+        self.token = token
+        KeychainStore.saveToken(token)
+        await client.setToken(token)
+        if let me = try? await loadMeOptional() {
+            user = me
+        } else if let me = try? await client.query("auth.me") as AuthUser {
+            user = me
+        } else {
+            errorMessage = "Signed in, but the profile did not load."
+        }
+    }
+
     func signOut() {
         KeychainStore.deleteToken()
         token = nil

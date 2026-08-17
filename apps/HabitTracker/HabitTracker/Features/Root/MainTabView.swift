@@ -129,10 +129,8 @@ struct RootView: View {
                 ProgressView("Loading")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(HTTheme.cream.ignoresSafeArea())
-            } else if auth.isSignedIn {
-                MainTabView(auth: auth, health: health)
             } else {
-                LoginView(auth: auth)
+                MainTabView(auth: auth, health: health)
             }
         }
         .task { await auth.restore() }

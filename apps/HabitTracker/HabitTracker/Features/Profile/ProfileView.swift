@@ -5,15 +5,25 @@ struct ProfileView: View {
     @Bindable var health: HealthKitService
     @State private var notifyOn = false
     @State private var shareWithCoach = false
+    @State private var showLogin = false
 
     var body: some View {
         NavigationStack {
             List {
                 Section {
-                    Text(auth.user?.name ?? "Signed in")
-                        .font(.headline)
-                    if let email = auth.user?.email {
-                        Text(email).foregroundStyle(HTTheme.muted)
+                    if auth.isSignedIn {
+                        Text(auth.user?.name ?? "Signed in")
+                            .font(.headline)
+                        if let email = auth.user?.email {
+                            Text(email).foregroundStyle(HTTheme.muted)
+                        }
+                    } else {
+                        Text("On this iPhone")
+                            .font(.headline)
+                        Text("Sign in to sync, message Lee Anne, and save a shopping list.")
+                            .font(.caption)
+                            .foregroundStyle(HTTheme.muted)
+                        Button("Sign in or create account") { showLogin = true }
                     }
                 }
 
@@ -48,24 +58,31 @@ struct ProfileView: View {
                         }
                 }
 
-                Section("Coach") {
-                    Toggle("Share habits with Lee Anne", isOn: $shareWithCoach)
-                        .onChange(of: shareWithCoach) { _, on in
-                            Task {
-                                _ = try? await auth.client.mutate(
-                                    "habit.toggleShareHabits",
-                                    input: ShareInput(share: on)
-                                ) as SuccessFlag
+                if auth.isSignedIn {
+                    Section("Coach") {
+                        Toggle("Share habits with Lee Anne", isOn: $shareWithCoach)
+                            .onChange(of: shareWithCoach) { _, on in
+                                Task {
+                                    _ = try? await auth.client.mutate(
+                                        "habit.toggleShareHabits",
+                                        input: ShareInput(share: on)
+                                    ) as SuccessFlag
+                                }
                             }
-                        }
+                    }
                 }
 
                 Section {
                     Link("Privacy policy", destination: AppConfig.privacyURL)
-                    Button("Sign out", role: .destructive) { auth.signOut() }
+                    if auth.isSignedIn {
+                        Button("Sign out", role: .destructive) { auth.signOut() }
+                    }
                 }
             }
-            .navigationTitle("Profile")
+            .navigationTitle("You")
+            .sheet(isPresented: $showLogin) {
+                LoginView(auth: auth, allowsSkip: true)
+            }
             .task { await health.refreshToday() }
         }
     }

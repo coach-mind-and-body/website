@@ -12,6 +12,7 @@ APP_SWIFT = [
     "HabitTracker/Core/AppGroup.swift",
     "HabitTracker/Core/Theme.swift",
     "HabitTracker/Core/KeychainStore.swift",
+    "HabitTracker/Core/GuestLocalStore.swift",
     "HabitTracker/Core/Models.swift",
     "HabitTracker/Core/API/SuperJSON.swift",
     "HabitTracker/Core/API/APIError.swift",
@@ -311,6 +312,7 @@ def main() -> None:
 
     info_keys = """
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HabitTracker/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Habit Tracker";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Take a photo of a meal so we can estimate protein and extras. You can always type it instead.";
