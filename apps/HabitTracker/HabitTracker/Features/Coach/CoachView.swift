@@ -123,43 +123,17 @@ struct CoachView: View {
                             proxy.scrollTo(last.id, anchor: .bottom)
                         }
                     }
-                }
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Button {
-                        model.showRecipePicker = true
-                        Task { await model.searchRecipes() }
-                    } label: {
-                        Label("Recipe", systemImage: "book")
-                            .font(.caption.weight(.bold))
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(Color.white)
-                            .clipShape(Capsule())
-                            .overlay(Capsule().stroke(HTTheme.roseBorder))
-                    }
-                    .foregroundStyle(HTTheme.forest)
-
-                    HStack(alignment: .bottom) {
-                        TextField("Write to Lee Anne…", text: $model.draft, axis: .vertical)
-                            .lineLimit(1...4)
-                            .padding(10)
-                            .background(Color.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
-                        Button {
-                            Task { await model.send() }
-                        } label: {
-                            Image(systemName: "arrow.up.circle.fill")
-                                .font(.system(size: 32))
-                                .foregroundStyle(HTTheme.forest)
+                    .onAppear {
+                        if let last = model.thread?.messages.last {
+                            proxy.scrollTo(last.id, anchor: .bottom)
                         }
-                        .disabled(model.isSending || model.draft.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
                 }
-                .padding(12)
-                .background(HTTheme.cream)
             }
-            .background(HTTheme.cream.ignoresSafeArea())
+            .background(HTTheme.cream)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                composer
+            }
             .navigationTitle(model.thread?.coachName ?? "Coach")
             .navigationDestination(for: String.self) { slug in
                 RecipeDetailView(slug: slug, food: FoodViewModel(auth: auth), auth: auth)
@@ -169,6 +143,45 @@ struct CoachView: View {
                 recipePicker
             }
         }
+    }
+
+    private var composer: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Button {
+                model.showRecipePicker = true
+                Task { await model.searchRecipes() }
+            } label: {
+                Label("Recipe", systemImage: "book")
+                    .font(.caption.weight(.bold))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.white)
+                    .clipShape(Capsule())
+                    .overlay(Capsule().stroke(HTTheme.roseBorder))
+            }
+            .foregroundStyle(HTTheme.forest)
+
+            HStack(alignment: .bottom) {
+                TextField("Write to Lee Anne…", text: $model.draft, axis: .vertical)
+                    .lineLimit(1...4)
+                    .padding(10)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                Button {
+                    Task { await model.send() }
+                } label: {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .font(.system(size: 32))
+                        .foregroundStyle(HTTheme.forest)
+                }
+                .disabled(model.isSending || model.draft.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.top, 10)
+        .padding(.bottom, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(HTTheme.cream)
     }
 
     private var recipePicker: some View {

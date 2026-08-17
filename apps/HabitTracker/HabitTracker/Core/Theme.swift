@@ -9,6 +9,8 @@ enum HTTheme {
 
     static let serif = Font.system(.largeTitle, design: .serif).weight(.bold)
     static let title = Font.system(.title, design: .serif).weight(.bold)
+    /// Height of the floating pill + coach circle, not counting the home indicator.
+    static let bottomBarClearance: CGFloat = 78
 }
 
 private struct OpenProfileKey: EnvironmentKey {

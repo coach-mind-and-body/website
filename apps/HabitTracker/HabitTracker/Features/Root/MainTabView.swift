@@ -60,11 +60,14 @@ struct MainTabView: View {
                 }
                 .safeAreaPadding(.top)
             }
+            .safeAreaPadding(.bottom)
+            .padding(.bottom, HTTheme.bottomBarClearance)
+            .overlay(alignment: .bottom) {
+                tabBar
+                    .safeAreaPadding(.bottom)
+            }
         }
         .environment(\.openProfile) { tab = .profile }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            tabBar
-        }
         .tint(HTTheme.forest)
         .task {
             await coach.refreshUnread()
