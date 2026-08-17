@@ -21,7 +21,7 @@ struct MainTabView: View {
         _habits = State(initialValue: HabitsViewModel(auth: auth, health: health))
         _food = State(initialValue: FoodViewModel(auth: auth))
         _coach = State(initialValue: CoachViewModel(auth: auth))
-        _fitness = State(initialValue: FitnessViewModel(auth: auth))
+        _fitness = State(initialValue: FitnessViewModel(auth: auth, health: health))
         _podcast = State(initialValue: PodcastViewModel(auth: auth))
     }
 
@@ -229,7 +229,7 @@ struct HealthPermissionView: View {
                 Text("Apple Health")
                     .font(HTTheme.serif)
                     .foregroundStyle(HTTheme.forest)
-                Text("With your permission, Habit Tracker reads exercise minutes, workouts, mindful minutes, last night’s sleep, steps, and weight. Move Body (20m+), Mindful Minutes, and Restful Sleep (7h+) can check themselves from Apple Health. You choose what to share. We never sell Health data. This is a coaching tool, not a medical device.")
+                Text("With your permission, Habit Tracker reads exercise, workouts, mindful minutes, sleep, steps, and weight — and writes back workouts and mindful sessions you start here, so Apple Health stays in sync. Move Body, Mindful Minutes, and Restful Sleep can check themselves. We never sell Health data. This is a coaching tool, not a medical device.")
                     .foregroundStyle(HTTheme.muted)
                 if let err = health.lastError {
                     Text(err).foregroundStyle(.red).font(.caption)

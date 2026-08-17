@@ -41,6 +41,7 @@ final class HabitsViewModel {
     private let auth: AuthStore
     private let health: HealthKitService
     private var didMergeGuest = false
+    private var skipHealthWrite = false
     var sessionEpoch: Int { auth.sessionEpoch }
 
     init(auth: AuthStore, health: HealthKitService) {
@@ -245,12 +246,31 @@ final class HabitsViewModel {
                     )
                 )
                 await load()
+                if next, !skipHealthWrite { await writeHealthIfNeeded(habit, on: day) }
             } catch {
                 errorMessage = error.localizedDescription
             }
             return
         }
         upsertGuestLog(habitId: habit.id, day: day, completed: next, numeric: current?.numericValue)
+        if next, !skipHealthWrite { await writeHealthIfNeeded(habit, on: day) }
+    }
+
+    func startMindfulSession(minutes: Int) async {
+        await health.saveMindfulSession(minutes: Double(minutes), on: dateStr)
+        skipHealthWrite = true
+        defer { skipHealthWrite = false }
+        if let habit = habits.first(where: { $0.title.lowercased().contains("mindful") }) {
+            await completeFromHealth(habit, numeric: habit.isNumeric ? minutes : nil)
+        }
+    }
+
+    private func writeHealthIfNeeded(_ habit: Habit, on day: String) async {
+        let key = habit.title.lowercased()
+        if key.contains("mindful") {
+            let mins = habit.isNumeric ? max(numericValue(habit, on: day), 1) : 1
+            await health.saveMindfulSession(minutes: Double(mins), on: day)
+        }
     }
 
     func setNumeric(_ habit: Habit, value: Int, on day: String? = nil) async {

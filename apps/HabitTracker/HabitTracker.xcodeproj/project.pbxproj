@@ -370,7 +370,7 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Take a photo of a meal so we can estimate protein and extras. You can always type it instead.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Habit Tracker reads steps, exercise minutes, workouts, mindful minutes, last night's sleep, and weight from Apple Health so Move Body, Mindful Minutes, and Restful Sleep can fill themselves in. This is a coaching tool, not medical advice. We do not sell Health data.";
-				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Habit Tracker does not write workouts unless you choose to in a later version.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "When you log a walk, workout, or mindful minutes in Habit Tracker, we save that session to Apple Health so your rings and Mindfulness stay in sync. We never sell Health data.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Attach an existing meal photo if you prefer not to use the camera.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -398,7 +398,7 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Take a photo of a meal so we can estimate protein and extras. You can always type it instead.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Habit Tracker reads steps, exercise minutes, workouts, mindful minutes, last night's sleep, and weight from Apple Health so Move Body, Mindful Minutes, and Restful Sleep can fill themselves in. This is a coaching tool, not medical advice. We do not sell Health data.";
-				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Habit Tracker does not write workouts unless you choose to in a later version.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "When you log a walk, workout, or mindful minutes in Habit Tracker, we save that session to Apple Health so your rings and Mindfulness stay in sync. We never sell Health data.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Attach an existing meal photo if you prefer not to use the camera.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";

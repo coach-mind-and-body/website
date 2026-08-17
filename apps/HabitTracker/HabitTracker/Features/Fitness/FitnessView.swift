@@ -14,9 +14,13 @@ final class FitnessViewModel {
     var category = "All"
     var errorMessage: String?
     private let auth: AuthStore
+    private let health: HealthKitService
     var sessionEpoch: Int { auth.sessionEpoch }
 
-    init(auth: AuthStore) { self.auth = auth }
+    init(auth: AuthStore, health: HealthKitService) {
+        self.auth = auth
+        self.health = health
+    }
 
     var minutesToday: Int { logs.reduce(0) { $0 + $1.durationMinutes } }
 
@@ -55,6 +59,7 @@ final class FitnessViewModel {
                     "fitness.addLog",
                     input: FitnessAddInput(dateStr: dateStr, exerciseName: trimmed, durationMinutes: minutes)
                 )
+                await health.saveWorkout(named: trimmed, minutes: minutes, on: dateStr)
                 await load()
             } catch {
                 errorMessage = error.localizedDescription
@@ -76,6 +81,7 @@ final class FitnessViewModel {
         )
         GuestLocalStore.saveFitness(all)
         logs = all.filter { $0.dateStr == dateStr }
+        await health.saveWorkout(named: trimmed, minutes: minutes, on: dateStr)
     }
 
     func delete(_ log: FitnessLog) async {
@@ -134,8 +140,11 @@ struct FitnessView: View {
                 .foregroundStyle(HTTheme.gold)
 
                 Text("\(model.minutesToday) min today")
-                    .font(HTTheme.serif)
+                    .font(HTTheme.title)
                     .foregroundStyle(HTTheme.forest)
+                Text("Walks and workouts you log here are saved to Apple Health.")
+                    .font(.caption)
+                    .foregroundStyle(HTTheme.muted)
 
                 HStack {
                     chip("Walk 10m", 10)

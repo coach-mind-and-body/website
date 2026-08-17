@@ -40,7 +40,7 @@ struct ProfileView: View {
                         if let kg = health.weightKg {
                             LabeledContent("Weight", value: String(format: "%.1f kg", kg))
                         }
-                        Text("We read steps, sleep, and weight to fill your day. We do not sell Health data. This is not a medical device.")
+                        Text("We read exercise, mindfulness, sleep, steps, and weight — and write workouts and mindful sessions you start here back to Apple Health. We do not sell Health data. This is not a medical device.")
                             .font(.caption)
                             .foregroundStyle(HTTheme.muted)
                     } else {

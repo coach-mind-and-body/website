@@ -21,6 +21,14 @@ final class HealthKitService {
     var moveBodyMet: Bool { moveMinutesToday >= 20 }
     var mindfulMet: Bool { mindfulMinutesToday >= 1 }
 
+    private var writeTypes: Set<HKSampleType> {
+        var set: Set<HKSampleType> = [HKObjectType.workoutType()]
+        if let mindful = HKObjectType.categoryType(forIdentifier: .mindfulSession) {
+            set.insert(mindful)
+        }
+        return set
+    }
+
     private var readTypes: Set<HKObjectType> {
         var set: Set<HKObjectType> = []
         if let s = HKObjectType.quantityType(forIdentifier: .stepCount) { set.insert(s) }
@@ -39,7 +47,7 @@ final class HealthKitService {
             return
         }
         do {
-            try await store.requestAuthorization(toShare: [], read: readTypes)
+            try await store.requestAuthorization(toShare: writeTypes, read: readTypes)
             authorizationAsked = true
             await refreshToday()
         } catch {
@@ -63,6 +71,51 @@ final class HealthKitService {
         weightKg = try? await mass
         workoutMinutesToday = (try? await workouts) ?? 0
         mindfulMinutesToday = (try? await mindful) ?? 0
+    }
+
+    func saveWorkout(named name: String, minutes: Int, on dateStr: String = MountainDate.today()) async {
+        guard isAvailable, minutes > 0 else { return }
+        let end = endDate(on: dateStr)
+        let start = end.addingTimeInterval(-Double(minutes) * 60)
+        let workout = HKWorkout(activityType: activityType(for: name), start: start, end: end)
+        do {
+            try await store.save(workout)
+            await refreshToday()
+        } catch {
+            lastError = error.localizedDescription
+        }
+    }
+
+    func saveMindfulSession(minutes: Double, on dateStr: String = MountainDate.today()) async {
+        guard isAvailable, minutes > 0,
+              let type = HKObjectType.categoryType(forIdentifier: .mindfulSession)
+        else { return }
+        let end = endDate(on: dateStr)
+        let start = end.addingTimeInterval(-minutes * 60)
+        let sample = HKCategorySample(type: type, value: 0, start: start, end: end)
+        do {
+            try await store.save(sample)
+            await refreshToday()
+        } catch {
+            lastError = error.localizedDescription
+        }
+    }
+
+    private func endDate(on dateStr: String) -> Date {
+        let today = MountainDate.today()
+        if dateStr == today { return Date() }
+        guard let day = MountainDate.date(from: dateStr) else { return Date() }
+        return day.addingTimeInterval(12 * 60 * 60)
+    }
+
+    private func activityType(for name: String) -> HKWorkoutActivityType {
+        let key = name.lowercased()
+        if key.contains("walk") { return .walking }
+        if key.contains("run") || key.contains("jog") { return .running }
+        if key.contains("strength") || key.contains("lift") { return .traditionalStrengthTraining }
+        if key.contains("yoga") || key.contains("stretch") { return .yoga }
+        if key.contains("cycle") || key.contains("bike") { return .cycling }
+        return .other
     }
 
     private func startOfToday() -> Date {

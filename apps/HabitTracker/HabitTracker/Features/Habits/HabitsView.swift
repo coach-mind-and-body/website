@@ -4,6 +4,10 @@ struct HabitsView: View {
     @Bindable var model: HabitsViewModel
     @Bindable var health: HealthKitService
     @Bindable var auth: AuthStore
+    @State private var showMindful = false
+    @State private var mindfulMinutes = 2
+    @State private var mindfulRemaining = 0
+    @State private var mindfulRunning = false
 
     var body: some View {
         NavigationStack {
@@ -30,6 +34,15 @@ struct HabitsView: View {
                 await model.load()
                 await health.refreshToday()
                 await model.syncFromHealth()
+            }
+            .onChange(of: health.moveMinutesToday) {
+                Task { await model.syncFromHealth() }
+            }
+            .onChange(of: health.mindfulMinutesToday) {
+                Task { await model.syncFromHealth() }
+            }
+            .sheet(isPresented: $showMindful) {
+                mindfulSheet
             }
         }
     }
@@ -459,6 +472,77 @@ struct HabitsView: View {
         }
     }
 
+    private var mindfulSheet: some View {
+        NavigationStack {
+            VStack(spacing: 20) {
+                Text("Mindful minutes")
+                    .font(HTTheme.title)
+                    .foregroundStyle(HTTheme.forest)
+                Text("This session is saved to Apple Health when you finish.")
+                    .font(.subheadline)
+                    .foregroundStyle(HTTheme.muted)
+                    .multilineTextAlignment(.center)
+                if mindfulRunning {
+                    Text("\(mindfulRemaining / 60):\(String(format: "%02d", mindfulRemaining % 60))")
+                        .font(.system(size: 48, weight: .bold, design: .rounded))
+                        .foregroundStyle(HTTheme.forest)
+                    Button("End early & save") {
+                        Task {
+                            let elapsed = max(1, mindfulMinutes * 60 - mindfulRemaining)
+                            await model.startMindfulSession(minutes: max(1, Int((Double(elapsed) / 60.0).rounded(.up))))
+                            stopMindful()
+                        }
+                    }
+                    .font(.headline)
+                    .foregroundStyle(HTTheme.gold)
+                } else {
+                    Picker("Minutes", selection: $mindfulMinutes) {
+                        Text("1 min").tag(1)
+                        Text("2 min").tag(2)
+                        Text("5 min").tag(5)
+                        Text("10 min").tag(10)
+                    }
+                    .pickerStyle(.segmented)
+                    Button("Begin") {
+                        mindfulRemaining = mindfulMinutes * 60
+                        mindfulRunning = true
+                        tickMindful()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(HTTheme.forest)
+                }
+                Spacer()
+            }
+            .padding(24)
+            .background(HTTheme.cream.ignoresSafeArea())
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { stopMindful() }
+                }
+            }
+        }
+        .presentationDetents([.medium])
+    }
+
+    private func tickMindful() {
+        Task {
+            while mindfulRunning, mindfulRemaining > 0 {
+                try? await Task.sleep(for: .seconds(1))
+                if !mindfulRunning { return }
+                mindfulRemaining -= 1
+            }
+            if mindfulRunning, mindfulRemaining <= 0 {
+                await model.startMindfulSession(minutes: mindfulMinutes)
+                stopMindful()
+            }
+        }
+    }
+
+    private func stopMindful() {
+        mindfulRunning = false
+        showMindful = false
+    }
+
     private func habitRow(_ habit: Habit) -> some View {
         let done = model.isCompleted(habit)
         let card = VStack(alignment: .leading, spacing: 8) {
@@ -486,6 +570,18 @@ struct HabitsView: View {
                     .labelsHidden()
                     .tint(done ? .white : HTTheme.forest)
                 } else {
+                    if habit.title.lowercased().contains("mindful") {
+                        Button("Start") {
+                            showMindful = true
+                        }
+                        .font(.caption.weight(.bold))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(done ? Color.white.opacity(0.25) : Color.white)
+                        .foregroundStyle(done ? Color.white : HTTheme.forest)
+                        .clipShape(Capsule())
+                        .buttonStyle(.plain)
+                    }
                     Image(systemName: done ? "checkmark.circle.fill" : "circle")
                         .font(.title2)
                         .foregroundStyle(done ? Color.white : HTTheme.muted)
