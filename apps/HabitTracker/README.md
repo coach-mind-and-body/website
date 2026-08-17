@@ -54,10 +54,15 @@ Until then, the Coach tab can still request notification permission and fire a *
 
 ## What’s in the app
 
-- Login (same API as the site)
-- Habits, recipes, week, shop, macros
-- Coach thread: recipe share button, file/image attachments, “notify me” banner
-- Health permission screen (paid team / real device)
+Same screens as the PWA, with a matching bottom bar:
+
+- **Habits** — Daily Reset + Progress (streak, week, challenges, Lee Anne updates, 3 victories, calendar, trophies)
+- **Macros** — protein/calories, meal chips, log/delete
+- **Recipes** — vault, this-week meal plan, shopping list
+- **Fitness** — movement log + workout videos
+- **Profile** — sign in (Apple / Google / email), Health, notifications
+- **Coach** (circle) — thread, recipe share, attachments
+- **Podcast** (circle) — episodes, YouTube play, add episode habits
 - Home-screen widget (needs App Groups / paid team)
 
 ## If Xcode yells

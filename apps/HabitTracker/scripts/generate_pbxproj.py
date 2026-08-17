@@ -24,9 +24,12 @@ APP_SWIFT = [
     "HabitTracker/Features/Root/MainTabView.swift",
     "HabitTracker/Features/Habits/HabitsView.swift",
     "HabitTracker/Features/Habits/HabitsViewModel.swift",
+    "HabitTracker/Features/Habits/HabitProgressView.swift",
     "HabitTracker/Features/Food/FoodViewModel.swift",
     "HabitTracker/Features/Food/RecipesView.swift",
     "HabitTracker/Features/Food/MealPlanView.swift",
+    "HabitTracker/Features/Fitness/FitnessView.swift",
+    "HabitTracker/Features/Podcast/PodcastView.swift",
     "HabitTracker/Features/Coach/CoachView.swift",
     "HabitTracker/Features/Profile/ProfileView.swift",
     "HabitTracker/Features/Intents/HabitAppIntents.swift",
@@ -87,6 +90,7 @@ def main() -> None:
     widget_link_app = uid("build:widgetkit-app")
     widget_link_ext = uid("build:widgetkit-ext")
     embed_widget = uid("build:embed-widget")
+    assets_build = uid("build:assets")
 
     refs += [
         f'\t\t{assets} /* Assets.xcassets */ = {{isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; }};',
@@ -233,6 +237,7 @@ def main() -> None:
         f"\t\t{widget_link_app} /* WidgetKit.framework in Frameworks */ = {{isa = PBXBuildFile; fileRef = {widget_fw} /* WidgetKit.framework */; }};",
         f"\t\t{widget_link_ext} /* WidgetKit.framework in Frameworks */ = {{isa = PBXBuildFile; fileRef = {widget_fw} /* WidgetKit.framework */; }};",
         f"\t\t{embed_widget} /* HabitTrackerWidget.appex in Embed Foundation Extensions */ = {{isa = PBXBuildFile; fileRef = {widget_product} /* HabitTrackerWidget.appex */; settings = {{ATTRIBUTES = (RemoveHeadersOnCopy, ); }}; }};",
+        f"\t\t{assets_build} /* Assets.xcassets in Resources */ = {{isa = PBXBuildFile; fileRef = {assets} /* Assets.xcassets */; }};",
     ]
 
     src_app = uid("phase:src-app")
@@ -446,6 +451,7 @@ def main() -> None:
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				{assets_build} /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		}};

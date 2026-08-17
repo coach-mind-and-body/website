@@ -157,6 +157,71 @@ final class FoodViewModel {
         }
     }
 
+    func addManual(
+        name: String,
+        meal: String,
+        calories: Int,
+        protein: Int,
+        carbs: Int,
+        fat: Int,
+        fiber: Int
+    ) async {
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+        if auth.isSignedIn {
+            do {
+                let _: SuccessFlag = try await auth.client.mutate(
+                    "calories.addLog",
+                    input: AddCalorieInput(
+                        dateStr: dateStr,
+                        mealType: meal,
+                        foodName: trimmed,
+                        calories: calories,
+                        protein: protein,
+                        carbs: carbs,
+                        fat: fat,
+                        fiber: fiber
+                    )
+                )
+                await loadLogs()
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            return
+        }
+        var all = GuestLocalStore.loadCalories()
+        all.insert(
+            CalorieLog(
+                id: Int(Date().timeIntervalSince1970),
+                dateStr: dateStr,
+                mealType: meal,
+                foodName: trimmed,
+                calories: calories,
+                protein: protein,
+                carbs: carbs,
+                fat: fat,
+                fiber: fiber
+            ),
+            at: 0
+        )
+        GuestLocalStore.saveCalories(all)
+        logs = all.filter { $0.dateStr == dateStr }
+    }
+
+    func deleteLog(_ log: CalorieLog) async {
+        if auth.isSignedIn {
+            _ = try? await auth.client.mutate(
+                "calories.deleteLog",
+                input: DeleteCalorieInput(id: log.id, dateStr: dateStr)
+            ) as SuccessFlag
+            await loadLogs()
+            return
+        }
+        var all = GuestLocalStore.loadCalories().filter { $0.id != log.id }
+        GuestLocalStore.saveCalories(all)
+        logs = all.filter { $0.dateStr == dateStr }
+    }
+
     func favorite(_ recipe: Recipe) async {
         guard auth.isSignedIn else { return }
         _ = try? await auth.client.mutate(

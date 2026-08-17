@@ -8,6 +8,7 @@ enum HTTheme {
     static let muted = Color(red: 107 / 255, green: 122 / 255, blue: 107 / 255)
 
     static let serif = Font.system(.largeTitle, design: .serif).weight(.bold)
+    static let title = Font.system(.title, design: .serif).weight(.bold)
 }
 
 struct HTCard<Content: View>: View {

@@ -236,6 +236,156 @@ struct ShareInput: Encodable {
     let share: Bool
 }
 
+struct FitnessLog: Codable, Identifiable, Hashable {
+    var id: Int
+    var dateStr: String
+    var exerciseName: String
+    var sets: Int
+    var reps: Int
+    var weight: Int
+    var durationMinutes: Int
+}
+
+struct FitnessAddInput: Encodable {
+    let dateStr: String
+    let exerciseName: String
+    var sets: Int = 1
+    var reps: Int = 0
+    var weight: Int = 0
+    var durationMinutes: Int = 0
+}
+
+struct WorkoutVideo: Codable, Identifiable, Hashable {
+    var id: Int
+    var title: String
+    var description: String?
+    var videoUrl: String
+    var category: String?
+}
+
+struct PodcastEpisode: Codable, Identifiable, Hashable {
+    var id: String
+    var title: String
+    var description: String?
+    var thumbnail: String?
+    var publishedAt: String?
+    var videoId: String
+    var slug: String?
+    var habitActionsJson: String?
+}
+
+struct PodcastPayload: Codable {
+    var episodes: [PodcastEpisode]
+}
+
+struct Challenge: Codable, Identifiable, Hashable {
+    var id: Int
+    var title: String
+    var description: String?
+    var durationDays: Int?
+    var isActive: Bool?
+    var isFeatured: Bool?
+    var linkedPodcastSlug: String?
+}
+
+struct UserChallenge: Codable, Identifiable, Hashable {
+    var id: Int
+    var challengeId: Int
+    var status: String?
+    var startDate: String?
+}
+
+struct ChallengeLog: Codable, Identifiable, Hashable {
+    var id: Int?
+    var userChallengeId: Int
+    var dateStr: String
+}
+
+struct UserChallengesPayload: Codable {
+    var challenges: [UserChallenge]
+    var logs: [ChallengeLog]?
+}
+
+struct JoinChallengeInput: Encodable {
+    let challengeId: Int
+    var deviceId: String?
+}
+
+struct ToggleChallengeLogInput: Encodable {
+    let userChallengeId: Int
+    let dateStr: String
+    let completed: Bool
+    var deviceId: String?
+}
+
+struct AppUpdate: Codable, Identifiable, Hashable {
+    var id: Int
+    var title: String
+    var message: String
+    var videoUrl: String?
+}
+
+struct WeeklyInsight: Codable, Hashable {
+    var weekCompletedDays: Int?
+    var lastWeekCompletedDays: Int?
+    var currentStreak: Int?
+    var bestStreak: Int?
+    var victoryDaysThisWeek: Int?
+    var bestWeekday: String?
+    var topHabitTitle: String?
+    var headline: String?
+    var body: String?
+    var tip: String?
+}
+
+struct VictoryList: Codable, Identifiable, Hashable {
+    var id: Int?
+    var dateStr: String
+    var win1: String?
+    var win2: String?
+    var win3: String?
+}
+
+struct SaveVictoryInput: Encodable {
+    let dateStr: String
+    let win1: String
+    let win2: String
+    let win3: String
+    var deviceId: String?
+}
+
+struct VictoryQueryInput: Encodable {
+    var fromDate: String?
+    var deviceId: String?
+}
+
+struct HabitAction: Codable, Hashable {
+    var title: String
+    var type: String?
+    var targetValue: Int?
+    var unit: String?
+    var description: String?
+}
+
+struct DeleteCalorieInput: Encodable {
+    let id: Int
+    let dateStr: String
+}
+
+struct DeviceIdInput: Encodable {
+    var deviceId: String?
+}
+
+struct SyncHabitInput: Encodable {
+    var title: String
+    var description: String?
+    var type: String
+    var targetValue: Int?
+    var unit: String?
+    var order: Int
+    var isActive: Bool
+}
+
 struct SaveNoteInput: Encodable {
     let dateStr: String
     let note: String

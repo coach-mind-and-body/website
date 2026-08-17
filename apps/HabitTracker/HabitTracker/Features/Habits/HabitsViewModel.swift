@@ -12,29 +12,148 @@ final class HabitsViewModel {
     var isLoading = false
     var errorMessage: String?
     var noteDraft = ""
+    var notesExpanded = false
+    var showPastDays = false
+    var mainTab = 0
+    var weekAnchor = MountainDate.today()
+
+    var challenges: [Challenge] = []
+    var userChallenges: [UserChallenge] = []
+    var challengeLogs: [ChallengeLog] = []
+    var showChallenges = false
+    var challengeTab = 0
+
+    var updates: [AppUpdate] = []
+    var dismissedUpdateIds: [Int] = GuestLocalStore.loadDismissedUpdates()
+    var showUpdates = false
+    var showDismissedUpdates = false
+
+    var insight: WeeklyInsight?
+    var win1 = ""
+    var win2 = ""
+    var win3 = ""
+    var victoriesExpanded = false
+
+    var progressMonth = MountainDate.today()
+    var progressDay: String?
+    var progressFood: [CalorieLog] = []
 
     private let auth: AuthStore
     private let health: HealthKitService
+    private var didMergeGuest = false
 
     init(auth: AuthStore, health: HealthKitService) {
         self.auth = auth
         self.health = health
     }
 
-    func log(for habitId: Int) -> HabitLog? {
-        logs.first { $0.userHabitId == habitId && $0.dateStr == dateStr }
+    func log(for habitId: Int, on day: String? = nil) -> HabitLog? {
+        let day = day ?? dateStr
+        return logs.first { $0.userHabitId == habitId && $0.dateStr == day }
+    }
+
+    func isCompleted(_ habit: Habit, on day: String? = nil) -> Bool {
+        log(for: habit.id, on: day)?.completed == true
+    }
+
+    func numericValue(_ habit: Habit, on day: String? = nil) -> Int {
+        log(for: habit.id, on: day)?.numericValue ?? 0
     }
 
     var doneCount: Int {
-        habits.filter { log(for: $0.id)?.completed == true }.count
+        habits.filter { isCompleted($0) }.count
+    }
+
+    var completedDateStrs: Set<String> {
+        let ids = Set(habits.map(\.id))
+        return Set(logs.filter { $0.completed && ids.contains($0.userHabitId) }.map(\.dateStr))
+    }
+
+    var currentStreak: Int {
+        var streak = 0
+        var day = MountainDate.today()
+        let done = completedDateStrs
+        while true {
+            if done.contains(day) {
+                streak += 1
+                day = MountainDate.shift(day, days: -1)
+            } else if day == MountainDate.today() {
+                day = MountainDate.shift(day, days: -1)
+            } else {
+                break
+            }
+        }
+        return streak
+    }
+
+    var bestStreak: Int {
+        let done = completedDateStrs.sorted()
+        guard !done.isEmpty else { return currentStreak }
+        var best = 1
+        var run = 1
+        for i in 1..<done.count {
+            if MountainDate.shift(done[i - 1], days: 1) == done[i] {
+                run += 1
+                best = max(best, run)
+            } else {
+                run = 1
+            }
+        }
+        return max(best, currentStreak)
+    }
+
+    var weekDays: [String] {
+        (-3...3).map { MountainDate.shift(weekAnchor, days: $0) }
+    }
+
+    var visibleUpdates: [AppUpdate] {
+        if showDismissedUpdates { return updates }
+        return updates.filter { !dismissedUpdateIds.contains($0.id) }
+    }
+
+    var unreadUpdateCount: Int {
+        updates.filter { !dismissedUpdateIds.contains($0.id) }.count
+    }
+
+    func userChallenge(for challengeId: Int) -> UserChallenge? {
+        userChallenges.first { $0.challengeId == challengeId }
+    }
+
+    func challengeProgress(_ challenge: Challenge) -> Int {
+        guard let uc = userChallenge(for: challenge.id) else { return 0 }
+        return challengeLogs.filter { $0.userChallengeId == uc.id }.count
+    }
+
+    func challengePercent(_ challenge: Challenge) -> Int {
+        let days = max(challenge.durationDays ?? 7, 1)
+        return min(100, Int((Double(challengeProgress(challenge)) / Double(days) * 100).rounded()))
+    }
+
+    func challengeDoneToday(_ challenge: Challenge) -> Bool {
+        guard let uc = userChallenge(for: challenge.id) else { return false }
+        return challengeLogs.contains { $0.userChallengeId == uc.id && $0.dateStr == MountainDate.today() }
+    }
+
+    var featuredChallenges: [Challenge] {
+        let joined = challenges.filter { userChallenge(for: $0.id) != nil }
+        let featured = challenges.filter { $0.isFeatured == true || userChallenge(for: $0.id) != nil }
+        if !featured.isEmpty { return Array(featured.prefix(3)) }
+        if !joined.isEmpty { return Array(joined.prefix(3)) }
+        return Array(challenges.prefix(2))
+    }
+
+    func filteredChallenges(completed: Bool) -> [Challenge] {
+        challenges.filter { challengePercent($0) == 100 ? completed : !completed }
     }
 
     func load() async {
         isLoading = true
         defer { isLoading = false }
         if auth.isSignedIn {
+            await mergeGuestIfNeeded()
             do {
-                let from = MountainDate.shift(dateStr, days: -21)
+                let lookback = mainTab == 1 ? -400 : -21
+                let from = MountainDate.shift(MountainDate.today(), days: lookback)
                 let payload: HabitsPayload = try await auth.client.query(
                     "habit.getUserHabits",
                     input: FromDateInput(fromDate: from)
@@ -47,9 +166,28 @@ final class HabitsViewModel {
             } catch {
                 errorMessage = error.localizedDescription
             }
-            return
+        } else {
+            await loadGuest()
         }
-        await loadGuest()
+        await loadDashboard()
+    }
+
+    func loadDashboard() async {
+        challenges = (try? await auth.client.query("challenges.getActiveChallenges")) ?? []
+        if let payload: UserChallengesPayload = try? await auth.client.query(
+            "challenges.getUserChallenges",
+            input: DeviceIdInput(deviceId: AppConfig.deviceId)
+        ) {
+            userChallenges = payload.challenges
+            challengeLogs = payload.logs ?? []
+        }
+        updates = (try? await auth.client.query("appUpdates.getUpdates")) ?? []
+        if auth.isSignedIn {
+            insight = try? await auth.client.query("habit.getWeeklyInsight")
+        } else {
+            insight = nil
+        }
+        await loadVictories()
     }
 
     private func loadGuest() async {
@@ -77,8 +215,22 @@ final class HabitsViewModel {
         publishWidget()
     }
 
-    func toggle(_ habit: Habit) async {
-        let current = log(for: habit.id)
+    private func mergeGuestIfNeeded() async {
+        guard !didMergeGuest else { return }
+        didMergeGuest = true
+        _ = try? await auth.client.mutate(
+            "challenges.mergeGuestData",
+            input: DeviceIdInput(deviceId: AppConfig.deviceId)
+        ) as SuccessFlag
+        _ = try? await auth.client.mutate(
+            "habit.mergeGuestVictories",
+            input: DeviceIdInput(deviceId: AppConfig.deviceId)
+        ) as SuccessFlag
+    }
+
+    func toggle(_ habit: Habit, on day: String? = nil) async {
+        let day = day ?? dateStr
+        let current = log(for: habit.id, on: day)
         let next = !(current?.completed ?? false)
         if auth.isSignedIn {
             do {
@@ -86,7 +238,7 @@ final class HabitsViewModel {
                     "habit.toggleLog",
                     input: ToggleLogInput(
                         userHabitId: habit.id,
-                        dateStr: dateStr,
+                        dateStr: day,
                         completed: next,
                         numericValue: current?.numericValue
                     )
@@ -97,10 +249,11 @@ final class HabitsViewModel {
             }
             return
         }
-        upsertGuestLog(habitId: habit.id, completed: next, numeric: current?.numericValue)
+        upsertGuestLog(habitId: habit.id, day: day, completed: next, numeric: current?.numericValue)
     }
 
-    func setNumeric(_ habit: Habit, value: Int) async {
+    func setNumeric(_ habit: Habit, value: Int, on day: String? = nil) async {
+        let day = day ?? dateStr
         let completed = value >= (habit.targetValue ?? 0)
         if auth.isSignedIn {
             do {
@@ -108,7 +261,7 @@ final class HabitsViewModel {
                     "habit.toggleLog",
                     input: ToggleLogInput(
                         userHabitId: habit.id,
-                        dateStr: dateStr,
+                        dateStr: day,
                         completed: completed,
                         numericValue: value
                     )
@@ -119,16 +272,16 @@ final class HabitsViewModel {
             }
             return
         }
-        upsertGuestLog(habitId: habit.id, completed: completed, numeric: value)
+        upsertGuestLog(habitId: habit.id, day: day, completed: completed, numeric: value)
     }
 
-    private func upsertGuestLog(habitId: Int, completed: Bool, numeric: Int?) {
+    private func upsertGuestLog(habitId: Int, day: String, completed: Bool, numeric: Int?) {
         var all = GuestLocalStore.loadLogs()
-        if let i = all.firstIndex(where: { $0.userHabitId == habitId && $0.dateStr == dateStr }) {
+        if let i = all.firstIndex(where: { $0.userHabitId == habitId && $0.dateStr == day }) {
             all[i].completed = completed
             all[i].numericValue = numeric
         } else {
-            all.append(HabitLog(id: Int(Date().timeIntervalSince1970), userHabitId: habitId, dateStr: dateStr, completed: completed, numericValue: numeric))
+            all.append(HabitLog(id: Int(Date().timeIntervalSince1970), userHabitId: habitId, dateStr: day, completed: completed, numericValue: numeric))
         }
         GuestLocalStore.saveLogs(all)
         logs = all
@@ -157,10 +310,125 @@ final class HabitsViewModel {
         notes = all
     }
 
-    func shiftDay(_ delta: Int) async {
-        dateStr = MountainDate.shift(dateStr, days: delta)
+    func selectDay(_ day: String) async {
+        dateStr = day
         noteDraft = notes.first(where: { $0.dateStr == dateStr })?.note ?? ""
-        await load()
+        await loadVictories()
+    }
+
+    func shiftWeek(_ delta: Int) {
+        weekAnchor = MountainDate.shift(weekAnchor, days: delta * 7)
+    }
+
+    func join(_ challenge: Challenge) async {
+        do {
+            let _: SuccessFlag = try await auth.client.mutate(
+                "challenges.joinChallenge",
+                input: JoinChallengeInput(challengeId: challenge.id, deviceId: AppConfig.deviceId)
+            )
+            await loadDashboard()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func tapChallengeChip(_ challenge: Challenge) async {
+        if userChallenge(for: challenge.id) == nil {
+            await join(challenge)
+            return
+        }
+        if !challengeDoneToday(challenge) {
+            await toggleChallenge(challenge)
+            return
+        }
+        showChallenges = true
+    }
+
+    func toggleChallenge(_ challenge: Challenge) async {
+        guard let uc = userChallenge(for: challenge.id) else { return }
+        let today = MountainDate.today()
+        let next = !challengeDoneToday(challenge)
+        do {
+            let _: SuccessFlag = try await auth.client.mutate(
+                "challenges.toggleChallengeLog",
+                input: ToggleChallengeLogInput(
+                    userChallengeId: uc.id,
+                    dateStr: today,
+                    completed: next,
+                    deviceId: AppConfig.deviceId
+                )
+            )
+            await loadDashboard()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func dismissUpdate(_ id: Int) {
+        if !dismissedUpdateIds.contains(id) {
+            dismissedUpdateIds.append(id)
+            GuestLocalStore.saveDismissedUpdates(dismissedUpdateIds)
+        }
+    }
+
+    func loadVictories() async {
+        if auth.isSignedIn {
+            let from = MountainDate.shift(MountainDate.today(), days: -30)
+            let rows: [VictoryList] = (try? await auth.client.query(
+                "habit.getVictoryLists",
+                input: VictoryQueryInput(fromDate: from, deviceId: AppConfig.deviceId)
+            )) ?? []
+            applyVictory(rows.first { $0.dateStr == dateStr })
+            return
+        }
+        applyVictory(GuestLocalStore.loadVictories().first { $0.dateStr == dateStr })
+    }
+
+    private func applyVictory(_ row: VictoryList?) {
+        win1 = row?.win1 ?? ""
+        win2 = row?.win2 ?? ""
+        win3 = row?.win3 ?? ""
+    }
+
+    func saveVictories() async {
+        _ = try? await auth.client.mutate(
+            "habit.saveVictoryList",
+            input: SaveVictoryInput(
+                dateStr: dateStr,
+                win1: win1,
+                win2: win2,
+                win3: win3,
+                deviceId: AppConfig.deviceId
+            )
+        ) as SuccessFlag
+        var all = GuestLocalStore.loadVictories()
+        if let i = all.firstIndex(where: { $0.dateStr == dateStr }) {
+            all[i].win1 = win1
+            all[i].win2 = win2
+            all[i].win3 = win3
+        } else {
+            all.append(VictoryList(dateStr: dateStr, win1: win1, win2: win2, win3: win3))
+        }
+        GuestLocalStore.saveVictories(all)
+    }
+
+    func openProgressDay(_ day: String) async {
+        progressDay = day
+        if auth.isSignedIn {
+            progressFood = (try? await auth.client.query("calories.getLogs", input: DateStrInput(dateStr: day))) ?? []
+        } else {
+            progressFood = GuestLocalStore.loadCalories().filter { $0.dateStr == day }
+        }
+    }
+
+    func youtubeId(from url: String?) -> String? {
+        guard let url, !url.isEmpty else { return nil }
+        let pattern = #"(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([^\"&?\/\s]{11})"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
+              let match = regex.firstMatch(in: url, range: NSRange(url.startIndex..., in: url)),
+              let range = Range(match.range(at: 1), in: url)
+        else { return nil }
+        return String(url[range])
     }
 
     private func publishWidget() {

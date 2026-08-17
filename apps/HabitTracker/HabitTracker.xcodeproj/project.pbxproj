@@ -24,9 +24,12 @@
 		E3A1D03E73697A822364C7AD /* HabitTracker/Features/Root/MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA24F16423DB42DC68B2391C /* HabitTracker/Features/Root/MainTabView.swift */; };
 		86A1B2EB344A94F7512CAD0E /* HabitTracker/Features/Habits/HabitsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27C9EB3726F0495EB6398493 /* HabitTracker/Features/Habits/HabitsView.swift */; };
 		043FBE9A48903159207FB2E1 /* HabitTracker/Features/Habits/HabitsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67CAD130BF1BA4357403A266 /* HabitTracker/Features/Habits/HabitsViewModel.swift */; };
+		DF8CB7F6EC4B9C1CC9FDC72C /* HabitTracker/Features/Habits/HabitProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FEA14B0B5232D01123EA2E8 /* HabitTracker/Features/Habits/HabitProgressView.swift */; };
 		78BB551D6BC4F944A0422C5D /* HabitTracker/Features/Food/FoodViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C44DB4212892B4258AC38D8B /* HabitTracker/Features/Food/FoodViewModel.swift */; };
 		EDEA9C814E1071121A320075 /* HabitTracker/Features/Food/RecipesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82D5ABD19BFBCE3F2FE2514 /* HabitTracker/Features/Food/RecipesView.swift */; };
 		44C410A9F0D38A4DB060D260 /* HabitTracker/Features/Food/MealPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BAD50590DCEB91E4E5046B7 /* HabitTracker/Features/Food/MealPlanView.swift */; };
+		979F45181990B7F29C8C7A76 /* HabitTracker/Features/Fitness/FitnessView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF1D4FDF431B5AB47A72F4B1 /* HabitTracker/Features/Fitness/FitnessView.swift */; };
+		F8364A2AFBC48E64AE0E894C /* HabitTracker/Features/Podcast/PodcastView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 938900B7043B6C096755EF67 /* HabitTracker/Features/Podcast/PodcastView.swift */; };
 		B291EC2B4505131B76A84B83 /* HabitTracker/Features/Coach/CoachView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CD1992A3C7EAA350CB4097D /* HabitTracker/Features/Coach/CoachView.swift */; };
 		C9741343A9DAFCF79FE79C6D /* HabitTracker/Features/Profile/ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48D2DDDE039F8EDBCFE7FB49 /* HabitTracker/Features/Profile/ProfileView.swift */; };
 		79EEE852158F8A47B7B124BE /* HabitTracker/Features/Intents/HabitAppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = D64791DBBD8BA5C8EAA7353F /* HabitTracker/Features/Intents/HabitAppIntents.swift */; };
@@ -40,6 +43,7 @@
 		DECC48ECC3F40C6EAD8C2D5C /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 41EB91E7BA414D2BC395B1A3 /* WidgetKit.framework */; };
 		16A5F125472940660306E8DA /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 41EB91E7BA414D2BC395B1A3 /* WidgetKit.framework */; };
 		874C008267AE8F79F8EB039D /* HabitTrackerWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CD3B4A18D83458EA6541A373 /* HabitTrackerWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		FB90684E69A6C96ED866993E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B2B4367B873474FE1C68712A /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -74,9 +78,12 @@
 		FA24F16423DB42DC68B2391C /* HabitTracker/Features/Root/MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Features/Root/MainTabView.swift; sourceTree = "<group>"; };
 		27C9EB3726F0495EB6398493 /* HabitTracker/Features/Habits/HabitsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Features/Habits/HabitsView.swift; sourceTree = "<group>"; };
 		67CAD130BF1BA4357403A266 /* HabitTracker/Features/Habits/HabitsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Features/Habits/HabitsViewModel.swift; sourceTree = "<group>"; };
+		5FEA14B0B5232D01123EA2E8 /* HabitTracker/Features/Habits/HabitProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Features/Habits/HabitProgressView.swift; sourceTree = "<group>"; };
 		C44DB4212892B4258AC38D8B /* HabitTracker/Features/Food/FoodViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Features/Food/FoodViewModel.swift; sourceTree = "<group>"; };
 		A82D5ABD19BFBCE3F2FE2514 /* HabitTracker/Features/Food/RecipesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Features/Food/RecipesView.swift; sourceTree = "<group>"; };
 		1BAD50590DCEB91E4E5046B7 /* HabitTracker/Features/Food/MealPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Features/Food/MealPlanView.swift; sourceTree = "<group>"; };
+		EF1D4FDF431B5AB47A72F4B1 /* HabitTracker/Features/Fitness/FitnessView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Features/Fitness/FitnessView.swift; sourceTree = "<group>"; };
+		938900B7043B6C096755EF67 /* HabitTracker/Features/Podcast/PodcastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Features/Podcast/PodcastView.swift; sourceTree = "<group>"; };
 		7CD1992A3C7EAA350CB4097D /* HabitTracker/Features/Coach/CoachView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Features/Coach/CoachView.swift; sourceTree = "<group>"; };
 		48D2DDDE039F8EDBCFE7FB49 /* HabitTracker/Features/Profile/ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Features/Profile/ProfileView.swift; sourceTree = "<group>"; };
 		D64791DBBD8BA5C8EAA7353F /* HabitTracker/Features/Intents/HabitAppIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Features/Intents/HabitAppIntents.swift; sourceTree = "<group>"; };
@@ -135,9 +142,12 @@
 				FA24F16423DB42DC68B2391C /* HabitTracker/Features/Root/MainTabView.swift */,
 				27C9EB3726F0495EB6398493 /* HabitTracker/Features/Habits/HabitsView.swift */,
 				67CAD130BF1BA4357403A266 /* HabitTracker/Features/Habits/HabitsViewModel.swift */,
+				5FEA14B0B5232D01123EA2E8 /* HabitTracker/Features/Habits/HabitProgressView.swift */,
 				C44DB4212892B4258AC38D8B /* HabitTracker/Features/Food/FoodViewModel.swift */,
 				A82D5ABD19BFBCE3F2FE2514 /* HabitTracker/Features/Food/RecipesView.swift */,
 				1BAD50590DCEB91E4E5046B7 /* HabitTracker/Features/Food/MealPlanView.swift */,
+				EF1D4FDF431B5AB47A72F4B1 /* HabitTracker/Features/Fitness/FitnessView.swift */,
+				938900B7043B6C096755EF67 /* HabitTracker/Features/Podcast/PodcastView.swift */,
 				7CD1992A3C7EAA350CB4097D /* HabitTracker/Features/Coach/CoachView.swift */,
 				48D2DDDE039F8EDBCFE7FB49 /* HabitTracker/Features/Profile/ProfileView.swift */,
 				D64791DBBD8BA5C8EAA7353F /* HabitTracker/Features/Intents/HabitAppIntents.swift */,
@@ -242,6 +252,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FB90684E69A6C96ED866993E /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -269,9 +280,12 @@
 				E3A1D03E73697A822364C7AD /* HabitTracker/Features/Root/MainTabView.swift in Sources */,
 				86A1B2EB344A94F7512CAD0E /* HabitTracker/Features/Habits/HabitsView.swift in Sources */,
 				043FBE9A48903159207FB2E1 /* HabitTracker/Features/Habits/HabitsViewModel.swift in Sources */,
+				DF8CB7F6EC4B9C1CC9FDC72C /* HabitTracker/Features/Habits/HabitProgressView.swift in Sources */,
 				78BB551D6BC4F944A0422C5D /* HabitTracker/Features/Food/FoodViewModel.swift in Sources */,
 				EDEA9C814E1071121A320075 /* HabitTracker/Features/Food/RecipesView.swift in Sources */,
 				44C410A9F0D38A4DB060D260 /* HabitTracker/Features/Food/MealPlanView.swift in Sources */,
+				979F45181990B7F29C8C7A76 /* HabitTracker/Features/Fitness/FitnessView.swift in Sources */,
+				F8364A2AFBC48E64AE0E894C /* HabitTracker/Features/Podcast/PodcastView.swift in Sources */,
 				B291EC2B4505131B76A84B83 /* HabitTracker/Features/Coach/CoachView.swift in Sources */,
 				C9741343A9DAFCF79FE79C6D /* HabitTracker/Features/Profile/ProfileView.swift in Sources */,
 				79EEE852158F8A47B7B124BE /* HabitTracker/Features/Intents/HabitAppIntents.swift in Sources */,

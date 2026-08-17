@@ -8,6 +8,12 @@ enum AppConfig {
     static let mountainTimeZone = TimeZone(identifier: "America/Denver")!
     static let privacyURL = URL(string: "https://mindandbodyresetcoach.com/privacy")!
     static let coachName = "Lee Anne"
+    static var deviceId: String {
+        if let existing = UserDefaults.standard.string(forKey: "mbr.deviceId") { return existing }
+        let id = UUID().uuidString
+        UserDefaults.standard.set(id, forKey: "mbr.deviceId")
+        return id
+    }
 
     static var trpcURL: URL { apiRoot.appending(path: "api/trpc") }
     static var loginURL: URL { apiRoot.appending(path: "api/auth/login") }
@@ -43,5 +49,54 @@ enum MountainDate {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = AppConfig.mountainTimeZone
         return calendar.component(.weekday, from: date) - 1
+    }
+
+    static func weekdayShort(_ dateStr: String) -> String {
+        let names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+        return names[weekdayIndex(dateStr)]
+    }
+
+    static func dayNumber(_ dateStr: String) -> String {
+        String(dateStr.split(separator: "-").last ?? "")
+    }
+
+    static func monthTitle(_ dateStr: String) -> String {
+        guard let date = date(from: dateStr) else { return dateStr }
+        let f = DateFormatter()
+        f.timeZone = AppConfig.mountainTimeZone
+        f.dateFormat = "MMMM yyyy"
+        return f.string(from: date)
+    }
+
+    static func friendly(_ dateStr: String) -> String {
+        guard let date = date(from: dateStr) else { return dateStr }
+        let f = DateFormatter()
+        f.timeZone = AppConfig.mountainTimeZone
+        f.dateFormat = "EEEE, MMM d"
+        return f.string(from: date)
+    }
+
+    static func monthDays(_ dateStr: String) -> [String] {
+        guard let date = date(from: dateStr) else { return [] }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = AppConfig.mountainTimeZone
+        guard let range = calendar.range(of: .day, in: .month, for: date),
+              let start = calendar.date(from: calendar.dateComponents([.year, .month], from: date))
+        else { return [] }
+        return range.compactMap { day in
+            calendar.date(byAdding: .day, value: day - 1, to: start).map { string(from: $0) }
+        }
+    }
+
+    static func leadingBlanks(_ dateStr: String) -> Int {
+        monthDays(dateStr).first.map { weekdayIndex($0) } ?? 0
+    }
+
+    static func shiftMonth(_ dateStr: String, months: Int) -> String {
+        guard let date = date(from: dateStr) else { return dateStr }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = AppConfig.mountainTimeZone
+        let next = calendar.date(byAdding: .month, value: months, to: date) ?? date
+        return string(from: next)
     }
 }

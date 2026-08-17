@@ -102,32 +102,116 @@ struct ShopView: View {
 
 struct CaloriesView: View {
     @Bindable var food: FoodViewModel
+    @State private var name = ""
+    @State private var meal = "snack"
+    @State private var calories = 0
+    @State private var protein = 0
+    @State private var showAdd = false
+
+    private let meals = ["breakfast", "lunch", "dinner", "snack", "drink"]
 
     var body: some View {
         NavigationStack {
-            List {
-                Section("Today") {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
                     HStack {
-                        Text("Protein")
+                        Button("←") { Task { food.dateStr = MountainDate.shift(food.dateStr, days: -1); await food.loadLogs() } }
                         Spacer()
-                        Text("\(food.proteinTotal)g").bold()
+                        Text(food.dateStr == MountainDate.today() ? "Today" : MountainDate.friendly(food.dateStr))
+                            .font(.subheadline.weight(.semibold))
+                        Spacer()
+                        Button("→") { Task { food.dateStr = MountainDate.shift(food.dateStr, days: 1); await food.loadLogs() } }
                     }
-                    HStack {
-                        Text("Calories")
-                        Spacer()
-                        Text("\(food.calorieTotal)")
+                    .foregroundStyle(HTTheme.gold)
+
+                    HStack(spacing: 10) {
+                        macroChip("Protein", "\(food.proteinTotal)g")
+                        macroChip("Calories", "\(food.calorieTotal)")
+                    }
+
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack {
+                            ForEach(meals, id: \.self) { m in
+                                Button(m.capitalized) { meal = m; showAdd = true }
+                                    .font(.caption.weight(.bold))
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 8)
+                                    .background(meal == m && showAdd ? HTTheme.forest : Color.white)
+                                    .foregroundStyle(meal == m && showAdd ? Color.white : HTTheme.forest)
+                                    .clipShape(Capsule())
+                                    .overlay(Capsule().stroke(HTTheme.roseBorder))
+                            }
+                        }
+                    }
+
+                    if showAdd {
+                        HTCard {
+                            TextField("What did you eat?", text: $name)
+                            HStack {
+                                Stepper("\(calories) kcal", value: $calories, in: 0...2000, step: 10)
+                                Stepper("\(protein)g protein", value: $protein, in: 0...200, step: 5)
+                            }
+                            .font(.caption)
+                            Button("Log \(meal)") {
+                                Task {
+                                    await food.addManual(name: name, meal: meal, calories: calories, protein: protein, carbs: 0, fat: 0, fiber: 0)
+                                    name = ""
+                                    calories = 0
+                                    protein = 0
+                                    showAdd = false
+                                }
+                            }
+                            .font(.headline)
+                            .foregroundStyle(HTTheme.forest)
+                            .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                        }
+                    }
+
+                    if food.logs.isEmpty {
+                        Text("No meals logged yet. Tap a meal chip, or log a recipe from the Recipes tab.")
+                            .font(.subheadline)
+                            .foregroundStyle(HTTheme.muted)
+                    }
+
+                    ForEach(food.logs) { log in
+                        HTCard {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(log.mealType.capitalized)
+                                        .font(.caption2.weight(.bold))
+                                        .foregroundStyle(HTTheme.gold)
+                                    Text(log.foodName).font(.headline).foregroundStyle(HTTheme.forest)
+                                    Text("\(log.protein)p · \(log.calories) kcal")
+                                        .font(.caption)
+                                        .foregroundStyle(HTTheme.muted)
+                                }
+                                Spacer()
+                                Button(role: .destructive) {
+                                    Task { await food.deleteLog(log) }
+                                } label: {
+                                    Image(systemName: "trash")
+                                }
+                            }
+                        }
                     }
                 }
-                ForEach(food.logs) { log in
-                    VStack(alignment: .leading) {
-                        Text(log.mealType.capitalized).font(.caption.weight(.bold)).foregroundStyle(HTTheme.gold)
-                        Text(log.foodName)
-                        Text("\(log.protein)p · \(log.calories) kcal").font(.caption).foregroundStyle(HTTheme.muted)
-                    }
-                }
+                .padding(16)
             }
+            .background(HTTheme.cream.ignoresSafeArea())
             .navigationTitle("Macros")
             .task { await food.loadLogs() }
         }
+    }
+
+    private func macroChip(_ label: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label.uppercased()).font(.caption2.weight(.bold)).foregroundStyle(HTTheme.muted)
+            Text(value).font(.title2.weight(.bold)).foregroundStyle(HTTheme.forest)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(HTTheme.roseBorder))
     }
 }

@@ -18,6 +18,22 @@ enum GuestLocalStore {
     static func loadCalories() -> [CalorieLog] { decode(caloriesKey, as: [CalorieLog].self) ?? [] }
     static func saveCalories(_ v: [CalorieLog]) { encode(caloriesKey, v) }
 
+    private static let fitnessKey = "guest.fitnessLogs.v1"
+    static func loadFitness() -> [FitnessLog] { decode(fitnessKey, as: [FitnessLog].self) ?? [] }
+    static func saveFitness(_ v: [FitnessLog]) { encode(fitnessKey, v) }
+
+    private static let victoriesKey = "guest.victories.v1"
+    static func loadVictories() -> [VictoryList] { decode(victoriesKey, as: [VictoryList].self) ?? [] }
+    static func saveVictories(_ v: [VictoryList]) { encode(victoriesKey, v) }
+
+    private static let dismissedKey = "guest.dismissedUpdates.v1"
+    static func loadDismissedUpdates() -> [Int] {
+        UserDefaults.standard.array(forKey: dismissedKey) as? [Int] ?? []
+    }
+    static func saveDismissedUpdates(_ ids: [Int]) {
+        UserDefaults.standard.set(ids, forKey: dismissedKey)
+    }
+
     private static func decode<T: Decodable>(_ key: String, as: T.Type) -> T? {
         guard let data = UserDefaults.standard.data(forKey: key) else { return nil }
         return try? JSONDecoder().decode(T.self, from: data)
