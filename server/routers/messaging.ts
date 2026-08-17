@@ -616,6 +616,18 @@ export const messagingRouter = router({
         .set({ lastMessageAt: new Date() })
         .where(eq(conversations.id, input.conversationId));
 
+      if (!isInternal && !isScheduled && convo.userId) {
+        const preview =
+          (finalContent || "").replace(/\s+/g, " ").trim().slice(0, 90) ||
+          (input.mediaUrl ? "Sent you a file" : "New message from Lee Anne");
+        const { notifyUser } = await import("./push");
+        notifyUser(convo.userId, {
+          title: "Lee Anne sent a message",
+          body: preview,
+          url: "/habit-tracker/coach",
+        }).catch((e) => console.error("[Messaging] notifyUser failed", e));
+      }
+
       return { success: true };
     }),
 

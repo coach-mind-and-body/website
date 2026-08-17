@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Phone, ArrowLeft, Loader2, MessageSquare, CreditCard, Star, Paperclip, Workflow, Link2, Video, Send, Clock, FileText, ChevronRight, RotateCcw } from "lucide-react";
+import { ChatShareToolbar } from "@/components/habit/ChatShareToolbar";
 import { useInboxPollInterval } from "@/lib/useInboxPollInterval";
 import { toast } from "sonner";
 import { isToday, isYesterday, format } from "date-fns";
@@ -482,6 +483,17 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
             <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" title="Video Meeting" onClick={() => injectTemplate("Join my video room here: ((video_room))")}>
               <Video className="h-4 w-4" />
             </Button>
+          </div>
+          <div className="px-2 pb-2">
+            <ChatShareToolbar
+              allowFiles
+              onShare={(p) => {
+                if (p.content) {
+                  setMessageText((prev) => (prev ? `${prev}\n${p.content}` : p.content || ""));
+                }
+                if (p.mediaUrl) setPendingUploadUrl(p.mediaUrl);
+              }}
+            />
           </div>
           
           <textarea 

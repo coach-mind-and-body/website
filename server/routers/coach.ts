@@ -105,6 +105,7 @@ export const coachRouter = router({
         direction: m.direction,
         senderName: m.senderName,
         content: m.content,
+        mediaUrl: m.mediaUrl,
         createdAt: m.createdAt,
         isAutomated: m.isAutomated,
       })),
@@ -112,19 +113,27 @@ export const coachRouter = router({
   }),
 
   send: protectedProcedure
-    .input(z.object({ content: z.string().min(1).max(4000) }))
+    .input(
+      z.object({
+        content: z.string().max(4000).optional(),
+        mediaUrl: z.string().max(2000).optional(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
       const thread = await getOrCreateThread(ctx.user.id, ctx.user.email ?? null, ctx.user.name ?? null);
-      const text = input.content.trim();
-      if (!text) throw new TRPCError({ code: "BAD_REQUEST", message: "Message is empty" });
+      const text = (input.content ?? "").trim();
+      if (!text && !input.mediaUrl) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Message is empty" });
+      }
 
       await db.insert(messages).values({
         conversationId: thread.id,
         direction: "inbound",
         senderName: ctx.user.name || ctx.user.email || "Client",
-        content: text,
+        content: text || null,
+        mediaUrl: input.mediaUrl ?? null,
         status: "received",
         isAutomated: false,
       });
@@ -140,8 +149,8 @@ export const coachRouter = router({
 
       notifyAdmins({
         title: "New coach message",
-        body: `${ctx.user.name || "A client"}: ${text.slice(0, 80)}`,
-        url: "/admin?tab=contacts",
+        body: `${ctx.user.name || "A client"}: ${(text || "Sent a file").slice(0, 80)}`,
+        url: "/admin",
       }).catch((e) => console.error("[Coach] notifyAdmins failed", e));
 
       return { success: true };

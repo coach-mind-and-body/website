@@ -2,12 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Loader2, Send } from "lucide-react";
+import { Bell, Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/use-auth";
 import { usePageTitle } from "@/hooks/usePageTitle";
+import { useWebPush } from "@/hooks/useWebPush";
 import { BRAND } from "@shared/brand";
+import { ChatShareToolbar, parseRecipeSlug } from "@/components/habit/ChatShareToolbar";
 
 const FOREST = "#2d3b2d";
 const GOLD = "#c9a96e";
@@ -32,6 +34,7 @@ export default function CoachChatClient() {
   });
 
   const { isAuthenticated, loading: authLoading, user } = useAuth();
+  const { isSupported, isSubscribed, isSubscribing, subscribeToPush } = useWebPush();
   const utils = trpc.useUtils();
   const [draft, setDraft] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
@@ -56,6 +59,13 @@ export default function CoachChatClient() {
     },
     onError: (e) => toast.error(e.message),
   });
+
+  const share = (payload: { content?: string; mediaUrl?: string }) => {
+    send.mutate({
+      content: payload.content,
+      mediaUrl: payload.mediaUrl,
+    });
+  };
 
   useEffect(() => {
     if (isAuthenticated && data?.conversationId) {
@@ -135,9 +145,22 @@ export default function CoachChatClient() {
         >
           {data?.coachName ?? BRAND.coachName}
         </h1>
-        <p className="text-sm text-[#6b7a6b] mb-4">
+        <p className="text-sm text-[#6b7a6b] mb-3">
           She sees this in her inbox. Replies show up here.
         </p>
+
+        {isSupported && !isSubscribed && (
+          <button
+            type="button"
+            onClick={() => void subscribeToPush()}
+            disabled={isSubscribing}
+            className="mb-4 w-full flex items-center justify-center gap-2 rounded-2xl border px-3 py-2.5 text-xs font-bold"
+            style={{ borderColor: BORDER, background: "white", color: FOREST }}
+          >
+            <Bell size={14} style={{ color: GOLD }} />
+            {isSubscribing ? "Enabling…" : "Notify me when Lee Anne replies"}
+          </button>
+        )}
 
         <div
           className="bg-white rounded-3xl border overflow-hidden flex flex-col"
@@ -151,6 +174,8 @@ export default function CoachChatClient() {
             ) : (
               messages.map((m) => {
                 const mine = m.direction === "inbound";
+                const recipeSlug = parseRecipeSlug(m.content);
+                const isImage = Boolean(m.mediaUrl && /\.(png|jpe?g|gif|webp|svg)(\?|$)/i.test(m.mediaUrl));
                 return (
                   <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
                     <div
@@ -166,7 +191,37 @@ export default function CoachChatClient() {
                           {m.senderName || BRAND.coachName}
                         </p>
                       )}
-                      <p className="text-sm whitespace-pre-wrap leading-relaxed">{m.content}</p>
+                      {m.mediaUrl && isImage && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={m.mediaUrl} alt="" className="rounded-xl mb-2 max-h-48 object-cover w-full" />
+                      )}
+                      {m.mediaUrl && !isImage && (
+                        <a
+                          href={m.mediaUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block text-xs font-bold underline mb-2"
+                          style={{ color: mine ? "white" : GOLD }}
+                        >
+                          Open file
+                        </a>
+                      )}
+                      {recipeSlug && (
+                        <Link
+                          href={`/habit-tracker/recipes/${recipeSlug}`}
+                          className="block text-xs font-bold rounded-xl px-3 py-2 mb-2"
+                          style={{
+                            background: mine ? "rgba(255,255,255,0.12)" : "white",
+                            color: mine ? "white" : FOREST,
+                            border: `1px solid ${mine ? "rgba(255,255,255,0.2)" : BORDER}`,
+                          }}
+                        >
+                          Open recipe →
+                        </Link>
+                      )}
+                      {m.content && (
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{m.content}</p>
+                      )}
                       <p className={`text-[10px] mt-1 ${mine ? "text-white/60" : "text-gray-400"}`}>
                         {formatTime(m.createdAt)}
                         {mine ? ` · ${user?.name?.split(" ")[0] || "You"}` : ""}
@@ -178,7 +233,9 @@ export default function CoachChatClient() {
             )}
           </div>
 
-          <div className="border-t p-3 flex gap-2 items-end" style={{ borderColor: BORDER }}>
+          <div className="border-t p-3 space-y-2" style={{ borderColor: BORDER }}>
+            <ChatShareToolbar onShare={share} />
+            <div className="flex gap-2 items-end">
             <textarea
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
@@ -203,6 +260,7 @@ export default function CoachChatClient() {
             >
               {send.isPending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
             </button>
+            </div>
           </div>
         </div>
       </div>

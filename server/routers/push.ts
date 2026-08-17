@@ -79,6 +79,47 @@ export async function notifyAdmins(payload: {
   }
 }
 
+/** Push a single signed-in client (habit-tracker PWA). */
+export async function notifyUser(
+  userId: number,
+  payload: { title: string; body: string; url?: string }
+) {
+  try {
+    const db = await getDb();
+    if (!db) return;
+    const subs = await db
+      .select()
+      .from(pushSubscriptions)
+      .where(eq(pushSubscriptions.userId, userId));
+    if (!subs.length) return;
+
+    const message = JSON.stringify({
+      ...payload,
+      url: payload.url ?? "/habit-tracker/coach",
+    });
+    await Promise.allSettled(
+      subs.map((sub) =>
+        webpush
+          .sendNotification(
+            {
+              endpoint: sub.endpoint,
+              keys: { p256dh: sub.p256dh, auth: sub.auth },
+            },
+            message
+          )
+          .catch((err: { statusCode?: number }) => {
+            console.warn("[Push] notifyUser failed:", err.statusCode);
+            if (err.statusCode === 410 || err.statusCode === 404) {
+              db.delete(pushSubscriptions).where(eq(pushSubscriptions.id, sub.id));
+            }
+          })
+      )
+    );
+  } catch (err) {
+    console.error("[Push] notifyUser error:", err);
+  }
+}
+
 // ─── Bulk notify: send to all admin subscriptions ─────────────────────────────
 export async function notifyAllAdmins(payload: {
   title: string;

@@ -1,5 +1,5 @@
-const CACHE_NAME = "mbr-habits-v2";
-const STATIC_CACHE = "mbr-static-v2";
+const CACHE_NAME = "mbr-habits-v3";
+const STATIC_CACHE = "mbr-static-v3";
 const OFFLINE_URL = "/offline.html";
 
 const PRECACHE = [OFFLINE_URL, "/habit-tracker", "/logo-circular.png", "/manifest.json"];
@@ -118,7 +118,10 @@ self.addEventListener("notificationclick", function (event) {
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
-        if (client.url.includes("/habit-tracker") && "focus" in client) {
+        if (client.url.includes("/habit-tracker") && "navigate" in client) {
+          return client.navigate(target).then(() => client.focus());
+        }
+        if (client.url.includes(target) && "focus" in client) {
           return client.focus();
         }
       }
