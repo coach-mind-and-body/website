@@ -46,7 +46,22 @@ struct MainTabView: View {
                     PodcastView(model: podcast, auth: auth)
                 }
             }
+            .overlay {
+                VStack {
+                    HStack {
+                        Spacer()
+                        if tab != .profile {
+                            ProfileAvatarButton(auth: auth)
+                                .padding(.trailing, 14)
+                                .padding(.top, tab == .habits || tab == .recipes ? 8 : 4)
+                        }
+                    }
+                    Spacer()
+                }
+                .safeAreaPadding(.top)
+            }
         }
+        .environment(\.openProfile) { tab = .profile }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             tabBar
         }
@@ -77,7 +92,7 @@ struct MainTabView: View {
                 tabButton(.macros, "fork.knife")
                 tabButton(.recipes, "frying.pan")
                 tabButton(.fitness, "figure.strengthtraining.traditional")
-                tabButton(.profile, "person")
+                tabButton(.podcast, "headphones")
             }
             .padding(.horizontal, 6)
             .padding(.vertical, 6)
@@ -87,7 +102,6 @@ struct MainTabView: View {
             .shadow(color: HTTheme.forest.opacity(0.12), radius: 16, y: 6)
 
             circleButton(.coach, "message", badge: coach.unread)
-            circleButton(.podcast, "headphones", badge: 0)
         }
         .padding(.horizontal, 12)
         .padding(.top, 8)
@@ -163,13 +177,18 @@ struct RecipesHubView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Picker("", selection: $page) {
-                Text("Recipes").tag(0)
-                Text("Week").tag(1)
-                Text("Shop").tag(2)
+            HStack(spacing: 10) {
+                Picker("", selection: $page) {
+                    Text("Recipes").tag(0)
+                    Text("Week").tag(1)
+                    Text("Shop").tag(2)
+                }
+                .pickerStyle(.segmented)
+                Color.clear.frame(width: 40, height: 40)
             }
-            .pickerStyle(.segmented)
-            .padding(12)
+            .padding(.leading, 12)
+            .padding(.trailing, 8)
+            .padding(.vertical, 12)
             .background(HTTheme.cream)
 
             TabView(selection: $page) {

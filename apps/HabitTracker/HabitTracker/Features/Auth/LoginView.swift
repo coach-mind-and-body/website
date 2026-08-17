@@ -61,11 +61,14 @@ struct LoginView: View {
                         do {
                             let token = try await googleHelper.signIn()
                             await auth.applyTokenOnly(token)
-                            if auth.isSignedIn { dismiss() }
                         } catch {
-                            auth.errorMessage = error.localizedDescription
+                            // Session can report cancel while habittracker:// still delivers the token.
+                            if !auth.isSignedIn {
+                                auth.errorMessage = Self.googleErrorMessage(error)
+                            }
                         }
                         busy = false
+                        if auth.isSignedIn { dismiss() }
                     }
                 } label: {
                     Text("Continue with Google")
@@ -159,32 +162,59 @@ struct LoginView: View {
             .padding(.vertical, 28)
         }
         .background(HTTheme.cream.ignoresSafeArea())
+        .onChange(of: auth.isSignedIn) { _, signedIn in
+            if signedIn { dismiss() }
+        }
+    }
+
+    private static func googleErrorMessage(_ error: Error) -> String {
+        let ns = error as NSError
+        if ns.domain == ASWebAuthenticationSessionError.errorDomain,
+           ns.code == ASWebAuthenticationSessionError.canceledLogin.rawValue {
+            return "Google sign-in was cancelled."
+        }
+        return error.localizedDescription
     }
 }
 
 final class GoogleAuthHelper: NSObject, ASWebAuthenticationPresentationContextProviding {
+    private var session: ASWebAuthenticationSession?
+
     func signIn() async throws -> String {
-        let url = URL(string: "https://mindandbodyresetcoach.com/api/auth/google?returnTo=habittracker://auth")!
+        var comps = URLComponents(string: "https://mindandbodyresetcoach.com/api/auth/google")!
+        comps.queryItems = [URLQueryItem(name: "returnTo", value: "habittracker://auth")]
+        guard let url = comps.url else {
+            throw APIError.server("Could not start Google sign-in.")
+        }
         return try await withCheckedThrowingContinuation { cont in
-            let session = ASWebAuthenticationSession(url: url, callbackURLScheme: "habittracker") { callback, error in
+            var finished = false
+            let finish: (Result<String, Error>) -> Void = { result in
+                guard !finished else { return }
+                finished = true
+                cont.resume(with: result)
+            }
+            let session = ASWebAuthenticationSession(url: url, callbackURLScheme: "habittracker") { [weak self] callback, error in
+                self?.session = nil
                 if let error {
-                    cont.resume(throwing: error)
+                    finish(.failure(error))
                     return
                 }
-                guard
-                    let callback,
-                    let token = URLComponents(url: callback, resolvingAgainstBaseURL: false)?
+                let token = callback.flatMap {
+                    URLComponents(url: $0, resolvingAgainstBaseURL: false)?
                         .queryItems?.first(where: { $0.name == "token" })?.value
-                else {
-                    cont.resume(throwing: APIError.server("Google sign-in did not return a session."))
-                    return
                 }
-                cont.resume(returning: token)
+                if let token, !token.isEmpty {
+                    finish(.success(token))
+                } else {
+                    finish(.failure(APIError.server("Google sign-in did not return a session.")))
+                }
             }
             session.presentationContextProvider = self
             session.prefersEphemeralWebBrowserSession = true
+            self.session = session
             if !session.start() {
-                cont.resume(throwing: APIError.server("Could not open Google sign-in."))
+                self.session = nil
+                finish(.failure(APIError.server("Could not open Google sign-in.")))
             }
         }
     }

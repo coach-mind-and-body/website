@@ -11,6 +11,41 @@ enum HTTheme {
     static let title = Font.system(.title, design: .serif).weight(.bold)
 }
 
+private struct OpenProfileKey: EnvironmentKey {
+    static let defaultValue: () -> Void = {}
+}
+
+extension EnvironmentValues {
+    var openProfile: () -> Void {
+        get { self[OpenProfileKey.self] }
+        set { self[OpenProfileKey.self] = newValue }
+    }
+}
+
+struct ProfileAvatarButton: View {
+    var auth: AuthStore
+    var isActive = false
+    var action: (() -> Void)? = nil
+    @Environment(\.openProfile) private var openProfile
+
+    var body: some View {
+        Button {
+            (action ?? openProfile)()
+        } label: {
+            Image(systemName: auth.isSignedIn ? "person.crop.circle.fill" : "person.crop.circle")
+                .font(.system(size: 22, weight: .regular))
+                .foregroundStyle(isActive ? Color.white : HTTheme.forest)
+                .frame(width: 40, height: 40)
+                .background(isActive ? HTTheme.forest : Color.white.opacity(0.92))
+                .clipShape(Circle())
+                .overlay(Circle().stroke(isActive ? HTTheme.forest : HTTheme.roseBorder))
+                .shadow(color: HTTheme.forest.opacity(0.1), radius: 6, y: 2)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Profile")
+    }
+}
+
 struct HTCard<Content: View>: View {
     @ViewBuilder var content: () -> Content
 

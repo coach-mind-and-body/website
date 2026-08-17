@@ -97,11 +97,15 @@ final class AuthStore {
         await client.setToken(token)
         if let me = try? await loadMeOptional() {
             user = me
-        } else if let me = try? await client.query("auth.me") as AuthUser {
-            user = me
-        } else {
-            errorMessage = "Signed in, but the profile did not load."
+            return
         }
+        if let me = try? await client.query("auth.me") as AuthUser {
+            user = me
+            return
+        }
+        // Token is valid enough to persist; keep the session even if /me is slow.
+        user = AuthUser(id: 0, name: "Signed in", email: nil, role: nil)
+        errorMessage = nil
     }
 
     func signOut() {

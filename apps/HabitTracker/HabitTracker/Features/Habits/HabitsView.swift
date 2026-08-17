@@ -29,7 +29,7 @@ struct HabitsView: View {
     private var guestBanner: some View {
         HStack(spacing: 8) {
             Image(systemName: "info.circle")
-            Text("Tracking on this iPhone only. Sign in on the You tab to sync.")
+            Text("Tracking on this iPhone only. Sign in from the profile icon to sync.")
                 .font(.caption.weight(.medium))
         }
         .foregroundStyle(.white)
@@ -62,6 +62,7 @@ struct HabitsView: View {
             .background(model.currentStreak >= 3 ? Color.orange.opacity(0.15) : Color.white)
             .clipShape(Capsule())
             .overlay(Capsule().stroke(model.currentStreak >= 3 ? Color.orange.opacity(0.4) : HTTheme.roseBorder))
+            Color.clear.frame(width: 40, height: 40)
         }
         .padding(.horizontal, 16)
         .padding(.top, 12)
