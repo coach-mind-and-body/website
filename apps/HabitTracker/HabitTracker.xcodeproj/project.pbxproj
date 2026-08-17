@@ -11,6 +11,7 @@
 		6AF4131B2EFC4775AEB6E872 /* HabitTracker/Config/AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A5C3AC7FFF21BF335BE4F2C /* HabitTracker/Config/AppConfig.swift */; };
 		A3EBF0BEC6DA8F413074753C /* HabitTracker/Core/AppGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23CF8436392F6B6EE543D238 /* HabitTracker/Core/AppGroup.swift */; };
 		03FFD4BE053B197D4159D3B6 /* HabitTracker/Core/Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C58044D3B055E28F45FD56D4 /* HabitTracker/Core/Theme.swift */; };
+		48CD18E0817A133FD1FFBFF1 /* HabitTracker/Core/YouTubeEmbed.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19134045713AE24A5C95E205 /* HabitTracker/Core/YouTubeEmbed.swift */; };
 		2973E27B5DACCDA261C7F1B4 /* HabitTracker/Core/KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E7C70699A277E64749959D0 /* HabitTracker/Core/KeychainStore.swift */; };
 		ECEB72280CA7224BC1D98F07 /* HabitTracker/Core/GuestLocalStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E5A85FE1EB9073BCED1396D /* HabitTracker/Core/GuestLocalStore.swift */; };
 		42CBBFFE0375886BBD7DBD09 /* HabitTracker/Core/Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3BC2B1B669EA2FB0EC7B4E9 /* HabitTracker/Core/Models.swift */; };
@@ -66,6 +67,7 @@
 		8A5C3AC7FFF21BF335BE4F2C /* HabitTracker/Config/AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Config/AppConfig.swift; sourceTree = "<group>"; };
 		23CF8436392F6B6EE543D238 /* HabitTracker/Core/AppGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Core/AppGroup.swift; sourceTree = "<group>"; };
 		C58044D3B055E28F45FD56D4 /* HabitTracker/Core/Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Core/Theme.swift; sourceTree = "<group>"; };
+		19134045713AE24A5C95E205 /* HabitTracker/Core/YouTubeEmbed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Core/YouTubeEmbed.swift; sourceTree = "<group>"; };
 		8E7C70699A277E64749959D0 /* HabitTracker/Core/KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Core/KeychainStore.swift; sourceTree = "<group>"; };
 		1E5A85FE1EB9073BCED1396D /* HabitTracker/Core/GuestLocalStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Core/GuestLocalStore.swift; sourceTree = "<group>"; };
 		F3BC2B1B669EA2FB0EC7B4E9 /* HabitTracker/Core/Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Core/Models.swift; sourceTree = "<group>"; };
@@ -131,6 +133,7 @@
 				8A5C3AC7FFF21BF335BE4F2C /* HabitTracker/Config/AppConfig.swift */,
 				23CF8436392F6B6EE543D238 /* HabitTracker/Core/AppGroup.swift */,
 				C58044D3B055E28F45FD56D4 /* HabitTracker/Core/Theme.swift */,
+				19134045713AE24A5C95E205 /* HabitTracker/Core/YouTubeEmbed.swift */,
 				8E7C70699A277E64749959D0 /* HabitTracker/Core/KeychainStore.swift */,
 				1E5A85FE1EB9073BCED1396D /* HabitTracker/Core/GuestLocalStore.swift */,
 				F3BC2B1B669EA2FB0EC7B4E9 /* HabitTracker/Core/Models.swift */,
@@ -270,6 +273,7 @@
 				6AF4131B2EFC4775AEB6E872 /* HabitTracker/Config/AppConfig.swift in Sources */,
 				A3EBF0BEC6DA8F413074753C /* HabitTracker/Core/AppGroup.swift in Sources */,
 				03FFD4BE053B197D4159D3B6 /* HabitTracker/Core/Theme.swift in Sources */,
+				48CD18E0817A133FD1FFBFF1 /* HabitTracker/Core/YouTubeEmbed.swift in Sources */,
 				2973E27B5DACCDA261C7F1B4 /* HabitTracker/Core/KeychainStore.swift in Sources */,
 				ECEB72280CA7224BC1D98F07 /* HabitTracker/Core/GuestLocalStore.swift in Sources */,
 				42CBBFFE0375886BBD7DBD09 /* HabitTracker/Core/Models.swift in Sources */,

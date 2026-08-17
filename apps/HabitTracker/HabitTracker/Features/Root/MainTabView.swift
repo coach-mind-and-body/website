@@ -46,20 +46,6 @@ struct MainTabView: View {
                     PodcastView(model: podcast, auth: auth)
                 }
             }
-            .overlay {
-                if tab == .habits {
-                    VStack {
-                        HStack {
-                            Spacer()
-                            ProfileAvatarButton(auth: auth)
-                                .padding(.trailing, 14)
-                                .padding(.top, 8)
-                        }
-                        Spacer()
-                    }
-                    .safeAreaPadding(.top)
-                }
-            }
             .padding(.bottom, HTTheme.bottomBarClearance)
             tabBar
                 .padding(.bottom, 10)

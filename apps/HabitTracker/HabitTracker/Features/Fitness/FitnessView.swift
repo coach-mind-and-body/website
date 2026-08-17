@@ -100,6 +100,7 @@ final class FitnessViewModel {
 struct FitnessView: View {
     @Bindable var model: FitnessViewModel
     @Bindable var auth: AuthStore
+    @State private var playingId: String?
 
     var body: some View {
         NavigationStack {
@@ -256,11 +257,23 @@ struct FitnessView: View {
                 }
                 LazyVStack(alignment: .leading, spacing: 10) {
                     ForEach(model.filteredVideos) { video in
-                        Link(destination: URL(string: video.videoUrl) ?? AppConfig.apiRoot) {
-                            HTCard {
-                                Text((video.category ?? "Workout").uppercased()).font(.caption2.weight(.bold)).foregroundStyle(HTTheme.gold)
-                                Text(video.title).foregroundStyle(HTTheme.forest)
-                                if let d = video.description { Text(d).font(.caption).foregroundStyle(HTTheme.muted).lineLimit(2) }
+                        let vid = YouTubeID.parse(video.videoUrl)
+                        HTCard {
+                            Text((video.category ?? "Workout").uppercased()).font(.caption2.weight(.bold)).foregroundStyle(HTTheme.gold)
+                            Text(video.title).foregroundStyle(HTTheme.forest)
+                            if let d = video.description { Text(d).font(.caption).foregroundStyle(HTTheme.muted).lineLimit(2) }
+                            if let vid, playingId == vid {
+                                YouTubeEmbed(videoId: vid)
+                                    .frame(height: 180)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                            } else if let vid {
+                                Button("Play") { playingId = vid }
+                                    .font(.caption.weight(.bold))
+                                    .foregroundStyle(HTTheme.gold)
+                            } else if let url = URL(string: video.videoUrl) {
+                                Link("Open video", destination: url)
+                                    .font(.caption.weight(.bold))
+                                    .foregroundStyle(HTTheme.gold)
                             }
                         }
                     }

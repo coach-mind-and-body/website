@@ -91,21 +91,22 @@ struct PodcastView: View {
                     }
 
                     if let ep = model.selected {
-                        AsyncImage(url: ep.thumbnail.flatMap(URL.init(string:))) { phase in
-                            if case .success(let img) = phase { img.resizable().scaledToFill() }
-                            else { HTTheme.roseBorder }
+                        if let vid = YouTubeID.parse(ep.videoId) ?? YouTubeID.parse(ep.id) {
+                            YouTubeEmbed(videoId: vid)
+                                .frame(height: 210)
+                                .clipShape(RoundedRectangle(cornerRadius: 16))
+                        } else {
+                            AsyncImage(url: ep.thumbnail.flatMap(URL.init(string:))) { phase in
+                                if case .success(let img) = phase { img.resizable().scaledToFill() }
+                                else { HTTheme.roseBorder }
+                            }
+                            .frame(height: 180)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
-                        .frame(height: 180)
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
 
                         Text(ep.title).font(.headline).foregroundStyle(HTTheme.forest)
                         if let d = ep.description, !d.isEmpty {
                             Text(d).font(.caption).foregroundStyle(HTTheme.muted).lineLimit(4)
-                        }
-                        if let url = URL(string: "https://www.youtube.com/watch?v=\(ep.videoId)") {
-                            Link("Play on YouTube", destination: url)
-                                .font(.subheadline.weight(.bold))
-                                .foregroundStyle(HTTheme.gold)
                         }
                         let actions = model.actions(for: ep)
                         if actions.isEmpty {

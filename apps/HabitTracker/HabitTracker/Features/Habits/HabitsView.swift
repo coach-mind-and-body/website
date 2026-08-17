@@ -65,7 +65,7 @@ struct HabitsView: View {
     }
 
     private var header: some View {
-        HStack(alignment: .top) {
+        HStack(alignment: .center, spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Today · \(MountainDate.dayNumber(MountainDate.today()))")
                     .font(.caption2.weight(.bold))
@@ -75,22 +75,22 @@ struct HabitsView: View {
                     .font(HTTheme.title)
                     .foregroundStyle(HTTheme.forest)
             }
-            Spacer()
+            Spacer(minLength: 8)
             HStack(spacing: 4) {
                 Image(systemName: model.currentStreak >= 3 ? "flame.fill" : "flame")
                 Text("\(model.currentStreak)")
                     .font(.subheadline.weight(.bold))
             }
             .foregroundStyle(model.currentStreak >= 3 ? Color.orange : HTTheme.muted)
+            .frame(height: 40)
             .padding(.horizontal, 12)
-            .padding(.vertical, 8)
             .background(model.currentStreak >= 3 ? Color.orange.opacity(0.15) : Color.white)
             .clipShape(Capsule())
             .overlay(Capsule().stroke(model.currentStreak >= 3 ? Color.orange.opacity(0.4) : HTTheme.roseBorder))
-            Color.clear.frame(width: 40, height: 40)
+            ProfileAvatarButton(auth: auth)
         }
         .padding(.horizontal, 16)
-        .padding(.top, 12)
+        .padding(.top, 8)
     }
 
     private var tabPicker: some View {
@@ -126,6 +126,7 @@ struct HabitsView: View {
             VStack(alignment: .leading, spacing: 14) {
                 healthStrip
                 forYouRow
+                challengeChips
                 habitsCard
                 victoriesCard
             }
@@ -159,39 +160,23 @@ struct HabitsView: View {
 
     private var forYouRow: some View {
         let unread = model.unreadUpdateCount
-        let featured = model.featuredChallenges.first
-        let done = featured.map { model.challengeDoneToday($0) } ?? false
-        let show = unread > 0 || featured != nil || !model.challenges.isEmpty
         return Group {
-            if show {
+            if unread > 0 {
                 Button {
-                    model.showUpdates = model.unreadUpdateCount > 0
-                    model.showChallenges = true
+                    model.showUpdates = true
+                    model.showChallenges = false
                     showForYou = true
                 } label: {
                     HStack(spacing: 10) {
-                        Image(systemName: unread > 0 ? "megaphone.fill" : "target")
+                        Image(systemName: "megaphone.fill")
                             .foregroundStyle(HTTheme.gold)
                         VStack(alignment: .leading, spacing: 2) {
-                            if unread > 0 {
-                                Text("From Lee Anne")
-                                    .font(.subheadline.weight(.bold))
-                                    .foregroundStyle(HTTheme.forest)
-                                Text(unread == 1 ? "1 new note" : "\(unread) new notes")
-                                    .font(.caption)
-                                    .foregroundStyle(HTTheme.muted)
-                            } else if let featured {
-                                Text(featured.title)
-                                    .font(.subheadline.weight(.bold))
-                                    .foregroundStyle(HTTheme.forest)
-                                Text(done ? "Done today" : "Challenge")
-                                    .font(.caption)
-                                    .foregroundStyle(HTTheme.muted)
-                            } else {
-                                Text("Challenges & notes")
-                                    .font(.subheadline.weight(.bold))
-                                    .foregroundStyle(HTTheme.forest)
-                            }
+                            Text("From Lee Anne")
+                                .font(.subheadline.weight(.bold))
+                                .foregroundStyle(HTTheme.forest)
+                            Text(unread == 1 ? "1 new note" : "\(unread) new notes")
+                                .font(.caption)
+                                .foregroundStyle(HTTheme.muted)
                         }
                         Spacer()
                         if unread > 0 {
@@ -293,11 +278,10 @@ struct HabitsView: View {
                 }
             }
             Text(update.message).font(.subheadline).foregroundStyle(HTTheme.muted)
-            if let vid = model.youtubeId(from: update.videoUrl),
-               let url = URL(string: "https://www.youtube.com/watch?v=\(vid)") {
-                Link("Watch video", destination: url)
-                    .font(.subheadline.weight(.bold))
-                    .foregroundStyle(HTTheme.gold)
+            if let vid = YouTubeID.parse(update.videoUrl) {
+                YouTubeEmbed(videoId: vid)
+                    .frame(height: 180)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
             }
         }
     }
