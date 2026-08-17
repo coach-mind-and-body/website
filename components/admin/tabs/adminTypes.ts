@@ -4,6 +4,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
   BookOpen,
+  ChefHat,
   Cookie,
   CreditCard,
   FolderOpen,
@@ -27,6 +28,7 @@ export type AdminTab =
   | "fpugroup"
   | "programbuilder"
   | "engagement"
+  | "food"
   | "blog"
   | "deposits"
   | "filelibrary"
@@ -43,6 +45,7 @@ export const ADMIN_TAB_IDS: AdminTab[] = [
   "fpugroup",
   "programbuilder",
   "engagement",
+  "food",
   "blog",
   "deposits",
   "filelibrary",
@@ -60,6 +63,7 @@ export const TABS: { id: AdminTab; label: string; icon: LucideIcon }[] = [
   { id: "fpugroup", label: "FPU Sign-Ups", icon: UserPlus },
   { id: "programbuilder", label: "Program Builder", icon: Layers },
   { id: "engagement", label: "Habit Tracker", icon: Target },
+  { id: "food", label: "Food Vault", icon: ChefHat },
   { id: "pageeditor", label: "Edit Financial Peace", icon: BookOpen },
   { id: "blog", label: "Blog", icon: BookOpen },
   { id: "deposits", label: "Payments", icon: CreditCard },

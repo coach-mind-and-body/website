@@ -8,6 +8,7 @@ import {
   Target,
   LogOut,
   UserRound,
+  MessageCircle,
   Shield,
   Headphones,
   ExternalLink,
@@ -151,6 +152,31 @@ export default function ProfileClient() {
             )}
           </div>
         </section>
+
+        <Link href="/habit-tracker/coach" className="block">
+          <section
+            className="bg-white rounded-3xl p-5 shadow-sm flex items-center justify-between gap-3"
+            style={{ border: "1px solid #f0e8e4" }}
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div
+                className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                style={{ background: "#f0e8e4", color: "#2d3b2d" }}
+              >
+                <MessageCircle size={18} />
+              </div>
+              <div className="min-w-0">
+                <p className="font-bold text-sm" style={{ color: "#2d3b2d" }}>
+                  Message Lee Anne
+                </p>
+                <p className="text-xs text-gray-500">
+                  Private thread — she sees it in her inbox
+                </p>
+              </div>
+            </div>
+            <ChevronRight size={18} className="text-gray-300 shrink-0" />
+          </section>
+        </Link>
 
         {/* Push enable */}
         <section

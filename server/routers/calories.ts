@@ -111,6 +111,8 @@ export const caloriesRouter = router({
       fat: z.number().min(0),
       fiber: z.number().min(0),
       imageUrl: z.string().optional(),
+      recipeId: z.number().optional(),
+      servings: z.number().min(0).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();

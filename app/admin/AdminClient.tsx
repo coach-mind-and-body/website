@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { UserPlus } from "lucide-react";
 import AdminPaymentsTab from "@/components/AdminPaymentsTab";
 import { AdminEngagementHub } from "@/components/admin/AdminEngagementHub";
+import { AdminFoodVaultTab } from "@/components/admin/AdminFoodVaultTab";
 import PageEditorTab from "@/components/PageEditorTab";
 import ProgramBuilderTab from "@/components/ProgramBuilderTab";
 import { AdminContactsTab } from "@/components/admin/AdminContactsTab";
@@ -184,6 +185,7 @@ export default function Admin() {
         {tab === "pageeditor" && <PageEditorTab />}
         {tab === "programbuilder" && <ProgramBuilderTab />}
         {tab === "engagement" && <AdminEngagementHub />}
+        {tab === "food" && <AdminFoodVaultTab />}
         {tab === "blog" && <AdminBlogTab />}
         {tab === "settings" && (
           <AdminMessagingSettingsTab gcalStatus={gcalStatus} disconnectGcal={disconnectGcal} />

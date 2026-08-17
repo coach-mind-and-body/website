@@ -29,6 +29,13 @@ const PILLARS = [
     points: ["Meal-by-meal logging", "Full macro breakdown", "Snap a photo for AI estimates"],
   },
   {
+    name: "Recipes",
+    title: "Lee Anne's recipe vault",
+    body: "High-protein, midlife-friendly meals you can actually cook on a Tuesday. Browse the vault, follow this week's plan, and send ingredients to your shopping list — food freedom, not food rules.",
+    href: "/habit-tracker/recipes",
+    points: ["Coach recipes + nutrition", "This-week meal plan", "One-tap log + shopping list"],
+  },
+  {
     name: "Fitness",
     title: "Workouts & video library",
     body: "Log sets, reps, weight, and duration — or follow guided videos and mark workouts complete when you're signed in.",
@@ -47,6 +54,7 @@ const PILLARS = [
 const WHY_US = [
   "Built for midlife women — not a bro-app clone",
   "Free to start — track on your device, no credit card",
+  "Lee Anne's recipe vault, this-week meal plan, and shopping list",
   "Optional free account to sync across phones",
   "Challenges, reminders, and coach-friendly privacy options",
   "From the same team as the Snack Hack & R.E.C.L.A.I.M. coaching",
@@ -210,9 +218,9 @@ export default function HabitTrackerInviteClient() {
               Everything in one tracker
             </h2>
             <p className="text-center text-sm text-gray-500 mb-8 max-w-xl mx-auto">
-              Three tabs. Same free tool. Switch between Dashboard, Macros, and Fitness anytime.
+              Habits, macros, Lee Anne's recipes, fitness, and the podcast — same free tool.
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {PILLARS.map((p) => (
                 <div
                   key={p.name}

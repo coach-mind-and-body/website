@@ -38,6 +38,7 @@ async function issueSession(openId: string, name: string) {
     path: "/",
     maxAge: ONE_YEAR_MS / 1000
   });
+  return sessionToken;
 }
 
 async function upsertLocalUser(data: {
@@ -125,8 +126,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ action:
         htmlBody: `<p>Hi ${name},</p><p>Welcome to Mind and Body Reset Coaching! Please verify your email address:</p><p><a href="${origin}/api/auth/verify-email?token=${emailVerifyToken}">Verify Email</a></p>`,
       }).catch(err => console.error("[Auth] Verification email failed:", err));
 
-      await issueSession(user.openId, user.name || name);
-      return NextResponse.json({ success: true, user: { id: user.id, name: user.name, email: user.email, role: user.role, emailVerified: user.emailVerified } });
+      const sessionToken = await issueSession(user.openId, user.name || name);
+      return NextResponse.json({ success: true, sessionToken, user: { id: user.id, name: user.name, email: user.email, role: user.role, emailVerified: user.emailVerified } });
     } catch (err) {
       console.error("[Auth] Signup error", err);
       return NextResponse.json({ error: "Signup failed" }, { status: 500 });
@@ -152,8 +153,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ action:
       if (ADMIN_EMAILS.includes(normalizedEmail) && user.role !== "admin") updateData.role = "admin";
       await db.update(users).set(updateData).where(eq(users.id, user.id));
 
-      await issueSession(user.openId, user.name || "");
-      return NextResponse.json({ success: true, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+      const sessionToken = await issueSession(user.openId, user.name || "");
+      return NextResponse.json({ success: true, sessionToken, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
     } catch (err) {
       console.error("[Auth] Login error", err);
       return NextResponse.json({ error: "Login failed" }, { status: 500 });

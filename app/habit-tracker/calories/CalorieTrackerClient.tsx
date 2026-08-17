@@ -14,6 +14,8 @@ import {
   Info,
   Pencil,
   Utensils,
+  ChefHat,
+  Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format, addDays } from "date-fns";
@@ -22,6 +24,24 @@ import Link from "next/link";
 import { todayMountainDateStr } from "@/lib/mountainTime";
 import { calendarDateStr, parseCalendarDate } from "@/lib/habitStreak";
 import { getDeviceId } from "@/lib/deviceId";
+import FoodHubNav from "@/components/habit/FoodHubNav";
+import FatSecretAttribution from "@/components/habit/FatSecretAttribution";
+
+type SelectedRecipe = {
+  id: number;
+  title: string;
+  servings: number;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
+};
+
+function scaleMacro(value: number, servings: number, recipeServings: number) {
+  const denom = recipeServings > 0 ? recipeServings : 1;
+  return Math.round((value || 0) * (servings / denom));
+}
 
 const LOCAL_KEY = "mbr_calorie_logs";
 const PROTEIN_GOAL_DEFAULT = 100;
@@ -90,8 +110,27 @@ export default function CalorieTrackerClient() {
   const [fiber, setFiber] = useState("");
   const [userHint, setUserHint] = useState("");
   const [showFullMacros, setShowFullMacros] = useState(false);
+  const [recipePickerOpen, setRecipePickerOpen] = useState(false);
+  const [recipeQuery, setRecipeQuery] = useState("");
+  const [selectedRecipe, setSelectedRecipe] = useState<SelectedRecipe | null>(null);
+  const [logServings, setLogServings] = useState(1);
+  const [fsInput, setFsInput] = useState("");
+  const [fsSubmitted, setFsSubmitted] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { data: fsStatus } = trpc.food.fatsecretStatus.useQuery();
+  const fsConfigured = Boolean(fsStatus?.configured);
+
+  const { data: vaultRecipes, isFetching: recipesLoading } = trpc.food.listRecipes.useQuery(
+    { q: recipeQuery.trim() || undefined },
+    { enabled: recipePickerOpen }
+  );
+
+  const { data: fsResults, isFetching: fsLoading } = trpc.food.fatsecretSearchFoods.useQuery(
+    { q: fsSubmitted },
+    { enabled: fsConfigured && fsSubmitted.trim().length > 0 }
+  );
 
   useEffect(() => {
     setMounted(true);
@@ -158,6 +197,7 @@ export default function CalorieTrackerClient() {
       setFat(data.fat.toString());
       setFiber(data.fiber.toString());
       setShowFullMacros(true);
+      setSelectedRecipe(null);
       toast.success("AI estimated macros — tweak if needed");
     },
     onError: (e) => toast.error(e.message),
@@ -172,6 +212,7 @@ export default function CalorieTrackerClient() {
       setFat(data.fat.toString());
       setFiber(data.fiber.toString());
       setShowFullMacros(true);
+      setSelectedRecipe(null);
       toast.success("AI estimated macros — tweak if needed");
     },
     onError: (e) => toast.error(e.message),
@@ -187,6 +228,46 @@ export default function CalorieTrackerClient() {
     setUserHint("");
     setEditingLogId(null);
     setShowFullMacros(false);
+    setRecipePickerOpen(false);
+    setRecipeQuery("");
+    setSelectedRecipe(null);
+    setLogServings(1);
+    setFsInput("");
+    setFsSubmitted("");
+  };
+
+  const applyRecipeMacros = (recipe: SelectedRecipe, servings: number) => {
+    setFoodName(recipe.title);
+    setCalories(String(scaleMacro(recipe.calories, servings, recipe.servings)));
+    setProtein(String(scaleMacro(recipe.protein, servings, recipe.servings)));
+    setCarbs(String(scaleMacro(recipe.carbs, servings, recipe.servings)));
+    setFat(String(scaleMacro(recipe.fat, servings, recipe.servings)));
+    setFiber(String(scaleMacro(recipe.fiber, servings, recipe.servings)));
+  };
+
+  const pickRecipe = (r: SelectedRecipe) => {
+    const recipe: SelectedRecipe = {
+      id: r.id,
+      title: r.title,
+      servings: r.servings > 0 ? r.servings : 1,
+      calories: r.calories || 0,
+      protein: r.protein || 0,
+      carbs: r.carbs || 0,
+      fat: r.fat || 0,
+      fiber: r.fiber || 0,
+    };
+    setSelectedRecipe(recipe);
+    setLogServings(1);
+    applyRecipeMacros(recipe, 1);
+    setShowFullMacros(true);
+    setRecipePickerOpen(false);
+  };
+
+  const changeLogServings = (next: number) => {
+    if (!selectedRecipe) return;
+    const servings = Math.max(1, next);
+    setLogServings(servings);
+    applyRecipeMacros(selectedRecipe, servings);
   };
 
   const dayLogs = useMemo(() => {
@@ -245,7 +326,12 @@ export default function CalorieTrackerClient() {
       if (editingLogId) {
         updateLogMutation.mutate({ id: editingLogId, ...payload });
       } else {
-        addLogMutation.mutate(payload);
+        addLogMutation.mutate({
+          ...payload,
+          ...(selectedRecipe
+            ? { recipeId: selectedRecipe.id, servings: logServings }
+            : {}),
+        });
       }
       return;
     }
@@ -348,6 +434,9 @@ export default function CalorieTrackerClient() {
             </p>
           </div>
         </div>
+        <div className="mt-4">
+          <FoodHubNav />
+        </div>
       </div>
 
       <div className="max-w-lg mx-auto px-4 space-y-4">
@@ -444,6 +533,19 @@ export default function CalorieTrackerClient() {
               </button>
             ))}
           </div>
+          <div className="mt-3 pt-3 border-t" style={{ borderColor: "#f0e8e4" }}>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#8a9a8a] mb-2">
+              From the vault
+            </p>
+            <Link
+              href="/habit-tracker/recipes"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-full text-sm font-bold border transition-all active:scale-95"
+              style={{ borderColor: "#f0e8e4", background: "#faf5f5", color: "#2d3b2d" }}
+            >
+              <ChefHat size={14} style={{ color: "#c9a96e" }} />
+              Browse recipes
+            </Link>
+          </div>
         </div>
 
         <AnimatePresence>
@@ -486,6 +588,99 @@ export default function CalorieTrackerClient() {
                 ))}
               </div>
 
+              <div className="mb-3">
+                <button
+                  type="button"
+                  onClick={() => setRecipePickerOpen((open) => !open)}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold"
+                  style={{ color: "#c9a96e" }}
+                >
+                  <ChefHat size={14} />
+                  {recipePickerOpen ? "Hide recipes" : "Pick a recipe"}
+                </button>
+                {recipePickerOpen && (
+                  <div
+                    className="mt-2 rounded-2xl border p-3"
+                    style={{ borderColor: "#f0e8e4", background: "#fcfaf9" }}
+                  >
+                    <input
+                      type="search"
+                      value={recipeQuery}
+                      onChange={(e) => setRecipeQuery(e.target.value)}
+                      placeholder="Search the vault…"
+                      className="w-full p-2.5 rounded-xl border text-sm mb-2 focus:outline-none focus:ring-1 focus:ring-[#c9a96e]"
+                    />
+                    {recipesLoading && (
+                      <div className="flex justify-center py-3">
+                        <Loader2 size={16} className="animate-spin text-gray-400" />
+                      </div>
+                    )}
+                    <div className="max-h-48 overflow-y-auto space-y-1">
+                      {(vaultRecipes ?? []).map((r) => (
+                        <button
+                          key={r.id}
+                          type="button"
+                          onClick={() =>
+                            pickRecipe({
+                              id: r.id,
+                              title: r.title,
+                              servings: r.servings,
+                              calories: r.calories,
+                              protein: r.protein,
+                              carbs: r.carbs,
+                              fat: r.fat,
+                              fiber: r.fiber,
+                            })
+                          }
+                          className="w-full text-left px-3 py-2 rounded-xl hover:bg-white transition-colors"
+                        >
+                          <div className="font-bold text-sm text-[#2d3b2d] truncate">{r.title}</div>
+                          <div className="text-[10px] text-gray-400">
+                            {r.protein}p · {r.calories} kcal · {r.servings} serving
+                            {r.servings === 1 ? "" : "s"}
+                          </div>
+                        </button>
+                      ))}
+                      {!recipesLoading && (vaultRecipes?.length ?? 0) === 0 && (
+                        <p className="text-xs text-gray-400 text-center py-2">No recipes yet</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {selectedRecipe && (
+                  <div
+                    className="mt-2 flex items-center justify-between gap-2 px-3 py-2 rounded-xl"
+                    style={{ background: "#f4f8f4" }}
+                  >
+                    <p className="text-xs font-bold text-[#2d3b2d] truncate min-w-0">
+                      {selectedRecipe.title}
+                    </p>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-[10px] font-bold uppercase text-gray-400">Servings</span>
+                      <button
+                        type="button"
+                        onClick={() => changeLogServings(logServings - 1)}
+                        className="w-6 h-6 rounded-full bg-white border text-sm font-bold text-[#2d3b2d]"
+                        style={{ borderColor: "#f0e8e4" }}
+                        aria-label="Fewer servings"
+                      >
+                        −
+                      </button>
+                      <span className="text-xs font-bold w-4 text-center">{logServings}</span>
+                      <button
+                        type="button"
+                        onClick={() => changeLogServings(logServings + 1)}
+                        className="w-6 h-6 rounded-full bg-white border text-sm font-bold text-[#2d3b2d]"
+                        style={{ borderColor: "#f0e8e4" }}
+                        aria-label="More servings"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Name + AI */}
               <div className="space-y-3">
                 <div>
@@ -516,6 +711,75 @@ export default function CalorieTrackerClient() {
                     </button>
                   </div>
                 </div>
+
+                {fsConfigured && (
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">
+                      Packaged food
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="search"
+                        value={fsInput}
+                        onChange={(e) => setFsInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            setFsSubmitted(fsInput.trim());
+                          }
+                        }}
+                        placeholder="Search FatSecret…"
+                        className="flex-1 p-3 rounded-xl border text-sm focus:outline-none focus:ring-1 focus:ring-[#c9a96e]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFsSubmitted(fsInput.trim())}
+                        disabled={!fsInput.trim() || fsLoading}
+                        className="px-3 rounded-xl font-bold text-xs shrink-0 disabled:opacity-50"
+                        style={{ background: "#fbeee9", color: "#c9a96e" }}
+                        aria-label="Search packaged foods"
+                      >
+                        {fsLoading ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
+                      </button>
+                    </div>
+                    {fsResults && fsResults.foods.length > 0 && (
+                      <div
+                        className="mt-2 max-h-40 overflow-y-auto space-y-1 rounded-2xl border p-2"
+                        style={{ borderColor: "#f0e8e4", background: "#fcfaf9" }}
+                      >
+                        {fsResults.foods.map((f) => (
+                          <button
+                            key={f.foodId}
+                            type="button"
+                            onClick={() => {
+                              setSelectedRecipe(null);
+                              setFoodName(f.brand ? `${f.name} (${f.brand})` : f.name);
+                              setCalories(String(f.calories || 0));
+                              setProtein(String(f.protein || 0));
+                              setCarbs(String(f.carbs || 0));
+                              setFat(String(f.fat || 0));
+                              setFiber("0");
+                              setShowFullMacros(true);
+                            }}
+                            className="w-full text-left px-3 py-2 rounded-xl hover:bg-white transition-colors"
+                          >
+                            <div className="font-bold text-sm text-[#2d3b2d] truncate">
+                              {f.name}
+                              {f.brand ? ` · ${f.brand}` : ""}
+                            </div>
+                            <div className="text-[10px] text-gray-400 truncate">
+                              {f.protein}p · {f.calories} kcal
+                              {f.description ? ` · ${f.description}` : ""}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {fsSubmitted && !fsLoading && fsResults && fsResults.foods.length === 0 && (
+                      <p className="text-xs text-gray-400 mt-2">No packaged foods matched.</p>
+                    )}
+                  </div>
+                )}
 
                 {/* Protein first — midlife priority */}
                 <div>
@@ -694,6 +958,8 @@ export default function CalorieTrackerClient() {
                       setFat(String(log.fat));
                       setFiber(String(log.fiber));
                       setShowFullMacros(true);
+                      setSelectedRecipe(null);
+                      setRecipePickerOpen(false);
                       setIsAdding(true);
                     }}
                     className="p-2 text-gray-300 hover:text-[#c9a96e]"
@@ -734,6 +1000,8 @@ export default function CalorieTrackerClient() {
             </Button>
           </div>
         )}
+
+        <FatSecretAttribution show={fsConfigured} />
       </div>
     </div>
   );

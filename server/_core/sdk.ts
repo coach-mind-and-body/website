@@ -255,7 +255,12 @@ class SDKServer {
   async authenticateNextRequest(req: globalThis.Request): Promise<User> {
     const cookieHeader = req.headers.get("cookie") || undefined;
     const cookies = this.parseCookies(cookieHeader);
-    const sessionCookie = cookies.get(COOKIE_NAME);
+    const authHeader = req.headers.get("authorization");
+    const bearer =
+      authHeader && authHeader.toLowerCase().startsWith("bearer ")
+        ? authHeader.slice(7).trim()
+        : null;
+    const sessionCookie = bearer || cookies.get(COOKIE_NAME);
     const session = await this.verifySession(sessionCookie);
 
     if (!session) {

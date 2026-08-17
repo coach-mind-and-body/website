@@ -625,6 +625,8 @@ export const conversations = mysqlTable("conversations", {
   unreadCount: int("unreadCount").default(0).notNull(),
   botActive: boolean("botActive").default(true).notNull(),
   lastMessageAt: timestamp("lastMessageAt").defaultNow().notNull(),
+  /** Client last opened the in-app coach thread (for unread badge). */
+  clientLastReadAt: timestamp("clientLastReadAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -779,6 +781,8 @@ export const calorieLogs = mysqlTable("calorie_logs", {
   fat: int("fat").default(0).notNull(),
   fiber: int("fiber").default(0).notNull(),
   imageUrl: varchar("imageUrl", { length: 1000 }), // If they snapped a photo
+  recipeId: int("recipeId"),
+  servings: int("servings").default(1).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -927,6 +931,109 @@ export const emailNewsletterSnippets = mysqlTable("email_newsletter_snippets", {
 
 export type EmailNewsletterSnippet = typeof emailNewsletterSnippets.$inferSelect;
 export type InsertEmailNewsletterSnippet = typeof emailNewsletterSnippets.$inferInsert;
+
+// ── Food vault: recipes, meal plans, shopping ────────────────────────────────
+export const recipes = mysqlTable("recipes", {
+  id: int("id").autoincrement().primaryKey(),
+  slug: varchar("slug", { length: 160 }).notNull().unique(),
+  title: varchar("title", { length: 500 }).notNull(),
+  description: text("description"),
+  imageUrl: varchar("imageUrl", { length: 1000 }),
+  source: mysqlEnum("source", ["coach", "fatsecret", "imported"]).default("coach").notNull(),
+  fatsecretRecipeId: varchar("fatsecretRecipeId", { length: 32 }),
+  fatsecretFoodId: varchar("fatsecretFoodId", { length: 32 }),
+  tagsJson: text("tagsJson"),
+  mealSlotsJson: text("mealSlotsJson"),
+  prepMinutes: int("prepMinutes").default(0).notNull(),
+  cookMinutes: int("cookMinutes").default(0).notNull(),
+  servings: int("servings").default(1).notNull(),
+  calories: int("calories").default(0).notNull(),
+  protein: int("protein").default(0).notNull(),
+  carbs: int("carbs").default(0).notNull(),
+  fat: int("fat").default(0).notNull(),
+  fiber: int("fiber").default(0).notNull(),
+  ingredientsJson: text("ingredientsJson"),
+  stepsJson: text("stepsJson"),
+  notes: text("notes"),
+  showNutrition: boolean("showNutrition").default(true).notNull(),
+  isPublished: boolean("isPublished").default(false).notNull(),
+  isFeatured: boolean("isFeatured").default(false).notNull(),
+  createdByUserId: int("createdByUserId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Recipe = typeof recipes.$inferSelect;
+export type InsertRecipe = typeof recipes.$inferInsert;
+
+export const mealPlans = mysqlTable("meal_plans", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 500 }).notNull(),
+  description: text("description"),
+  notes: text("notes"),
+  tagsJson: text("tagsJson"),
+  servingsDefault: int("servingsDefault").default(1).notNull(),
+  showNutrition: boolean("showNutrition").default(true).notNull(),
+  isPublished: boolean("isPublished").default(false).notNull(),
+  isFeatured: boolean("isFeatured").default(false).notNull(),
+  createdByUserId: int("createdByUserId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type MealPlan = typeof mealPlans.$inferSelect;
+export type InsertMealPlan = typeof mealPlans.$inferInsert;
+
+export const mealPlanSlots = mysqlTable("meal_plan_slots", {
+  id: int("id").autoincrement().primaryKey(),
+  mealPlanId: int("mealPlanId").notNull(),
+  dayOfWeek: int("dayOfWeek").notNull(), // 0 = Sunday
+  slot: mysqlEnum("slot", ["breakfast", "lunch", "dinner", "snack", "snack2"]).notNull(),
+  recipeId: int("recipeId").notNull(),
+  servings: int("servings").default(1).notNull(),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  notes: varchar("notes", { length: 500 }),
+});
+
+export type MealPlanSlot = typeof mealPlanSlots.$inferSelect;
+export type InsertMealPlanSlot = typeof mealPlanSlots.$inferInsert;
+
+export const mealPlanAssignments = mysqlTable("meal_plan_assignments", {
+  id: int("id").autoincrement().primaryKey(),
+  mealPlanId: int("mealPlanId").notNull(),
+  userId: int("userId").notNull(),
+  startDate: varchar("startDate", { length: 10 }),
+  notes: varchar("notes", { length: 500 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type MealPlanAssignment = typeof mealPlanAssignments.$inferSelect;
+export type InsertMealPlanAssignment = typeof mealPlanAssignments.$inferInsert;
+
+export const recipeFavorites = mysqlTable("recipe_favorites", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  recipeId: int("recipeId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type RecipeFavorite = typeof recipeFavorites.$inferSelect;
+
+export const shoppingListItems = mysqlTable("shopping_list_items", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  mealPlanId: int("mealPlanId"),
+  name: varchar("name", { length: 500 }).notNull(),
+  amount: varchar("amount", { length: 64 }),
+  unit: varchar("unit", { length: 64 }),
+  aisle: varchar("aisle", { length: 32 }).default("other").notNull(),
+  isChecked: boolean("isChecked").default(false).notNull(),
+  source: mysqlEnum("source", ["plan", "custom"]).default("custom").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ShoppingListItem = typeof shoppingListItems.$inferSelect;
+export type InsertShoppingListItem = typeof shoppingListItems.$inferInsert;
 
 // --- DUMMY EXPORTS TO BYPASS STATIC WEBPACK ERRORS FOR LEGACY CRM CODE ---
 export const vacationQuotes = mysqlTable("dummy_vq", { id: int("id") });

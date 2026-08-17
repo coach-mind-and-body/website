@@ -8,10 +8,12 @@ import {
   Activity,
   Headphones,
   UserRound,
+  ChefHat,
 } from "lucide-react";
 import HabitTrackerInstallPrompt from "@/components/HabitTrackerInstallPrompt";
 import HabitPodcastMiniPlayer from "@/components/HabitPodcastMiniPlayer";
 import { HabitPodcastPlayerProvider } from "@/contexts/HabitPodcastPlayerContext";
+import CoachNavButton from "@/components/habit/CoachNavButton";
 
 /** Light frosted glass with soft rose tint so it reads against the cream app */
 const glassStyle = {
@@ -41,6 +43,12 @@ export default function HabitTrackerLayout({
       exact: false,
     },
     {
+      name: "Recipes",
+      href: "/habit-tracker/recipes",
+      icon: ChefHat,
+      exact: false,
+    },
+    {
       name: "Fitness",
       href: "/habit-tracker/fitness",
       icon: Activity,
@@ -56,9 +64,21 @@ export default function HabitTrackerLayout({
 
   const podcastHref = "/habit-tracker/podcasts";
   const podcastActive = pathname?.startsWith(podcastHref) ?? false;
+  const coachHref = "/habit-tracker/coach";
+  const coachActive = pathname?.startsWith(coachHref) ?? false;
 
-  const isActive = (item: (typeof navItems)[number]) =>
-    item.exact ? pathname === item.href : pathname?.startsWith(item.href);
+  const isActive = (item: (typeof navItems)[number]) => {
+    if (!pathname) return false;
+    // Recipes hub: vault, this-week meal plan, and shop share one tab
+    if (item.href === "/habit-tracker/recipes") {
+      return (
+        pathname.startsWith("/habit-tracker/recipes") ||
+        pathname.startsWith("/habit-tracker/meal-plan") ||
+        pathname.startsWith("/habit-tracker/shop")
+      );
+    }
+    return item.exact ? pathname === item.href : pathname.startsWith(item.href);
+  };
 
   return (
     <HabitPodcastPlayerProvider>
@@ -110,6 +130,7 @@ export default function HabitTrackerLayout({
                 );
               })}
             </div>
+            <CoachNavButton active={coachActive} compact />
             <Link
               href={podcastHref}
               aria-label="Podcast"
@@ -172,6 +193,7 @@ export default function HabitTrackerLayout({
               })}
             </div>
 
+            <CoachNavButton active={coachActive} />
             <Link
               href={podcastHref}
               aria-label="Podcast"
