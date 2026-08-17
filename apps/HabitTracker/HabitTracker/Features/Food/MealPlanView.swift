@@ -54,7 +54,8 @@ struct MealPlanView: View {
             .navigationDestination(for: String.self) { slug in
                 RecipeDetailView(slug: slug, food: food, auth: auth)
             }
-            .task { await food.loadPlan() }
+            .task(id: food.sessionEpoch) { await food.loadPlan() }
+            .refreshable { await food.loadPlan() }
         }
     }
 }
@@ -95,7 +96,8 @@ struct ShopView: View {
                 }
             }
             .navigationTitle("Shop")
-            .task { await food.loadShop() }
+            .task(id: food.sessionEpoch) { await food.loadShop() }
+            .refreshable { await food.loadShop() }
         }
     }
 }
@@ -199,7 +201,8 @@ struct CaloriesView: View {
             }
             .background(HTTheme.cream.ignoresSafeArea())
             .navigationTitle("Macros")
-            .task { await food.loadLogs() }
+            .task(id: food.sessionEpoch) { await food.loadLogs() }
+            .refreshable { await food.loadLogs() }
         }
     }
 

@@ -5,6 +5,9 @@ enum SuperJSON {
     static func decode<T: Decodable>(_ type: T.Type, from data: Data) throws -> T {
         let raw = try JSONSerialization.jsonObject(with: data)
         let jsonValue = try unwrapPayload(raw)
+        if jsonValue is NSNull {
+            throw APIError.empty
+        }
         let normalized = applyDateMeta(jsonValue)
         let encoded = try JSONSerialization.data(withJSONObject: normalized, options: [.fragmentsAllowed])
         let decoder = JSONDecoder()

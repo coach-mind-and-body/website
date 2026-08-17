@@ -41,6 +41,7 @@ final class HabitsViewModel {
     private let auth: AuthStore
     private let health: HealthKitService
     private var didMergeGuest = false
+    var sessionEpoch: Int { auth.sessionEpoch }
 
     init(auth: AuthStore, health: HealthKitService) {
         self.auth = auth

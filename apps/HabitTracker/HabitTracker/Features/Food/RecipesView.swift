@@ -19,6 +19,16 @@ struct RecipesView: View {
                         .textFieldStyle(.roundedBorder)
                         .onSubmit { Task { await food.loadRecipes() } }
 
+                    if let err = food.errorMessage {
+                        Text(err).font(.caption).foregroundStyle(.red)
+                    } else if food.isLoading && food.recipes.isEmpty {
+                        ProgressView().frame(maxWidth: .infinity).padding(.top, 24)
+                    } else if food.recipes.isEmpty {
+                        Text("No recipes yet. Pull to refresh.")
+                            .font(.subheadline)
+                            .foregroundStyle(HTTheme.muted)
+                    }
+
                     LazyVStack(spacing: 12) {
                         ForEach(food.recipes) { recipe in
                             NavigationLink(value: recipe.slug) {
@@ -35,7 +45,8 @@ struct RecipesView: View {
             .navigationDestination(for: String.self) { slug in
                 RecipeDetailView(slug: slug, food: food, auth: auth)
             }
-            .task { await food.loadRecipes() }
+            .task(id: food.sessionEpoch) { await food.loadRecipes() }
+            .refreshable { await food.loadRecipes() }
         }
     }
 

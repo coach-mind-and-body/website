@@ -9,8 +9,9 @@ final class AuthStore {
     var token: String?
     var isRestoring = true
     var errorMessage: String?
+    var sessionEpoch = 0
 
-    var isSignedIn: Bool { token != nil && user != nil }
+    var isSignedIn: Bool { token != nil && user != nil && (user?.id ?? 0) > 0 }
 
     func restore() async {
         isRestoring = true
@@ -23,12 +24,16 @@ final class AuthStore {
         token = saved
         await client.setToken(saved)
         do {
-            let me: AuthUser = try await client.query("auth.me")
-            user = me
+            if let me = try await loadMeOptional() {
+                user = me
+                sessionEpoch += 1
+            } else {
+                signOut()
+            }
         } catch {
-            // Token expired or payload shape is null
             if let optional = try? await loadMeOptional() {
                 user = optional
+                sessionEpoch += 1
             } else {
                 signOut()
             }
@@ -36,16 +41,19 @@ final class AuthStore {
     }
 
     private func loadMeOptional() async throws -> AuthUser? {
-        // auth.me returns the user or null
         struct Box: Decodable {
             let id: Int?
             let name: String?
             let email: String?
             let role: String?
         }
-        let box: Box = try await client.query("auth.me")
-        guard let id = box.id else { return nil }
-        return AuthUser(id: id, name: box.name, email: box.email, role: box.role)
+        do {
+            let box: Box = try await client.query("auth.me")
+            guard let id = box.id, id > 0 else { return nil }
+            return AuthUser(id: id, name: box.name, email: box.email, role: box.role)
+        } catch APIError.empty {
+            return nil
+        }
     }
 
     func signIn(email: String, password: String) async {
@@ -56,7 +64,7 @@ final class AuthStore {
                 errorMessage = "Sign-in did not return a session. Update the server if this persists."
                 return
             }
-            apply(token: tok, user: u)
+            await apply(token: tok, user: u)
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -70,7 +78,7 @@ final class AuthStore {
                 errorMessage = "Account created but session missing. Try signing in."
                 return
             }
-            apply(token: tok, user: u)
+            await apply(token: tok, user: u)
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -84,7 +92,7 @@ final class AuthStore {
                 errorMessage = "Apple sign-in did not return a session."
                 return
             }
-            apply(token: tok, user: u)
+            await apply(token: tok, user: u)
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -97,28 +105,25 @@ final class AuthStore {
         await client.setToken(token)
         if let me = try? await loadMeOptional() {
             user = me
+            sessionEpoch += 1
             return
         }
-        if let me = try? await client.query("auth.me") as AuthUser {
-            user = me
-            return
-        }
-        // Token is valid enough to persist; keep the session even if /me is slow.
-        user = AuthUser(id: 0, name: "Signed in", email: nil, role: nil)
-        errorMessage = nil
+        errorMessage = "Signed in, but your profile did not load. Pull to refresh on the You screen."
     }
 
     func signOut() {
         KeychainStore.deleteToken()
         token = nil
         user = nil
+        sessionEpoch += 1
         Task { await client.setToken(nil) }
     }
 
-    private func apply(token: String, user: AuthUser) {
+    private func apply(token: String, user: AuthUser) async {
         self.token = token
         self.user = user
         KeychainStore.saveToken(token)
-        Task { await client.setToken(token) }
+        await client.setToken(token)
+        sessionEpoch += 1
     }
 }

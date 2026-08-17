@@ -164,7 +164,7 @@ struct CoachView: View {
             .navigationDestination(for: String.self) { slug in
                 RecipeDetailView(slug: slug, food: FoodViewModel(auth: auth), auth: auth)
             }
-            .task { await model.load() }
+            .task(id: auth.isSignedIn) { await model.load() }
             .sheet(isPresented: $model.showRecipePicker) {
                 recipePicker
             }

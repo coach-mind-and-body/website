@@ -14,6 +14,7 @@ final class FitnessViewModel {
     var category = "All"
     var errorMessage: String?
     private let auth: AuthStore
+    var sessionEpoch: Int { auth.sessionEpoch }
 
     init(auth: AuthStore) { self.auth = auth }
 
@@ -28,12 +29,17 @@ final class FitnessViewModel {
     }
 
     func load() async {
+        errorMessage = nil
         if auth.isSignedIn {
             logs = (try? await auth.client.query("fitness.getLogs", input: DateStrInput(dateStr: dateStr))) ?? []
         } else {
             logs = GuestLocalStore.loadFitness().filter { $0.dateStr == dateStr }
         }
-        videos = (try? await auth.client.query("fitness.getVideos")) ?? []
+        do {
+            videos = try await auth.client.query("fitness.getVideos")
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     func addQuick(name: String, minutes: Int) async {
@@ -102,7 +108,8 @@ struct FitnessView: View {
             }
             .background(HTTheme.cream.ignoresSafeArea())
             .navigationTitle("Fitness")
-            .task { await model.load() }
+            .task(id: model.sessionEpoch) { await model.load() }
+            .refreshable { await model.load() }
         }
     }
 
@@ -190,6 +197,14 @@ struct FitnessView: View {
                 }
             }
             ScrollView {
+                if let err = model.errorMessage {
+                    Text(err).font(.caption).foregroundStyle(.red).padding(16)
+                } else if model.filteredVideos.isEmpty {
+                    Text("No videos yet. Pull to refresh.")
+                        .font(.subheadline)
+                        .foregroundStyle(HTTheme.muted)
+                        .padding(16)
+                }
                 LazyVStack(alignment: .leading, spacing: 10) {
                     ForEach(model.filteredVideos) { video in
                         Link(destination: URL(string: video.videoUrl) ?? AppConfig.apiRoot) {

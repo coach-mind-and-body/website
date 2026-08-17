@@ -8,30 +8,41 @@ actor TRPCClient {
     }
 
     func query<T: Decodable>(_ path: String) async throws -> T {
-        try await send(path: path, body: try SuperJSON.encodeEmptyInput(), decode: T.self)
+        try await send(path: path, body: try SuperJSON.encodeEmptyInput(), decode: T.self, method: "GET")
     }
 
     func query<T: Decodable, I: Encodable>(_ path: String, input: I) async throws -> T {
-        try await send(path: path, body: try SuperJSON.encodeInput(input), decode: T.self)
+        try await send(path: path, body: try SuperJSON.encodeInput(input), decode: T.self, method: "GET")
     }
 
     func mutate<T: Decodable, I: Encodable>(_ path: String, input: I) async throws -> T {
-        try await send(path: path, body: try SuperJSON.encodeInput(input), decode: T.self)
+        try await send(path: path, body: try SuperJSON.encodeInput(input), decode: T.self, method: "POST")
     }
 
     func mutateEmpty<T: Decodable>(_ path: String) async throws -> T {
-        try await send(path: path, body: try SuperJSON.encodeEmptyInput(), decode: T.self)
+        try await send(path: path, body: try SuperJSON.encodeEmptyInput(), decode: T.self, method: "POST")
     }
 
-    private func send<T: Decodable>(path: String, body: Data, decode: T.Type) async throws -> T {
-        let url = AppConfig.trpcURL.appending(path: path)
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    private func send<T: Decodable>(path: String, body: Data, decode: T.Type, method: String) async throws -> T {
+        let base = AppConfig.trpcURL.appending(path: path)
+        var request = URLRequest(url: base)
+        request.httpMethod = method
         if let token, !token.isEmpty {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
-        request.httpBody = body
+        if method == "GET" {
+            var comps = URLComponents(url: base, resolvingAgainstBaseURL: false)
+            comps?.queryItems = [
+                URLQueryItem(name: "input", value: String(data: body, encoding: .utf8))
+            ]
+            guard let getURL = comps?.url else {
+                throw APIError.badPayload("Could not build request URL")
+            }
+            request.url = getURL
+        } else {
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = body
+        }
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse else {
@@ -47,7 +58,6 @@ actor TRPCClient {
         do {
             return try SuperJSON.decode(T.self, from: data)
         } catch {
-            // Some procedures return a raw JSON array/object without envelope in edge cases
             if let fallback = try? JSONDecoder().decode(T.self, from: data) {
                 return fallback
             }

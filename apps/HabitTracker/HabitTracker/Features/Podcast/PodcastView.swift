@@ -10,6 +10,7 @@ final class PodcastViewModel {
     var isLoading = false
     var errorMessage: String?
     private let auth: AuthStore
+    var sessionEpoch: Int { auth.sessionEpoch }
 
     init(auth: AuthStore) { self.auth = auth }
 
@@ -84,6 +85,13 @@ struct PodcastView: View {
                     .foregroundStyle(HTTheme.gold)
 
                     if model.isLoading { ProgressView().frame(maxWidth: .infinity) }
+                    if let err = model.errorMessage {
+                        Text(err).font(.caption).foregroundStyle(.red)
+                    } else if !model.isLoading && model.episodes.isEmpty {
+                        Text("No episodes yet. Pull to refresh.")
+                            .font(.subheadline)
+                            .foregroundStyle(HTTheme.muted)
+                    }
 
                     if let ep = model.selected {
                         AsyncImage(url: ep.thumbnail.flatMap(URL.init(string:))) { phase in
@@ -151,7 +159,8 @@ struct PodcastView: View {
             }
             .background(HTTheme.cream.ignoresSafeArea())
             .navigationTitle("Podcast")
-            .task { await model.load() }
+            .task(id: model.sessionEpoch) { await model.load() }
+            .refreshable { await model.load() }
         }
     }
 }

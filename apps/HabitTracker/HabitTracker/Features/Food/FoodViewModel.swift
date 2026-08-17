@@ -15,6 +15,7 @@ final class FoodViewModel {
     var selectedTag: String?
 
     private let auth: AuthStore
+    var sessionEpoch: Int { auth.sessionEpoch }
 
     init(auth: AuthStore) { self.auth = auth }
 
@@ -32,6 +33,7 @@ final class FoodViewModel {
                 favoritesOnly: nil
             )
             recipes = try await auth.client.query("food.listRecipes", input: input)
+            errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
         }

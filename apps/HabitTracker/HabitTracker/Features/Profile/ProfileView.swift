@@ -25,6 +25,9 @@ struct ProfileView: View {
                             .foregroundStyle(HTTheme.muted)
                         Button("Sign in or create account") { showLogin = true }
                     }
+                    if let err = auth.errorMessage {
+                        Text(err).font(.caption).foregroundStyle(.red)
+                    }
                 }
 
                 Section("Health") {
@@ -84,6 +87,7 @@ struct ProfileView: View {
                 LoginView(auth: auth, allowsSkip: true)
             }
             .task { await health.refreshToday() }
+            .refreshable { await auth.restore(); await health.refreshToday() }
         }
     }
 }

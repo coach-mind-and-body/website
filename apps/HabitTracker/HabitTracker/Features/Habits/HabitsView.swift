@@ -21,7 +21,7 @@ struct HabitsView: View {
             }
             .background(HTTheme.cream.ignoresSafeArea())
             .navigationBarHidden(true)
-            .task { await model.load(); await health.refreshToday() }
+            .task(id: model.sessionEpoch) { await model.load(); await health.refreshToday() }
             .refreshable { await model.load(); await health.refreshToday() }
         }
     }
