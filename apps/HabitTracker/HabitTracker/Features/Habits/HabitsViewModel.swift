@@ -311,6 +311,52 @@ final class HabitsViewModel {
         notes = all
     }
 
+    func healthCaption(for habit: Habit) -> String? {
+        let key = habit.title.lowercased()
+        if key.contains("move") {
+            let mins = Int(health.moveMinutesToday.rounded())
+            return mins > 0 ? "Apple Health · \(mins) min move" : nil
+        }
+        if key.contains("mindful") {
+            let mins = Int(health.mindfulMinutesToday.rounded())
+            return mins > 0 ? "Apple Health · \(mins) mindful min" : nil
+        }
+        if key.contains("sleep") {
+            guard health.sleepHoursLastNight > 0 else { return nil }
+            return String(format: "Apple Health · %.1fh sleep", health.sleepHoursLastNight)
+        }
+        return nil
+    }
+
+    func syncFromHealth() async {
+        await health.refreshToday()
+        guard dateStr == MountainDate.today() else { return }
+        for habit in habits {
+            let key = habit.title.lowercased()
+            if key.contains("move"), health.moveBodyMet {
+                let minutes = max(Int(health.moveMinutesToday.rounded()), habit.targetValue ?? 20)
+                await completeFromHealth(habit, numeric: habit.isNumeric ? minutes : nil)
+            } else if key.contains("mindful"), health.mindfulMet {
+                let minutes = max(Int(health.mindfulMinutesToday.rounded()), 1)
+                await completeFromHealth(habit, numeric: habit.isNumeric ? minutes : nil)
+            } else if key.contains("sleep"), health.restfulSleepMet {
+                let hours = Int(health.sleepHoursLastNight.rounded())
+                await completeFromHealth(habit, numeric: habit.isNumeric ? hours : nil)
+            }
+        }
+    }
+
+    private func completeFromHealth(_ habit: Habit, numeric: Int?) async {
+        if habit.isNumeric, let numeric {
+            if numericValue(habit) >= numeric && isCompleted(habit) { return }
+            await setNumeric(habit, value: max(numeric, numericValue(habit)))
+            return
+        }
+        if !isCompleted(habit) {
+            await toggle(habit)
+        }
+    }
+
     func selectDay(_ day: String) async {
         dateStr = day
         noteDraft = notes.first(where: { $0.dateStr == dateStr })?.note ?? ""

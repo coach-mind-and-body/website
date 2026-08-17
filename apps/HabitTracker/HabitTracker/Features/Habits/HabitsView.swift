@@ -21,8 +21,16 @@ struct HabitsView: View {
             }
             .background(HTTheme.cream.ignoresSafeArea())
             .navigationBarHidden(true)
-            .task(id: model.sessionEpoch) { await model.load(); await health.refreshToday() }
-            .refreshable { await model.load(); await health.refreshToday() }
+            .task(id: model.sessionEpoch) {
+                await model.load()
+                await health.refreshToday()
+                await model.syncFromHealth()
+            }
+            .refreshable {
+                await model.load()
+                await health.refreshToday()
+                await model.syncFromHealth()
+            }
         }
     }
 
@@ -114,16 +122,17 @@ struct HabitsView: View {
                 victoriesCard
             }
             .padding(16)
-            .padding(.bottom, 12)
+            .padding(.bottom, 48)
         }
     }
 
     private var healthStrip: some View {
-        HStack(spacing: 10) {
-            healthChip("Steps", value: "\(Int(health.stepsToday))")
-            healthChip("Sleep", value: String(format: "%.1fh", health.sleepHoursLastNight))
-            if let kg = health.weightKg {
-                healthChip("Weight", value: String(format: "%.1fkg", kg))
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                healthChip("Move", value: "\(Int(health.moveMinutesToday))m")
+                healthChip("Mindful", value: "\(Int(health.mindfulMinutesToday))m")
+                healthChip("Sleep", value: String(format: "%.1fh", health.sleepHoursLastNight))
+                healthChip("Steps", value: "\(Int(health.stepsToday))")
             }
         }
     }
@@ -134,7 +143,7 @@ struct HabitsView: View {
             Text(value).font(.headline).foregroundStyle(HTTheme.forest)
         }
         .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(minWidth: 92, alignment: .leading)
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(HTTheme.roseBorder))
@@ -460,6 +469,11 @@ struct HabitsView: View {
                         .foregroundStyle(done ? Color.white : HTTheme.forest)
                     if let d = habit.description, !d.isEmpty {
                         Text(d).font(.caption).foregroundStyle(done ? Color.white.opacity(0.85) : HTTheme.muted)
+                    }
+                    if let cap = model.healthCaption(for: habit) {
+                        Text(cap)
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(done ? Color.white.opacity(0.9) : HTTheme.gold)
                     }
                 }
                 Spacer()

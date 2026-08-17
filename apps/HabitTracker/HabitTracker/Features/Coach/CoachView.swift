@@ -135,6 +135,12 @@ struct CoachView: View {
                 composer
             }
             .navigationTitle(model.thread?.coachName ?? "Coach")
+            .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    ProfileAvatarButton(auth: auth)
+                }
+            }
             .navigationDestination(for: String.self) { slug in
                 RecipeDetailView(slug: slug, food: FoodViewModel(auth: auth), auth: auth)
             }

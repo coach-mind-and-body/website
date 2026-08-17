@@ -71,9 +71,6 @@ struct PodcastView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    Text("Podcast")
-                        .font(HTTheme.serif)
-                        .foregroundStyle(HTTheme.forest)
                     Text("Lee Anne’s Mind and Body Reset — listen on YouTube, then add a habit from the episode.")
                         .font(.subheadline)
                         .foregroundStyle(HTTheme.muted)
@@ -159,6 +156,12 @@ struct PodcastView: View {
             }
             .background(HTTheme.cream.ignoresSafeArea())
             .navigationTitle("Podcast")
+            .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    ProfileAvatarButton(auth: auth)
+                }
+            }
             .task(id: model.sessionEpoch) { await model.load() }
             .refreshable { await model.load() }
         }

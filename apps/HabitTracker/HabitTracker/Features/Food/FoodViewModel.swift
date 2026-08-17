@@ -13,6 +13,9 @@ final class FoodViewModel {
     var isLoading = false
     var errorMessage: String?
     var selectedTag: String?
+    var fatSecretOn = false
+    var fatSecretHits: [FatSecretFood] = []
+    var estimateBusy = false
 
     private let auth: AuthStore
     var sessionEpoch: Int { auth.sessionEpoch }
@@ -222,6 +225,64 @@ final class FoodViewModel {
         var all = GuestLocalStore.loadCalories().filter { $0.id != log.id }
         GuestLocalStore.saveCalories(all)
         logs = all.filter { $0.dateStr == dateStr }
+    }
+
+    func checkFatSecret() async {
+        let status: FatSecretStatus? = try? await auth.client.query("food.fatsecretStatus")
+        fatSecretOn = status?.configured == true
+    }
+
+    func searchFatSecret(_ q: String) async {
+        let trimmed = q.trimmingCharacters(in: .whitespaces)
+        guard fatSecretOn, !trimmed.isEmpty else {
+            fatSecretHits = []
+            return
+        }
+        do {
+            let payload: FatSecretFoodsPayload = try await auth.client.query(
+                "food.fatsecretSearchFoods",
+                input: FatSecretSearchInput(q: trimmed)
+            )
+            fatSecretHits = payload.foods
+            errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
+            fatSecretHits = []
+        }
+    }
+
+    func estimateText(_ name: String) async -> FoodEstimate? {
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return nil }
+        estimateBusy = true
+        defer { estimateBusy = false }
+        do {
+            let result: FoodEstimate = try await auth.client.mutate(
+                "calories.analyzeFoodText",
+                input: AnalyzeTextInput(foodName: trimmed, deviceId: AppConfig.deviceId)
+            )
+            errorMessage = nil
+            return result
+        } catch {
+            errorMessage = error.localizedDescription
+            return nil
+        }
+    }
+
+    func estimateImage(_ base64: String, hint: String?) async -> FoodEstimate? {
+        estimateBusy = true
+        defer { estimateBusy = false }
+        do {
+            let result: FoodEstimate = try await auth.client.mutate(
+                "calories.analyzeFoodImage",
+                input: AnalyzeImageInput(imageBase64: base64, userHint: hint, deviceId: AppConfig.deviceId)
+            )
+            errorMessage = nil
+            return result
+        } catch {
+            errorMessage = error.localizedDescription
+            return nil
+        }
     }
 
     func favorite(_ recipe: Recipe) async {

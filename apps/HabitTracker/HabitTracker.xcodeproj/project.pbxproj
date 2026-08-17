@@ -28,6 +28,7 @@
 		78BB551D6BC4F944A0422C5D /* HabitTracker/Features/Food/FoodViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C44DB4212892B4258AC38D8B /* HabitTracker/Features/Food/FoodViewModel.swift */; };
 		EDEA9C814E1071121A320075 /* HabitTracker/Features/Food/RecipesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82D5ABD19BFBCE3F2FE2514 /* HabitTracker/Features/Food/RecipesView.swift */; };
 		44C410A9F0D38A4DB060D260 /* HabitTracker/Features/Food/MealPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BAD50590DCEB91E4E5046B7 /* HabitTracker/Features/Food/MealPlanView.swift */; };
+		D20AECB615B30A96BD9B1484 /* HabitTracker/Features/Food/CaloriesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F97C9776AF2AB3585AA3B5C /* HabitTracker/Features/Food/CaloriesView.swift */; };
 		979F45181990B7F29C8C7A76 /* HabitTracker/Features/Fitness/FitnessView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF1D4FDF431B5AB47A72F4B1 /* HabitTracker/Features/Fitness/FitnessView.swift */; };
 		F8364A2AFBC48E64AE0E894C /* HabitTracker/Features/Podcast/PodcastView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 938900B7043B6C096755EF67 /* HabitTracker/Features/Podcast/PodcastView.swift */; };
 		B291EC2B4505131B76A84B83 /* HabitTracker/Features/Coach/CoachView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CD1992A3C7EAA350CB4097D /* HabitTracker/Features/Coach/CoachView.swift */; };
@@ -82,6 +83,7 @@
 		C44DB4212892B4258AC38D8B /* HabitTracker/Features/Food/FoodViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Features/Food/FoodViewModel.swift; sourceTree = "<group>"; };
 		A82D5ABD19BFBCE3F2FE2514 /* HabitTracker/Features/Food/RecipesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Features/Food/RecipesView.swift; sourceTree = "<group>"; };
 		1BAD50590DCEB91E4E5046B7 /* HabitTracker/Features/Food/MealPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Features/Food/MealPlanView.swift; sourceTree = "<group>"; };
+		5F97C9776AF2AB3585AA3B5C /* HabitTracker/Features/Food/CaloriesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Features/Food/CaloriesView.swift; sourceTree = "<group>"; };
 		EF1D4FDF431B5AB47A72F4B1 /* HabitTracker/Features/Fitness/FitnessView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Features/Fitness/FitnessView.swift; sourceTree = "<group>"; };
 		938900B7043B6C096755EF67 /* HabitTracker/Features/Podcast/PodcastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Features/Podcast/PodcastView.swift; sourceTree = "<group>"; };
 		7CD1992A3C7EAA350CB4097D /* HabitTracker/Features/Coach/CoachView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Features/Coach/CoachView.swift; sourceTree = "<group>"; };
@@ -146,6 +148,7 @@
 				C44DB4212892B4258AC38D8B /* HabitTracker/Features/Food/FoodViewModel.swift */,
 				A82D5ABD19BFBCE3F2FE2514 /* HabitTracker/Features/Food/RecipesView.swift */,
 				1BAD50590DCEB91E4E5046B7 /* HabitTracker/Features/Food/MealPlanView.swift */,
+				5F97C9776AF2AB3585AA3B5C /* HabitTracker/Features/Food/CaloriesView.swift */,
 				EF1D4FDF431B5AB47A72F4B1 /* HabitTracker/Features/Fitness/FitnessView.swift */,
 				938900B7043B6C096755EF67 /* HabitTracker/Features/Podcast/PodcastView.swift */,
 				7CD1992A3C7EAA350CB4097D /* HabitTracker/Features/Coach/CoachView.swift */,
@@ -284,6 +287,7 @@
 				78BB551D6BC4F944A0422C5D /* HabitTracker/Features/Food/FoodViewModel.swift in Sources */,
 				EDEA9C814E1071121A320075 /* HabitTracker/Features/Food/RecipesView.swift in Sources */,
 				44C410A9F0D38A4DB060D260 /* HabitTracker/Features/Food/MealPlanView.swift in Sources */,
+				D20AECB615B30A96BD9B1484 /* HabitTracker/Features/Food/CaloriesView.swift in Sources */,
 				979F45181990B7F29C8C7A76 /* HabitTracker/Features/Fitness/FitnessView.swift in Sources */,
 				F8364A2AFBC48E64AE0E894C /* HabitTracker/Features/Podcast/PodcastView.swift in Sources */,
 				B291EC2B4505131B76A84B83 /* HabitTracker/Features/Coach/CoachView.swift in Sources */,
@@ -365,7 +369,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "Habit Tracker";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Take a photo of a meal so we can estimate protein and extras. You can always type it instead.";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "Habit Tracker reads steps, sleep, and weight from Apple Health to fill in your day. This is a coaching tool, not medical advice. We do not sell Health data.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Habit Tracker reads steps, exercise minutes, workouts, mindful minutes, last night's sleep, and weight from Apple Health so Move Body, Mindful Minutes, and Restful Sleep can fill themselves in. This is a coaching tool, not medical advice. We do not sell Health data.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Habit Tracker does not write workouts unless you choose to in a later version.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Attach an existing meal photo if you prefer not to use the camera.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -393,7 +397,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "Habit Tracker";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Take a photo of a meal so we can estimate protein and extras. You can always type it instead.";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "Habit Tracker reads steps, sleep, and weight from Apple Health to fill in your day. This is a coaching tool, not medical advice. We do not sell Health data.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Habit Tracker reads steps, exercise minutes, workouts, mindful minutes, last night's sleep, and weight from Apple Health so Move Body, Mindful Minutes, and Restful Sleep can fill themselves in. This is a coaching tool, not medical advice. We do not sell Health data.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Habit Tracker does not write workouts unless you choose to in a later version.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Attach an existing meal photo if you prefer not to use the camera.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

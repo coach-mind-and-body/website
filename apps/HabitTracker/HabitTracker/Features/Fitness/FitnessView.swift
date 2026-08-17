@@ -93,6 +93,7 @@ final class FitnessViewModel {
 
 struct FitnessView: View {
     @Bindable var model: FitnessViewModel
+    @Bindable var auth: AuthStore
 
     var body: some View {
         NavigationStack {
@@ -108,6 +109,12 @@ struct FitnessView: View {
             }
             .background(HTTheme.cream.ignoresSafeArea())
             .navigationTitle("Fitness")
+            .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    ProfileAvatarButton(auth: auth)
+                }
+            }
             .task(id: model.sessionEpoch) { await model.load() }
             .refreshable { await model.load() }
         }

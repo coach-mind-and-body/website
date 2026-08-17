@@ -5,16 +5,8 @@ struct RecipesView: View {
     @Bindable var auth: AuthStore
 
     var body: some View {
-        NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    Text("The vault")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(HTTheme.muted)
-                        .textCase(.uppercase)
-                    Text("Recipes")
-                        .font(HTTheme.serif)
-                        .foregroundStyle(HTTheme.forest)
                     TextField("Search recipes", text: $food.query)
                         .textFieldStyle(.roundedBorder)
                         .onSubmit { Task { await food.loadRecipes() } }
@@ -40,14 +32,9 @@ struct RecipesView: View {
                 }
                 .padding(16)
             }
-            .background(HTTheme.cream.ignoresSafeArea())
-            .navigationTitle("Recipes")
-            .navigationDestination(for: String.self) { slug in
-                RecipeDetailView(slug: slug, food: food, auth: auth)
-            }
+            .background(HTTheme.cream)
             .task(id: food.sessionEpoch) { await food.loadRecipes() }
             .refreshable { await food.loadRecipes() }
-        }
     }
 
     private func recipeCard(_ recipe: Recipe) -> some View {

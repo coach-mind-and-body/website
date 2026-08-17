@@ -11,13 +11,24 @@ final class HealthKitService {
     var stepsToday: Double = 0
     var sleepHoursLastNight: Double = 0
     var weightKg: Double?
+    var exerciseMinutesToday: Double = 0
+    var workoutMinutesToday: Double = 0
+    var mindfulMinutesToday: Double = 0
+
+    /// Best “move” signal: Apple Exercise minutes, or logged workout time if higher.
+    var moveMinutesToday: Double { max(exerciseMinutesToday, workoutMinutesToday) }
+    var restfulSleepMet: Bool { sleepHoursLastNight >= 7 }
+    var moveBodyMet: Bool { moveMinutesToday >= 20 }
+    var mindfulMet: Bool { mindfulMinutesToday >= 1 }
 
     private var readTypes: Set<HKObjectType> {
         var set: Set<HKObjectType> = []
         if let s = HKObjectType.quantityType(forIdentifier: .stepCount) { set.insert(s) }
         if let s = HKObjectType.quantityType(forIdentifier: .bodyMass) { set.insert(s) }
         if let s = HKObjectType.quantityType(forIdentifier: .activeEnergyBurned) { set.insert(s) }
+        if let s = HKObjectType.quantityType(forIdentifier: .appleExerciseTime) { set.insert(s) }
         if let s = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) { set.insert(s) }
+        if let s = HKObjectType.categoryType(forIdentifier: .mindfulSession) { set.insert(s) }
         set.insert(HKObjectType.workoutType())
         return set
     }
@@ -40,12 +51,18 @@ final class HealthKitService {
         guard isAvailable else { return }
         async let steps = sum(.stepCount, unit: .count(), start: startOfToday())
         async let energy = sum(.activeEnergyBurned, unit: .kilocalorie(), start: startOfToday())
+        async let exercise = sum(.appleExerciseTime, unit: .minute(), start: startOfToday())
         async let sleep = sleepHours(from: startOfYesterday())
         async let mass = latest(.bodyMass, unit: .gramUnit(with: .kilo))
+        async let workouts = workoutMinutes(from: startOfToday())
+        async let mindful = mindfulMinutes(from: startOfToday())
         stepsToday = (try? await steps) ?? 0
         _ = try? await energy
+        exerciseMinutesToday = (try? await exercise) ?? 0
         sleepHoursLastNight = (try? await sleep) ?? 0
         weightKg = try? await mass
+        workoutMinutesToday = (try? await workouts) ?? 0
+        mindfulMinutesToday = (try? await mindful) ?? 0
     }
 
     private func startOfToday() -> Date {
@@ -97,6 +114,32 @@ final class HealthKitService {
                     .filter { asleep.contains($0.value) }
                     .reduce(0.0) { $0 + $1.endDate.timeIntervalSince($1.startDate) }
                 cont.resume(returning: seconds / 3600)
+            }
+            store.execute(q)
+        }
+    }
+
+    private func workoutMinutes(from start: Date) async throws -> Double {
+        let pred = HKQuery.predicateForSamples(withStart: start, end: Date())
+        return try await withCheckedThrowingContinuation { cont in
+            let q = HKSampleQuery(sampleType: .workoutType(), predicate: pred, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { _, samples, err in
+                if let err { cont.resume(throwing: err); return }
+                let seconds = (samples as? [HKWorkout] ?? []).reduce(0.0) { $0 + $1.duration }
+                cont.resume(returning: seconds / 60)
+            }
+            store.execute(q)
+        }
+    }
+
+    private func mindfulMinutes(from start: Date) async throws -> Double {
+        guard let type = HKObjectType.categoryType(forIdentifier: .mindfulSession) else { return 0 }
+        let pred = HKQuery.predicateForSamples(withStart: start, end: Date())
+        return try await withCheckedThrowingContinuation { cont in
+            let q = HKSampleQuery(sampleType: type, predicate: pred, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { _, samples, err in
+                if let err { cont.resume(throwing: err); return }
+                let seconds = (samples as? [HKCategorySample] ?? [])
+                    .reduce(0.0) { $0 + $1.endDate.timeIntervalSince($1.startDate) }
+                cont.resume(returning: seconds / 60)
             }
             store.execute(q)
         }

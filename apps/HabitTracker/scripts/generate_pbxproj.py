@@ -28,6 +28,7 @@ APP_SWIFT = [
     "HabitTracker/Features/Food/FoodViewModel.swift",
     "HabitTracker/Features/Food/RecipesView.swift",
     "HabitTracker/Features/Food/MealPlanView.swift",
+    "HabitTracker/Features/Food/CaloriesView.swift",
     "HabitTracker/Features/Fitness/FitnessView.swift",
     "HabitTracker/Features/Podcast/PodcastView.swift",
     "HabitTracker/Features/Coach/CoachView.swift",
@@ -321,7 +322,7 @@ def main() -> None:
 				INFOPLIST_KEY_CFBundleDisplayName = "Habit Tracker";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Take a photo of a meal so we can estimate protein and extras. You can always type it instead.";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "Habit Tracker reads steps, sleep, and weight from Apple Health to fill in your day. This is a coaching tool, not medical advice. We do not sell Health data.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Habit Tracker reads steps, exercise minutes, workouts, mindful minutes, last night's sleep, and weight from Apple Health so Move Body, Mindful Minutes, and Restful Sleep can fill themselves in. This is a coaching tool, not medical advice. We do not sell Health data.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Habit Tracker does not write workouts unless you choose to in a later version.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Attach an existing meal photo if you prefer not to use the camera.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

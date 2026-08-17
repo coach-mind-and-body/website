@@ -33,11 +33,11 @@ struct MainTabView: View {
                 case .habits:
                     HabitsView(model: habits, health: health, auth: auth)
                 case .macros:
-                    CaloriesView(food: food)
+                    CaloriesView(food: food, auth: auth)
                 case .recipes:
                     RecipesHubView(food: food, auth: auth)
                 case .fitness:
-                    FitnessView(model: fitness)
+                    FitnessView(model: fitness, auth: auth)
                 case .profile:
                     ProfileView(auth: auth, health: health)
                 case .coach:
@@ -47,18 +47,18 @@ struct MainTabView: View {
                 }
             }
             .overlay {
-                VStack {
-                    HStack {
-                        Spacer()
-                        if tab != .profile {
+                if tab == .habits {
+                    VStack {
+                        HStack {
+                            Spacer()
                             ProfileAvatarButton(auth: auth)
                                 .padding(.trailing, 14)
-                                .padding(.top, tab == .habits || tab == .recipes ? 8 : 4)
+                                .padding(.top, 8)
                         }
+                        Spacer()
                     }
-                    Spacer()
+                    .safeAreaPadding(.top)
                 }
-                .safeAreaPadding(.top)
             }
             .safeAreaPadding(.bottom)
             .padding(.bottom, HTTheme.bottomBarClearance)
@@ -83,7 +83,9 @@ struct MainTabView: View {
                 }
             }
         }
-        .sheet(isPresented: $showHealth) {
+        .sheet(isPresented: $showHealth, onDismiss: {
+            Task { await habits.syncFromHealth() }
+        }) {
             HealthPermissionView(health: health, isPresented: $showHealth)
         }
     }
@@ -179,27 +181,40 @@ struct RecipesHubView: View {
     @State private var page = 0
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 10) {
+        NavigationStack {
+            VStack(spacing: 0) {
                 Picker("", selection: $page) {
                     Text("Recipes").tag(0)
                     Text("Week").tag(1)
                     Text("Shop").tag(2)
                 }
                 .pickerStyle(.segmented)
-                Color.clear.frame(width: 40, height: 40)
-            }
-            .padding(.leading, 12)
-            .padding(.trailing, 8)
-            .padding(.vertical, 12)
-            .background(HTTheme.cream)
+                .padding(.horizontal, 16)
+                .padding(.top, 4)
+                .padding(.bottom, 10)
 
-            TabView(selection: $page) {
-                RecipesView(food: food, auth: auth).tag(0)
-                MealPlanView(food: food, auth: auth).tag(1)
-                ShopView(food: food).tag(2)
+                Group {
+                    switch page {
+                    case 1:
+                        MealPlanView(food: food, auth: auth)
+                    case 2:
+                        ShopView(food: food)
+                    default:
+                        RecipesView(food: food, auth: auth)
+                    }
+                }
             }
-            .tabViewStyle(.page(indexDisplayMode: .never))
+            .background(HTTheme.cream.ignoresSafeArea())
+            .navigationTitle(page == 1 ? "This week" : page == 2 ? "Shop" : "Recipes")
+            .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    ProfileAvatarButton(auth: auth)
+                }
+            }
+            .navigationDestination(for: String.self) { slug in
+                RecipeDetailView(slug: slug, food: food, auth: auth)
+            }
         }
     }
 }
@@ -214,7 +229,7 @@ struct HealthPermissionView: View {
                 Text("Apple Health")
                     .font(HTTheme.serif)
                     .foregroundStyle(HTTheme.forest)
-                Text("Habit Tracker can read steps, last night’s sleep, and weight so your day isn’t another form to fill out. You choose what to share. We never sell Health data. This is a coaching tool, not a medical device.")
+                Text("With your permission, Habit Tracker reads exercise minutes, workouts, mindful minutes, last night’s sleep, steps, and weight. Move Body (20m+), Mindful Minutes, and Restful Sleep (7h+) can check themselves from Apple Health. You choose what to share. We never sell Health data. This is a coaching tool, not a medical device.")
                     .foregroundStyle(HTTheme.muted)
                 if let err = health.lastError {
                     Text(err).foregroundStyle(.red).font(.caption)

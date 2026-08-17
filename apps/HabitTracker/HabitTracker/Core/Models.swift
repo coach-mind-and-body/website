@@ -372,6 +372,52 @@ struct DeleteCalorieInput: Encodable {
     let dateStr: String
 }
 
+struct FoodEstimate: Codable, Hashable {
+    var foodName: String
+    var calories: Int
+    var protein: Int
+    var carbs: Int
+    var fat: Int
+    var fiber: Int
+}
+
+struct AnalyzeTextInput: Encodable {
+    let foodName: String
+    var deviceId: String?
+}
+
+struct AnalyzeImageInput: Encodable {
+    let imageBase64: String
+    var userHint: String?
+    var deviceId: String?
+}
+
+struct FatSecretStatus: Codable {
+    var configured: Bool?
+}
+
+struct FatSecretSearchInput: Encodable {
+    let q: String
+    var page: Int?
+}
+
+struct FatSecretFood: Codable, Identifiable, Hashable {
+    var foodId: String
+    var name: String
+    var brand: String?
+    var description: String?
+    var calories: Int
+    var protein: Int
+    var carbs: Int
+    var fat: Int
+    var id: String { foodId }
+}
+
+struct FatSecretFoodsPayload: Codable {
+    var foods: [FatSecretFood]
+    var total: Int?
+}
+
 struct DeviceIdInput: Encodable {
     var deviceId: String?
 }
