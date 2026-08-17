@@ -263,9 +263,7 @@ struct FitnessView: View {
                             Text(video.title).foregroundStyle(HTTheme.forest)
                             if let d = video.description { Text(d).font(.caption).foregroundStyle(HTTheme.muted).lineLimit(2) }
                             if let vid, playingId == vid {
-                                YouTubeEmbed(videoId: vid)
-                                    .frame(height: 180)
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                YouTubePlayer(videoId: vid)
                             } else if let vid {
                                 Button("Play") { playingId = vid }
                                     .font(.caption.weight(.bold))

@@ -48,7 +48,8 @@ struct MainTabView: View {
             }
             .padding(.bottom, HTTheme.bottomBarClearance)
             tabBar
-                .padding(.bottom, 10)
+                .padding(.bottom, 6)
+                .ignoresSafeArea(.container, edges: .bottom)
         }
         .environment(\.openProfile) { tab = .profile }
         .tint(HTTheme.forest)

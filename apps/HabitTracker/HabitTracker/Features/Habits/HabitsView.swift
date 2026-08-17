@@ -279,9 +279,7 @@ struct HabitsView: View {
             }
             Text(update.message).font(.subheadline).foregroundStyle(HTTheme.muted)
             if let vid = YouTubeID.parse(update.videoUrl) {
-                YouTubeEmbed(videoId: vid)
-                    .frame(height: 180)
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                YouTubePlayer(videoId: vid)
             }
         }
     }

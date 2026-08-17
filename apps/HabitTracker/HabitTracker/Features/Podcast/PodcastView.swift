@@ -92,9 +92,7 @@ struct PodcastView: View {
 
                     if let ep = model.selected {
                         if let vid = YouTubeID.parse(ep.videoId) ?? YouTubeID.parse(ep.id) {
-                            YouTubeEmbed(videoId: vid)
-                                .frame(height: 210)
-                                .clipShape(RoundedRectangle(cornerRadius: 16))
+                            YouTubePlayer(videoId: vid)
                         } else {
                             AsyncImage(url: ep.thumbnail.flatMap(URL.init(string:))) { phase in
                                 if case .success(let img) = phase { img.resizable().scaledToFill() }
