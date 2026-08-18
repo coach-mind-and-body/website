@@ -16,27 +16,25 @@ final class CoachViewModel {
     var recipeQuery = ""
     var recipeHits: [Recipe] = []
     var recipesLoading = false
-    var notifyEnabled = false
+    var notifyEnabled = UserDefaults.standard.bool(forKey: "coach.notifyEnabled")
     var uploading = false
+    var isOnCoachTab = false
     private var lastSeenMessageId: Int?
     private let auth: AuthStore
 
     init(auth: AuthStore) { self.auth = auth }
 
-    func load() async {
+    func load(announce: Bool = false) async {
         guard auth.isSignedIn else { return }
         do {
             let previousLast = thread?.messages.last?.id
             thread = try await auth.client.query("coach.getThread")
             unread = (try? await auth.client.query("coach.unreadCount") as UnreadCount)?.count ?? 0
             let _: SuccessFlag = try await auth.client.mutateEmpty("coach.markRead")
-            if notifyEnabled,
-               let newest = thread?.messages.last,
-               !newest.isMine,
-               let previousLast,
-               newest.id != previousLast
-            {
-                await NotificationService.notifyCoachReply(preview: newest.content ?? "New message")
+            let newest = thread?.messages.last
+            let isNew = newest != nil && newest?.id != previousLast && newest?.isMine == false
+            if announce, notifyEnabled, isNew, !isOnCoachTab {
+                await NotificationService.notifyCoachReply(preview: newest?.content ?? "New message")
             }
             unread = 0
         } catch {
@@ -88,6 +86,7 @@ final class CoachViewModel {
 
     func enableNotifications() async {
         notifyEnabled = await NotificationService.requestAuthorization()
+        UserDefaults.standard.set(notifyEnabled, forKey: "coach.notifyEnabled")
     }
 
     func sendPhoto(_ image: UIImage) async {
@@ -164,7 +163,15 @@ struct CoachView: View {
             .navigationDestination(for: String.self) { slug in
                 RecipeDetailView(slug: slug, food: FoodViewModel(auth: auth), auth: auth)
             }
-            .task(id: auth.isSignedIn) { await model.load() }
+            .task(id: auth.isSignedIn) {
+                model.isOnCoachTab = true
+                await model.load(announce: false)
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .seconds(4))
+                    await model.load(announce: false)
+                }
+                model.isOnCoachTab = false
+            }
             .sheet(isPresented: $model.showRecipePicker) {
                 recipePicker
             }

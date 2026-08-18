@@ -14,6 +14,7 @@ struct MainTabView: View {
     @State private var podcast: PodcastViewModel
     @State private var tab: AppTab = .habits
     @State private var showHealth = false
+    @Environment(\.scenePhase) private var scenePhase
 
     init(auth: AuthStore, health: HealthKitService) {
         self.auth = auth
@@ -59,11 +60,28 @@ struct MainTabView: View {
                 showHealth = true
             }
             while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(20))
-                let before = coach.unread
-                await coach.refreshUnread()
-                if coach.notifyEnabled, coach.unread > before {
-                    await NotificationService.notifyCoachReply(preview: "New message in Coach")
+                try? await Task.sleep(for: .seconds(8))
+                if tab == .coach {
+                    coach.isOnCoachTab = true
+                    await coach.load(announce: false)
+                } else {
+                    coach.isOnCoachTab = false
+                    let before = coach.unread
+                    await coach.refreshUnread()
+                    if coach.notifyEnabled, coach.unread > before {
+                        await NotificationService.notifyCoachReply(preview: "New message in Coach")
+                    }
+                }
+            }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                Task {
+                    if tab == .coach {
+                        await coach.load(announce: false)
+                    } else {
+                        await coach.refreshUnread()
+                    }
                 }
             }
         }
