@@ -60,17 +60,12 @@ struct MainTabView: View {
                 showHealth = true
             }
             while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(8))
-                if tab == .coach {
-                    coach.isOnCoachTab = true
-                    await coach.load(announce: false)
-                } else {
-                    coach.isOnCoachTab = false
-                    let before = coach.unread
-                    await coach.refreshUnread()
-                    if coach.notifyEnabled, coach.unread > before {
-                        await NotificationService.notifyCoachReply(preview: "New message in Coach")
-                    }
+                try? await Task.sleep(for: .seconds(30))
+                if tab == .coach { continue }
+                let before = coach.unread
+                await coach.refreshUnread()
+                if coach.notifyEnabled, coach.unread > before {
+                    await NotificationService.notifyCoachReply(preview: "New message in Coach")
                 }
             }
         }

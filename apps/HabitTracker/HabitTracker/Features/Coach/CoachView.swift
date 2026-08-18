@@ -166,12 +166,8 @@ struct CoachView: View {
             .task(id: auth.isSignedIn) {
                 model.isOnCoachTab = true
                 await model.load(announce: false)
-                while !Task.isCancelled {
-                    try? await Task.sleep(for: .seconds(4))
-                    await model.load(announce: false)
-                }
-                model.isOnCoachTab = false
             }
+            .onDisappear { model.isOnCoachTab = false }
             .sheet(isPresented: $model.showRecipePicker) {
                 recipePicker
             }

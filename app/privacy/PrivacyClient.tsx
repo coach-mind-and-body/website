@@ -106,6 +106,11 @@ export default function Privacy() {
               </h2>
               <p className="text-base leading-relaxed" style={{ color: "oklch(0.40 0.02 160)" }}>
                 You may request to access, update, or delete your personal information or unsubscribe from emails at any time.
+                Habit Tracker account deletion: email{" "}
+                <a href="mailto:coach@mindandbodyresetcoach.com" className="underline">
+                  coach@mindandbodyresetcoach.com
+                </a>{" "}
+                from the signed-in address.
               </p>
             </div>
 
@@ -153,18 +158,90 @@ export default function Privacy() {
                 </p>
                 <p>
                   <strong style={{ color: "oklch(0.22 0.02 160)" }}>Camera &amp; photos.</strong> Optional. You can
-                  photograph a meal for an AI portion estimate, or send a photo to your coach. Images are sent to our
-                  servers to provide that feature.
+                  photograph a meal for an AI portion estimate, or send a photo to your coach. Estimate photos are sent
+                  to our servers and to the AI processor described in section 7. Coach photos are stored so Lee Anne can
+                  see them in her inbox.
                 </p>
                 <p>
                   <strong style={{ color: "oklch(0.22 0.02 160)" }}>Notifications.</strong> Optional evening reminders
                   and coach-reply alerts. You can turn these off in the app or iOS Settings.
                 </p>
                 <p>
-                  You may revoke Health access in iOS Settings → Health → Data Access. You may request deletion of
-                  your Habit Tracker account and associated server data by emailing us.
+                  You may revoke Health access in iOS Settings → Health → Data Access. To delete your Habit Tracker
+                  account and associated server data, email{" "}
+                  <a href="mailto:coach@mindandbodyresetcoach.com" className="underline">
+                    coach@mindandbodyresetcoach.com
+                  </a>{" "}
+                  from the address on the account. We will delete or de-identify personal data we control, except where
+                  we must keep records (for example, payment or legal obligations).
                 </p>
               </div>
+            </div>
+
+            <div>
+              <h2
+                className="font-bold text-xl mb-3 pb-3"
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  color: "oklch(0.22 0.02 160)",
+                  borderBottom: "2px solid rgba(255,255,255,0.7)",
+                }}
+              >
+                7. Service providers
+              </h2>
+              <p className="text-base leading-relaxed mb-3" style={{ color: "oklch(0.40 0.02 160)" }}>
+                We use vendors to run the website and Habit Tracker. They process data only to provide those services:
+              </p>
+              <ul className="space-y-2 pl-5 list-disc" style={{ color: "oklch(0.40 0.02 160)" }}>
+                <li className="text-base leading-relaxed">Hosting and database (our cloud infrastructure)</li>
+                <li className="text-base leading-relaxed">Sign in with Apple and Google Sign-In (authentication)</li>
+                <li className="text-base leading-relaxed">Optional meal photo / text estimates use an AI model (Google Gemini) to return calories and macros. Meal images you submit for that feature are sent to that processor.</li>
+                <li className="text-base leading-relaxed">Optional packaged-food lookup via FatSecret</li>
+                <li className="text-base leading-relaxed">YouTube, if you play podcast or workout videos in the app</li>
+                <li className="text-base leading-relaxed">Analytics (website traffic) and email delivery</li>
+              </ul>
+            </div>
+
+            <div>
+              <h2
+                className="font-bold text-xl mb-3 pb-3"
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  color: "oklch(0.22 0.02 160)",
+                  borderBottom: "2px solid rgba(255,255,255,0.7)",
+                }}
+              >
+                8. Children
+              </h2>
+              <p className="text-base leading-relaxed" style={{ color: "oklch(0.40 0.02 160)" }}>
+                Habit Tracker and our coaching services are intended for adults. We do not knowingly collect personal
+                information from children under 13. If you believe a child has created an account, contact us and we
+                will delete it.
+              </p>
+            </div>
+
+            <div>
+              <h2
+                className="font-bold text-xl mb-3 pb-3"
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  color: "oklch(0.22 0.02 160)",
+                  borderBottom: "2px solid rgba(255,255,255,0.7)",
+                }}
+              >
+                9. Contact
+              </h2>
+              <p className="text-base leading-relaxed" style={{ color: "oklch(0.40 0.02 160)" }}>
+                Privacy questions or deletion requests:{" "}
+                <a href="mailto:coach@mindandbodyresetcoach.com" className="underline">
+                  coach@mindandbodyresetcoach.com
+                </a>
+                . Website:{" "}
+                <a href="https://mindandbodyresetcoach.com" className="underline">
+                  mindandbodyresetcoach.com
+                </a>
+                .
+              </p>
             </div>
           </div>
         </div>
