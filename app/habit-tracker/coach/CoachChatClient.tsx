@@ -10,6 +10,7 @@ import { usePageTitle } from "@/hooks/usePageTitle";
 import { useWebPush } from "@/hooks/useWebPush";
 import { BRAND } from "@shared/brand";
 import { ChatShareToolbar, parseRecipeSlug } from "@/components/habit/ChatShareToolbar";
+import { TypingDots } from "@/components/chat/TypingDots";
 
 const FOREST = "#2d3b2d";
 const GOLD = "#c9a96e";
@@ -37,13 +38,19 @@ export default function CoachChatClient() {
   const { isSupported, isSubscribed, isSubscribing, subscribeToPush } = useWebPush();
   const utils = trpc.useUtils();
   const [draft, setDraft] = useState("");
+  const [coachTyping, setCoachTyping] = useState(false);
+  const [optimistic, setOptimistic] = useState<
+    { id: number; content?: string; mediaUrl?: string; createdAt: Date }[]
+  >([]);
   const listRef = useRef<HTMLDivElement>(null);
   const didInitScroll = useRef(false);
+  const typingReset = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTypingSent = useRef(0);
 
   const { data, isLoading, refetch } = trpc.coach.getThread.useQuery(undefined, {
     enabled: isAuthenticated,
     refetchInterval: () =>
-      typeof document !== "undefined" && document.hidden ? false : 12_000,
+      typeof document !== "undefined" && document.hidden ? false : 30_000,
     refetchOnWindowFocus: true,
   });
 
@@ -51,20 +58,37 @@ export default function CoachChatClient() {
     onSuccess: () => void utils.coach.unreadCount.invalidate(),
   });
 
-  const send = trpc.coach.send.useMutation({
-    onSuccess: () => {
-      setDraft("");
-      void refetch();
-      void utils.coach.unreadCount.invalidate();
-    },
-    onError: (e) => toast.error(e.message),
-  });
+  const pingTyping = trpc.coach.typing.useMutation();
+
+  const send = trpc.coach.send.useMutation();
+
+  const fireSend = (payload: { content?: string; mediaUrl?: string }) => {
+    const content = payload.content?.trim();
+    if (!content && !payload.mediaUrl) return;
+    const id = -Date.now();
+    setOptimistic((prev) => [
+      ...prev,
+      { id, content, mediaUrl: payload.mediaUrl, createdAt: new Date() },
+    ]);
+    if (payload.content !== undefined) setDraft("");
+    send.mutate(
+      { content, mediaUrl: payload.mediaUrl },
+      {
+        onSuccess: () => {
+          void refetch().then(() => setOptimistic((prev) => prev.filter((o) => o.id !== id)));
+          void utils.coach.unreadCount.invalidate();
+        },
+        onError: (e) => {
+          setOptimistic((prev) => prev.filter((o) => o.id !== id));
+          if (content) setDraft(content);
+          toast.error(e.message);
+        },
+      }
+    );
+  };
 
   const share = (payload: { content?: string; mediaUrl?: string }) => {
-    send.mutate({
-      content: payload.content,
-      mediaUrl: payload.mediaUrl,
-    });
+    fireSend(payload);
   };
 
   useEffect(() => {
@@ -87,12 +111,43 @@ export default function CoachChatClient() {
       return;
     }
     el.scrollTop = el.scrollHeight;
-  }, [data?.messages.length]);
+  }, [data?.messages.length, optimistic.length, coachTyping]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !data?.conversationId) return;
+    const es = new EventSource(`/api/coach/events?conversationId=${data.conversationId}`);
+    es.onmessage = (ev) => {
+      try {
+        const payload = JSON.parse(ev.data) as { type?: string; who?: string };
+        if (payload.type === "message") {
+          setCoachTyping(false);
+          void refetch().then(() => {
+            if (payload.who === "client") setOptimistic([]);
+          });
+          void utils.coach.unreadCount.invalidate();
+          if (payload.who === "coach") markRead.mutate();
+        }
+        if (payload.type === "typing" && payload.who === "coach") {
+          setCoachTyping(true);
+          if (typingReset.current) clearTimeout(typingReset.current);
+          typingReset.current = setTimeout(() => setCoachTyping(false), 2500);
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+    return () => {
+      es.close();
+      if (typingReset.current) clearTimeout(typingReset.current);
+    };
+    // markRead / utils are stable enough; reconnect only when the thread id changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, data?.conversationId]);
 
   const onSend = () => {
     const text = draft.trim();
-    if (!text || send.isPending) return;
-    send.mutate({ content: text });
+    if (!text) return;
+    fireSend({ content: text });
   };
 
   if (authLoading) {
@@ -172,7 +227,8 @@ export default function CoachChatClient() {
                 <Loader2 className="animate-spin" style={{ color: GOLD }} />
               </div>
             ) : (
-              messages.map((m) => {
+              <>
+              {messages.map((m) => {
                 const mine = m.direction === "inbound";
                 const recipeSlug = parseRecipeSlug(m.content);
                 const isImage = Boolean(m.mediaUrl && /\.(png|jpe?g|gif|webp|svg)(\?|$)/i.test(m.mediaUrl));
@@ -229,7 +285,36 @@ export default function CoachChatClient() {
                     </div>
                   </div>
                 );
-              })
+              })}
+              {optimistic.map((m) => (
+                <div key={m.id} className="flex justify-end">
+                  <div
+                    className="max-w-[85%] rounded-2xl px-3.5 py-2.5 opacity-80"
+                    style={{ background: FOREST, color: "white" }}
+                  >
+                    {m.mediaUrl && /\.(png|jpe?g|gif|webp|svg)(\?|$)/i.test(m.mediaUrl) && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={m.mediaUrl} alt="" className="rounded-xl mb-2 max-h-48 object-cover w-full" />
+                    )}
+                    {m.content && (
+                      <p className="text-sm whitespace-pre-wrap leading-relaxed">{m.content}</p>
+                    )}
+                    <p className="text-[10px] mt-1 text-white/60">Sending…</p>
+                  </div>
+                </div>
+              ))}
+              {coachTyping && (
+                <div className="flex justify-start">
+                  <div
+                    className="rounded-2xl px-3.5 py-2.5 text-[#8a9a8a]"
+                    style={{ background: "#faf5f5", border: `1px solid ${BORDER}` }}
+                  >
+                    <TypingDots />
+                    <span className="sr-only">{BRAND.coachName} is typing</span>
+                  </div>
+                </div>
+              )}
+              </>
             )}
           </div>
 
@@ -238,7 +323,14 @@ export default function CoachChatClient() {
             <div className="flex gap-2 items-end">
             <textarea
               value={draft}
-              onChange={(e) => setDraft(e.target.value)}
+              onChange={(e) => {
+                setDraft(e.target.value);
+                const now = Date.now();
+                if (now - lastTypingSent.current > 1500) {
+                  lastTypingSent.current = now;
+                  pingTyping.mutate();
+                }
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
@@ -253,7 +345,7 @@ export default function CoachChatClient() {
             <button
               type="button"
               onClick={onSend}
-              disabled={send.isPending || !draft.trim()}
+              disabled={!draft.trim()}
               className="w-11 h-11 rounded-full flex items-center justify-center text-white shrink-0 disabled:opacity-40"
               style={{ background: FOREST }}
               aria-label="Send"

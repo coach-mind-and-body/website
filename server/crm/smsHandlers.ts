@@ -147,6 +147,9 @@ export async function handleInboundSms(formData: Record<string, string>) {
       status: "received"
     });
 
+    const { publishCoachEvent } = await import("../coachEvents");
+    publishCoachEvent({ type: "message", conversationId: conv!.id, who: "client" });
+
     // Cancel active nurture + review drips when the customer replies
     const replyUserId = conv!.userId ?? (await resolveContactByPhone(db, From)).userId;
     if (replyUserId) {

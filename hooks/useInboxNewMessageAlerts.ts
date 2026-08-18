@@ -27,14 +27,15 @@ export function useInboxNewMessageAlerts() {
       if (isInitialized.current && prev !== undefined && c.unreadCount > prev) {
         newMessagesCount++;
         if (c.id !== activeChatId) {
-          toast(`New message from ${c.userName || c.contactPhone || "customer"}`);
+          const via = c.platform === "webchat" ? "Habit Tracker" : c.platform === "sms" ? "SMS" : c.platform || "chat";
+          toast(`New ${via} message from ${c.userName || c.contactPhone || c.contactEmail || "customer"}`);
         }
       }
       previousCounts.current[c.id] = c.unreadCount;
     });
 
     if (newMessagesCount > 0) {
-      playInboxDing();
+      playInboxNotificationSound();
     }
 
     if (conversations.length > 0) {

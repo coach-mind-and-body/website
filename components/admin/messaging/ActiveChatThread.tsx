@@ -11,6 +11,8 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Phone, ArrowLeft, Loader2, MessageSquare, CreditCard, Star, Paperclip, Workflow, Link2, Video, Send, Clock, FileText, ChevronRight, RotateCcw } from "lucide-react";
 import { ChatShareToolbar } from "@/components/habit/ChatShareToolbar";
+import ChannelBadge, { channelColors } from "@/components/admin/ChannelBadge";
+import { TypingDots } from "@/components/chat/TypingDots";
 import { useInboxPollInterval } from "@/lib/useInboxPollInterval";
 import { toast } from "sonner";
 import { isToday, isYesterday, format } from "date-fns";
@@ -51,17 +53,55 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
   const [scheduledDate, setScheduledDate] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [pendingUploadUrl, setPendingUploadUrl] = useState<string | null>(null);
+  const [clientTyping, setClientTyping] = useState(false);
+  const [live, setLive] = useState(false);
+  const [optimistic, setOptimistic] = useState<
+    { id: number; content?: string; mediaUrl?: string | null; createdAt: string }[]
+  >([]);
+  const typingReset = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTypingSent = useRef(0);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  const pollInterval = useInboxPollInterval(3000, 15000);
+  const pollInterval = useInboxPollInterval(live ? 30000 : 3000, live ? 60000 : 15000);
   const { data: activeChat, isLoading: isLoadingChat } = trpc.messaging.getConversation.useQuery({ id: chatId }, {
     refetchInterval: pollInterval
   });
   
   const { data: sequencesData = [] } = trpc.crmAutomations.listSequences.useQuery();
   const { data: templates = [] } = trpc.messaging.listTemplates.useQuery();
+  const sendTyping = trpc.messaging.typing.useMutation();
+
+  useEffect(() => {
+    if (!chatId) return;
+    const es = new EventSource(`/api/coach/events?conversationId=${chatId}`);
+    es.onmessage = (ev) => {
+      try {
+        const data = JSON.parse(ev.data) as { type?: string; who?: string };
+        if (data.type === "hello") setLive(true);
+        if (data.type === "message") {
+          setClientTyping(false);
+          setOptimistic([]);
+          void utils.messaging.getConversation.invalidate({ id: chatId });
+          void utils.messaging.listConversations.invalidate();
+        }
+        if (data.type === "typing" && data.who === "client") {
+          setClientTyping(true);
+          if (typingReset.current) clearTimeout(typingReset.current);
+          typingReset.current = setTimeout(() => setClientTyping(false), 2500);
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+    es.onerror = () => setLive(false);
+    return () => {
+      es.close();
+      setLive(false);
+      if (typingReset.current) clearTimeout(typingReset.current);
+    };
+  }, [chatId, utils]);
 
   const activeName = activeChat?.conversation?.userName || activeChat?.conversation?.contactPhone || "Unknown Customer";
   const activePhone = activeChat?.conversation?.contactPhone || "Unknown";
@@ -127,12 +167,10 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
     }
-  }, [activeChat?.messages?.length]);
+  }, [activeChat?.messages?.length, optimistic.length, clientTyping]);
 
   const sendSms = trpc.messaging.mockSendSms.useMutation({
     onSuccess: () => {
-      setMessageText("");
-      setPendingUploadUrl(null);
       setScheduledDate(null);
       setIsInternalMode(false);
       utils.messaging.getConversation.invalidate({ id: chatId });
@@ -144,9 +182,6 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
         }
       }, 100);
     },
-    onError: (err) => {
-      toast.error(`Failed to send message: ${err.message}`);
-    }
   });
 
   const retryFailed = trpc.messaging.retryFailedMessage.useMutation({
@@ -215,6 +250,41 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
     setMessageText(prev => prev + (prev ? " " : "") + text);
   };
 
+  const isAppChat = activeChat?.conversation?.platform === "webchat";
+  const bubbleColor = channelColors(activeChat?.conversation?.platform).bubble;
+
+  const fireSend = () => {
+    const text = messageText.trim();
+    const media = pendingUploadUrl;
+    if (!text && !media) return;
+    const optId = -Date.now();
+    if (!scheduledDate) {
+      setOptimistic((prev) => [
+        ...prev,
+        { id: optId, content: text || undefined, mediaUrl: media, createdAt: new Date().toISOString() },
+      ]);
+    }
+    setMessageText("");
+    setPendingUploadUrl(null);
+    sendSms.mutate(
+      {
+        conversationId: chatId,
+        content: text || undefined,
+        mediaUrl: media || undefined,
+        scheduledAt: scheduledDate || undefined,
+      },
+      {
+        onSuccess: () => setOptimistic((prev) => prev.filter((o) => o.id !== optId)),
+        onError: (err) => {
+          setOptimistic((prev) => prev.filter((o) => o.id !== optId));
+          setMessageText(text);
+          setPendingUploadUrl(media);
+          toast.error(`Failed to send message: ${err.message}`);
+        },
+      }
+    );
+  };
+
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-slate-50/50 overflow-hidden">
       <div className="h-[65px] shrink-0 z-10 relative border-b flex items-center px-2 sm:px-6 bg-white shadow-sm">
@@ -243,7 +313,18 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
               )}
               <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors -ml-1" />
             </p>
-            <p className="text-[11px] text-slate-500 font-medium truncate px-1 mt-0.5 tracking-wide">{activePhone !== "Unknown" ? (activeChat?.conversation?.platform === 'facebook' || activeChat?.conversation?.platform === 'instagram' ? (activeChat?.conversation?.platform === 'instagram' ? 'Instagram Chat' : 'Facebook Messenger') : activePhone) : "No phone number"}</p>
+            <p className="text-[11px] text-slate-500 font-medium truncate px-1 mt-0.5 tracking-wide flex items-center justify-center gap-1.5">
+              <ChannelBadge platform={activeChat?.conversation?.platform} />
+              {activeChat?.conversation?.platform === "webchat"
+                ? (activeChat?.conversation?.contactEmail || "In-app chat — not SMS")
+                : activeChat?.conversation?.platform === "facebook"
+                  ? "Facebook Messenger"
+                  : activeChat?.conversation?.platform === "instagram"
+                    ? "Instagram"
+                    : activePhone !== "Unknown"
+                      ? activePhone
+                      : "No phone number"}
+            </p>
           </button>
         </div>
         
@@ -251,6 +332,7 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
           <Button variant="ghost" size="sm" onClick={() => closeChat.mutate({ id: chatId })} className="text-slate-500 hover:text-red-600 hidden sm:flex">
             Close Chat
           </Button>
+          {activeChat?.conversation?.platform !== "webchat" && (
           <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full bg-[#1da05c] hover:bg-[#188c50] text-white shadow-sm shrink-0 flex items-center justify-center" onClick={() => {
             const phone = activePhone !== "Unknown" ? activePhone : "";
             if (phone) {
@@ -262,6 +344,7 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
           }} title="Call this contact">
             <Phone className="h-4 w-4 fill-white text-white" />
           </Button>
+          )}
         </div>
       </div>
 
@@ -330,7 +413,10 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
                   </div>
                 ) : (
                   <div className={`flex flex-col gap-1 ${msg.direction === "outbound" ? "items-end" : "items-start"}`}>
-                    <div className={`${msg.direction === "outbound" ? "bg-[#E8EDFB] text-slate-900 rounded-tr-sm shadow-sm" : "bg-[#f1f1f1] text-slate-900 rounded-tl-sm"} p-3 rounded-2xl max-w-[80%] text-sm`}>
+                    <div
+                      className={`${msg.direction === "outbound" ? "text-white rounded-tr-sm shadow-sm" : "bg-[#E9E9EB] text-slate-900 rounded-tl-sm"} p-3 rounded-2xl max-w-[80%] text-sm`}
+                      style={msg.direction === "outbound" ? { background: bubbleColor } : undefined}
+                    >
                       {msg.mediaUrl && (
                         <img 
                           src={msg.mediaUrl!.includes("twilio.com") ? `/api/crm/media?url=${encodeURIComponent(msg.mediaUrl!)}` : msg.mediaUrl} 
@@ -385,6 +471,28 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
               </Fragment>
             );
           })}
+          {optimistic.map((msg) => (
+            <div key={msg.id} className="flex flex-col gap-1 items-end">
+              <div
+                className="text-white rounded-tr-sm shadow-sm p-3 rounded-2xl max-w-[80%] text-sm opacity-85"
+                style={{ background: bubbleColor }}
+              >
+                {msg.mediaUrl && (
+                  <img src={msg.mediaUrl} alt="" className="max-w-full rounded-md mb-2 object-contain max-h-64" />
+                )}
+                {msg.content && <p className="whitespace-pre-wrap break-words">{msg.content}</p>}
+              </div>
+              <span className="text-[10px] text-slate-400">Sending…</span>
+            </div>
+          ))}
+          {clientTyping && (
+            <div className="flex justify-start">
+              <div className="bg-[#E9E9EB] text-slate-500 rounded-2xl rounded-tl-sm px-3.5 py-2.5 shadow-sm">
+                <TypingDots />
+                <span className="sr-only">Client is typing</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -397,6 +505,7 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
             <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" title="Payment Request" onClick={() => setPaymentModalOpen(true)}>
               <CreditCard className="h-4 w-4" />
             </Button>
+            {!isAppChat && (
             <Button
               variant="ghost"
               size="icon"
@@ -417,6 +526,7 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
                 <Star className="h-4 w-4" />
               )}
             </Button>
+            )}
             <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" title="Attach File" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
               {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
             </Button>
@@ -498,9 +608,22 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
           
           <textarea 
             className="w-full min-h-[80px] p-3 text-sm focus:outline-none resize-none"
-            placeholder={`Message ${activeName}...`}
+            placeholder={isAppChat ? `iMessage · ${activeName}` : `SMS · ${activeName}`}
             value={messageText}
-            onChange={(e) => setMessageText(e.target.value)}
+            onChange={(e) => {
+              setMessageText(e.target.value);
+              const now = Date.now();
+              if (now - lastTypingSent.current > 1500) {
+                lastTypingSent.current = now;
+                sendTyping.mutate({ conversationId: chatId });
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                fireSend();
+              }
+            }}
           />
           
           {pendingUploadUrl && (
@@ -542,23 +665,17 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
                   <span className="ml-1 hover:text-blue-800">×</span>
                 </Badge>
               )}
-              <span className="text-xs text-muted-foreground mr-2 hidden sm:inline-block">
-                {messageText.length} / 1,600 characters
-              </span>
+              {!isAppChat && (
+                <span className="text-xs text-muted-foreground mr-2 hidden sm:inline-block">
+                  {messageText.length} / 1,600 characters
+                </span>
+              )}
               <Button 
                 size="sm" 
-                className={`bg-slate-900 hover:bg-slate-800 text-white rounded-full px-4`}
-                disabled={(!messageText.trim() && !pendingUploadUrl) || sendSms.isPending}
-                onClick={() => {
-                  if (messageText.trim() || pendingUploadUrl) {
-                    sendSms.mutate({ 
-                      conversationId: chatId, 
-                      content: messageText.trim() || undefined, 
-                      mediaUrl: pendingUploadUrl || undefined,
-                      scheduledAt: scheduledDate || undefined
-                    });
-                  }
-                }}
+                className="text-white rounded-full px-4"
+                style={{ background: bubbleColor }}
+                disabled={!messageText.trim() && !pendingUploadUrl}
+                onClick={fireSend}
               >
                 {sendSms.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
                 {scheduledDate ? "Schedule" : "Send"}

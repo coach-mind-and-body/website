@@ -628,6 +628,23 @@ export const messagingRouter = router({
         }).catch((e) => console.error("[Messaging] notifyUser failed", e));
       }
 
+      if (!isInternal && !isScheduled) {
+        const { publishCoachEvent } = await import("../coachEvents");
+        publishCoachEvent({
+          type: "message",
+          conversationId: input.conversationId,
+          who: "coach",
+        });
+      }
+
+      return { success: true };
+    }),
+
+  typing: adminProcedure
+    .input(z.object({ conversationId: z.number() }))
+    .mutation(async ({ input }) => {
+      const { publishCoachEvent } = await import("../coachEvents");
+      publishCoachEvent({ type: "typing", conversationId: input.conversationId, who: "coach" });
       return { success: true };
     }),
 
@@ -717,6 +734,9 @@ export const messagingRouter = router({
       if (messageStatus === "failed") {
         throw new Error("Failed to send SMS — check Twilio configuration");
       }
+
+      const { publishCoachEvent } = await import("../coachEvents");
+      publishCoachEvent({ type: "message", conversationId: conv!.id, who: "coach" });
 
       return { success: true, conversationId: conv!.id };
     }),

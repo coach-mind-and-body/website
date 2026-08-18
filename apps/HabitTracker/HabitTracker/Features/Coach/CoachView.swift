@@ -19,7 +19,11 @@ final class CoachViewModel {
     var notifyEnabled = UserDefaults.standard.bool(forKey: "coach.notifyEnabled")
     var uploading = false
     var isOnCoachTab = false
+    var coachTyping = false
     private var lastSeenMessageId: Int?
+    private var typingReset: Task<Void, Never>?
+    private var lastTypingSent = Date.distantPast
+    private var optimisticSeq = 0
     private let auth: AuthStore
 
     init(auth: AuthStore) { self.auth = auth }
@@ -27,11 +31,20 @@ final class CoachViewModel {
     func load(announce: Bool = false) async {
         guard auth.isSignedIn else { return }
         do {
-            let previousLast = thread?.messages.last?.id
+            let previousLast = thread?.messages.last(where: { $0.id > 0 })?.id
+            let pending = thread?.messages.filter { $0.pending == true } ?? []
             thread = try await auth.client.query("coach.getThread")
+            if !pending.isEmpty {
+                let serverText = Set((thread?.messages ?? []).compactMap(\.content))
+                let stillFlying = pending.filter { msg in
+                    guard let content = msg.content, !content.isEmpty else { return true }
+                    return !serverText.contains(content)
+                }
+                thread?.messages.append(contentsOf: stillFlying)
+            }
             unread = (try? await auth.client.query("coach.unreadCount") as UnreadCount)?.count ?? 0
             let _: SuccessFlag = try await auth.client.mutateEmpty("coach.markRead")
-            let newest = thread?.messages.last
+            let newest = thread?.messages.last(where: { $0.id > 0 })
             let isNew = newest != nil && newest?.id != previousLast && newest?.isMine == false
             if announce, notifyEnabled, isNew, !isOnCoachTab {
                 await NotificationService.notifyCoachReply(preview: newest?.content ?? "New message")
@@ -45,6 +58,22 @@ final class CoachViewModel {
     func send(content: String? = nil, mediaUrl: String? = nil) async {
         let text = (content ?? draft).trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty || mediaUrl != nil else { return }
+        optimisticSeq += 1
+        let optimisticId = -(Int(Date().timeIntervalSince1970 * 1000) + optimisticSeq)
+        let bubble = CoachMessage(
+            id: optimisticId,
+            direction: "inbound",
+            senderName: auth.user?.name,
+            content: text.isEmpty ? nil : text,
+            mediaUrl: mediaUrl,
+            createdAt: Date(),
+            isAutomated: false,
+            pending: true
+        )
+        if thread != nil {
+            thread?.messages.append(bubble)
+        }
+        draft = ""
         isSending = true
         defer { isSending = false }
         do {
@@ -52,10 +81,52 @@ final class CoachViewModel {
                 "coach.send",
                 input: SendCoachInput(content: text.isEmpty ? nil : text, mediaUrl: mediaUrl)
             )
-            draft = ""
-            await load()
+            await load(announce: false)
         } catch {
+            thread?.messages.removeAll { $0.id == optimisticId }
+            draft = text
             errorMessage = error.localizedDescription
+        }
+    }
+
+    func pingTyping() async {
+        guard Date().timeIntervalSince(lastTypingSent) > 1.5 else { return }
+        lastTypingSent = Date()
+        _ = try? await auth.client.mutateEmpty("coach.typing") as SuccessFlag
+    }
+
+    func listenForEvents() async {
+        guard let id = thread?.conversationId else { return }
+        var comps = URLComponents(url: AppConfig.apiRoot.appending(path: "api/coach/events"), resolvingAgainstBaseURL: false)
+        comps?.queryItems = [URLQueryItem(name: "conversationId", value: String(id))]
+        guard let url = comps?.url else { return }
+        var request = URLRequest(url: url)
+        request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
+        if let token = auth.token, !token.isEmpty {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        do {
+            let (bytes, _) = try await URLSession.shared.bytes(for: request)
+            for try await line in bytes.lines {
+                if Task.isCancelled { break }
+                guard line.hasPrefix("data: ") else { continue }
+                let payload = Data(line.dropFirst(6).utf8)
+                struct Ev: Decodable { var type: String?; var who: String? }
+                guard let ev = try? JSONDecoder().decode(Ev.self, from: payload) else { continue }
+                if ev.type == "message" {
+                    coachTyping = false
+                    await load(announce: ev.who == "coach")
+                } else if ev.type == "typing", ev.who == "coach" {
+                    coachTyping = true
+                    typingReset?.cancel()
+                    typingReset = Task {
+                        try? await Task.sleep(for: .seconds(2.5))
+                        if !Task.isCancelled { coachTyping = false }
+                    }
+                }
+            }
+        } catch {
+            /* stream dropped — caller may retry */
         }
     }
 
@@ -133,13 +204,32 @@ struct CoachView: View {
                                 bubble(msg)
                                     .id(msg.id)
                             }
+                            if model.coachTyping {
+                                HStack {
+                                    TypingDots()
+                                        .padding(.horizontal, 14)
+                                        .padding(.vertical, 11)
+                                        .background(Color.white)
+                                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                                    Spacer(minLength: 40)
+                                }
+                                .id("typing")
+                                .accessibilityLabel("Lee Anne is typing")
+                            }
                         }
                         .padding(16)
                     }
                     .dockScrollClearance()
                     .onChange(of: model.thread?.messages.count) {
-                        if let last = model.thread?.messages.last {
+                        if model.coachTyping {
+                            proxy.scrollTo("typing", anchor: .bottom)
+                        } else if let last = model.thread?.messages.last {
                             proxy.scrollTo(last.id, anchor: .bottom)
+                        }
+                    }
+                    .onChange(of: model.coachTyping) {
+                        if model.coachTyping {
+                            proxy.scrollTo("typing", anchor: .bottom)
                         }
                     }
                     .onAppear {
@@ -166,6 +256,11 @@ struct CoachView: View {
             .task(id: auth.isSignedIn) {
                 model.isOnCoachTab = true
                 await model.load(announce: false)
+                while !Task.isCancelled {
+                    await model.listenForEvents()
+                    try? await Task.sleep(for: .seconds(2))
+                }
+                model.isOnCoachTab = false
             }
             .onDisappear { model.isOnCoachTab = false }
             .sheet(isPresented: $model.showRecipePicker) {
@@ -224,6 +319,9 @@ struct CoachView: View {
                     .padding(10)
                     .background(Color.white)
                     .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .onChange(of: model.draft) {
+                        Task { await model.pingTyping() }
+                    }
                 Button {
                     Task { await model.send() }
                 } label: {
@@ -231,7 +329,7 @@ struct CoachView: View {
                         .font(.system(size: 32))
                         .foregroundStyle(HTTheme.forest)
                 }
-                .disabled(model.isSending || model.draft.trimmingCharacters(in: .whitespaces).isEmpty)
+                .disabled(model.draft.trimmingCharacters(in: .whitespaces).isEmpty)
             }
         }
         .padding(.horizontal, 12)
@@ -320,8 +418,39 @@ struct CoachView: View {
                 .padding(12)
                 .background(msg.isMine ? HTTheme.forest : Color.white)
                 .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                if msg.isMine, isLastMine(msg) {
+                    Text(msg.pending == true ? "Sending…" : "Delivered")
+                        .font(.caption2)
+                        .foregroundStyle(HTTheme.muted)
+                }
             }
             if !msg.isMine { Spacer(minLength: 40) }
         }
+    }
+
+    private func isLastMine(_ msg: CoachMessage) -> Bool {
+        model.thread?.messages.last(where: { $0.isMine })?.id == msg.id
+    }
+}
+
+private struct TypingDots: View {
+    @State private var bounce = false
+
+    var body: some View {
+        HStack(spacing: 5) {
+            ForEach(0..<3, id: \.self) { i in
+                Circle()
+                    .fill(Color(white: 0.62))
+                    .frame(width: 7, height: 7)
+                    .offset(y: bounce ? -3 : 2)
+                    .animation(
+                        .easeInOut(duration: 0.38)
+                            .repeatForever(autoreverses: true)
+                            .delay(Double(i) * 0.14),
+                        value: bounce
+                    )
+            }
+        }
+        .onAppear { bounce = true }
     }
 }

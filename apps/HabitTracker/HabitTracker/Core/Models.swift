@@ -189,6 +189,7 @@ struct CoachMessage: Codable, Identifiable, Hashable {
     var mediaUrl: String?
     var createdAt: Date?
     var isAutomated: Bool?
+    var pending: Bool?
 
     var isMine: Bool { direction == "inbound" }
 

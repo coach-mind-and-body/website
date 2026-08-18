@@ -3,6 +3,7 @@
 import { Users, BookOpen, CreditCard, Bell, Video, Cookie, Plus, RefreshCw, ExternalLink } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useInbox } from "@/components/admin/messaging/InboxContext";
+import ChannelBadge from "@/components/admin/ChannelBadge";
 import { toast } from "sonner";
 
 const KIND_STYLES: Record<string, { label: string; bg: string; color: string }> = {
@@ -375,14 +376,7 @@ export function AdminOverviewTab() {
                     <p className="font-semibold text-sm truncate" style={{ color: "oklch(0.20 0.015 50)" }}>
                       {conv.userName || conv.contactEmail || conv.contactPhone || "In-app client"}
                     </p>
-                    {conv.platform === "webchat" && (
-                      <span
-                        className="shrink-0 text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full"
-                        style={{ background: "oklch(0.93 0.04 148)", color: "oklch(0.38 0.10 148)" }}
-                      >
-                        In-app
-                      </span>
-                    )}
+                    <ChannelBadge platform={conv.platform} />
                   </div>
                   <p className="text-xs truncate" style={{ color: "oklch(0.52 0.015 50)" }}>
                     {conv.lastMessagePreview || "No messages"}

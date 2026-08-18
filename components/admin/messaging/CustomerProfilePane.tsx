@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import Link from "next/link";
 import { Check, Edit2, Phone, Mail, Users, Tag, Plus, Loader2, Workflow, Clock, CreditCard } from "lucide-react";
+import ChannelBadge from "@/components/admin/ChannelBadge";
 import { useInboxPollInterval } from "@/lib/useInboxPollInterval";
 import { toast } from "sonner";
 import type { Lead } from "@/drizzle/schema";
@@ -188,6 +189,7 @@ function CustomerProfilePaneContent({ chatId }: { chatId: number }) {
             <div className="flex flex-col gap-1">
               <h2 className="text-xl font-bold text-slate-800 truncate pr-2 flex items-center gap-2">
                 {activeName}
+                <ChannelBadge platform={activeChat?.conversation?.platform} />
               </h2>
               {activeChat?.conversation?.designationLabel &&
                 activeChat.conversation.designation !== "customer" && (
@@ -247,7 +249,11 @@ function CustomerProfilePaneContent({ chatId }: { chatId: number }) {
                   }
                 }}
               >
-                {activeChat?.conversation?.platform === 'facebook' || activeChat?.conversation?.platform === 'instagram' ? 'Meta PSID: ' + activePhone.slice(0,6) + '...' : activePhone}
+                {activeChat?.conversation?.platform === 'webchat'
+                  ? (activeChat?.conversation?.contactEmail || "Habit Tracker app — no SMS number")
+                  : activeChat?.conversation?.platform === 'facebook' || activeChat?.conversation?.platform === 'instagram'
+                    ? 'Meta PSID: ' + activePhone.slice(0,6) + '...'
+                    : activePhone}
               </button>
             )}
           </div>

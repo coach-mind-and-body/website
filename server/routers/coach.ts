@@ -179,8 +179,25 @@ export const coachRouter = router({
         url: "/admin",
       }).catch((e) => console.error("[Coach] notifyAdmins failed", e));
 
+      const { publishCoachEvent } = await import("../coachEvents");
+      publishCoachEvent({ type: "message", conversationId: thread.id, who: "client" });
+
       return { success: true };
     }),
+
+  typing: protectedProcedure.mutation(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return { success: true };
+    const [thread] = await db
+      .select({ id: conversations.id })
+      .from(conversations)
+      .where(and(eq(conversations.userId, ctx.user.id), eq(conversations.platform, "webchat")))
+      .limit(1);
+    if (!thread) return { success: true };
+    const { publishCoachEvent } = await import("../coachEvents");
+    publishCoachEvent({ type: "typing", conversationId: thread.id, who: "client" });
+    return { success: true };
+  }),
 
   markRead: protectedProcedure.mutation(async ({ ctx }) => {
     const db = await getDb();
