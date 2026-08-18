@@ -10,10 +10,7 @@ import { ENV } from "../../../../server/_core/env";
 import { sendTransactionalEmail } from "../../../../server/notifications";
 import { cookies } from "next/headers";
 
-const ADMIN_EMAILS = [
-  "carter@inseitzmarketing.com",
-  "coach@mindandbodyresetcoach.com",
-];
+import { isAdminEmail } from "@shared/adminEmails";
 
 function generateToken(bytes = 32): string {
   return crypto.randomBytes(bytes).toString("hex");
@@ -55,7 +52,7 @@ async function upsertLocalUser(data: {
   if (!db) throw new Error("Database not available");
 
   const existing = await db.select().from(users).where(eq(users.openId, data.openId)).limit(1);
-  const isAdmin = ADMIN_EMAILS.includes(data.email);
+  const isAdmin = isAdminEmail(data.email);
 
   if (existing.length === 0) {
     await db.insert(users).values({
@@ -150,7 +147,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ action:
       if (!valid) return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
 
       const updateData: Record<string, unknown> = { lastSignedIn: new Date() };
-      if (ADMIN_EMAILS.includes(normalizedEmail) && user.role !== "admin") updateData.role = "admin";
+      if (isAdminEmail(normalizedEmail) && user.role !== "admin") updateData.role = "admin";
       await db.update(users).set(updateData).where(eq(users.id, user.id));
 
       const sessionToken = await issueSession(user.openId, user.name || "");
@@ -367,7 +364,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ action: 
       const user = await upsertLocalUser({
         openId,
         name: googleUser.name || null,
-        email: googleUser.email,
+        email: String(googleUser.email).toLowerCase().trim(),
         loginMethod: "google",
         googleId: googleUser.sub,
         emailVerified: googleUser.email_verified ?? true,

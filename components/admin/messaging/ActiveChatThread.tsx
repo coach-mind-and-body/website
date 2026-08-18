@@ -12,7 +12,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Phone, ArrowLeft, Loader2, MessageSquare, CreditCard, Star, Paperclip, Workflow, Link2, Video, Send, Clock, FileText, ChevronRight, RotateCcw } from "lucide-react";
 import { ChatShareToolbar } from "@/components/habit/ChatShareToolbar";
 import ChannelBadge, { channelColors } from "@/components/admin/ChannelBadge";
-import { TypingDots } from "@/components/chat/TypingDots";
 import { QuotedReply } from "@/components/chat/QuotedReply";
 import { useInboxPollInterval } from "@/lib/useInboxPollInterval";
 import { toast } from "sonner";
@@ -54,7 +53,6 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
   const [scheduledDate, setScheduledDate] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [pendingUploadUrl, setPendingUploadUrl] = useState<string | null>(null);
-  const [clientTyping, setClientTyping] = useState(false);
   const [live, setLive] = useState(false);
   const [replyingTo, setReplyingTo] = useState<{
     id: number;
@@ -70,8 +68,7 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
       replyTo?: { id: number; content?: string | null; senderName?: string | null } | null;
     }[]
   >([]);
-  const typingReset = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastTypingSent = useRef(0);
+
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -83,12 +80,6 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
   
   const { data: sequencesData = [] } = trpc.crmAutomations.listSequences.useQuery();
   const { data: templates = [] } = trpc.messaging.listTemplates.useQuery();
-  const sendTyping = trpc.messaging.typing.useMutation();
-  const { data: typingState } = trpc.messaging.typingState.useQuery(
-    { conversationId: chatId },
-    { enabled: chatId > 0, refetchInterval: 1000 }
-  );
-
   useEffect(() => {
     if (!chatId) return;
     const es = new EventSource(`/api/coach/events?conversationId=${chatId}`);
@@ -97,15 +88,9 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
         const data = JSON.parse(ev.data) as { type?: string; who?: string };
         if (data.type === "hello") setLive(true);
         if (data.type === "message") {
-          setClientTyping(false);
           setOptimistic([]);
           void utils.messaging.getConversation.invalidate({ id: chatId });
           void utils.messaging.listConversations.invalidate();
-        }
-        if (data.type === "typing" && data.who === "client") {
-          setClientTyping(true);
-          if (typingReset.current) clearTimeout(typingReset.current);
-          typingReset.current = setTimeout(() => setClientTyping(false), 2500);
         }
       } catch {
         /* ignore */
@@ -115,7 +100,6 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
     return () => {
       es.close();
       setLive(false);
-      if (typingReset.current) clearTimeout(typingReset.current);
     };
   }, [chatId, utils]);
 
@@ -183,11 +167,7 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
     }
-  }, [activeChat?.messages?.length, optimistic.length, clientTyping]);
-
-  useEffect(() => {
-    if (typingState?.clientTyping) setClientTyping(true);
-  }, [typingState?.clientTyping]);
+  }, [activeChat?.messages?.length, optimistic.length]);
 
   const sendSms = trpc.messaging.mockSendSms.useMutation({
     onSuccess: () => {
@@ -531,14 +511,6 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
               <span className="text-[10px] text-slate-400">Sending…</span>
             </div>
           ))}
-          {clientTyping && (
-            <div className="flex justify-start">
-              <div className="bg-[#E9E9EB] text-slate-500 rounded-2xl rounded-tl-sm px-3.5 py-2.5 shadow-sm">
-                <TypingDots />
-                <span className="sr-only">Client is typing</span>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
@@ -664,14 +636,7 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
             className="w-full min-h-[80px] p-3 text-sm focus:outline-none resize-none"
             placeholder={isAppChat ? `iMessage · ${activeName}` : `SMS · ${activeName}`}
             value={messageText}
-            onChange={(e) => {
-              setMessageText(e.target.value);
-              const now = Date.now();
-              if (now - lastTypingSent.current > 1500) {
-                lastTypingSent.current = now;
-                sendTyping.mutate({ conversationId: chatId });
-              }
-            }}
+            onChange={(e) => setMessageText(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();

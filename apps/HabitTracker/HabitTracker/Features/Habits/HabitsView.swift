@@ -124,7 +124,6 @@ struct HabitsView: View {
     private var dailyScroll: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                healthStrip
                 forYouRow
                 challengeChips
                 habitsCard
@@ -133,29 +132,6 @@ struct HabitsView: View {
             .padding(16)
         }
         .dockScrollClearance()
-    }
-
-    private var healthStrip: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
-                healthChip("Move", value: "\(Int(health.moveMinutesToday))m")
-                healthChip("Mindful", value: "\(Int(health.mindfulMinutesToday))m")
-                healthChip("Sleep", value: String(format: "%.1fh", health.sleepHoursLastNight))
-                healthChip("Steps", value: "\(Int(health.stepsToday))")
-            }
-        }
-    }
-
-    private func healthChip(_ label: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label.uppercased()).font(.caption2.weight(.bold)).foregroundStyle(HTTheme.muted)
-            Text(value).font(.headline).foregroundStyle(HTTheme.forest)
-        }
-        .padding(12)
-        .frame(minWidth: 92, alignment: .leading)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(HTTheme.roseBorder))
     }
 
     private var forYouRow: some View {

@@ -35,7 +35,22 @@ import { coachRouter } from "./routers/coach";
 export const appRouter = router({
   system: systemRouter,
   auth: router({
-    me: publicProcedure.query(opts => opts.ctx.user),
+    me: publicProcedure.query(async ({ ctx }) => {
+      const user = ctx.user;
+      if (!user) return null;
+      const { isAdminEmail } = await import("../shared/adminEmails");
+      if (isAdminEmail(user.email) && user.role !== "admin") {
+        const { getDb } = await import("./db");
+        const { users } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        const db = await getDb();
+        if (db) {
+          await db.update(users).set({ role: "admin" }).where(eq(users.id, user.id));
+        }
+        return { ...user, role: "admin" };
+      }
+      return user;
+    }),
     logout: publicProcedure.mutation(async ({ ctx }) => {
       const cookieStore = await cookies();
       cookieStore.delete(COOKIE_NAME);

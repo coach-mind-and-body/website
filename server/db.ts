@@ -52,15 +52,11 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       values.lastSignedIn = user.lastSignedIn;
       updateSet.lastSignedIn = user.lastSignedIn;
     }
-    // Admin emails — these accounts are always promoted to admin on login
-    const ADMIN_EMAILS = [
-      'carter@inseitzmarketing.com',
-      'coach@mindandbodyresetcoach.com',
-    ];
+    const { isAdminEmail } = await import("../shared/adminEmails");
     if (user.role !== undefined) {
       values.role = user.role;
       updateSet.role = user.role;
-    } else if (user.openId === ENV.ownerOpenId || (user.email && ADMIN_EMAILS.includes(user.email))) {
+    } else if (user.openId === ENV.ownerOpenId || isAdminEmail(user.email)) {
       values.role = 'admin';
       updateSet.role = 'admin';
     }

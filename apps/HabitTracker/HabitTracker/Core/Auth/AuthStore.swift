@@ -13,6 +13,14 @@ final class AuthStore {
 
     var isSignedIn: Bool { token != nil && user != nil && (user?.id ?? 0) > 0 }
 
+    var isAdmin: Bool {
+        let role = (user?.role ?? "").lowercased()
+        let email = (user?.email ?? "").lowercased().trimmingCharacters(in: .whitespaces)
+        return role == "admin"
+            || email == "coach@mindandbodyresetcoach.com"
+            || email == "carter@inseitzmarketing.com"
+    }
+
     func restore() async {
         isRestoring = true
         defer { isRestoring = false }

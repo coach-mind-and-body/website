@@ -19,11 +19,8 @@ final class CoachViewModel {
     var notifyEnabled = UserDefaults.standard.bool(forKey: "coach.notifyEnabled")
     var uploading = false
     var isOnCoachTab = false
-    var coachTyping = false
     var replyingTo: CoachMessage?
     private var lastSeenMessageId: Int?
-    private var typingReset: Task<Void, Never>?
-    private var lastTypingSent = Date.distantPast
     private var optimisticSeq = 0
     private let auth: AuthStore
 
@@ -95,25 +92,6 @@ final class CoachViewModel {
         }
     }
 
-    func pingTyping() async {
-        guard Date().timeIntervalSince(lastTypingSent) > 1.5 else { return }
-        lastTypingSent = Date()
-        _ = try? await auth.client.mutateEmpty("coach.typing") as SuccessFlag
-    }
-
-    func refreshTyping() async {
-        struct TypingState: Decodable { var coachTyping: Bool? }
-        let state: TypingState? = try? await auth.client.query("coach.typingState")
-        if state?.coachTyping == true {
-            coachTyping = true
-            typingReset?.cancel()
-            typingReset = Task {
-                try? await Task.sleep(for: .seconds(2.8))
-                if !Task.isCancelled { coachTyping = false }
-            }
-        }
-    }
-
     func listenForEvents() async {
         guard let id = thread?.conversationId else { return }
         var comps = URLComponents(url: AppConfig.apiRoot.appending(path: "api/coach/events"), resolvingAgainstBaseURL: false)
@@ -133,15 +111,7 @@ final class CoachViewModel {
                 struct Ev: Decodable { var type: String?; var who: String? }
                 guard let ev = try? JSONDecoder().decode(Ev.self, from: payload) else { continue }
                 if ev.type == "message" {
-                    coachTyping = false
                     await load(announce: ev.who == "coach")
-                } else if ev.type == "typing", ev.who == "coach" {
-                    coachTyping = true
-                    typingReset?.cancel()
-                    typingReset = Task {
-                        try? await Task.sleep(for: .seconds(2.5))
-                        if !Task.isCancelled { coachTyping = false }
-                    }
                 }
             }
         } catch {
@@ -240,32 +210,13 @@ struct CoachView: View {
                                         }
                                     }
                             }
-                            if model.coachTyping {
-                                HStack {
-                                    TypingDots()
-                                        .padding(.horizontal, 14)
-                                        .padding(.vertical, 11)
-                                        .background(Color.white)
-                                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                                    Spacer(minLength: 40)
-                                }
-                                .id("typing")
-                                .accessibilityLabel("Lee Anne is typing")
-                            }
                         }
                         .padding(16)
                     }
                     .dockScrollClearance()
                     .onChange(of: model.thread?.messages.count) {
-                        if model.coachTyping {
-                            proxy.scrollTo("typing", anchor: .bottom)
-                        } else if let last = model.thread?.messages.last {
+                        if let last = model.thread?.messages.last {
                             proxy.scrollTo(last.id, anchor: .bottom)
-                        }
-                    }
-                    .onChange(of: model.coachTyping) {
-                        if model.coachTyping {
-                            proxy.scrollTo("typing", anchor: .bottom)
                         }
                     }
                     .onAppear {
@@ -297,12 +248,6 @@ struct CoachView: View {
                     try? await Task.sleep(for: .seconds(2))
                 }
                 model.isOnCoachTab = false
-            }
-            .task(id: auth.isSignedIn) {
-                while !Task.isCancelled {
-                    await model.refreshTyping()
-                    try? await Task.sleep(for: .seconds(1))
-                }
             }
             .onDisappear { model.isOnCoachTab = false }
             .sheet(isPresented: $model.showRecipePicker) {
@@ -390,9 +335,6 @@ struct CoachView: View {
                     .padding(10)
                     .background(Color.white)
                     .clipShape(RoundedRectangle(cornerRadius: 16))
-                    .onChange(of: model.draft) {
-                        Task { await model.pingTyping() }
-                    }
                 Button {
                     Task { await model.send() }
                 } label: {
@@ -537,27 +479,5 @@ struct DateChip: View {
                 .clipShape(Capsule())
                 .frame(maxWidth: .infinity)
         }
-    }
-}
-
-struct TypingDots: View {
-    @State private var bounce = false
-
-    var body: some View {
-        HStack(spacing: 5) {
-            ForEach(0..<3, id: \.self) { i in
-                Circle()
-                    .fill(Color(white: 0.62))
-                    .frame(width: 7, height: 7)
-                    .offset(y: bounce ? -3 : 2)
-                    .animation(
-                        .easeInOut(duration: 0.38)
-                            .repeatForever(autoreverses: true)
-                            .delay(Double(i) * 0.14),
-                        value: bounce
-                    )
-            }
-        }
-        .onAppear { bounce = true }
     }
 }

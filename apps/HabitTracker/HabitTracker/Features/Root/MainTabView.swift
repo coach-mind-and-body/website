@@ -12,7 +12,7 @@ struct MainTabView: View {
     @State private var coach: CoachViewModel
     @State private var fitness: FitnessViewModel
     @State private var podcast: PodcastViewModel
-    @State private var tab: AppTab = .habits
+    @State private var tab: AppTab
     @State private var showHealth = false
     @Environment(\.scenePhase) private var scenePhase
 
@@ -24,6 +24,7 @@ struct MainTabView: View {
         _coach = State(initialValue: CoachViewModel(auth: auth))
         _fitness = State(initialValue: FitnessViewModel(auth: auth, health: health))
         _podcast = State(initialValue: PodcastViewModel(auth: auth))
+        _tab = State(initialValue: auth.isAdmin ? .coach : .habits)
     }
 
     var body: some View {
@@ -32,7 +33,11 @@ struct MainTabView: View {
             Group {
                 switch tab {
                 case .habits:
-                    HabitsView(model: habits, health: health, auth: auth)
+                    if auth.isAdmin {
+                        AdminHabitsPhoneView(auth: auth)
+                    } else {
+                        HabitsView(model: habits, health: health, auth: auth)
+                    }
                 case .macros:
                     CaloriesView(food: food, auth: auth)
                 case .recipes:
@@ -42,8 +47,8 @@ struct MainTabView: View {
                 case .profile:
                     ProfileView(auth: auth, health: health)
                 case .coach:
-                    if auth.user?.role == "admin" {
-                        CoachInboxView(coach: coach, auth: auth)
+                    if auth.isAdmin {
+                        CoachInboxView(coach: coach, auth: auth, showsModePicker: false)
                     } else {
                         CoachView(model: coach, auth: auth)
                     }
@@ -57,6 +62,12 @@ struct MainTabView: View {
                 .ignoresSafeArea(.container, edges: .bottom)
         }
         .environment(\.openProfile) { tab = .profile }
+        .onChange(of: auth.isAdmin) { _, admin in
+            tab = admin ? .coach : .habits
+        }
+        .onChange(of: auth.sessionEpoch) {
+            if auth.isAdmin { tab = .coach }
+        }
         .tint(HTTheme.forest)
         .task {
             await coach.refreshUnread()
@@ -92,22 +103,38 @@ struct MainTabView: View {
     }
 
     private var tabBar: some View {
-        HStack(spacing: 10) {
-            HStack(spacing: 0) {
-                tabButton(.habits, "square.grid.2x2")
-                tabButton(.macros, "fork.knife")
-                tabButton(.recipes, "frying.pan")
-                tabButton(.fitness, "figure.strengthtraining.traditional")
-                tabButton(.podcast, "headphones")
-            }
-            .padding(.horizontal, 6)
-            .padding(.vertical, 5)
-            .background(.ultraThinMaterial)
-            .clipShape(Capsule())
-            .overlay(Capsule().stroke(Color.white.opacity(0.4), lineWidth: 1))
-            .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
+        Group {
+            if auth.isAdmin {
+                HStack(spacing: 0) {
+                    tabButton(.coach, "message")
+                    tabButton(.habits, "checklist")
+                    tabButton(.profile, "person.crop.circle")
+                }
+                .padding(.horizontal, 6)
+                .padding(.vertical, 5)
+                .background(.ultraThinMaterial)
+                .clipShape(Capsule())
+                .overlay(Capsule().stroke(Color.white.opacity(0.4), lineWidth: 1))
+                .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
+            } else {
+                HStack(spacing: 10) {
+                    HStack(spacing: 0) {
+                        tabButton(.habits, "square.grid.2x2")
+                        tabButton(.macros, "fork.knife")
+                        tabButton(.recipes, "frying.pan")
+                        tabButton(.fitness, "figure.strengthtraining.traditional")
+                        tabButton(.podcast, "headphones")
+                    }
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 5)
+                    .background(.ultraThinMaterial)
+                    .clipShape(Capsule())
+                    .overlay(Capsule().stroke(Color.white.opacity(0.4), lineWidth: 1))
+                    .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
 
-            circleButton(.coach, "message", badge: coach.unread)
+                    circleButton(.coach, "message", badge: coach.unread)
+                }
+            }
         }
     }
 

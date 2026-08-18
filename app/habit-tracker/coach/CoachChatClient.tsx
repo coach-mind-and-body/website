@@ -12,7 +12,6 @@ import { usePageTitle } from "@/hooks/usePageTitle";
 import { useWebPush } from "@/hooks/useWebPush";
 import { BRAND } from "@shared/brand";
 import { ChatShareToolbar, parseRecipeSlug } from "@/components/habit/ChatShareToolbar";
-import { TypingDots } from "@/components/chat/TypingDots";
 import { QuotedReply, DateChip } from "@/components/chat/QuotedReply";
 import { dayKey, dayLabel, messageTime } from "@/lib/chatTime";
 
@@ -35,14 +34,11 @@ export default function CoachChatClient() {
   const utils = trpc.useUtils();
   const [draft, setDraft] = useState("");
   const [replyingTo, setReplyingTo] = useState<ReplyTo | null>(null);
-  const [coachTyping, setCoachTyping] = useState(false);
   const [optimistic, setOptimistic] = useState<
     { id: number; content?: string; mediaUrl?: string; createdAt: Date; replyTo?: ReplyTo | null }[]
   >([]);
   const listRef = useRef<HTMLDivElement>(null);
   const didInitScroll = useRef(false);
-  const typingReset = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastTypingSent = useRef(0);
 
   const { data, isLoading, refetch } = trpc.coach.getThread.useQuery(undefined, {
     enabled: isAuthenticated,
@@ -53,12 +49,6 @@ export default function CoachChatClient() {
 
   const markRead = trpc.coach.markRead.useMutation({
     onSuccess: () => void utils.coach.unreadCount.invalidate(),
-  });
-
-  const pingTyping = trpc.coach.typing.useMutation();
-  const { data: typingState } = trpc.coach.typingState.useQuery(undefined, {
-    enabled: isAuthenticated,
-    refetchInterval: 1000,
   });
 
   const send = trpc.coach.send.useMutation();
@@ -116,7 +106,7 @@ export default function CoachChatClient() {
       return;
     }
     el.scrollTop = el.scrollHeight;
-  }, [data?.messages.length, optimistic.length, coachTyping]);
+  }, [data?.messages.length, optimistic.length]);
 
   useEffect(() => {
     if (!isAuthenticated || !data?.conversationId) return;
@@ -125,17 +115,11 @@ export default function CoachChatClient() {
       try {
         const payload = JSON.parse(ev.data) as { type?: string; who?: string };
         if (payload.type === "message") {
-          setCoachTyping(false);
           void refetch().then(() => {
             if (payload.who === "client") setOptimistic([]);
           });
           void utils.coach.unreadCount.invalidate();
           if (payload.who === "coach") markRead.mutate();
-        }
-        if (payload.type === "typing" && payload.who === "coach") {
-          setCoachTyping(true);
-          if (typingReset.current) clearTimeout(typingReset.current);
-          typingReset.current = setTimeout(() => setCoachTyping(false), 2500);
         }
       } catch {
         /* ignore */
@@ -143,7 +127,6 @@ export default function CoachChatClient() {
     };
     return () => {
       es.close();
-      if (typingReset.current) clearTimeout(typingReset.current);
     };
     // markRead / utils are stable enough; reconnect only when the thread id changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -154,10 +137,6 @@ export default function CoachChatClient() {
     if (!text) return;
     fireSend({ content: text });
   };
-
-  useEffect(() => {
-    if (typingState?.coachTyping) setCoachTyping(true);
-  }, [typingState?.coachTyping]);
 
   useEffect(() => {
     if (isAuthenticated && user?.role === "admin") {
@@ -340,17 +319,6 @@ export default function CoachChatClient() {
                   </div>
                 </div>
               ))}
-              {coachTyping && (
-                <div className="flex justify-start">
-                  <div
-                    className="rounded-2xl px-3.5 py-2.5 text-[#8a9a8a]"
-                    style={{ background: "#faf5f5", border: `1px solid ${BORDER}` }}
-                  >
-                    <TypingDots />
-                    <span className="sr-only">{BRAND.coachName} is typing</span>
-                  </div>
-                </div>
-              )}
               </>
             )}
           </div>
@@ -375,14 +343,7 @@ export default function CoachChatClient() {
             <div className="flex gap-2 items-end">
             <textarea
               value={draft}
-              onChange={(e) => {
-                setDraft(e.target.value);
-                const now = Date.now();
-                if (now - lastTypingSent.current > 1500) {
-                  lastTypingSent.current = now;
-                  pingTyping.mutate();
-                }
-              }}
+              onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();

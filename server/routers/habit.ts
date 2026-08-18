@@ -42,12 +42,17 @@ export const habitRouter = router({
     let habits = await db.select().from(userHabits)
       .where(and(eq(userHabits.userId, ctx.user.id), eq(userHabits.isActive, true)))
       .orderBy(userHabits.order);
-    
-    // Auto-initialize from templates if user has no habits
-    if (habits.length === 0) {
-      const templates = await db.select().from(habitTemplates).where(eq(habitTemplates.isActive, true)).orderBy(habitTemplates.order);
-      if (templates.length > 0) {
-        const newHabits = templates.map(t => ({
+
+    const templates = await db
+      .select()
+      .from(habitTemplates)
+      .where(eq(habitTemplates.isActive, true))
+      .orderBy(habitTemplates.order);
+    const have = new Set(habits.map((h) => h.title.trim().toLowerCase()));
+    const missing = templates.filter((t) => !have.has(t.title.trim().toLowerCase()));
+    if (missing.length) {
+      await db.insert(userHabits).values(
+        missing.map((t) => ({
           userId: ctx.user.id,
           title: t.title,
           description: t.description,
@@ -56,12 +61,13 @@ export const habitRouter = router({
           unit: t.unit,
           order: t.order,
           isActive: true,
-        }));
-        await db.insert(userHabits).values(newHabits);
-        habits = await db.select().from(userHabits)
-          .where(and(eq(userHabits.userId, ctx.user.id), eq(userHabits.isActive, true)))
-          .orderBy(userHabits.order);
-      }
+        }))
+      );
+      habits = await db
+        .select()
+        .from(userHabits)
+        .where(and(eq(userHabits.userId, ctx.user.id), eq(userHabits.isActive, true)))
+        .orderBy(userHabits.order);
     }
 
     const defaultFrom = new Date();

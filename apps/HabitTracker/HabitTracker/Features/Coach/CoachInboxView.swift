@@ -10,7 +10,6 @@ final class CoachInboxViewModel {
     var draft = ""
     var isSending = false
     var errorMessage: String?
-    var clientTyping = false
     var replyingTo: AdminChatMessage?
     var loadingList = false
     var loadingThread = false
@@ -18,8 +17,6 @@ final class CoachInboxViewModel {
     var templates: [HabitTemplateRow] = []
     var editingTemplate: HabitTemplateRow?
     var newTitle = ""
-    private var typingReset: Task<Void, Never>?
-    private var lastTypingSent = Date.distantPast
     private var optimisticSeq = 0
     private let auth: AuthStore
 
@@ -99,7 +96,6 @@ final class CoachInboxViewModel {
         messages = []
         draft = ""
         replyingTo = nil
-        clientTyping = false
     }
 
     func loadThread() async {
@@ -179,33 +175,6 @@ final class CoachInboxViewModel {
         }
     }
 
-    func pingTyping() async {
-        guard let id = selected?.id else { return }
-        guard Date().timeIntervalSince(lastTypingSent) > 1.5 else { return }
-        lastTypingSent = Date()
-        _ = try? await auth.client.mutate(
-            "messaging.typing",
-            input: AdminTypingInput(conversationId: id)
-        ) as SuccessFlag
-    }
-
-    func refreshTyping() async {
-        guard let id = selected?.id else { return }
-        struct TypingState: Decodable { var clientTyping: Bool? }
-        let state: TypingState? = try? await auth.client.query(
-            "messaging.typingState",
-            input: AdminTypingInput(conversationId: id)
-        )
-        if state?.clientTyping == true {
-            clientTyping = true
-            typingReset?.cancel()
-            typingReset = Task {
-                try? await Task.sleep(for: .seconds(2.8))
-                if !Task.isCancelled { clientTyping = false }
-            }
-        }
-    }
-
     func listenLoop() {
         Task { [weak self] in
             while let self, self.selected != nil, !Task.isCancelled {
@@ -233,16 +202,8 @@ final class CoachInboxViewModel {
                 struct Ev: Decodable { var type: String?; var who: String? }
                 guard let ev = try? JSONDecoder().decode(Ev.self, from: Data(line.dropFirst(6).utf8)) else { continue }
                 if ev.type == "message" {
-                    clientTyping = false
                     await loadThread()
                     await loadList()
-                } else if ev.type == "typing", ev.who == "client" {
-                    clientTyping = true
-                    typingReset?.cancel()
-                    typingReset = Task {
-                        try? await Task.sleep(for: .seconds(2.5))
-                        if !Task.isCancelled { clientTyping = false }
-                    }
                 }
             }
         } catch {
@@ -254,11 +215,13 @@ final class CoachInboxViewModel {
 struct CoachInboxView: View {
     @Bindable var coach: CoachViewModel
     @Bindable var auth: AuthStore
+    var showsModePicker = true
     @State private var model: CoachInboxViewModel
 
-    init(coach: CoachViewModel, auth: AuthStore) {
+    init(coach: CoachViewModel, auth: AuthStore, showsModePicker: Bool = true) {
         self.coach = coach
         self.auth = auth
+        self.showsModePicker = showsModePicker
         _model = State(initialValue: CoachInboxViewModel(auth: auth))
     }
 
@@ -269,17 +232,19 @@ struct CoachInboxView: View {
                     thread
                 } else {
                     VStack(spacing: 0) {
-                        Picker("", selection: $model.homeTab) {
-                            Text("Inbox").tag(0)
-                            Text("Habits").tag(1)
+                        if showsModePicker {
+                            Picker("", selection: $model.homeTab) {
+                                Text("Inbox").tag(0)
+                                Text("Habits").tag(1)
+                            }
+                            .pickerStyle(.segmented)
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 8)
                         }
-                        .pickerStyle(.segmented)
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 8)
-                        if model.homeTab == 0 {
-                            list
-                        } else {
+                        if showsModePicker && model.homeTab == 1 {
                             habitsAdmin
+                        } else {
+                            list
                         }
                     }
                 }
@@ -378,17 +343,6 @@ struct CoachInboxView: View {
                                     }
                                 }
                         }
-                        if model.clientTyping {
-                            HStack {
-                                TypingDots()
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 11)
-                                    .background(Color.white)
-                                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                                Spacer(minLength: 40)
-                            }
-                            .id("typing")
-                        }
                     }
                     .padding(16)
                 }
@@ -400,12 +354,6 @@ struct CoachInboxView: View {
                 }
             }
             composer
-        }
-        .task(id: model.selected?.id) {
-            while !Task.isCancelled, model.selected != nil {
-                await model.refreshTyping()
-                try? await Task.sleep(for: .seconds(1))
-            }
         }
     }
 
@@ -440,9 +388,6 @@ struct CoachInboxView: View {
                     .padding(10)
                     .background(Color.white)
                     .clipShape(RoundedRectangle(cornerRadius: 16))
-                    .onChange(of: model.draft) {
-                        Task { await model.pingTyping() }
-                    }
                 Button {
                     Task { await model.send() }
                 } label: {
@@ -539,6 +484,68 @@ struct CoachInboxView: View {
         }
         .listStyle(.plain)
         .refreshable { await model.loadTemplates() }
+    }
+}
+
+struct AdminHabitsPhoneView: View {
+    @Bindable var auth: AuthStore
+    @State private var model: CoachInboxViewModel
+
+    init(auth: AuthStore) {
+        self.auth = auth
+        _model = State(initialValue: CoachInboxViewModel(auth: auth))
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    HStack {
+                        TextField("New habit title", text: $model.newTitle)
+                        Button("Add") {
+                            let title = model.newTitle.trimmingCharacters(in: .whitespaces)
+                            guard !title.isEmpty else { return }
+                            Task {
+                                await model.saveTemplate(
+                                    HabitTemplateRow(id: 0, title: title, type: "boolean", order: model.templates.count + 1, isActive: true)
+                                )
+                            }
+                        }
+                        .disabled(model.newTitle.trimmingCharacters(in: .whitespaces).isEmpty)
+                    }
+                } header: {
+                    Text("Everyone’s Today list")
+                } footer: {
+                    Text("Protein, fiber, sleep, hydrate, move, mindful. Add or swipe to remove for every client.")
+                }
+                ForEach(model.templates) { row in
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(row.title).font(.headline).foregroundStyle(HTTheme.forest)
+                        if let desc = row.description, !desc.isEmpty {
+                            Text(desc).font(.caption).foregroundStyle(HTTheme.muted)
+                        }
+                    }
+                    .swipeActions {
+                        Button(role: .destructive) {
+                            Task { await model.deleteTemplate(row.id) }
+                        } label: {
+                            Label("Remove", systemImage: "trash")
+                        }
+                    }
+                }
+            }
+            .listStyle(.plain)
+            .background(HTTheme.cream)
+            .navigationTitle("Daily habits")
+            .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    ProfileAvatarButton(auth: auth)
+                }
+            }
+            .task { await model.loadTemplates() }
+            .refreshable { await model.loadTemplates() }
+        }
     }
 }
 
