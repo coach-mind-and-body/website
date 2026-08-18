@@ -627,6 +627,9 @@ export const conversations = mysqlTable("conversations", {
   lastMessageAt: timestamp("lastMessageAt").defaultNow().notNull(),
   /** Client last opened the in-app coach thread (for unread badge). */
   clientLastReadAt: timestamp("clientLastReadAt"),
+  /** Last keystroke from the client / coach — used for iMessage-style dots. */
+  clientTypingAt: timestamp("clientTypingAt"),
+  coachTypingAt: timestamp("coachTypingAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

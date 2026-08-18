@@ -242,6 +242,24 @@ export const habitRouter = router({
         order: input.order,
         isActive: input.isActive,
       });
+      if (input.isActive) {
+        const existingOwners = await db.select({ userId: userHabits.userId }).from(userHabits);
+        const owners = [...new Set(existingOwners.map((o) => o.userId))];
+        if (owners.length) {
+          await db.insert(userHabits).values(
+            owners.map((userId) => ({
+              userId,
+              title: input.title,
+              description: input.description,
+              type: input.type,
+              targetValue: input.targetValue,
+              unit: input.unit,
+              order: input.order,
+              isActive: true,
+            }))
+          );
+        }
+      }
       return { success: true };
     }),
 
@@ -259,6 +277,11 @@ export const habitRouter = router({
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("DB Error");
+      const [existing] = await db
+        .select()
+        .from(habitTemplates)
+        .where(eq(habitTemplates.id, input.id))
+        .limit(1);
       await db.update(habitTemplates)
         .set({
           title: input.title,
@@ -270,6 +293,20 @@ export const habitRouter = router({
           isActive: input.isActive,
         })
         .where(eq(habitTemplates.id, input.id));
+      if (existing) {
+        await db
+          .update(userHabits)
+          .set({
+            title: input.title,
+            description: input.description,
+            type: input.type,
+            targetValue: input.targetValue,
+            unit: input.unit,
+            order: input.order,
+            isActive: input.isActive,
+          })
+          .where(eq(userHabits.title, existing.title));
+      }
       return { success: true };
     }),
 
@@ -278,6 +315,17 @@ export const habitRouter = router({
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("DB Error");
+      const [existing] = await db
+        .select()
+        .from(habitTemplates)
+        .where(eq(habitTemplates.id, input.id))
+        .limit(1);
+      if (existing) {
+        await db
+          .update(userHabits)
+          .set({ isActive: false })
+          .where(eq(userHabits.title, existing.title));
+      }
       await db.delete(habitTemplates).where(eq(habitTemplates.id, input.id));
       return { success: true };
     }),

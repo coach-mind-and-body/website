@@ -513,7 +513,7 @@ struct HabitsView: View {
                 ProgressView().frame(maxWidth: .infinity).padding(.top, 20)
             }
 
-            ForEach(model.habits) { habit in
+            ForEach(model.checklistHabits) { habit in
                 habitRow(habit)
             }
 
@@ -683,26 +683,58 @@ struct HabitsView: View {
     }
 
     private var victoriesCard: some View {
-        DisclosureGroup(isExpanded: $model.victoriesExpanded) {
-            TextField("Win 1", text: $model.win1)
-            TextField("Win 2", text: $model.win2)
-            TextField("Win 3", text: $model.win3)
-            Button("Save victories") { Task { await model.saveVictories() } }
-                .font(.subheadline.weight(.bold))
-                .foregroundStyle(HTTheme.forest)
-        } label: {
-            HStack {
-                Image(systemName: "sparkles").foregroundStyle(HTTheme.gold)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("3 victories").font(.headline).foregroundStyle(HTTheme.forest)
-                    Text("Evidence for later-you").font(.caption).foregroundStyle(HTTheme.muted)
+        VStack(alignment: .leading, spacing: 10) {
+            Button {
+                model.victoriesExpanded.toggle()
+            } label: {
+                HStack {
+                    Image(systemName: "sparkles").foregroundStyle(HTTheme.gold)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("3 victories").font(.headline).foregroundStyle(HTTheme.forest)
+                        Text(filledWins == 0 ? "What did you do right today?" : "\(filledWins)/3 wins logged")
+                            .font(.caption)
+                            .foregroundStyle(HTTheme.muted)
+                    }
+                    Spacer()
+                    Image(systemName: model.victoriesExpanded ? "chevron.up" : "chevron.down")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(HTTheme.muted)
                 }
+            }
+            .buttonStyle(.plain)
+
+            if model.victoriesExpanded {
+                TextField("Win 1 — walked, hit protein, paused a craving", text: $model.win1)
+                    .textFieldStyle(.roundedBorder)
+                TextField("Win 2", text: $model.win2)
+                    .textFieldStyle(.roundedBorder)
+                TextField("Win 3", text: $model.win3)
+                    .textFieldStyle(.roundedBorder)
+                if let err = model.victoriesError {
+                    Text(err).font(.caption).foregroundStyle(.red)
+                }
+                Button {
+                    Task { await model.saveVictories() }
+                } label: {
+                    Text(model.victoriesSaving ? "Saving…" : model.victoriesSaved ? "Saved" : "Save victories")
+                        .font(.subheadline.weight(.bold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(HTTheme.gold)
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .disabled(model.victoriesSaving)
+                .buttonStyle(.plain)
             }
         }
         .padding(16)
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 24))
         .overlay(RoundedRectangle(cornerRadius: 24).stroke(HTTheme.roseBorder))
-        .tint(HTTheme.forest)
+    }
+
+    private var filledWins: Int {
+        [model.win1, model.win2, model.win3].filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }.count
     }
 }

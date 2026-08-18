@@ -655,9 +655,31 @@ export const messagingRouter = router({
   typing: adminProcedure
     .input(z.object({ conversationId: z.number() }))
     .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (db) {
+        await db
+          .update(conversations)
+          .set({ coachTypingAt: new Date() })
+          .where(eq(conversations.id, input.conversationId));
+      }
       const { publishCoachEvent } = await import("../coachEvents");
       publishCoachEvent({ type: "typing", conversationId: input.conversationId, who: "coach" });
       return { success: true };
+    }),
+
+  typingState: adminProcedure
+    .input(z.object({ conversationId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { clientTyping: false };
+      const [row] = await db
+        .select({ clientTypingAt: conversations.clientTypingAt })
+        .from(conversations)
+        .where(eq(conversations.id, input.conversationId))
+        .limit(1);
+      const at = row?.clientTypingAt;
+      const clientTyping = Boolean(at && Date.now() - new Date(at).getTime() < 3000);
+      return { clientTyping };
     }),
 
   // Start a new outbound conversation

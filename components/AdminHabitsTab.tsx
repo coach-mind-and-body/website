@@ -47,8 +47,11 @@ export default function AdminHabitsTab() {
 
   return (
     <div>
+      <p className="text-sm mb-6" style={{ color: "oklch(0.52 0.015 50)" }}>
+        These are the habits on everyone&apos;s Today list. Save / delete here updates every signed-in tracker — not just new accounts.
+      </p>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="font-bold text-2xl" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.20 0.015 50)" }}>Habit Templates</h2>
+        <h2 className="font-bold text-2xl" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.20 0.015 50)" }}>Daily habits</h2>
         <Button 
           onClick={() => setEditing({ title: "", description: "", type: "boolean", targetValue: null, unit: null, order: (templates?.length || 0) + 1, isActive: true })}
           className="rounded-full font-bold"

@@ -14,6 +14,10 @@ final class CoachInboxViewModel {
     var replyingTo: AdminChatMessage?
     var loadingList = false
     var loadingThread = false
+    var homeTab = 0
+    var templates: [HabitTemplateRow] = []
+    var editingTemplate: HabitTemplateRow?
+    var newTitle = ""
     private var typingReset: Task<Void, Never>?
     private var lastTypingSent = Date.distantPast
     private var optimisticSeq = 0
@@ -37,6 +41,51 @@ final class CoachInboxViewModel {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    func loadTemplates() async {
+        templates = (try? await auth.client.query("habit.adminGetTemplates")) ?? []
+    }
+
+    func saveTemplate(_ row: HabitTemplateRow) async {
+        do {
+            if row.id > 0 {
+                let _: SuccessFlag = try await auth.client.mutate(
+                    "habit.adminUpdateTemplate",
+                    input: SaveHabitTemplateInput(
+                        id: row.id,
+                        title: row.title,
+                        description: row.description,
+                        type: row.type ?? "boolean",
+                        targetValue: row.targetValue,
+                        unit: row.unit,
+                        order: row.order ?? 0,
+                        isActive: row.isActive ?? true
+                    )
+                )
+            } else {
+                let _: SuccessFlag = try await auth.client.mutate(
+                    "habit.adminCreateTemplate",
+                    input: SaveHabitTemplateInput(
+                        title: row.title,
+                        description: row.description,
+                        type: "boolean",
+                        order: templates.count + 1,
+                        isActive: true
+                    )
+                )
+            }
+            editingTemplate = nil
+            newTitle = ""
+            await loadTemplates()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func deleteTemplate(_ id: Int) async {
+        _ = try? await auth.client.mutate("habit.adminDeleteTemplate", input: TemplateIdInput(id: id)) as SuccessFlag
+        await loadTemplates()
     }
 
     func open(_ row: InboxConversation) async {
@@ -140,6 +189,23 @@ final class CoachInboxViewModel {
         ) as SuccessFlag
     }
 
+    func refreshTyping() async {
+        guard let id = selected?.id else { return }
+        struct TypingState: Decodable { var clientTyping: Bool? }
+        let state: TypingState? = try? await auth.client.query(
+            "messaging.typingState",
+            input: AdminTypingInput(conversationId: id)
+        )
+        if state?.clientTyping == true {
+            clientTyping = true
+            typingReset?.cancel()
+            typingReset = Task {
+                try? await Task.sleep(for: .seconds(2.8))
+                if !Task.isCancelled { clientTyping = false }
+            }
+        }
+    }
+
     func listenLoop() {
         Task { [weak self] in
             while let self, self.selected != nil, !Task.isCancelled {
@@ -202,11 +268,24 @@ struct CoachInboxView: View {
                 if model.selected != nil {
                     thread
                 } else {
-                    list
+                    VStack(spacing: 0) {
+                        Picker("", selection: $model.homeTab) {
+                            Text("Inbox").tag(0)
+                            Text("Habits").tag(1)
+                        }
+                        .pickerStyle(.segmented)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 8)
+                        if model.homeTab == 0 {
+                            list
+                        } else {
+                            habitsAdmin
+                        }
+                    }
                 }
             }
             .background(HTTheme.cream)
-            .navigationTitle(model.selected == nil ? "Inbox" : model.selectedTitle)
+            .navigationTitle(model.selected == nil ? (model.homeTab == 0 ? "Inbox" : "Daily habits") : model.selectedTitle)
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -220,6 +299,7 @@ struct CoachInboxView: View {
             }
             .task {
                 await model.loadList()
+                await model.loadTemplates()
                 coach.unread = model.conversations.reduce(0) { $0 + ($1.unreadCount ?? 0) }
             }
         }
@@ -321,6 +401,12 @@ struct CoachInboxView: View {
             }
             composer
         }
+        .task(id: model.selected?.id) {
+            while !Task.isCancelled, model.selected != nil {
+                await model.refreshTyping()
+                try? await Task.sleep(for: .seconds(1))
+            }
+        }
     }
 
     private var composer: some View {
@@ -411,6 +497,48 @@ struct CoachInboxView: View {
             }
             if !msg.isMine { Spacer(minLength: 40) }
         }
+    }
+
+    private var habitsAdmin: some View {
+        List {
+            Section {
+                HStack {
+                    TextField("New habit title", text: $model.newTitle)
+                    Button("Add") {
+                        let title = model.newTitle.trimmingCharacters(in: .whitespaces)
+                        guard !title.isEmpty else { return }
+                        Task {
+                            await model.saveTemplate(
+                                HabitTemplateRow(id: 0, title: title, type: "boolean", order: model.templates.count + 1, isActive: true)
+                            )
+                        }
+                    }
+                    .disabled(model.newTitle.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            } footer: {
+                Text("Changes apply to everyone’s Today list, not just new accounts.")
+            }
+            ForEach(model.templates) { row in
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(row.title).font(.headline).foregroundStyle(HTTheme.forest)
+                    if let desc = row.description, !desc.isEmpty {
+                        Text(desc).font(.caption).foregroundStyle(HTTheme.muted)
+                    }
+                    if row.isActive == false {
+                        Text("Inactive").font(.caption2.weight(.bold)).foregroundStyle(.red)
+                    }
+                }
+                .swipeActions {
+                    Button(role: .destructive) {
+                        Task { await model.deleteTemplate(row.id) }
+                    } label: {
+                        Label("Remove", systemImage: "trash")
+                    }
+                }
+            }
+        }
+        .listStyle(.plain)
+        .refreshable { await model.loadTemplates() }
     }
 }
 

@@ -84,6 +84,10 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
   const { data: sequencesData = [] } = trpc.crmAutomations.listSequences.useQuery();
   const { data: templates = [] } = trpc.messaging.listTemplates.useQuery();
   const sendTyping = trpc.messaging.typing.useMutation();
+  const { data: typingState } = trpc.messaging.typingState.useQuery(
+    { conversationId: chatId },
+    { enabled: chatId > 0, refetchInterval: 1000 }
+  );
 
   useEffect(() => {
     if (!chatId) return;
@@ -180,6 +184,10 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
       scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
     }
   }, [activeChat?.messages?.length, optimistic.length, clientTyping]);
+
+  useEffect(() => {
+    if (typingState?.clientTyping) setClientTyping(true);
+  }, [typingState?.clientTyping]);
 
   const sendSms = trpc.messaging.mockSendSms.useMutation({
     onSuccess: () => {

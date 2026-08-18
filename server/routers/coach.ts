@@ -200,9 +200,26 @@ export const coachRouter = router({
       .where(and(eq(conversations.userId, ctx.user.id), eq(conversations.platform, "webchat")))
       .limit(1);
     if (!thread) return { success: true };
+    await db
+      .update(conversations)
+      .set({ clientTypingAt: new Date() })
+      .where(eq(conversations.id, thread.id));
     const { publishCoachEvent } = await import("../coachEvents");
     publishCoachEvent({ type: "typing", conversationId: thread.id, who: "client" });
     return { success: true };
+  }),
+
+  typingState: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return { coachTyping: false };
+    const [thread] = await db
+      .select({ coachTypingAt: conversations.coachTypingAt })
+      .from(conversations)
+      .where(and(eq(conversations.userId, ctx.user.id), eq(conversations.platform, "webchat")))
+      .limit(1);
+    const at = thread?.coachTypingAt;
+    const coachTyping = Boolean(at && Date.now() - new Date(at).getTime() < 3000);
+    return { coachTyping };
   }),
 
   markRead: protectedProcedure.mutation(async ({ ctx }) => {

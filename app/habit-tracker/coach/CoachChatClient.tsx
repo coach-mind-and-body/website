@@ -56,6 +56,10 @@ export default function CoachChatClient() {
   });
 
   const pingTyping = trpc.coach.typing.useMutation();
+  const { data: typingState } = trpc.coach.typingState.useQuery(undefined, {
+    enabled: isAuthenticated,
+    refetchInterval: 1000,
+  });
 
   const send = trpc.coach.send.useMutation();
 
@@ -150,6 +154,10 @@ export default function CoachChatClient() {
     if (!text) return;
     fireSend({ content: text });
   };
+
+  useEffect(() => {
+    if (typingState?.coachTyping) setCoachTyping(true);
+  }, [typingState?.coachTyping]);
 
   useEffect(() => {
     if (isAuthenticated && user?.role === "admin") {

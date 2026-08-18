@@ -20,6 +20,7 @@ import { OnboardingPackModal } from "@/components/habit/OnboardingPackModal";
 import { PatternInsightCard } from "@/components/habit/PatternInsightCard";
 import HabitTrackerInstallPrompt from "@/components/HabitTrackerInstallPrompt";
 import { useWebPush } from "@/hooks/useWebPush";
+import { isVictoryHabitTitle } from "@/lib/victoryHabit";
 
 type LocalHabit = { id: number; title: string; description?: string | null; type: "boolean" | "numeric"; targetValue: number | null; unit: string | null; isActive: boolean; };
 
@@ -323,7 +324,8 @@ export default function HabitTrackerClient() {
   };
 
   const activeHabits = (isAuthenticated ? (userSyncData?.habits || []) : localHabits)
-    .filter(h => h.isActive !== false);
+    .filter(h => h.isActive !== false)
+    .filter(h => !isVictoryHabitTitle(h.title));
   const logs = isAuthenticated ? (userSyncData?.logs || []) : localLogs;
   const notes = isAuthenticated ? (userSyncData?.notes || []) : localNotes;
 

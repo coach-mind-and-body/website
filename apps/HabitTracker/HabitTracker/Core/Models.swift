@@ -304,6 +304,32 @@ struct AdminTypingInput: Encodable {
     var conversationId: Int
 }
 
+struct HabitTemplateRow: Codable, Identifiable, Hashable {
+    var id: Int
+    var title: String
+    var description: String?
+    var type: String?
+    var targetValue: Int?
+    var unit: String?
+    var order: Int?
+    var isActive: Bool?
+}
+
+struct SaveHabitTemplateInput: Encodable {
+    var id: Int?
+    var title: String
+    var description: String?
+    var type: String
+    var targetValue: Int?
+    var unit: String?
+    var order: Int
+    var isActive: Bool
+}
+
+struct TemplateIdInput: Encodable {
+    var id: Int
+}
+
 struct CoachPhotoInput: Encodable {
     let mimeType: String
     let base64Data: String

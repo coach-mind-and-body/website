@@ -33,6 +33,19 @@ final class HabitsViewModel {
     var win2 = ""
     var win3 = ""
     var victoriesExpanded = false
+    var victoriesSaving = false
+    var victoriesSaved = false
+    var victoriesError: String?
+
+    var checklistHabits: [Habit] {
+        habits.filter { !Self.isVictoryHabit($0.title) }
+    }
+
+    static func isVictoryHabit(_ title: String) -> Bool {
+        let t = title.trimmingCharacters(in: .whitespaces).lowercased()
+        return t.contains("3 win") || t.contains("three win") || t.contains("3 victories")
+            || t.contains("victory list") || t == "write 3 wins" || t == "write 3 wins tonight"
+    }
 
     var progressMonth = MountainDate.today()
     var progressDay: String?
@@ -458,25 +471,38 @@ final class HabitsViewModel {
     }
 
     func saveVictories() async {
-        _ = try? await auth.client.mutate(
-            "habit.saveVictoryList",
-            input: SaveVictoryInput(
-                dateStr: dateStr,
-                win1: win1,
-                win2: win2,
-                win3: win3,
-                deviceId: AppConfig.deviceId
-            )
-        ) as SuccessFlag
-        var all = GuestLocalStore.loadVictories()
-        if let i = all.firstIndex(where: { $0.dateStr == dateStr }) {
-            all[i].win1 = win1
-            all[i].win2 = win2
-            all[i].win3 = win3
-        } else {
-            all.append(VictoryList(dateStr: dateStr, win1: win1, win2: win2, win3: win3))
+        victoriesSaving = true
+        victoriesSaved = false
+        victoriesError = nil
+        defer { victoriesSaving = false }
+        do {
+            if auth.isSignedIn {
+                struct SavedId: Decodable { var id: Int? }
+                let _: SavedId = try await auth.client.mutate(
+                    "habit.saveVictoryList",
+                    input: SaveVictoryInput(
+                        dateStr: dateStr,
+                        win1: win1,
+                        win2: win2,
+                        win3: win3,
+                        deviceId: AppConfig.deviceId
+                    )
+                )
+            }
+            var all = GuestLocalStore.loadVictories()
+            if let i = all.firstIndex(where: { $0.dateStr == dateStr }) {
+                all[i].win1 = win1
+                all[i].win2 = win2
+                all[i].win3 = win3
+            } else {
+                all.append(VictoryList(dateStr: dateStr, win1: win1, win2: win2, win3: win3))
+            }
+            GuestLocalStore.saveVictories(all)
+            victoriesSaved = true
+            victoriesExpanded = true
+        } catch {
+            victoriesError = error.localizedDescription
         }
-        GuestLocalStore.saveVictories(all)
     }
 
     func openProgressDay(_ day: String) async {

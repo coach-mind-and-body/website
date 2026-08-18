@@ -101,6 +101,19 @@ final class CoachViewModel {
         _ = try? await auth.client.mutateEmpty("coach.typing") as SuccessFlag
     }
 
+    func refreshTyping() async {
+        struct TypingState: Decodable { var coachTyping: Bool? }
+        let state: TypingState? = try? await auth.client.query("coach.typingState")
+        if state?.coachTyping == true {
+            coachTyping = true
+            typingReset?.cancel()
+            typingReset = Task {
+                try? await Task.sleep(for: .seconds(2.8))
+                if !Task.isCancelled { coachTyping = false }
+            }
+        }
+    }
+
     func listenForEvents() async {
         guard let id = thread?.conversationId else { return }
         var comps = URLComponents(url: AppConfig.apiRoot.appending(path: "api/coach/events"), resolvingAgainstBaseURL: false)
@@ -284,6 +297,12 @@ struct CoachView: View {
                     try? await Task.sleep(for: .seconds(2))
                 }
                 model.isOnCoachTab = false
+            }
+            .task(id: auth.isSignedIn) {
+                while !Task.isCancelled {
+                    await model.refreshTyping()
+                    try? await Task.sleep(for: .seconds(1))
+                }
             }
             .onDisappear { model.isOnCoachTab = false }
             .sheet(isPresented: $model.showRecipePicker) {
