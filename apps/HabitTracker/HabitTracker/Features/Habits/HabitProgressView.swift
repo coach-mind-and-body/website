@@ -26,8 +26,8 @@ struct HabitProgressView: View {
                 trophyCard
             }
             .padding(16)
-            .padding(.bottom, 8)
         }
+        .dockScrollClearance()
         .sheet(item: Binding(
             get: { model.progressDay.map { DaySheet(id: $0) } },
             set: { model.progressDay = $0?.id }

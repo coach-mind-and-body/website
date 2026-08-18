@@ -9,8 +9,14 @@ enum HTTheme {
 
     static let serif = Font.system(.largeTitle, design: .serif).weight(.bold)
     static let title = Font.system(.title, design: .serif).weight(.bold)
-    /// Kept for any screen that still pads manually. Matches the frosted dock height.
-    static let bottomBarClearance: CGFloat = 8
+    /// Extra scroll room so the last row can sit above the floating glass pill.
+    static let dockClearance: CGFloat = 72
+}
+
+extension View {
+    func dockScrollClearance() -> some View {
+        contentMargins(.bottom, HTTheme.dockClearance, for: .scrollContent)
+    }
 }
 
 private struct OpenProfileKey: EnvironmentKey {

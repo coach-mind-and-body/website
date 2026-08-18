@@ -131,8 +131,8 @@ struct HabitsView: View {
                 victoriesCard
             }
             .padding(16)
-            .padding(.bottom, 8)
         }
+        .dockScrollClearance()
     }
 
     private var healthStrip: some View {

@@ -215,6 +215,7 @@ struct FitnessView: View {
             }
             .padding(16)
         }
+        .dockScrollClearance()
     }
 
     private func chip(_ label: String, _ minutes: Int) -> some View {
@@ -279,6 +280,7 @@ struct FitnessView: View {
                 .padding(.horizontal, 16)
                 .padding(.bottom, 16)
             }
+            .dockScrollClearance()
         }
     }
 }

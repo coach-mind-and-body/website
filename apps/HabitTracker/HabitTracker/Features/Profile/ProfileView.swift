@@ -82,6 +82,7 @@ struct ProfileView: View {
                     }
                 }
             }
+            .dockScrollClearance()
             .navigationTitle("You")
             .sheet(isPresented: $showLogin) {
                 LoginView(auth: auth, allowsSkip: true)

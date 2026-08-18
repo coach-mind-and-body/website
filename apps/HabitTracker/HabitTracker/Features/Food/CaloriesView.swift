@@ -90,8 +90,8 @@ struct CaloriesView: View {
                     }
                 }
                 .padding(16)
-                .padding(.bottom, 24)
             }
+            .dockScrollClearance()
             .background(HTTheme.cream.ignoresSafeArea())
             .navigationTitle("Macros")
             .navigationBarTitleDisplayMode(.large)

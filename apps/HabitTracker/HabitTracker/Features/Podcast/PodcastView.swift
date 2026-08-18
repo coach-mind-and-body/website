@@ -153,6 +153,7 @@ struct PodcastView: View {
                 }
                 .padding(16)
             }
+            .dockScrollClearance()
             .background(HTTheme.cream.ignoresSafeArea())
             .navigationTitle("Podcast")
             .navigationBarTitleDisplayMode(.large)

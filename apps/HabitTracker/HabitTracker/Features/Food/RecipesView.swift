@@ -32,6 +32,7 @@ struct RecipesView: View {
                 }
                 .padding(16)
             }
+            .dockScrollClearance()
             .background(HTTheme.cream)
             .task(id: food.sessionEpoch) { await food.loadRecipes() }
             .refreshable { await food.loadRecipes() }

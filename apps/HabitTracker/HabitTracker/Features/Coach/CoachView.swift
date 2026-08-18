@@ -137,6 +137,7 @@ struct CoachView: View {
                         }
                         .padding(16)
                     }
+                    .dockScrollClearance()
                     .onChange(of: model.thread?.messages.count) {
                         if let last = model.thread?.messages.last {
                             proxy.scrollTo(last.id, anchor: .bottom)
@@ -233,8 +234,9 @@ struct CoachView: View {
         .padding(.horizontal, 12)
         .padding(.top, 10)
         .padding(.bottom, 10)
+        .padding(.bottom, HTTheme.dockClearance)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(HTTheme.cream)
+        .background(HTTheme.cream.opacity(0.92))
     }
 
     private var recipePicker: some View {

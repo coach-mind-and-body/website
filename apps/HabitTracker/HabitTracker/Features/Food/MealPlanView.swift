@@ -47,6 +47,7 @@ struct MealPlanView: View {
                 }
                 .padding(16)
             }
+            .dockScrollClearance()
             .background(HTTheme.cream)
             .task(id: food.sessionEpoch) { await food.loadPlan() }
             .refreshable { await food.loadPlan() }
@@ -88,6 +89,7 @@ struct ShopView: View {
                 }
             }
             .scrollContentBackground(.hidden)
+            .dockScrollClearance()
             .background(HTTheme.cream)
             .task(id: food.sessionEpoch) { await food.loadShop() }
             .refreshable { await food.loadShop() }
