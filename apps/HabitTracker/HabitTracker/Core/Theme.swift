@@ -9,8 +9,8 @@ enum HTTheme {
 
     static let serif = Font.system(.largeTitle, design: .serif).weight(.bold)
     static let title = Font.system(.title, design: .serif).weight(.bold)
-    /// Space reserved above the floating pill so content and composers clear it.
-    static let bottomBarClearance: CGFloat = 125
+    /// Kept for any screen that still pads manually. Matches the frosted dock height.
+    static let bottomBarClearance: CGFloat = 8
 }
 
 private struct OpenProfileKey: EnvironmentKey {

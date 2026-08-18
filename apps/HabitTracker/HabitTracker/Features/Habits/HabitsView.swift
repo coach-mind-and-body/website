@@ -131,7 +131,7 @@ struct HabitsView: View {
                 victoriesCard
             }
             .padding(16)
-            .padding(.bottom, 48)
+            .padding(.bottom, 8)
         }
     }
 

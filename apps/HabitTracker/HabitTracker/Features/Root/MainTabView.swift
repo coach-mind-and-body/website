@@ -46,10 +46,9 @@ struct MainTabView: View {
                     PodcastView(model: podcast, auth: auth)
                 }
             }
-            .padding(.bottom, HTTheme.bottomBarClearance)
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
             tabBar
-                .padding(.bottom, 6)
-                .ignoresSafeArea(.container, edges: .bottom)
         }
         .environment(\.openProfile) { tab = .profile }
         .tint(HTTheme.forest)
@@ -83,19 +82,23 @@ struct MainTabView: View {
                 tabButton(.fitness, "figure.strengthtraining.traditional")
                 tabButton(.podcast, "headphones")
             }
-            .padding(.horizontal, 6)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 4)
+            .padding(.vertical, 4)
             .background(.ultraThinMaterial)
             .clipShape(Capsule())
             .overlay(Capsule().stroke(Color.white.opacity(0.45), lineWidth: 1))
-            .shadow(color: HTTheme.forest.opacity(0.12), radius: 16, y: 6)
 
             circleButton(.coach, "message", badge: coach.unread)
         }
         .padding(.horizontal, 12)
         .padding(.top, 8)
-        .padding(.bottom, 6)
-        .background(HTTheme.cream.opacity(0.01))
+        .padding(.bottom, 8)
+        .background(.ultraThinMaterial)
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(Color.white.opacity(0.35))
+                .frame(height: 0.5)
+        }
     }
 
     private func tabButton(_ value: AppTab, _ icon: String) -> some View {
