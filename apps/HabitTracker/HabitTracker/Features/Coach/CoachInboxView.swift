@@ -1,5 +1,7 @@
 import Observation
+import PhotosUI
 import SwiftUI
+import UIKit
 
 @MainActor
 @Observable
@@ -17,6 +19,9 @@ final class CoachInboxViewModel {
     var templates: [HabitTemplateRow] = []
     var editingTemplate: HabitTemplateRow?
     var newTitle = ""
+    var library: [CommonFileRow] = []
+    var showLibrary = false
+    var uploading = false
     private var optimisticSeq = 0
     private let auth: AuthStore
 
@@ -137,10 +142,10 @@ final class CoachInboxViewModel {
         }
     }
 
-    func send() async {
+    func send(content: String? = nil, mediaUrl: String? = nil) async {
         guard let id = selected?.id else { return }
-        let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
+        let text = (content ?? draft).trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty || mediaUrl != nil else { return }
         optimisticSeq += 1
         let optId = -(Int(Date().timeIntervalSince1970 * 1000) + optimisticSeq)
         let reply = replyingTo
@@ -148,7 +153,8 @@ final class CoachInboxViewModel {
             id: optId,
             direction: "outbound",
             senderName: auth.user?.name ?? "You",
-            content: text,
+            content: text.isEmpty ? nil : text,
+            mediaUrl: mediaUrl,
             createdAt: Date(),
             type: "message",
             replyToId: reply?.id,
@@ -156,23 +162,52 @@ final class CoachInboxViewModel {
             pending: true
         )
         messages.append(bubble)
-        draft = ""
+        if content == nil { draft = "" }
         replyingTo = nil
         isSending = true
         defer { isSending = false }
         do {
             let _: SuccessFlag = try await auth.client.mutate(
                 "messaging.mockSendSms",
-                input: SendAdminMessageInput(conversationId: id, content: text, replyToId: reply?.id)
+                input: SendAdminMessageInput(
+                    conversationId: id,
+                    content: text.isEmpty ? nil : text,
+                    mediaUrl: mediaUrl,
+                    replyToId: reply?.id
+                )
             )
             await loadThread()
             await loadList()
         } catch {
             messages.removeAll { $0.id == optId }
-            draft = text
+            if mediaUrl == nil { draft = text }
             replyingTo = reply
             errorMessage = error.localizedDescription
         }
+    }
+
+    func sendPhoto(_ image: UIImage) async {
+        guard let data = image.jpegData(compressionQuality: 0.7) else { return }
+        uploading = true
+        defer { uploading = false }
+        do {
+            let result: CoachPhotoResult = try await auth.client.mutate(
+                "coach.uploadPhoto",
+                input: CoachPhotoInput(mimeType: "image/jpeg", base64Data: data.base64EncodedString())
+            )
+            await send(mediaUrl: result.url)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func loadLibrary() async {
+        library = (try? await auth.client.query("clientFiles.listCommon")) ?? []
+    }
+
+    func sendLibraryFile(_ file: CommonFileRow) async {
+        showLibrary = false
+        await send(content: file.fileName, mediaUrl: file.fileUrl)
     }
 
     func listenLoop() {
@@ -217,6 +252,7 @@ struct CoachInboxView: View {
     @Bindable var auth: AuthStore
     var showsModePicker = true
     @State private var model: CoachInboxViewModel
+    @State private var photoItem: PhotosPickerItem?
 
     init(coach: CoachViewModel, auth: AuthStore, showsModePicker: Bool = true) {
         self.coach = coach
@@ -355,6 +391,51 @@ struct CoachInboxView: View {
             }
             composer
         }
+        .sheet(isPresented: $model.showLibrary) {
+            librarySheet
+        }
+        .onChange(of: photoItem) { _, item in
+            guard let item else { return }
+            Task {
+                if let data = try? await item.loadTransferable(type: Data.self),
+                   let image = UIImage(data: data) {
+                    await model.sendPhoto(image)
+                }
+                photoItem = nil
+            }
+        }
+    }
+
+    private var librarySheet: some View {
+        NavigationStack {
+            List {
+                if model.library.isEmpty {
+                    Text("No files in the admin library yet. Add them on the website under File library.")
+                        .font(.caption)
+                        .foregroundStyle(HTTheme.muted)
+                }
+                ForEach(model.library) { file in
+                    Button {
+                        Task { await model.sendLibraryFile(file) }
+                    } label: {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(file.fileName).foregroundStyle(HTTheme.forest)
+                            if let mime = file.mimeType {
+                                Text(mime).font(.caption2).foregroundStyle(HTTheme.muted)
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationTitle("File library")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { model.showLibrary = false }
+                }
+            }
+            .task { await model.loadLibrary() }
+        }
+        .presentationDetents([.medium, .large])
     }
 
     private var composer: some View {
@@ -382,6 +463,24 @@ struct CoachInboxView: View {
                 .background(Color.white)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
+            HStack(spacing: 10) {
+                PhotosPicker(selection: $photoItem, matching: .images) {
+                    Image(systemName: model.uploading ? "arrow.triangle.2.circlepath" : "photo")
+                        .font(.title3)
+                        .foregroundStyle(HTTheme.forest)
+                }
+                .disabled(model.uploading)
+
+                Button {
+                    model.showLibrary = true
+                    Task { await model.loadLibrary() }
+                } label: {
+                    Image(systemName: "folder")
+                        .font(.title3)
+                        .foregroundStyle(HTTheme.forest)
+                }
+            }
+
             HStack(alignment: .bottom) {
                 TextField("Message…", text: $model.draft, axis: .vertical)
                     .lineLimit(1...4)
@@ -395,7 +494,7 @@ struct CoachInboxView: View {
                         .font(.system(size: 32))
                         .foregroundStyle(channelColor(model.selected?.platform))
                 }
-                .disabled(model.draft.trimmingCharacters(in: .whitespaces).isEmpty)
+                .disabled(model.draft.trimmingCharacters(in: .whitespaces).isEmpty || model.uploading)
             }
         }
         .padding(.horizontal, 12)
@@ -428,7 +527,23 @@ struct CoachInboxView: View {
                                 .frame(width: 2)
                         }
                     }
-                    if let content = msg.content, !content.isEmpty {
+                    if let urlStr = msg.mediaUrl, let url = URL(string: urlStr) {
+                        if isImageURL(urlStr) {
+                            AsyncImage(url: url) { phase in
+                                if case .success(let img) = phase {
+                                    img.resizable().scaledToFill()
+                                } else {
+                                    ProgressView()
+                                }
+                            }
+                            .frame(maxHeight: 180)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        } else {
+                            Link(msg.content ?? "Open file", destination: url)
+                                .font(.caption.weight(.bold))
+                        }
+                    }
+                    if let content = msg.content, !content.isEmpty, msg.mediaUrl == nil || isImageURL(msg.mediaUrl) {
                         Text(content).font(.body)
                     }
                 }
@@ -464,13 +579,17 @@ struct CoachInboxView: View {
                 Text("Changes apply to everyone’s Today list, not just new accounts.")
             }
             ForEach(model.templates) { row in
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(row.title).font(.headline).foregroundStyle(HTTheme.forest)
-                    if let desc = row.description, !desc.isEmpty {
-                        Text(desc).font(.caption).foregroundStyle(HTTheme.muted)
-                    }
-                    if row.isActive == false {
-                        Text("Inactive").font(.caption2.weight(.bold)).foregroundStyle(.red)
+                Button {
+                    model.editingTemplate = row
+                } label: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(row.title).font(.headline).foregroundStyle(HTTheme.forest)
+                        if let desc = row.description, !desc.isEmpty {
+                            Text(desc).font(.caption).foregroundStyle(HTTheme.muted)
+                        }
+                        if row.isActive == false {
+                            Text("Inactive").font(.caption2.weight(.bold)).foregroundStyle(.red)
+                        }
                     }
                 }
                 .swipeActions {
@@ -519,10 +638,24 @@ struct AdminHabitsPhoneView: View {
                     Text("Protein, fiber, sleep, hydrate, move, mindful. Add or swipe to remove for every client.")
                 }
                 ForEach(model.templates) { row in
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(row.title).font(.headline).foregroundStyle(HTTheme.forest)
-                        if let desc = row.description, !desc.isEmpty {
-                            Text(desc).font(.caption).foregroundStyle(HTTheme.muted)
+                    Button {
+                        model.editingTemplate = row
+                    } label: {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(row.title).font(.headline).foregroundStyle(HTTheme.forest)
+                            HStack(spacing: 6) {
+                                if row.type == "numeric" {
+                                    Text("\(row.targetValue.map(String.init) ?? "?") \(row.unit ?? "")")
+                                        .font(.caption)
+                                        .foregroundStyle(HTTheme.gold)
+                                }
+                                if let desc = row.description, !desc.isEmpty {
+                                    Text(desc).font(.caption).foregroundStyle(HTTheme.muted).lineLimit(1)
+                                }
+                                if row.isActive == false {
+                                    Text("Off").font(.caption2.weight(.bold)).foregroundStyle(.red)
+                                }
+                            }
                         }
                     }
                     .swipeActions {
@@ -543,8 +676,68 @@ struct AdminHabitsPhoneView: View {
                     ProfileAvatarButton(auth: auth)
                 }
             }
+            .sheet(item: $model.editingTemplate) { row in
+                HabitEditSheet(row: row) { updated in
+                    Task { await model.saveTemplate(updated) }
+                } onCancel: {
+                    model.editingTemplate = nil
+                }
+            }
             .task { await model.loadTemplates() }
             .refreshable { await model.loadTemplates() }
+        }
+    }
+}
+
+private struct HabitEditSheet: View {
+    @State var row: HabitTemplateRow
+    var onSave: (HabitTemplateRow) -> Void
+    var onCancel: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                TextField("Title", text: Binding(
+                    get: { row.title },
+                    set: { row.title = $0 }
+                ))
+                TextField("Description", text: Binding(
+                    get: { row.description ?? "" },
+                    set: { row.description = $0 }
+                ))
+                Picker("Type", selection: Binding(
+                    get: { row.type ?? "boolean" },
+                    set: { row.type = $0 }
+                )) {
+                    Text("Checkbox").tag("boolean")
+                    Text("Number").tag("numeric")
+                }
+                if row.type == "numeric" {
+                    TextField("Target", value: Binding(
+                        get: { row.targetValue },
+                        set: { row.targetValue = $0 }
+                    ), format: .number)
+                    TextField("Unit (oz, g, hr)", text: Binding(
+                        get: { row.unit ?? "" },
+                        set: { row.unit = $0 }
+                    ))
+                }
+                Toggle("Active on everyone’s list", isOn: Binding(
+                    get: { row.isActive ?? true },
+                    set: { row.isActive = $0 }
+                ))
+            }
+            .navigationTitle("Edit habit")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel", action: onCancel)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") { onSave(row) }
+                        .disabled(row.title.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
         }
     }
 }
@@ -557,6 +750,11 @@ private func channelLabel(_ platform: String?) -> String {
     case "instagram": return "Instagram"
     default: return "SMS"
     }
+}
+
+private func isImageURL(_ url: String?) -> Bool {
+    guard let url else { return false }
+    return url.range(of: #"\.(png|jpe?g|gif|webp|heic|svg)(\?|$)"#, options: [.regularExpression, .caseInsensitive]) != nil
 }
 
 private func channelColor(_ platform: String?) -> Color {

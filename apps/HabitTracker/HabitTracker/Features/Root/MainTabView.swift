@@ -24,7 +24,7 @@ struct MainTabView: View {
         _coach = State(initialValue: CoachViewModel(auth: auth))
         _fitness = State(initialValue: FitnessViewModel(auth: auth, health: health))
         _podcast = State(initialValue: PodcastViewModel(auth: auth))
-        _tab = State(initialValue: auth.isAdmin ? .coach : .habits)
+        _tab = State(initialValue: auth.usesAdminChrome ? .coach : .habits)
     }
 
     var body: some View {
@@ -33,7 +33,7 @@ struct MainTabView: View {
             Group {
                 switch tab {
                 case .habits:
-                    if auth.isAdmin {
+                    if auth.usesAdminChrome {
                         AdminHabitsPhoneView(auth: auth)
                     } else {
                         HabitsView(model: habits, health: health, auth: auth)
@@ -47,7 +47,7 @@ struct MainTabView: View {
                 case .profile:
                     ProfileView(auth: auth, health: health)
                 case .coach:
-                    if auth.isAdmin {
+                    if auth.usesAdminChrome {
                         CoachInboxView(coach: coach, auth: auth, showsModePicker: false)
                     } else {
                         CoachView(model: coach, auth: auth)
@@ -62,11 +62,10 @@ struct MainTabView: View {
                 .ignoresSafeArea(.container, edges: .bottom)
         }
         .environment(\.openProfile) { tab = .profile }
-        .onChange(of: auth.isAdmin) { _, admin in
-            tab = admin ? .coach : .habits
-        }
-        .onChange(of: auth.sessionEpoch) {
-            if auth.isAdmin { tab = .coach }
+        .onChange(of: auth.preferClientPreview) { _, preview in
+            if auth.isAdmin {
+                tab = preview ? .habits : .coach
+            }
         }
         .tint(HTTheme.forest)
         .task {
@@ -104,7 +103,7 @@ struct MainTabView: View {
 
     private var tabBar: some View {
         Group {
-            if auth.isAdmin {
+            if auth.usesAdminChrome {
                 HStack(spacing: 0) {
                     tabButton(.coach, "message")
                     tabButton(.habits, "checklist")

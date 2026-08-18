@@ -13,6 +13,10 @@ final class AuthStore {
 
     var isSignedIn: Bool { token != nil && user != nil && (user?.id ?? 0) > 0 }
 
+    var preferClientPreview = UserDefaults.standard.bool(forKey: "admin.preferClientPreview") {
+        didSet { UserDefaults.standard.set(preferClientPreview, forKey: "admin.preferClientPreview") }
+    }
+
     var isAdmin: Bool {
         let role = (user?.role ?? "").lowercased()
         let email = (user?.email ?? "").lowercased().trimmingCharacters(in: .whitespaces)
@@ -20,6 +24,9 @@ final class AuthStore {
             || email == "coach@mindandbodyresetcoach.com"
             || email == "carter@inseitzmarketing.com"
     }
+
+    /// Admin dock vs the real client app. One switch — not a second app.
+    var usesAdminChrome: Bool { isAdmin && !preferClientPreview }
 
     func restore() async {
         isRestoring = true

@@ -330,6 +330,13 @@ struct TemplateIdInput: Encodable {
     var id: Int
 }
 
+struct CommonFileRow: Codable, Identifiable, Hashable {
+    var id: Int
+    var fileName: String
+    var fileUrl: String
+    var mimeType: String?
+}
+
 struct CoachPhotoInput: Encodable {
     let mimeType: String
     let base64Data: String

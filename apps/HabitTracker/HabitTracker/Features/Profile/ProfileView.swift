@@ -30,6 +30,7 @@ struct ProfileView: View {
                     }
                 }
 
+                if !auth.usesAdminChrome {
                 Section("Health") {
                     if health.isAvailable {
                         Button("Allow Apple Health") {
@@ -60,8 +61,20 @@ struct ProfileView: View {
                             }
                         }
                 }
+                }
 
-                if auth.isSignedIn {
+                if auth.isAdmin {
+                    Section("Coach mode") {
+                        Toggle("Preview client app", isOn: $auth.preferClientPreview)
+                        Text(auth.preferClientPreview
+                             ? "You’re seeing the same five tabs a client sees. Turn this off to get back to Inbox."
+                             : "Inbox, daily habits, and You. Turn on to check the client app without signing out.")
+                            .font(.caption)
+                            .foregroundStyle(HTTheme.muted)
+                    }
+                }
+
+                if auth.isSignedIn && !auth.usesAdminChrome {
                     Section("Coach") {
                         Toggle("Share habits with Lee Anne", isOn: $shareWithCoach)
                             .onChange(of: shareWithCoach) { _, on in
