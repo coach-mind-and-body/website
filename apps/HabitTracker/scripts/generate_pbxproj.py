@@ -33,6 +33,7 @@ APP_SWIFT = [
     "HabitTracker/Features/Fitness/FitnessView.swift",
     "HabitTracker/Features/Podcast/PodcastView.swift",
     "HabitTracker/Features/Coach/CoachView.swift",
+    "HabitTracker/Features/Coach/CoachInboxView.swift",
     "HabitTracker/Features/Profile/ProfileView.swift",
     "HabitTracker/Features/Intents/HabitAppIntents.swift",
     "Shared/WidgetSnapshot.swift",

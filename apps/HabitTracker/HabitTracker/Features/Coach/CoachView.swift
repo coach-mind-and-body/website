@@ -20,6 +20,7 @@ final class CoachViewModel {
     var uploading = false
     var isOnCoachTab = false
     var coachTyping = false
+    var replyingTo: CoachMessage?
     private var lastSeenMessageId: Int?
     private var typingReset: Task<Void, Never>?
     private var lastTypingSent = Date.distantPast
@@ -60,6 +61,7 @@ final class CoachViewModel {
         guard !text.isEmpty || mediaUrl != nil else { return }
         optimisticSeq += 1
         let optimisticId = -(Int(Date().timeIntervalSince1970 * 1000) + optimisticSeq)
+        let reply = replyingTo
         let bubble = CoachMessage(
             id: optimisticId,
             direction: "inbound",
@@ -68,23 +70,27 @@ final class CoachViewModel {
             mediaUrl: mediaUrl,
             createdAt: Date(),
             isAutomated: false,
-            pending: true
+            pending: true,
+            replyToId: reply?.id,
+            replyTo: reply.map { ReplyPreview(id: $0.id, content: $0.content, senderName: $0.senderName) }
         )
         if thread != nil {
             thread?.messages.append(bubble)
         }
         draft = ""
+        replyingTo = nil
         isSending = true
         defer { isSending = false }
         do {
             let _: SuccessFlag = try await auth.client.mutate(
                 "coach.send",
-                input: SendCoachInput(content: text.isEmpty ? nil : text, mediaUrl: mediaUrl)
+                input: SendCoachInput(content: text.isEmpty ? nil : text, mediaUrl: mediaUrl, replyToId: reply?.id)
             )
             await load(announce: false)
         } catch {
             thread?.messages.removeAll { $0.id == optimisticId }
             draft = text
+            replyingTo = reply
             errorMessage = error.localizedDescription
         }
     }
@@ -152,6 +158,11 @@ final class CoachViewModel {
 
     func refreshUnread() async {
         guard auth.isSignedIn else { return }
+        if auth.user?.role == "admin" {
+            let rows: [InboxConversation] = (try? await auth.client.query("messaging.listConversations")) ?? []
+            unread = rows.reduce(0) { $0 + ($1.unreadCount ?? 0) }
+            return
+        }
         unread = (try? await auth.client.query("coach.unreadCount") as UnreadCount)?.count ?? 0
     }
 
@@ -200,9 +211,21 @@ struct CoachView: View {
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 10) {
-                            ForEach(model.thread?.messages ?? []) { msg in
+                            ForEach(Array((model.thread?.messages ?? []).enumerated()), id: \.element.id) { index, msg in
+                                let messages = model.thread?.messages ?? []
+                                let prev = index > 0 ? messages[index - 1] : nil
+                                if ChatDay.key(msg.createdAt) != ChatDay.key(prev?.createdAt) {
+                                    DateChip(label: ChatDay.label(msg.createdAt))
+                                }
                                 bubble(msg)
                                     .id(msg.id)
+                                    .contextMenu {
+                                        Button {
+                                            model.replyingTo = msg
+                                        } label: {
+                                            Label("Reply", systemImage: "arrowshape.turn.up.left")
+                                        }
+                                    }
                             }
                             if model.coachTyping {
                                 HStack {
@@ -313,6 +336,35 @@ struct CoachView: View {
                 Text(err).font(.caption).foregroundStyle(.red)
             }
 
+            if let reply = model.replyingTo {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(reply.senderName ?? (reply.isMine ? "You" : "Lee Anne"))
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(HTTheme.gold)
+                        Text(reply.content ?? "Attachment")
+                            .font(.caption)
+                            .foregroundStyle(HTTheme.muted)
+                            .lineLimit(2)
+                    }
+                    Spacer()
+                    Button {
+                        model.replyingTo = nil
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(HTTheme.muted)
+                    }
+                }
+                .padding(10)
+                .background(Color.white)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(alignment: .leading) {
+                    Rectangle()
+                        .fill(HTTheme.gold)
+                        .frame(width: 3)
+                }
+            }
+
             HStack(alignment: .bottom) {
                 TextField("Write to Lee Anne…", text: $model.draft, axis: .vertical)
                     .lineLimit(1...4)
@@ -383,6 +435,22 @@ struct CoachView: View {
                         .foregroundStyle(HTTheme.gold)
                 }
                 VStack(alignment: .leading, spacing: 8) {
+                    if let quoted = msg.replyTo {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(quoted.senderName ?? "Message")
+                                .font(.caption2.weight(.bold))
+                            Text(quoted.content ?? "Attachment")
+                                .font(.caption)
+                                .lineLimit(2)
+                        }
+                        .padding(.leading, 8)
+                        .overlay(alignment: .leading) {
+                            Rectangle()
+                                .fill(msg.isMine ? Color.white.opacity(0.6) : HTTheme.gold)
+                                .frame(width: 2)
+                        }
+                        .opacity(0.85)
+                    }
                     if let urlStr = msg.mediaUrl, let url = URL(string: urlStr) {
                         if msg.isImageAttachment {
                             AsyncImage(url: url) { phase in
@@ -418,8 +486,11 @@ struct CoachView: View {
                 .padding(12)
                 .background(msg.isMine ? HTTheme.forest : Color.white)
                 .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                if msg.isMine, isLastMine(msg) {
-                    Text(msg.pending == true ? "Sending…" : "Delivered")
+                Text(msg.pending == true ? "Sending…" : ChatDay.time(msg.createdAt))
+                    .font(.caption2)
+                    .foregroundStyle(HTTheme.muted)
+                if msg.isMine, isLastMine(msg), msg.pending != true {
+                    Text("Delivered")
                         .font(.caption2)
                         .foregroundStyle(HTTheme.muted)
                 }
@@ -433,7 +504,24 @@ struct CoachView: View {
     }
 }
 
-private struct TypingDots: View {
+struct DateChip: View {
+    var label: String
+
+    var body: some View {
+        if !label.isEmpty {
+            Text(label)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(HTTheme.muted)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(Color.black.opacity(0.05))
+                .clipShape(Capsule())
+                .frame(maxWidth: .infinity)
+        }
+    }
+}
+
+struct TypingDots: View {
     @State private var bounce = false
 
     var body: some View {

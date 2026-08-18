@@ -13,6 +13,7 @@ import { Phone, ArrowLeft, Loader2, MessageSquare, CreditCard, Star, Paperclip, 
 import { ChatShareToolbar } from "@/components/habit/ChatShareToolbar";
 import ChannelBadge, { channelColors } from "@/components/admin/ChannelBadge";
 import { TypingDots } from "@/components/chat/TypingDots";
+import { QuotedReply } from "@/components/chat/QuotedReply";
 import { useInboxPollInterval } from "@/lib/useInboxPollInterval";
 import { toast } from "sonner";
 import { isToday, isYesterday, format } from "date-fns";
@@ -55,8 +56,19 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
   const [pendingUploadUrl, setPendingUploadUrl] = useState<string | null>(null);
   const [clientTyping, setClientTyping] = useState(false);
   const [live, setLive] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<{
+    id: number;
+    content?: string | null;
+    senderName?: string | null;
+  } | null>(null);
   const [optimistic, setOptimistic] = useState<
-    { id: number; content?: string; mediaUrl?: string | null; createdAt: string }[]
+    {
+      id: number;
+      content?: string;
+      mediaUrl?: string | null;
+      createdAt: string;
+      replyTo?: { id: number; content?: string | null; senderName?: string | null } | null;
+    }[]
   >([]);
   const typingReset = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTypingSent = useRef(0);
@@ -258,20 +270,29 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
     const media = pendingUploadUrl;
     if (!text && !media) return;
     const optId = -Date.now();
+    const reply = scheduledDate ? null : replyingTo;
     if (!scheduledDate) {
       setOptimistic((prev) => [
         ...prev,
-        { id: optId, content: text || undefined, mediaUrl: media, createdAt: new Date().toISOString() },
+        {
+          id: optId,
+          content: text || undefined,
+          mediaUrl: media,
+          createdAt: new Date().toISOString(),
+          replyTo: reply,
+        },
       ]);
     }
     setMessageText("");
     setPendingUploadUrl(null);
+    setReplyingTo(null);
     sendSms.mutate(
       {
         conversationId: chatId,
         content: text || undefined,
         mediaUrl: media || undefined,
         scheduledAt: scheduledDate || undefined,
+        replyToId: reply?.id,
       },
       {
         onSuccess: () => setOptimistic((prev) => prev.filter((o) => o.id !== optId)),
@@ -414,9 +435,23 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
                 ) : (
                   <div className={`flex flex-col gap-1 ${msg.direction === "outbound" ? "items-end" : "items-start"}`}>
                     <div
-                      className={`${msg.direction === "outbound" ? "text-white rounded-tr-sm shadow-sm" : "bg-[#E9E9EB] text-slate-900 rounded-tl-sm"} p-3 rounded-2xl max-w-[80%] text-sm`}
+                      className={`${msg.direction === "outbound" ? "text-white rounded-tr-sm shadow-sm" : "bg-[#E9E9EB] text-slate-900 rounded-tl-sm"} p-3 rounded-2xl max-w-[80%] text-sm cursor-pointer`}
                       style={msg.direction === "outbound" ? { background: bubbleColor } : undefined}
+                      onClick={() =>
+                        setReplyingTo({
+                          id: msg.id,
+                          content: msg.content,
+                          senderName: msg.senderName || (msg.direction === "outbound" ? "You" : activeName),
+                        })
+                      }
                     >
+                      {msg.replyTo && (
+                        <QuotedReply
+                          name={msg.replyTo.senderName}
+                          text={msg.replyTo.content}
+                          mine={msg.direction === "outbound"}
+                        />
+                      )}
                       {msg.mediaUrl && (
                         <img 
                           src={msg.mediaUrl!.includes("twilio.com") ? `/api/crm/media?url=${encodeURIComponent(msg.mediaUrl!)}` : msg.mediaUrl} 
@@ -477,6 +512,9 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
                 className="text-white rounded-tr-sm shadow-sm p-3 rounded-2xl max-w-[80%] text-sm opacity-85"
                 style={{ background: bubbleColor }}
               >
+                {msg.replyTo && (
+                  <QuotedReply name={msg.replyTo.senderName} text={msg.replyTo.content} mine />
+                )}
                 {msg.mediaUrl && (
                   <img src={msg.mediaUrl} alt="" className="max-w-full rounded-md mb-2 object-contain max-h-64" />
                 )}
@@ -606,6 +644,14 @@ export default function ActiveChatThread({ chatId }: { chatId: number }) {
             />
           </div>
           
+          {replyingTo && (
+            <div className="px-3 pt-2 flex items-start justify-between gap-2">
+              <QuotedReply name={replyingTo.senderName} text={replyingTo.content} />
+              <button type="button" className="text-[11px] font-semibold text-slate-400" onClick={() => setReplyingTo(null)}>
+                Cancel
+              </button>
+            </div>
+          )}
           <textarea 
             className="w-full min-h-[80px] p-3 text-sm focus:outline-none resize-none"
             placeholder={isAppChat ? `iMessage · ${activeName}` : `SMS · ${activeName}`}

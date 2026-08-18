@@ -181,6 +181,43 @@ struct CoachThread: Codable {
     var messages: [CoachMessage]
 }
 
+struct ReplyPreview: Codable, Hashable {
+    var id: Int
+    var content: String?
+    var senderName: String?
+}
+
+enum ChatDay {
+    static func key(_ date: Date?) -> String {
+        guard let date else { return "" }
+        let c = Calendar.current
+        return "\(c.component(.year, from: date))-\(c.component(.month, from: date))-\(c.component(.day, from: date))"
+    }
+
+    static func label(_ date: Date?) -> String {
+        guard let date else { return "" }
+        let cal = Calendar.current
+        if cal.isDateInToday(date) { return "Today" }
+        if cal.isDateInYesterday(date) { return "Yesterday" }
+        let days = cal.dateComponents([.day], from: cal.startOfDay(for: date), to: cal.startOfDay(for: Date())).day ?? 0
+        let f = DateFormatter()
+        f.locale = .current
+        if days > 1 && days < 7 {
+            f.setLocalizedDateFormatFromTemplate("EEEE")
+        } else {
+            f.setLocalizedDateFormatFromTemplate("EEE MMM d")
+        }
+        return f.string(from: date)
+    }
+
+    static func time(_ date: Date?) -> String {
+        guard let date else { return "" }
+        let f = DateFormatter()
+        f.timeStyle = .short
+        return f.string(from: date)
+    }
+}
+
 struct CoachMessage: Codable, Identifiable, Hashable {
     var id: Int
     var direction: String
@@ -190,6 +227,8 @@ struct CoachMessage: Codable, Identifiable, Hashable {
     var createdAt: Date?
     var isAutomated: Bool?
     var pending: Bool?
+    var replyToId: Int?
+    var replyTo: ReplyPreview?
 
     var isMine: Bool { direction == "inbound" }
 
@@ -215,6 +254,54 @@ struct UnreadCount: Codable {
 struct SendCoachInput: Encodable {
     var content: String?
     var mediaUrl: String?
+    var replyToId: Int?
+}
+
+struct InboxConversation: Codable, Identifiable, Hashable {
+    var id: Int
+    var platform: String?
+    var userName: String?
+    var contactPhone: String?
+    var contactEmail: String?
+    var unreadCount: Int?
+    var lastMessagePreview: String?
+    var lastMessageAt: Date?
+}
+
+struct AdminThreadPayload: Codable {
+    var conversation: InboxConversation?
+    var messages: [AdminChatMessage]
+}
+
+struct AdminChatMessage: Codable, Identifiable, Hashable {
+    var id: Int
+    var direction: String?
+    var senderName: String?
+    var content: String?
+    var mediaUrl: String?
+    var createdAt: Date?
+    var status: String?
+    var type: String?
+    var replyToId: Int?
+    var replyTo: ReplyPreview?
+    var pending: Bool?
+
+    var isMine: Bool { direction == "outbound" }
+}
+
+struct ConversationIdInput: Encodable {
+    var id: Int
+}
+
+struct SendAdminMessageInput: Encodable {
+    var conversationId: Int
+    var content: String?
+    var mediaUrl: String?
+    var replyToId: Int?
+}
+
+struct AdminTypingInput: Encodable {
+    var conversationId: Int
 }
 
 struct CoachPhotoInput: Encodable {

@@ -366,8 +366,11 @@ export const messagingRouter = router({
       }
 
       // Merge messages and calls, sorting oldest first
+      const { attachReplyPreviews } = await import("../chatReply");
+      const withReplies = attachReplyPreviews(history);
+
       const combined = [
-        ...history.map(m => ({ ...m, type: "message" as const })),
+        ...withReplies.map(m => ({ ...m, type: "message" as const })),
         ...callsHistory.map(c => ({ 
           type: "call" as const, 
           id: c.id + 1000000, // offset id so react keys don't collide
@@ -518,6 +521,7 @@ export const messagingRouter = router({
       mediaUrl: z.string().optional(),
       isInternal: z.boolean().optional(),
       scheduledAt: z.string().optional(), // ISO string
+      replyToId: z.number().int().positive().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
@@ -532,6 +536,13 @@ export const messagingRouter = router({
       }
 
       let finalContent = input.content ? input.content.replace(/\(\(review_link\)\)/g, "https://coachmindandbody.com/reviews").replace(/\(\(payment_link\)\)/g, "https://coachmindandbody.com/premium") : "";
+      let storedContent = finalContent;
+      if (input.replyToId && convo.platform !== "webchat") {
+        const [parent] = await db.select().from(messages).where(eq(messages.id, input.replyToId)).limit(1);
+        const { smsQuotePrefix } = await import("../chatReply");
+        const prefix = smsQuotePrefix(parent);
+        if (prefix) finalContent = storedContent ? `${prefix}\n${storedContent}` : prefix;
+      }
 
       const { shortenLinksInText } = await import("../crm/automations");
       finalContent = await shortenLinksInText(finalContent);
@@ -601,7 +612,7 @@ export const messagingRouter = router({
       await db.insert(messages).values({
         conversationId: input.conversationId,
         direction: "outbound",
-        content: finalContent || null,
+        content: storedContent || null,
         mediaUrl: input.mediaUrl || null,
         twilioSid: twilioSidToSave,
         senderName: "Admin",
@@ -609,6 +620,7 @@ export const messagingRouter = router({
         isAutomated: false,
         isInternal: isInternal,
         scheduledAt: isScheduled ? new Date(input.scheduledAt!) : null,
+        replyToId: input.replyToId ?? null,
       });
 
       // Update conversation's last active time

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { UserPlus } from "lucide-react";
+import { Bell, UserPlus } from "lucide-react";
+import { useWebPush } from "@/hooks/useWebPush";
 import AdminPaymentsTab from "@/components/AdminPaymentsTab";
 import { AdminEngagementHub } from "@/components/admin/AdminEngagementHub";
 import { AdminFoodVaultTab } from "@/components/admin/AdminFoodVaultTab";
@@ -44,6 +45,7 @@ export default function Admin() {
 
   const [showEnrollModal, setShowEnrollModal] = useState(false);
   const isAdmin = isAuthenticated && user?.role === "admin";
+  const { isSupported: pushSupported, isSubscribed: pushOn, isSubscribing, subscribeToPush } = useWebPush();
 
   const { data: gcalStatus, refetch: refetchGcal } = trpc.googleCalendar.status.useQuery(undefined, {
     enabled: isAdmin && (tab === "contacts" || tab === "settings"),
@@ -121,6 +123,18 @@ export default function Admin() {
             </span>
           </a>
           <div className="flex items-center gap-4">
+            {pushSupported && !pushOn && (
+              <button
+                type="button"
+                onClick={() => void subscribeToPush()}
+                disabled={isSubscribing}
+                className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full"
+                style={{ background: "oklch(0.96 0.025 50)", color: "oklch(0.35 0.04 50)", border: "1px solid oklch(0.90 0.015 80)" }}
+              >
+                <Bell size={13} />
+                {isSubscribing ? "Enabling…" : "Notify me"}
+              </button>
+            )}
             <div className="flex items-center gap-2">
               <div
                 className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"

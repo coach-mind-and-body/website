@@ -42,7 +42,11 @@ struct MainTabView: View {
                 case .profile:
                     ProfileView(auth: auth, health: health)
                 case .coach:
-                    CoachView(model: coach, auth: auth)
+                    if auth.user?.role == "admin" {
+                        CoachInboxView(coach: coach, auth: auth)
+                    } else {
+                        CoachView(model: coach, auth: auth)
+                    }
                 case .podcast:
                     PodcastView(model: podcast, auth: auth)
                 }

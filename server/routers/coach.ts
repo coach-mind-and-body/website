@@ -98,10 +98,12 @@ export const coachRouter = router({
       .orderBy(desc(messages.createdAt))
       .limit(80);
 
+    const chronological = history.reverse();
+    const { attachReplyPreviews } = await import("../chatReply");
     return {
       conversationId: thread.id,
       coachName: COACH_NAME,
-      messages: history.reverse().map((m) => ({
+      messages: attachReplyPreviews(chronological).map((m) => ({
         id: m.id,
         direction: m.direction,
         senderName: m.senderName,
@@ -109,6 +111,8 @@ export const coachRouter = router({
         mediaUrl: m.mediaUrl,
         createdAt: m.createdAt,
         isAutomated: m.isAutomated,
+        replyToId: m.replyToId,
+        replyTo: m.replyTo,
       })),
     };
   }),
@@ -143,6 +147,7 @@ export const coachRouter = router({
       z.object({
         content: z.string().max(4000).optional(),
         mediaUrl: z.string().max(2000).optional(),
+        replyToId: z.number().int().positive().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -162,6 +167,7 @@ export const coachRouter = router({
         mediaUrl: input.mediaUrl ?? null,
         status: "received",
         isAutomated: false,
+        replyToId: input.replyToId ?? null,
       });
 
       await db

@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+
 import { Bell, Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -11,22 +13,15 @@ import { useWebPush } from "@/hooks/useWebPush";
 import { BRAND } from "@shared/brand";
 import { ChatShareToolbar, parseRecipeSlug } from "@/components/habit/ChatShareToolbar";
 import { TypingDots } from "@/components/chat/TypingDots";
+import { QuotedReply, DateChip } from "@/components/chat/QuotedReply";
+import { dayKey, dayLabel, messageTime } from "@/lib/chatTime";
 
 const FOREST = "#2d3b2d";
 const GOLD = "#c9a96e";
 const BORDER = "#f0e8e4";
 const CREAM = "#faf5f5";
 
-function formatTime(d: Date | string) {
-  const date = typeof d === "string" ? new Date(d) : d;
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
+type ReplyTo = { id: number; content?: string | null; senderName?: string | null };
 
 export default function CoachChatClient() {
   usePageTitle({
@@ -34,13 +29,15 @@ export default function CoachChatClient() {
     description: "Private thread with Lee Anne.",
   });
 
+  const router = useRouter();
   const { isAuthenticated, loading: authLoading, user } = useAuth();
   const { isSupported, isSubscribed, isSubscribing, subscribeToPush } = useWebPush();
   const utils = trpc.useUtils();
   const [draft, setDraft] = useState("");
+  const [replyingTo, setReplyingTo] = useState<ReplyTo | null>(null);
   const [coachTyping, setCoachTyping] = useState(false);
   const [optimistic, setOptimistic] = useState<
-    { id: number; content?: string; mediaUrl?: string; createdAt: Date }[]
+    { id: number; content?: string; mediaUrl?: string; createdAt: Date; replyTo?: ReplyTo | null }[]
   >([]);
   const listRef = useRef<HTMLDivElement>(null);
   const didInitScroll = useRef(false);
@@ -62,17 +59,21 @@ export default function CoachChatClient() {
 
   const send = trpc.coach.send.useMutation();
 
-  const fireSend = (payload: { content?: string; mediaUrl?: string }) => {
+  const fireSend = (payload: { content?: string; mediaUrl?: string; replyToId?: number }) => {
     const content = payload.content?.trim();
     if (!content && !payload.mediaUrl) return;
     const id = -Date.now();
+    const reply = payload.replyToId
+      ? (replyingTo && replyingTo.id === payload.replyToId ? replyingTo : null)
+      : replyingTo;
     setOptimistic((prev) => [
       ...prev,
-      { id, content, mediaUrl: payload.mediaUrl, createdAt: new Date() },
+      { id, content, mediaUrl: payload.mediaUrl, createdAt: new Date(), replyTo: reply },
     ]);
     if (payload.content !== undefined) setDraft("");
+    setReplyingTo(null);
     send.mutate(
-      { content, mediaUrl: payload.mediaUrl },
+      { content, mediaUrl: payload.mediaUrl, replyToId: reply?.id },
       {
         onSuccess: () => {
           void refetch().then(() => setOptimistic((prev) => prev.filter((o) => o.id !== id)));
@@ -149,6 +150,12 @@ export default function CoachChatClient() {
     if (!text) return;
     fireSend({ content: text });
   };
+
+  useEffect(() => {
+    if (isAuthenticated && user?.role === "admin") {
+      router.replace("/admin");
+    }
+  }, [isAuthenticated, user?.role, router]);
 
   if (authLoading) {
     return (
@@ -228,60 +235,81 @@ export default function CoachChatClient() {
               </div>
             ) : (
               <>
-              {messages.map((m) => {
+              {messages.map((m, index) => {
                 const mine = m.direction === "inbound";
                 const recipeSlug = parseRecipeSlug(m.content);
                 const isImage = Boolean(m.mediaUrl && /\.(png|jpe?g|gif|webp|svg)(\?|$)/i.test(m.mediaUrl));
+                const prev = messages[index - 1];
+                const showDay = dayKey(m.createdAt) !== dayKey(prev?.createdAt);
                 return (
-                  <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-                    <div
-                      className="max-w-[85%] rounded-2xl px-3.5 py-2.5"
-                      style={{
-                        background: mine ? FOREST : "#faf5f5",
-                        color: mine ? "white" : FOREST,
-                        border: mine ? "none" : `1px solid ${BORDER}`,
-                      }}
-                    >
-                      {!mine && (
-                        <p className="text-[10px] font-bold uppercase tracking-wide mb-0.5" style={{ color: GOLD }}>
-                          {m.senderName || BRAND.coachName}
+                  <div key={m.id}>
+                    {showDay && <DateChip label={dayLabel(m.createdAt)} />}
+                    <div className={`flex ${mine ? "justify-end" : "justify-start"} group`}>
+                      <button
+                        type="button"
+                        className="max-w-[85%] rounded-2xl px-3.5 py-2.5 text-left"
+                        style={{
+                          background: mine ? FOREST : "#faf5f5",
+                          color: mine ? "white" : FOREST,
+                          border: mine ? "none" : `1px solid ${BORDER}`,
+                        }}
+                        onClick={() =>
+                          setReplyingTo({
+                            id: m.id,
+                            content: m.content,
+                            senderName: mine ? user?.name : m.senderName || BRAND.coachName,
+                          })
+                        }
+                      >
+                        {m.replyTo && (
+                          <QuotedReply
+                            name={m.replyTo.senderName}
+                            text={m.replyTo.content}
+                            mine={mine}
+                          />
+                        )}
+                        {!mine && (
+                          <p className="text-[10px] font-bold uppercase tracking-wide mb-0.5" style={{ color: GOLD }}>
+                            {m.senderName || BRAND.coachName}
+                          </p>
+                        )}
+                        {m.mediaUrl && isImage && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={m.mediaUrl} alt="" className="rounded-xl mb-2 max-h-48 object-cover w-full" />
+                        )}
+                        {m.mediaUrl && !isImage && (
+                          <a
+                            href={m.mediaUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block text-xs font-bold underline mb-2"
+                            style={{ color: mine ? "white" : GOLD }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Open file
+                          </a>
+                        )}
+                        {recipeSlug && (
+                          <Link
+                            href={`/habit-tracker/recipes/${recipeSlug}`}
+                            className="block text-xs font-bold rounded-xl px-3 py-2 mb-2"
+                            style={{
+                              background: mine ? "rgba(255,255,255,0.12)" : "white",
+                              color: mine ? "white" : FOREST,
+                              border: `1px solid ${mine ? "rgba(255,255,255,0.2)" : BORDER}`,
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Open recipe →
+                          </Link>
+                        )}
+                        {m.content && (
+                          <p className="text-sm whitespace-pre-wrap leading-relaxed">{m.content}</p>
+                        )}
+                        <p className={`text-[10px] mt-1 ${mine ? "text-white/60" : "text-gray-400"}`}>
+                          {messageTime(m.createdAt)}
                         </p>
-                      )}
-                      {m.mediaUrl && isImage && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={m.mediaUrl} alt="" className="rounded-xl mb-2 max-h-48 object-cover w-full" />
-                      )}
-                      {m.mediaUrl && !isImage && (
-                        <a
-                          href={m.mediaUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block text-xs font-bold underline mb-2"
-                          style={{ color: mine ? "white" : GOLD }}
-                        >
-                          Open file
-                        </a>
-                      )}
-                      {recipeSlug && (
-                        <Link
-                          href={`/habit-tracker/recipes/${recipeSlug}`}
-                          className="block text-xs font-bold rounded-xl px-3 py-2 mb-2"
-                          style={{
-                            background: mine ? "rgba(255,255,255,0.12)" : "white",
-                            color: mine ? "white" : FOREST,
-                            border: `1px solid ${mine ? "rgba(255,255,255,0.2)" : BORDER}`,
-                          }}
-                        >
-                          Open recipe →
-                        </Link>
-                      )}
-                      {m.content && (
-                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{m.content}</p>
-                      )}
-                      <p className={`text-[10px] mt-1 ${mine ? "text-white/60" : "text-gray-400"}`}>
-                        {formatTime(m.createdAt)}
-                        {mine ? ` · ${user?.name?.split(" ")[0] || "You"}` : ""}
-                      </p>
+                      </button>
                     </div>
                   </div>
                 );
@@ -292,6 +320,7 @@ export default function CoachChatClient() {
                     className="max-w-[85%] rounded-2xl px-3.5 py-2.5 opacity-80"
                     style={{ background: FOREST, color: "white" }}
                   >
+                    {m.replyTo && <QuotedReply name={m.replyTo.senderName} text={m.replyTo.content} mine />}
                     {m.mediaUrl && /\.(png|jpe?g|gif|webp|svg)(\?|$)/i.test(m.mediaUrl) && (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={m.mediaUrl} alt="" className="rounded-xl mb-2 max-h-48 object-cover w-full" />
@@ -319,6 +348,21 @@ export default function CoachChatClient() {
           </div>
 
           <div className="border-t p-3 space-y-2" style={{ borderColor: BORDER }}>
+            {replyingTo && (
+              <div
+                className="flex items-start justify-between gap-2 rounded-xl px-3 py-2"
+                style={{ background: CREAM, border: `1px solid ${BORDER}` }}
+              >
+                <QuotedReply name={replyingTo.senderName} text={replyingTo.content} />
+                <button
+                  type="button"
+                  className="text-xs font-bold text-[#8a9a8a]"
+                  onClick={() => setReplyingTo(null)}
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
             <ChatShareToolbar onShare={share} />
             <div className="flex gap-2 items-end">
             <textarea

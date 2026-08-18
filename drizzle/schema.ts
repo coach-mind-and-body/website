@@ -651,6 +651,8 @@ export const messages = mysqlTable("messages", {
   ]).default("received").notNull(),
   isAutomated: boolean("isAutomated").default(false).notNull(), // Was this sent by Gemini/System?
   isInternal: boolean("isInternal").default(false).notNull(), // Team whisper
+  /** Quoted parent — iMessage-style reply to a specific bubble. */
+  replyToId: int("replyToId"),
   scheduledAt: timestamp("scheduledAt"), // Future scheduled message
   shortLinkId: varchar("shortLinkId", { length: 255 }), // Short.io link ID for click tracking
   hasClicked: boolean("hasClicked").default(false).notNull(), // Has the user clicked the short link
