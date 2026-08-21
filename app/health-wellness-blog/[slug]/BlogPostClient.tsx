@@ -143,7 +143,7 @@ function RelatedPosts({ slug, category }: { slug: string; category?: string }) {
                 href={`/health-wellness-blog/${p.slug}`}
                 className="card-brand rounded-2xl overflow-hidden group block"
               >
-                <div className="h-44 relative overflow-hidden" style={{ background: "oklch(0.93 0.06 78)" }}>
+                <div className="relative overflow-hidden aspect-[16/9]" style={{ background: "oklch(0.93 0.06 78)" }}>
                   {cover && (
                     <img
                       src={cover}
@@ -506,7 +506,7 @@ export default function BlogPost({ initialPost = null }: { initialPost?: Initial
       <hr className="my-8" style={{ borderColor: "oklch(0.85 0.01 160)" }} />
     ),
     img: ({ src, alt }: { src?: string; alt?: string }) => (
-      <img src={src} alt={alt ?? ""} className="rounded-xl my-6 w-full object-cover" style={{ maxHeight: "480px" }} loading="lazy" />
+      <img src={src} alt={alt ?? ""} className="rounded-xl my-6 w-full h-auto" loading="lazy" />
     ),
     a: ({ href, children }: { href?: string; children?: React.ReactNode }) => (
       <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: "oklch(0.38 0.10 148)", textDecoration: "underline", textUnderlineOffset: "3px" }}>{children}</a>
@@ -520,21 +520,10 @@ export default function BlogPost({ initialPost = null }: { initialPost?: Initial
     <div className="min-h-screen" style={{ background: "oklch(0.97 0.008 10)" }}>
       <SiteNav />
 
-      {/* Hero */}
-      <section className="pb-8" style={{ background: "linear-gradient(135deg, oklch(0.93 0.06 75) 0%, oklch(0.97 0.008 10) 60%)" }}>
-        {/* Cover image */}
-        {post.coverImage && (
-          <div className="w-full h-64 md:h-80 overflow-hidden mb-8">
-            <img
-              src={post.coverImage}
-              alt={post.title}
-              className="w-full h-full object-cover"
-              loading="eager"
-            />
-          </div>
-        )}
+      {/* Hero — featured image sits in the article column at native 16:9 so faces/landscapes are not cropped */}
+      <section className="pt-8 pb-8" style={{ background: "linear-gradient(135deg, oklch(0.93 0.06 75) 0%, oklch(0.97 0.008 10) 60%)" }}>
         <div className="container max-w-3xl mx-auto">
-          <Link href="/health-wellness-blog" className="inline-flex items-center gap-1 text-xs font-bold mb-4 block" style={{ color: "oklch(0.38 0.10 148)" }}>
+          <Link href="/health-wellness-blog" className="inline-flex items-center gap-1 text-xs font-bold mb-4" style={{ color: "oklch(0.38 0.10 148)" }}>
             <ChevronLeft size={14} /> Back to Blog
           </Link>
           <span className="badge-forest mb-4 block w-fit">{post.category}</span>
@@ -553,6 +542,17 @@ export default function BlogPost({ initialPost = null }: { initialPost?: Initial
               {Math.max(1, Math.ceil(post.content.replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length / 200))} min read
             </span>
           </div>
+          {post.coverImage && (
+            <figure className="mt-8 mb-0">
+              <img
+                src={post.coverImage}
+                alt={post.coverImageAlt || post.title}
+                className="w-full h-auto rounded-2xl"
+                style={{ display: "block" }}
+                loading="eager"
+              />
+            </figure>
+          )}
         </div>
       </section>
 

@@ -182,7 +182,7 @@ export default function Blog({ initialPosts = [] }: { initialPosts?: InitialList
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {posts.map((post) => (
                 <Link key={post.slug} href={`/health-wellness-blog/${post.slug}`} className="card-brand rounded-2xl overflow-hidden group block">
-                  <div className="h-48 relative overflow-hidden" style={{ background: "linear-gradient(135deg, oklch(0.93 0.06 75) 0%, oklch(0.88 0.04 10) 100%)" }}>
+                  <div className="relative overflow-hidden aspect-[16/9]" style={{ background: "linear-gradient(135deg, oklch(0.93 0.06 75) 0%, oklch(0.88 0.04 10) 100%)" }}>
                     {post.coverImage && (
                       <img
                         src={post.coverImage}

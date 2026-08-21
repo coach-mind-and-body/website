@@ -47,7 +47,7 @@ const posts: Post[] = [
     excerpt:
       "Where did this belly come from? Menopause belly is not a character flaw. Here is why midsection change shows up after 40 — and what helps beyond another salad streak.",
     category: "Menopause & Hormonal Health",
-    coverImage: `${CDN}/patterns-not-the-belly-unlocking-weight-loss-success-after-40.jpg`,
+    coverImage: `${CDN}/menopause-belly-why-it-shows-up-and-what-actually-helps.jpg`,
     coverImageAlt:
       "Confident midlife woman — menopause belly is a midlife pattern, not a personal failure",
     publishedAt: new Date("2026-08-08T15:00:00.000Z"),
@@ -182,7 +182,7 @@ const posts: Post[] = [
     excerpt:
       "The quiet was real. Then the mental food chatter came back. Food noise after stopping a GLP-1 is common — here is what comes next without shame.",
     category: "Mindful Eating & Nutrition",
-    coverImage: `${CDN}/calming-food-noise-drop-the-food-courtroom-calm-evening.jpg`,
+    coverImage: `${CDN}/food-noise-after-stopping-ozempic-or-wegovy.jpg`,
     coverImageAlt:
       "Midlife woman navigating food noise after GLP-1 medication changes",
     publishedAt: new Date("2026-08-09T15:00:00.000Z"),
@@ -309,7 +309,7 @@ const posts: Post[] = [
     excerpt:
       "Emotional eating after 40 is rarely “just emotions.” Here is how to interrupt stress eating and food noise without shame or another diet war.",
     category: "Mindset & Self-Compassion",
-    coverImage: `${CDN}/weight-loss-mindset-mind-the-gap-to-find-your-peace_1780341577441.webp`,
+    coverImage: `${CDN}/how-to-stop-emotional-eating-after-40-without-shame.jpg`,
     coverImageAlt:
       "Midlife woman finding calm around emotional eating and food noise after 40",
     publishedAt: new Date("2026-08-09T16:00:00.000Z"),
@@ -436,7 +436,7 @@ const posts: Post[] = [
     excerpt:
       "Wide awake at 3 a.m. again? Midlife sleep disruption is common. Here is what often drives it — and what helps without another 2 a.m. doom scroll.",
     category: "Menopause & Hormonal Health",
-    coverImage: `${CDN}/the-midlife-sleep-crisis_1780341582693.jpg`,
+    coverImage: `${CDN}/why-you-wake-up-at-3am-in-midlife.jpg`,
     coverImageAlt:
       "Midlife woman dealing with 3 a.m. waking and sleep disruption",
     publishedAt: new Date("2026-08-10T14:00:00.000Z"),
@@ -551,7 +551,7 @@ const posts: Post[] = [
     excerpt:
       "If your whole personality is “I’ll start Monday,” midlife is calling the bluff. Here is how to stop restarting and start recovering.",
     category: "Weight Loss Mindset",
-    coverImage: `${CDN}/stop-chasing-plans-lasting-health-transformation_1780341583637.jpg`,
+    coverImage: `${CDN}/how-to-stop-starting-over-every-monday-after-40.jpg`,
     coverImageAlt:
       "Midlife woman breaking the start-Monday diet cycle with steady habits",
     publishedAt: new Date("2026-08-10T15:00:00.000Z"),

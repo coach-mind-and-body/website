@@ -385,11 +385,11 @@
     margin: 2rem 0;
   }
   .blog-prose img {
-    border-radius: 0.75rem;
+    border-radius: 1rem;
     margin: 1.5rem 0;
     width: 100%;
-    object-fit: cover;
-    max-height: 480px;
+    height: auto;
+    display: block;
   }
   .blog-prose a {
     color: oklch(0.38 0.10 148);
