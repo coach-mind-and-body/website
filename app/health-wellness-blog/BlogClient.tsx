@@ -3,7 +3,6 @@
 import { useState, useMemo } from "react";
 import Link from 'next/link';
 import { ChevronRight, Search, X } from "lucide-react";
-import { usePageTitle } from "@/hooks/usePageTitle";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import { trpc } from "@/lib/trpc";
@@ -31,8 +30,6 @@ type InitialListPost = {
 };
 
 export default function Blog({ initialPosts = [] }: { initialPosts?: InitialListPost[] }) {
-  usePageTitle({ title: "Health & Wellness Blog | Mind & Body Reset Coaches", description: "Read the latest insights on midlife health, mindset, and weight loss from Lee Anne Chapman." });
-
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);

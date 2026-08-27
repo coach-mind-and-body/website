@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: "/habit-tracker-invite" },
   openGraph: {
-    title: "Free Midlife Habit Tracker | Mind & Body Reset Coaches",
+    title: "Free Midlife Habit Tracker | Mind and Body Reset Coaching",
     description:
       "Track daily habits, meals & macros, Lee Anne's recipes, and workouts in one free tool built for midlife wellness.",
     url: "/habit-tracker-invite",
@@ -29,14 +29,14 @@ export const metadata: Metadata = {
         url: "/og-habit-tracker.jpg",
         width: 1200,
         height: 630,
-        alt: "Mind & Body Reset Coaches Habit Tracker",
+        alt: "Mind and Body Reset Coaching Habit Tracker",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Free Midlife Habit Tracker",
-    description: "Habits, macros, recipes, and fitness — free from Mind & Body Reset Coaches.",
+    description: "Habits, macros, recipes, and fitness — free from Mind and Body Reset Coaching.",
     images: ["/og-habit-tracker.jpg"],
   },
 };

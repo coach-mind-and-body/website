@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import FeelGreatClient from "../feel-great-system/FeelGreatClient";
 import { absoluteUrl, SITE_URL } from "@shared/brand";
 
+const SHOP_URL = "https://ufeelgreat.com/c/mindbodyresetgals";
+const PRODUCT_IMAGE =
+  "https://cosmic-assets.unicity.com/shop2/USA/configurable_product_images/61c339582f1941e08b1da35af1372998/Unimate_benefits__Lemon_Ginger_.webp";
+
 export const metadata: Metadata = {
   // Primary GSC query: "feel great system" (impressions exist; avg position ~33)
   title: {
@@ -54,14 +58,18 @@ const productJsonLd = {
     name: "Unicity",
   },
   url: absoluteUrl("/unicity"),
-  image: absoluteUrl("/logo-new.jpg"),
+  image: PRODUCT_IMAGE,
   offers: {
-    "@type": "Offer",
+    "@type": "AggregateOffer",
+    url: SHOP_URL,
+    priceCurrency: "USD",
+    lowPrice: "159",
+    highPrice: "169",
+    offerCount: 2,
     availability: "https://schema.org/InStock",
-    url: absoluteUrl("/unicity"),
     seller: {
       "@type": "Organization",
-      name: "Mind and Body Reset",
+      name: "Mind and Body Reset Coaching",
       url: SITE_URL,
     },
   },

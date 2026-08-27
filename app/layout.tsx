@@ -8,7 +8,7 @@ import { SITE_URL, absoluteUrl, BRAND } from "@shared/brand";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Health Coach for Women Over 40 | Mind & Body Reset Coaches",
+    default: "Health Coach for Women Over 40 | Mind and Body Reset Coaching",
     template: "%s | Mind and Body Reset",
   },
   description:
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   authors: [{ name: "Lee Anne Chapman", url: absoluteUrl("/about") }],
   creator: "Lee Anne Chapman",
   openGraph: {
-    title: "Health Coach for Women Over 40 | Mind & Body Reset Coaches",
+    title: "Health Coach for Women Over 40 | Mind and Body Reset Coaching",
     description:
       "Reclaim your health, balance hormones, and reverse insulin resistance with certified coach Lee Anne Chapman.",
     url: SITE_URL,
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Health Coach for Women Over 40 | Mind & Body Reset Coaches",
+    title: "Health Coach for Women Over 40 | Mind and Body Reset Coaching",
     description:
       "Reclaim your health, balance hormones, and reverse insulin resistance with Lee Anne Chapman.",
     images: ["/logo-new.jpg"],
@@ -97,7 +97,7 @@ const jsonLd = {
     {
       "@type": "HealthAndBeautyBusiness",
       "@id": `${SITE_URL}/#business`,
-      name: "Mind and Body Reset",
+      name: BRAND.name,
       image: absoluteUrl("/logo-new.jpg"),
       url: SITE_URL,
       priceRange: "$$",
@@ -113,8 +113,10 @@ const jsonLd = {
         longitude: -111.891,
       },
       sameAs: [
-        "https://www.instagram.com/mindandbodyresetcoach/",
-        "https://www.youtube.com/@MindandBodyResetCoach",
+        BRAND.instagramUrl,
+        BRAND.facebookUrl,
+        BRAND.youtubeUrl,
+        BRAND.tiktokUrl,
       ],
       description:
         "Mind and Body Reset is a mind body coaching practice for women over 40 — hormones, insulin resistance, food noise, and lasting habits with Lee Anne Chapman.",
@@ -132,7 +134,8 @@ const jsonLd = {
       description:
         "Certified life and health coach helping women 40+ with midlife health, hormonal changes, food freedom, and sustainable habits.",
       url: absoluteUrl("/about"),
-      image: absoluteUrl("/logo-new.jpg"),
+      image: BRAND.coachImageUrl,
+      sameAs: [BRAND.instagramUrl, BRAND.facebookUrl, BRAND.youtubeUrl],
       worksFor: { "@id": `${SITE_URL}/#business` },
       knowsAbout: [
         "midlife health",

@@ -183,7 +183,7 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
                 <a
                   href={FPU_CLASS_URL}
                   target="_blank"
-                  rel="noopener noreferrer"
+                  rel="sponsored noopener noreferrer"
                   className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full font-bold text-base transition-all hover:shadow-xl hover:-translate-y-0.5"
                   style={{
                     background: "oklch(0.72 0.11 78)",
@@ -444,7 +444,7 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
               <a
                 href={FPU_CLASS_URL}
                 target="_blank"
-                rel="noopener noreferrer"
+                rel="sponsored noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full font-bold text-lg transition-all bg-[#d4a017] text-[#1a2e1e] shadow-[0_4px_20px_rgba(212,160,23,0.35)] hover:-translate-y-1 hover:shadow-[0_8px_28px_rgba(212,160,23,0.45)]"
               >
                 Buy Kit &amp; Join My Class →
@@ -621,7 +621,7 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
                 <a
                   href={FPU_CLASS_URL}
                   target="_blank"
-                  rel="noopener noreferrer"
+                  rel="sponsored noopener noreferrer"
                   className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full font-bold text-sm transition-all hover:shadow-lg hover:-translate-y-0.5 w-full"
                   style={{ background: "oklch(0.72 0.11 78)", color: "oklch(0.20 0.015 50)" }}
                 >
@@ -669,7 +669,7 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
                 <a
                   href={FPU_CLASS_URL}
                   target="_blank"
-                  rel="noopener noreferrer"
+                  rel="sponsored noopener noreferrer"
                   className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full font-bold text-sm transition-all hover:shadow-md w-full border"
                   style={{ borderColor: "oklch(0.38 0.09 148)", color: "oklch(0.38 0.09 148)", background: "transparent" }}
                 >
@@ -702,7 +702,7 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
             <a
               href={FPU_CLASS_URL}
               target="_blank"
-              rel="noopener noreferrer"
+              rel="sponsored noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 px-10 py-4 rounded-full font-bold text-base transition-all hover:shadow-xl hover:-translate-y-1"
               style={{ background: "oklch(0.72 0.11 78)", color: "oklch(0.20 0.015 50)" }}
             >
@@ -731,7 +731,7 @@ function FinancialPeaceContent({ hideNav = false }: { hideNav?: boolean }) {
             <a
               href={FPU_CLASS_URL}
               target="_blank"
-              rel="noopener noreferrer"
+              rel="sponsored noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-full font-bold text-base transition-all hover:shadow-xl hover:-translate-y-1"
               style={{ background: "oklch(0.72 0.11 78)", color: "oklch(0.20 0.015 50)" }}
             >

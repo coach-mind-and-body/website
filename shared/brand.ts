@@ -18,6 +18,13 @@ export const BRAND = {
   website: SITE_URL,
   logoUrl: "/logo-new.jpg",
   logoWideUrl: "/logo-wide.jpg",
+  /** Public CloudFront portrait used on /about — also Person JSON-LD image */
+  coachImageUrl:
+    "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/3542web-rigeljackson(2)_83b0d4af.webp",
+  instagramUrl: "https://www.instagram.com/mindandbodyresetgals/",
+  facebookUrl: "https://www.facebook.com/MindandBodyReset",
+  youtubeUrl: "https://www.youtube.com/@MindandBodyResetCoach",
+  tiktokUrl: "https://www.tiktok.com/@resetgals8",
 } as const;
 
 export const GOOGLE_CALENDAR = {

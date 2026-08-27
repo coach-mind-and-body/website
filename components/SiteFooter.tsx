@@ -34,7 +34,7 @@ export default function SiteFooter() {
             </p>
             <div className="flex gap-4">
               <a
-                href="https://www.instagram.com/mindandbodyresetgals/"
+                href={BRAND.instagramUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="transition-opacity hover:opacity-60"
@@ -44,7 +44,7 @@ export default function SiteFooter() {
                 <Instagram size={20} />
               </a>
               <a
-                href="https://www.facebook.com/MindandBodyReset"
+                href={BRAND.facebookUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="transition-opacity hover:opacity-60"
@@ -54,7 +54,7 @@ export default function SiteFooter() {
                 <Facebook size={20} />
               </a>
               <a
-                href="https://www.youtube.com/@MindandBodyResetCoach"
+                href={BRAND.youtubeUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="transition-opacity hover:opacity-60"

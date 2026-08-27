@@ -94,7 +94,7 @@ export default function JoinLanding() {
         >
           <img
             src={BRAND.logoUrl}
-            alt="Mind & Body Reset Coaches"
+            alt="Mind and Body Reset Coaching"
             className="mb-6"
             style={{ width: "90px", height: "90px", objectFit: "contain" }}
           />

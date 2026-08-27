@@ -11,6 +11,7 @@ const UNIMATE_IMG =
   "https://cosmic-assets.unicity.com/shop2/USA/configurable_product_images/61c339582f1941e08b1da35af1372998/Unimate_benefits__Lemon_Ginger_.webp";
 
 const SHOP_URL = "https://ufeelgreat.com/c/mindbodyresetgals";
+const SHOP_REL = "sponsored noopener noreferrer";
 
 export default function FeelGreat() {
   
@@ -49,7 +50,7 @@ export default function FeelGreat() {
               <a
                 href={SHOP_URL}
                 target="_blank"
-                rel="noopener noreferrer"
+                rel={SHOP_REL}
                 className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-bold text-base transition-all hover:shadow-xl hover:-translate-y-1"
                 style={{ background: "oklch(0.38 0.10 148)", color: "white" }}
               >
@@ -232,7 +233,7 @@ export default function FeelGreat() {
               <a
                 href={SHOP_URL}
                 target="_blank"
-                rel="noopener noreferrer"
+                rel={SHOP_REL}
                 className="block w-full text-center py-4 rounded-xl font-bold transition-all hover:shadow-lg hover:-translate-y-0.5"
                 style={{ background: "oklch(0.38 0.10 148)", color: "white" }}
               >
@@ -281,7 +282,7 @@ export default function FeelGreat() {
               <a
                 href={SHOP_URL}
                 target="_blank"
-                rel="noopener noreferrer"
+                rel={SHOP_REL}
                 className="block w-full text-center py-4 rounded-xl font-bold border transition-all hover:shadow-md"
                 style={{ borderColor: "oklch(0.38 0.10 148)", color: "oklch(0.38 0.10 148)", background: "transparent" }}
               >
@@ -293,7 +294,7 @@ export default function FeelGreat() {
           <a
             href={SHOP_URL}
             target="_blank"
-            rel="noopener noreferrer"
+            rel={SHOP_REL}
             className="inline-flex items-center gap-2 px-10 py-4 rounded-xl font-bold text-base transition-all hover:shadow-xl hover:-translate-y-1 mb-8"
             style={{ background: "oklch(0.38 0.10 148)", color: "white" }}
           >
@@ -465,6 +466,9 @@ export default function FeelGreat() {
           </p>
           <p className="font-semibold" style={{ color: "oklch(0.35 0.02 160)" }}>
             The Feel Great Money-Back Guarantee: We stand behind our science. If you don&apos;t feel the difference, we&apos;ve got you covered.
+          </p>
+          <p className="mt-3">
+            Lee Anne Chapman is a Unicity independent affiliate. Shop links on this page may earn a commission at no extra cost to you. This is coaching education — not medical advice.
           </p>
         </div>
       </div>

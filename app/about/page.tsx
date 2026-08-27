@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import AboutClient from "./AboutClient";
-import { absoluteUrl, SITE_URL } from "@shared/brand";
+import { absoluteUrl, BRAND, SITE_URL } from "@shared/brand";
 
 export const metadata: Metadata = {
   title: { absolute: "About Lee Anne Chapman | Midlife Health Coach" },
@@ -30,10 +30,10 @@ const personJsonLd = {
   description:
     "Lee Anne Chapman helps women over 40 reclaim their health, balance hormones, reverse insulin resistance, and build a peaceful relationship with food — without shame or another diet.",
   url: absoluteUrl("/about"),
-  image: absoluteUrl("/logo-new.jpg"),
+  image: BRAND.coachImageUrl,
   worksFor: {
     "@type": "Organization",
-    name: "Mind and Body Reset",
+    name: BRAND.name,
     url: SITE_URL,
   },
   address: {
@@ -50,7 +50,7 @@ const personJsonLd = {
     "Food freedom",
     "Habit change",
   ],
-  sameAs: ["https://www.instagram.com/mindandbodyresetcoach/"],
+  sameAs: [BRAND.instagramUrl, BRAND.facebookUrl, BRAND.youtubeUrl],
 };
 
 export default function Page() {
