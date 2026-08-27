@@ -198,9 +198,9 @@ export default function MidlifeWeightHubClient() {
               className="text-lg leading-relaxed mb-8 max-w-2xl mx-auto"
               style={{ color: "oklch(0.93 0.02 80)" }}
             >
-              You are not lazy. You are not broken. Midlife weight, menopause belly, food noise,
-              and night cravings need a different playbook than the diets that worked at 28.
-              Start with the guide that matches your exact struggle.
+              Midlife weight loss after 40 is rarely a willpower problem. Menopause, insulin
+              shifts, food noise, and night cravings need a different playbook than the diets
+              that worked at 28. Pick the guide that matches what you actually googled.
             </p>
             <div className="flex flex-wrap gap-3 justify-center">
               <Link href="/book">
@@ -234,6 +234,14 @@ export default function MidlifeWeightHubClient() {
                 style={{ color: "oklch(0.38 0.10 148)" }}
               >
                 how to calm food noise
+              </Link>
+              . If the quiet ended after Ozempic or Wegovy, start with{" "}
+              <Link
+                href="/health-wellness-blog/food-noise-after-stopping-ozempic-or-wegovy"
+                className="font-semibold underline"
+                style={{ color: "oklch(0.38 0.10 148)" }}
+              >
+                food noise after stopping a GLP-1
               </Link>
               . If the midsection showed up overnight, start with{" "}
               <Link

@@ -25,6 +25,14 @@ export const metadata: Metadata = {
       "Learn how the Feel Great System (Unimate + Balance) supports fasting and metabolic health — with coaching for women 40+.",
     url: "/unicity",
     type: "website",
+    images: [
+      {
+        url: "https://cdn.mindandbodyresetcoach.com/blog-images/fuel-system-reset-switching-from-sugar-to-fat-burning_1780341579953.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Feel Great System — Unimate + Balance for midlife metabolic health",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
@@ -101,6 +109,22 @@ const faqJsonLd = {
       acceptedAnswer: {
         "@type": "Answer",
         text: "Yes. Products alone rarely fix food noise, stress eating, or identity patterns. Lee Anne pairs Feel Great System education with midlife coaching so habits stick beyond the first week of motivation.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Is the Feel Great protocol the same as the Feel Great System?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "People search both. Here, Feel Great System means Unicity Unimate + Balance as a daily practice, not a calorie-counting diet.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Is there a Unicity fasting app?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Unicity has its own tools. This page is coaching education for women 40+ using Feel Great with habits and food-noise skills — not a replacement for Unicity’s app.",
       },
     },
   ],

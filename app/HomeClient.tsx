@@ -64,9 +64,9 @@ const TESTIMONIALS = [
 
 const CDN = "https://cdn.mindandbodyresetcoach.com/blog-images";
 const STATIC_POSTS = [
-  { slug: "midlife-body-image-your-body-is-not-a-before-picture", category: "Body Image", date: "March 2, 2026", title: "Midlife Body Image: Your Body is Not a Before Picture", excerpt: "Rebuilding body confidence after 40 — why your internal commentary is a habit, not a truth.", coverImage: `${CDN}/midlife-body-image-your-body-is-not-a-before-picture.webp` },
-  { slug: "embrace-reflection-shifting-from-fault-finding-to-self-awareness", category: "Mindset & Self-Compassion", date: "February 13, 2026", title: "Embrace Reflection: Shifting from Fault-Finding to Self-Awareness", excerpt: "How to stop negative self-talk in the mirror and break the fault-finding cycle.", coverImage: `${CDN}/embrace-reflection-shifting-from-fault-finding-to-self-awareness.jpg` },
+  { slug: "food-noise-after-stopping-ozempic-or-wegovy", category: "Mindful Eating & Nutrition", date: "August 9, 2026", title: "Food Noise After Stopping Ozempic or Wegovy", excerpt: "Does food noise come back after stopping Wegovy or Ozempic? Often yes — here is what comes next without shame.", coverImage: `${CDN}/food-noise-after-stopping-ozempic-or-wegovy.jpg` },
   { slug: "calming-food-noise-drop-the-food-courtroom", category: "Mindful Eating & Nutrition", date: "February 6, 2026", title: "Calming Food Noise: Drop the Mental Food Fight", excerpt: "Practical strategies to quiet the constant mental chatter about food.", coverImage: `${CDN}/calming-food-noise-drop-the-food-courtroom.jpg` },
+  { slug: "midlife-body-image-your-body-is-not-a-before-picture", category: "Body Image", date: "March 2, 2026", title: "Midlife Body Image: Your Body is Not a Before Picture", excerpt: "Rebuilding body confidence after 40 — why your internal commentary is a habit, not a truth.", coverImage: `${CDN}/midlife-body-image-your-body-is-not-a-before-picture.webp` },
 ];
 
 export default function Home() {

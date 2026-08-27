@@ -431,6 +431,18 @@ export default function FeelGreat() {
                 q: "Who should talk to a doctor first?",
                 a: "Anyone with medical conditions, who is pregnant or nursing, or who takes medications should check with their clinician before starting supplements or changing fasting habits.",
               },
+              {
+                q: "Is the Feel Great protocol the same as the Feel Great System?",
+                a: "People search both phrases. On this site, Feel Great System means Unicity Unimate + Balance as a daily practice — not a calorie-counting diet. Pair it with midlife coaching if fasting alone never sticks.",
+              },
+              {
+                q: "Is there a Unicity fasting app?",
+                a: "Unicity has its own tools; this site is coaching education for women 40+ using Feel Great alongside habits, food noise, and insulin-aware living — not a replacement for Unicity’s app.",
+              },
+              {
+                q: "Can women over 40 use the Feel Great System?",
+                a: "Many do, with clinician guidance. Midlife hunger, sleep, and food noise still need a plan. That is the coaching layer Lee Anne adds — products plus habits, not products instead of habits.",
+              },
             ].map((item) => (
               <div key={item.q}>
                 <h3 className="font-bold text-lg mb-2" style={{ color: "oklch(0.22 0.02 160)" }}>

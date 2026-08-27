@@ -23,6 +23,14 @@ export const metadata: Metadata = {
       "A coaching hub for menopause belly, food noise, night cravings, and patterns that stick — without another restrictive diet.",
     url: "/midlife-weight-loss-after-40",
     type: "website",
+    images: [
+      {
+        url: "https://cdn.mindandbodyresetcoach.com/blog-images/patterns-not-the-belly-unlocking-weight-loss-success-after-40.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Midlife weight loss after 40 — guides for women 40+",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
