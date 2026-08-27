@@ -13,15 +13,15 @@ import {
 } from "@/hooks/useMetaParams";
 import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
 
-/** Full rate for value anchor. Intro price = PROGRAM.fullPrice ($597). */
-const USUAL_PRICE = 999;
+/** Full rate for value anchor. Intro price = PROGRAM.fullPrice ($597). Matches ad videos. */
+const USUAL_PRICE = 1200;
 /** Intro cohort — first N enrollments at intro rate. */
 const SPOTS = 10;
 /**
  * Soft deadline for scarcity (honest window). Update when you open a new cohort.
  * Shown as “or by [date], whichever comes first.”
  */
-const COHORT_WINDOW = "August 1, 2026";
+const COHORT_WINDOW = "September 30, 2026";
 
 const LEEANNE_IMG =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/3542web-rigeljackson(2)_83b0d4af.webp";
@@ -114,6 +114,14 @@ const TESTIMONIALS = [
     theme: "Ownership of my health",
     quote:
       "Lee Anne's coaching goes beyond typical health advice. She helps women step out of the quick-fix mindset and into a long term approach that supports your physical and mental health. You feel empowered to take ownership of your health in a way that lasts.",
+  },
+  {
+    initial: "M",
+    name: "Marianne",
+    date: "Aug 2026",
+    theme: "They're science, not failure",
+    quote:
+      "Working with LeeAnne helped me understand that sugar cravings and brain chatter aren't personal failures. They're science. She taught me how to pause, step back, and recognize when my lower brain is running the show, instead of reacting on autopilot. That awareness alone has changed how I make choices and how I feel day to day. I'd recommend LeeAnne for anyone who wants to understand their brain and actually make changes that last.",
   },
 ];
 
@@ -549,7 +557,7 @@ export default function ReclaimInviteClient() {
             <p className="text-center text-sm text-gray-500 mb-8">
               Real clients. Real words. Not stock quotes.
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
               {TESTIMONIALS.map((t) => (
                 <div
                   key={t.name}

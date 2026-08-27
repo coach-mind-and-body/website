@@ -5,6 +5,7 @@ import {
   BarChart3,
   BookOpen,
   ChefHat,
+  ClipboardList,
   Cookie,
   CreditCard,
   FolderOpen,
@@ -20,6 +21,7 @@ import {
 
 export type AdminTab =
   | "overview"
+  | "sprint"
   | "contacts"
   | "crm-automations"
   | "newsletters"
@@ -37,6 +39,7 @@ export type AdminTab =
 
 export const ADMIN_TAB_IDS: AdminTab[] = [
   "overview",
+  "sprint",
   "contacts",
   "crm-automations",
   "newsletters",
@@ -55,6 +58,7 @@ export const ADMIN_TAB_IDS: AdminTab[] = [
 
 export const TABS: { id: AdminTab; label: string; icon: LucideIcon }[] = [
   { id: "overview", label: "Overview", icon: BarChart3 },
+  { id: "sprint", label: "This month", icon: ClipboardList },
   { id: "contacts", label: "Contacts", icon: Users },
   { id: "crm-automations", label: "CRM & AI", icon: Megaphone },
   { id: "newsletters", label: "Newsletters", icon: Mail },

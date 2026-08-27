@@ -55,6 +55,11 @@ const TESTIMONIALS = [
     title: "Ownership of my health",
     quote: "Lee Anne's coaching goes beyond typical health advice. She helps women step out of the quick-fix mindset and into a long term approach that supports your physical and mental health. You feel empowered to take ownership of your health in a way that lasts.",
   },
+  {
+    name: "Marianne", date: "8/7/2026", initial: "M",
+    title: "They're science, not failure",
+    quote: "Working with LeeAnne helped me understand that sugar cravings and brain chatter aren't personal failures. They're science. She taught me how to pause, step back, and recognize when my lower brain is running the show, instead of reacting on autopilot. That awareness alone has changed how I make choices and how I feel day to day. I'd recommend LeeAnne for anyone who wants to understand their brain and actually make changes that last.",
+  },
 ];
 
 const CDN = "https://cdn.mindandbodyresetcoach.com/blog-images";
@@ -181,7 +186,7 @@ export default function Home() {
               What Women Just Like You Are Saying
             </h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
             {TESTIMONIALS.map((t) => (
               <div key={t.name} className="card-brand rounded-2xl p-6 fade-up flex flex-col">
                 <div className="flex items-center gap-3 mb-4">

@@ -9,13 +9,13 @@ import ReclaimInviteClient from "./ReclaimInviteClient";
 export const metadata: Metadata = {
   title: { absolute: "R.E.C.L.A.I.M. Private Coaching | Intro $597" },
   description:
-    "6 private coaching sessions for women 40+ ready to quiet food noise and rewire midlife habits. Intro pricing $597 (usually $999). Book a free fit call or enroll.",
+    "6 private coaching sessions for women 40+ ready to quiet food noise and rewire midlife habits. Intro pricing $597 (usually $1,200). Book a free fit call or enroll.",
   robots: { index: false, follow: false },
   alternates: { canonical: "/reclaim-invite" },
   openGraph: {
     title: "R.E.C.L.A.I.M. · 6-Week Private Coaching",
     description:
-      "6 weeks of private midlife coaching. Intro $597 (usually $999). Enroll or book a free fit call.",
+      "6 weeks of private midlife coaching. Intro $597 (usually $1,200). Enroll or book a free fit call.",
     url: "/reclaim-invite",
     type: "website",
   },

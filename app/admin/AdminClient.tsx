@@ -19,6 +19,7 @@ import { AdminBlogTab } from "@/components/admin/tabs/AdminBlogTab";
 import { AdminCommonFilesTab } from "@/components/admin/tabs/AdminCommonFilesTab";
 import { AdminManualEnrollModal } from "@/components/admin/tabs/AdminManualEnrollModal";
 import { AdminNewsletterTab } from "@/components/admin/AdminNewsletterTab";
+import { AdminSprintTab } from "@/components/admin/AdminSprintTab";
 import { ADMIN_TAB_IDS, TABS, type AdminTab } from "@/components/admin/tabs/adminTypes";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/use-auth";
@@ -176,6 +177,7 @@ export default function Admin() {
         </div>
 
         {tab === "overview" && <AdminOverviewTab />}
+        {tab === "sprint" && <AdminSprintTab />}
 
         {tab === "contacts" && (
           <div>
