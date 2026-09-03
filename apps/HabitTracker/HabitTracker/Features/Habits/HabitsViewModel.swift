@@ -22,6 +22,12 @@ final class HabitsViewModel {
     var challengeLogs: [ChallengeLog] = []
     var showChallenges = false
     var challengeTab = 0
+    var todayChallenge: ChallengeTodayPayload?
+    var journalNoticed = ""
+    var journalGlad = ""
+    var journalHard = ""
+    var journalSaving = false
+    var showChallengeGuides = false
 
     var updates: [AppUpdate] = []
     var dismissedUpdateIds: [Int] = GuestLocalStore.loadDismissedUpdates()
@@ -195,6 +201,17 @@ final class HabitsViewModel {
         ) {
             userChallenges = payload.challenges
             challengeLogs = payload.logs ?? []
+        }
+        if let today: ChallengeTodayPayload = try? await auth.client.query(
+            "challenges.getToday",
+            input: DeviceIdInput(deviceId: AppConfig.deviceId)
+        ) {
+            todayChallenge = today
+            journalNoticed = today.journal?.noticed ?? ""
+            journalGlad = today.journal?.glad ?? ""
+            journalHard = today.journal?.hard ?? ""
+        } else {
+            todayChallenge = nil
         }
         updates = (try? await auth.client.query("appUpdates.getUpdates")) ?? []
         if auth.isSignedIn {
@@ -422,6 +439,46 @@ final class HabitsViewModel {
             return
         }
         showChallenges = true
+    }
+
+    func saveTodayJournal() async {
+        guard let today = todayChallenge, let ucid = today.userChallengeId, let day = today.today else { return }
+        journalSaving = true
+        defer { journalSaving = false }
+        do {
+            let _: SuccessFlag = try await auth.client.mutate(
+                "challenges.saveJournal",
+                input: SaveChallengeJournalInput(
+                    userChallengeId: ucid,
+                    dateStr: day.dateStr,
+                    noticed: journalNoticed,
+                    glad: journalGlad,
+                    hard: journalHard,
+                    deviceId: AppConfig.deviceId
+                )
+            )
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func toggleTodayChallenge() async {
+        guard let today = todayChallenge, let ucid = today.userChallengeId, let day = today.today else { return }
+        let next = !(day.done ?? false)
+        do {
+            let _: SuccessFlag = try await auth.client.mutate(
+                "challenges.toggleChallengeLog",
+                input: ToggleChallengeLogInput(
+                    userChallengeId: ucid,
+                    dateStr: day.dateStr,
+                    completed: next,
+                    deviceId: AppConfig.deviceId
+                )
+            )
+            await loadDashboard()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     func toggleChallenge(_ challenge: Challenge) async {

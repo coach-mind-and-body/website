@@ -32,6 +32,7 @@ const STATIC_PAGES: Array<{
   { path: "/health-wellness-blog", changefreq: "weekly", priority: "0.9", lastmod: "2026-08-10" },
   { path: "/food-quiz", changefreq: "monthly", priority: "0.8", lastmod: "2026-06-15" },
   { path: "/snack-hack", changefreq: "monthly", priority: "0.8", lastmod: "2026-06-20" },
+  { path: "/real-food-reset", changefreq: "weekly", priority: "0.95", lastmod: "2026-09-03" },
   // Free product pages — worth indexing (habits / macros / midlife keywords)
   { path: "/habit-tracker-invite", changefreq: "monthly", priority: "0.8", lastmod: "2026-07-01" },
   { path: "/habit-tracker", changefreq: "weekly", priority: "0.85", lastmod: "2026-07-15" },

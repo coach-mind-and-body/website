@@ -25,7 +25,7 @@ import { RichTextEditor, type RichTextEditorHandle } from "@/components/RichText
 import { trpc } from "@/lib/trpc";
 import { BRAND } from "@shared/brand";
 
-type AudienceGroup = "finance" | "health" | "all" | "snack_hack";
+type AudienceGroup = "finance" | "health" | "all" | "snack_hack" | "real_food_reset";
 type View = "list" | "compose" | "analytics" | "finance" | "history";
 
 const AUDIENCE_LABELS: Record<AudienceGroup, string> = {
@@ -33,6 +33,7 @@ const AUDIENCE_LABELS: Record<AudienceGroup, string> = {
   health: "Health",
   all: "Everyone",
   snack_hack: "Snack Hack",
+  real_food_reset: "Real Food Reset",
 };
 
 const DEFAULT_GREETING = "Hi {{firstName}},";
@@ -1502,6 +1503,7 @@ export function AdminNewsletterTab() {
                 [
                   { id: "health" as const, label: "Health", desc: "Leads, clients, health list" },
                   { id: "snack_hack" as const, label: "Snack Hack", desc: "Guide downloads only" },
+                  { id: "real_food_reset" as const, label: "Real Food Reset", desc: "Challenge registrants only" },
                   { id: "finance" as const, label: "Finance", desc: "FPU + manual finance list" },
                   { id: "all" as const, label: "Everyone", desc: "All emails we have" },
                 ] as const

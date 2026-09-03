@@ -9,6 +9,7 @@ struct HabitsView: View {
     @State private var mindfulRemaining = 0
     @State private var mindfulRunning = false
     @State private var showForYou = false
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
         NavigationStack {
@@ -125,6 +126,7 @@ struct HabitsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 forYouRow
+                todayChallengeCard
                 challengeChips
                 habitsCard
                 victoriesCard
@@ -256,6 +258,106 @@ struct HabitsView: View {
             Text(update.message).font(.subheadline).foregroundStyle(HTTheme.muted)
             if let vid = YouTubeID.parse(update.videoUrl) {
                 YouTubePlayer(videoId: vid)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var todayChallengeCard: some View {
+        if let today = model.todayChallenge, today.enrolled {
+            HTCard {
+                Text("Real Food Reset")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(HTTheme.gold)
+                    .textCase(.uppercase)
+                Text(today.title ?? "The 5-Day Real Food Reset")
+                    .font(.headline)
+                    .foregroundStyle(HTTheme.forest)
+                if today.beforeStart == true {
+                    Text("You’re in. We start September 28. Lives Mon/Wed/Fri at 12:00 pm Mountain.")
+                        .font(.subheadline)
+                        .foregroundStyle(HTTheme.muted)
+                }
+                if today.afterEnd == true {
+                    Text("The five days are complete. Your journal is still here.")
+                        .font(.subheadline)
+                        .foregroundStyle(HTTheme.muted)
+                }
+                if let day = today.today {
+                    Text("Day \(day.n) · \(day.weekday)")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(HTTheme.muted)
+                    Text(day.title)
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(HTTheme.forest)
+                    Text(day.win)
+                        .font(.caption)
+                        .foregroundStyle(HTTheme.muted)
+                    if let meet = today.meetUrl, let url = URL(string: meet) {
+                        Button {
+                            openURL(url)
+                        } label: {
+                            Label("Join live (Google Meet)", systemImage: "video.fill")
+                                .font(.subheadline.weight(.bold))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 10)
+                                .background(HTTheme.forest)
+                                .foregroundStyle(.white)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    if day.format == "video" {
+                        Text("No live call today. Log your food and jot a few lines below.")
+                            .font(.caption)
+                            .foregroundStyle(HTTheme.muted)
+                    }
+                    Button {
+                        Task { await model.toggleTodayChallenge() }
+                    } label: {
+                        Text((day.done ?? false) ? "Done today" : "Check off today")
+                            .font(.subheadline.weight(.bold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background((day.done ?? false) ? Color.clear : HTTheme.gold)
+                            .foregroundStyle((day.done ?? false) ? HTTheme.gold : Color.white)
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(HTTheme.gold))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                    .buttonStyle(.plain)
+                    Text("Daily journal")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(HTTheme.forest)
+                        .padding(.top, 4)
+                    Text(day.journal?.noticed ?? "What did you notice today?")
+                        .font(.caption2)
+                        .foregroundStyle(HTTheme.muted)
+                    TextField("", text: $model.journalNoticed, axis: .vertical)
+                        .lineLimit(2...4)
+                        .textFieldStyle(.roundedBorder)
+                    Text(day.journal?.glad ?? "One choice you’re glad you made")
+                        .font(.caption2)
+                        .foregroundStyle(HTTheme.muted)
+                    TextField("", text: $model.journalGlad, axis: .vertical)
+                        .lineLimit(2...4)
+                        .textFieldStyle(.roundedBorder)
+                    Text(day.journal?.hard ?? "One thing that was hard")
+                        .font(.caption2)
+                        .foregroundStyle(HTTheme.muted)
+                    TextField("", text: $model.journalHard, axis: .vertical)
+                        .lineLimit(2...4)
+                        .textFieldStyle(.roundedBorder)
+                    Button {
+                        Task { await model.saveTodayJournal() }
+                    } label: {
+                        Text(model.journalSaving ? "Saving…" : "Save journal")
+                            .font(.caption.weight(.bold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(model.journalSaving)
+                }
             }
         }
     }

@@ -6,6 +6,10 @@ import { subscribers } from "../../drizzle/schema";
 import { resendSubscribe } from "../resendSubscribe";
 import { sendSnackHackEmail, sendTransactionalEmail } from "../notifications";
 import { enrollUserInSequence, SNACK_HACK_SEQUENCE_ID, FOOD_QUIZ_SEQUENCE_ID } from "../sequences";
+import { sendMarketingEmail } from "../emailMarketing";
+import { getRealFoodResetConfirmationEmail, getRealFoodResetReasonLine } from "../emails/realFoodReset";
+import { REAL_FOOD_RESET, REAL_FOOD_RESET_SEQUENCE_ID } from "@shared/realFoodReset";
+import { enrollRealFoodResetByEmail } from "../realFoodResetChallenge";
 import { 
   getFoodQuizRebalancerEmail, 
   getFoodQuizDoerEmail, 
@@ -208,6 +212,70 @@ export const leadgenRouter = router({
       });
 
       return { success: true };
+    }),
+
+  subscribeRealFoodReset: publicProcedure
+    .input(leadInputSchema)
+    .mutation(async ({ input, ctx }) => {
+      try {
+        await addSubscriberSegment(input.email, input.firstName, REAL_FOOD_RESET.segment);
+      } catch (e) {
+        console.error("[LeadGen] CRITICAL: failed to save Real Food Reset subscriber:", e);
+        throw new Error("We couldn't save your signup. Please try again.");
+      }
+
+      const result = await resendSubscribe({
+        email: input.email,
+        firstName: input.firstName,
+      });
+      if (!result.success) {
+        console.error("[LeadGen] Resend subscribe error (Real Food Reset):", result.error);
+      }
+
+      const firstName = input.firstName?.trim() || "friend";
+      let claimToken: string | null = null;
+      try {
+        const enrolled = await enrollRealFoodResetByEmail(input.email);
+        claimToken = enrolled.claimToken;
+      } catch (e) {
+        console.error("[LeadGen] Real Food Reset challenge enroll failed:", e);
+      }
+      try {
+        await enrollUserInSequence(input.email, firstName, REAL_FOOD_RESET_SEQUENCE_ID);
+      } catch (e) {
+        console.error("[LeadGen] Real Food Reset email sequence enroll failed:", e);
+      }
+
+      const confirmation = getRealFoodResetConfirmationEmail(firstName, claimToken);
+      const sent = await sendMarketingEmail({
+        to: input.email,
+        toName: firstName,
+        subject: confirmation.subject,
+        htmlBody: confirmation.html,
+        textBody: confirmation.text,
+        reasonLine: getRealFoodResetReasonLine("real_food_reset"),
+        tags: [
+          { name: "campaign", value: "real_food_reset" },
+          { name: "email", value: "confirmation" },
+        ],
+      });
+      if (!sent.ok && !sent.skipped) {
+        console.error("[LeadGen] Real Food Reset confirmation email failed:", sent.error);
+      }
+
+      await fireMetaPixelLead({
+        customerEmail: input.email,
+        customerName: input.firstName,
+        contentName: REAL_FOOD_RESET.name,
+        eventSourceUrl:
+          input.eventSourceUrl ?? `https://mindandbodyresetcoach.com${REAL_FOOD_RESET.path}`,
+        eventId: input.eventId,
+        req: ctx.req,
+        fbc: input.fbc,
+        fbp: input.fbp,
+      });
+
+      return { success: true, claimToken };
     }),
 
   adminListSnackHack: adminProcedure.query(async () => {

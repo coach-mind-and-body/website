@@ -17,7 +17,12 @@ type Db = NonNullable<Awaited<ReturnType<typeof getDb>>>;
 /** Segment flag for manually managed finance newsletter list */
 export const NEWSLETTER_FINANCE_SEGMENT = "newsletter_finance";
 
-export type NewsletterAudienceGroup = "finance" | "health" | "all" | "snack_hack";
+export type NewsletterAudienceGroup =
+  | "finance"
+  | "health"
+  | "all"
+  | "snack_hack"
+  | "real_food_reset";
 
 export type NewsletterRecipient = {
   email: string;
@@ -63,6 +68,15 @@ function isSnackHackSegment(segments: string[]): boolean {
       s === "leadgen_snack_hack" ||
       s.includes("snack_hack") ||
       s.includes("snack-hack")
+  );
+}
+
+function isRealFoodResetSegment(segments: string[]): boolean {
+  return segments.some(
+    (s) =>
+      s === "leadgen_real_food_reset" ||
+      s.includes("real_food_reset") ||
+      s.includes("real-food-reset")
   );
 }
 
@@ -163,6 +177,8 @@ export async function resolveNewsletterAudience(
       add(sub.email, name, "subscriber:finance", isFinanceSegment(segs));
     } else if (group === "snack_hack") {
       add(sub.email, name, "subscriber:snack_hack", isSnackHackSegment(segs));
+    } else if (group === "real_food_reset") {
+      add(sub.email, name, "subscriber:real_food_reset", isRealFoodResetSegment(segs));
     } else {
       add(sub.email, name, "subscriber:health", isHealthSegment(segs));
     }

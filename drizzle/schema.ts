@@ -277,6 +277,8 @@ export const challenges = mysqlTable("challenges", {
   themeTag: varchar("themeTag", { length: 100 }),
   featuredOrder: int("featuredOrder").default(0).notNull(),
   isFeatured: boolean("isFeatured").default(false).notNull(),
+  /** Live classroom URL (Google Meet). Never returned unless the user is enrolled. */
+  meetUrl: varchar("meetUrl", { length: 1000 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -284,6 +286,8 @@ export const userChallenges = mysqlTable("user_challenges", {
   id: int("id").primaryKey().autoincrement(),
   userId: int("userId").references(() => users.id),
   deviceId: text("deviceId"), // For anonymous users
+  email: varchar("email", { length: 320 }),
+  claimToken: varchar("claimToken", { length: 64 }),
   challengeId: int("challengeId").references(() => challenges.id).notNull(),
   startDate: date("startDate", { mode: "string" }).notNull(),
   status: varchar("status", { length: 50, enum: ["active", "completed", "failed"] }).notNull().default("active"),
@@ -293,6 +297,16 @@ export const userChallengeLogs = mysqlTable("user_challenge_logs", {
   id: int("id").primaryKey().autoincrement(),
   userChallengeId: int("userChallengeId").references(() => userChallenges.id).notNull(),
   dateStr: date("dateStr", { mode: "string" }).notNull(),
+});
+
+export const userChallengeJournals = mysqlTable("user_challenge_journals", {
+  id: int("id").primaryKey().autoincrement(),
+  userChallengeId: int("userChallengeId").references(() => userChallenges.id).notNull(),
+  dateStr: date("dateStr", { mode: "string" }).notNull(),
+  noticed: text("noticed"),
+  glad: text("glad"),
+  hard: text("hard"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
 export const appUpdates = mysqlTable("app_updates", {
@@ -845,7 +859,13 @@ export const emailNewsletters = mysqlTable("email_newsletters", {
   bodyHtml: text("bodyHtml").notNull(),
   ctaLabel: varchar("ctaLabel", { length: 255 }),
   ctaUrl: varchar("ctaUrl", { length: 1000 }),
-  audienceGroup: mysqlEnum("audienceGroup", ["finance", "health", "all", "snack_hack"])
+  audienceGroup: mysqlEnum("audienceGroup", [
+    "finance",
+    "health",
+    "all",
+    "snack_hack",
+    "real_food_reset",
+  ])
     .default("health")
     .notNull(),
   excludeEnrolled: boolean("excludeEnrolled").default(false).notNull(),

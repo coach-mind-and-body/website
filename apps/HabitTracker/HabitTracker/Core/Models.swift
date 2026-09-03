@@ -416,6 +416,59 @@ struct Challenge: Codable, Identifiable, Hashable {
     var isActive: Bool?
     var isFeatured: Bool?
     var linkedPodcastSlug: String?
+    var themeTag: String?
+}
+
+struct ChallengeJournalPrompts: Codable, Hashable {
+    var noticed: String
+    var glad: String
+    var hard: String
+}
+
+struct ChallengeTodayDay: Codable, Hashable {
+    var n: Int
+    var dateStr: String
+    var weekday: String
+    var title: String
+    var win: String
+    var format: String
+    var formatLabel: String
+    var done: Bool?
+    var journal: ChallengeJournalPrompts?
+}
+
+struct ChallengeJournalEntry: Codable, Hashable {
+    var noticed: String?
+    var glad: String?
+    var hard: String?
+}
+
+struct ChallengeTodayPayload: Codable, Hashable {
+    var enrolled: Bool
+    var challengeId: Int?
+    var userChallengeId: Int?
+    var title: String?
+    var startsOn: String?
+    var endsOn: String?
+    var beforeStart: Bool?
+    var afterEnd: Bool?
+    var today: ChallengeTodayDay?
+    var meetUrl: String?
+    var journal: ChallengeJournalEntry?
+}
+
+struct ClaimEnrollmentInput: Encodable {
+    let token: String
+    var deviceId: String?
+}
+
+struct SaveChallengeJournalInput: Encodable {
+    let userChallengeId: Int
+    let dateStr: String
+    var noticed: String?
+    var glad: String?
+    var hard: String?
+    var deviceId: String?
 }
 
 struct UserChallenge: Codable, Identifiable, Hashable {

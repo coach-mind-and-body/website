@@ -91,6 +91,14 @@ export default function Home() {
       <div className="scroll-progress" style={{ width: `${progress}%` }} />
       <SiteNav />
 
+      <Link
+        href="/real-food-reset"
+        className="block text-center px-4 py-3 text-sm font-semibold"
+        style={{ background: "oklch(0.38 0.10 148)", color: "#fff" }}
+      >
+        Free 5-Day Real Food Reset · starts September 28 · Save your spot →
+      </Link>
+
       {/* ── HERO ── */}
       <section className="relative overflow-hidden" style={{ background: "oklch(0.985 0.008 80)", minHeight: "560px" }}>
         <div className="container relative z-10 py-16 md:py-20">

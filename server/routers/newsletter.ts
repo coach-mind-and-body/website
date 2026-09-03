@@ -33,7 +33,13 @@ import { parseContactPaste } from "../parseContactPaste";
 import { storagePut } from "../storage";
 import { adminProcedure, router } from "../_core/trpc";
 
-const audienceGroupSchema = z.enum(["finance", "health", "all", "snack_hack"]);
+const audienceGroupSchema = z.enum([
+  "finance",
+  "health",
+  "all",
+  "snack_hack",
+  "real_food_reset",
+]);
 
 const composeFields = {
   subject: z.string().min(1).max(500),

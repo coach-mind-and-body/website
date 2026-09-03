@@ -14,6 +14,12 @@ import {
   SNACK_HACK_RECLAIM_OFFER_SEQUENCE_ID,
 } from "./emails/snackHackReclaimOffer";
 import { sendMarketingEmail, isEmailOptedOut } from "./emailMarketing";
+import {
+  REAL_FOOD_RESET_DAY_DATES,
+  REAL_FOOD_RESET_DAY_EMAILS,
+} from "./emails/realFoodReset";
+import { REAL_FOOD_RESET_SEQUENCE_ID } from "@shared/realFoodReset";
+import { todayMountainDateStr } from "../lib/mountainTime";
 
 export const SNACK_HACK_SEQUENCE_ID = "snack_hack_nurture";
 export const FOOD_QUIZ_SEQUENCE_ID = "food_quiz_nurture";
@@ -35,7 +41,17 @@ interface AbsoluteDaySequenceConfig {
   dayOffsets: readonly number[];
 }
 
-type SequenceConfig = IntervalSequenceConfig | AbsoluteDaySequenceConfig;
+interface CalendarSequenceConfig {
+  type: "calendar_dates";
+  emails: EmailGenerator[];
+  /** America/Denver YYYY-MM-DD send dates */
+  dates: readonly string[];
+}
+
+type SequenceConfig =
+  | IntervalSequenceConfig
+  | AbsoluteDaySequenceConfig
+  | CalendarSequenceConfig;
 
 const SEQUENCE_CONFIG: Record<string, SequenceConfig> = {
   reclaim_6_week: { type: "interval", emails: RECLAIM_EMAILS, delayDays: 7 },
@@ -57,6 +73,11 @@ const SEQUENCE_CONFIG: Record<string, SequenceConfig> = {
     emails: [...SNACK_HACK_RECLAIM_OFFER_EMAILS],
     dayOffsets: SNACK_HACK_RECLAIM_OFFER_DAY_OFFSETS,
   },
+  [REAL_FOOD_RESET_SEQUENCE_ID]: {
+    type: "calendar_dates",
+    emails: [...REAL_FOOD_RESET_DAY_EMAILS],
+    dates: REAL_FOOD_RESET_DAY_DATES,
+  },
 };
 
 function getSequenceConfig(sequenceId: string): SequenceConfig | null {
@@ -76,6 +97,12 @@ function isEnrollmentDue(
     const dueAt = new Date(enrollment.createdAt);
     dueAt.setDate(dueAt.getDate() + offsetDays);
     return now >= dueAt;
+  }
+
+  if (config.type === "calendar_dates") {
+    const date = config.dates[stepIndex];
+    if (!date) return false;
+    return todayMountainDateStr() >= date;
   }
 
   if (!enrollment.updatedAt) return true;
@@ -115,6 +142,8 @@ async function sendSequenceStep(
       "You're receiving this because you took the Food Freedom Quiz.",
     reclaim_6_week: "You're receiving this as part of your R.E.C.L.A.I.M. program.",
     fpu_babystep_1: "You're receiving this as part of your Financial Peace journey.",
+    [REAL_FOOD_RESET_SEQUENCE_ID]:
+      "You're receiving this because you registered for the 5-Day Real Food Reset.",
   };
 
   const result = await sendMarketingEmail({
@@ -173,7 +202,31 @@ export async function processEmailSequences() {
 
     // Catch up on any overdue steps (e.g. backfilled leads who missed Day 3 and Day 7).
     while (currentEnrollment.currentStepId < config.emails.length) {
-      if (!isEnrollmentDue(currentEnrollment, config)) break;
+      if (config.type === "calendar_dates") {
+        const sendDate = config.dates[currentEnrollment.currentStepId];
+        const today = todayMountainDateStr();
+        if (!sendDate || today < sendDate) break;
+        if (today > sendDate) {
+          const nextStep = currentEnrollment.currentStepId + 1;
+          const isComplete = nextStep >= config.emails.length;
+          await db
+            .update(sequenceEnrollments)
+            .set({
+              currentStepId: nextStep,
+              status: isComplete ? "completed" : "active",
+              updatedAt: new Date(),
+            })
+            .where(eq(sequenceEnrollments.id, currentEnrollment.id));
+          currentEnrollment = {
+            ...currentEnrollment,
+            currentStepId: nextStep,
+            status: isComplete ? "completed" : "active",
+          };
+          continue;
+        }
+      } else if (!isEnrollmentDue(currentEnrollment, config)) {
+        break;
+      }
 
       const success = await sendSequenceStep(
         currentEnrollment,
@@ -249,11 +302,24 @@ export async function enrollUserInSequence(
     .limit(1);
 
   if (existingEnrollment.length === 0) {
+    const config = getSequenceConfig(sequenceId);
+    let currentStepId = 0;
+    let status: "active" | "completed" = "active";
+    if (config?.type === "calendar_dates") {
+      const today = todayMountainDateStr();
+      const idx = config.dates.findIndex((d) => d >= today);
+      if (idx < 0) {
+        currentStepId = config.dates.length;
+        status = "completed";
+      } else {
+        currentStepId = idx;
+      }
+    }
     await db.insert(sequenceEnrollments).values({
       userId,
       sequenceId,
-      status: "active",
-      currentStepId: 0,
+      status,
+      currentStepId,
       ...(opts?.anchorDate ? { createdAt: opts.anchorDate } : {}),
     });
     console.log(`[Sequences] Enrolled ${email} in sequence: ${sequenceId}`);

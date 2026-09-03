@@ -16,6 +16,7 @@ import { todayMountainDateStr, dateToMountainDateStr } from "@/lib/mountainTime"
 import { calendarDateStr, parseCalendarDate, calculateCurrentStreak } from "@/lib/habitStreak";
 import { HabitProgressTab } from "./HabitProgressTab";
 import { VictoryListCard } from "@/components/habit/VictoryListCard";
+import ChallengeTodayCard from "@/components/habit/ChallengeTodayCard";
 import { OnboardingPackModal } from "@/components/habit/OnboardingPackModal";
 import { PatternInsightCard } from "@/components/habit/PatternInsightCard";
 import HabitTrackerInstallPrompt from "@/components/HabitTrackerInstallPrompt";
@@ -721,6 +722,8 @@ export default function HabitTrackerClient() {
           )}
           </div>
         )}
+
+        {mainTab === "daily" && <ChallengeTodayCard />}
 
         {/* Featured / joined challenge chips (always visible) */}
         {activeChallengesData && activeChallengesData.length > 0 && (() => {

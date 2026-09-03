@@ -10,6 +10,7 @@ import { getLoginUrl } from "@/lib/const";
 const LOGO = BRAND.logoUrl;
 
 const NAV_LINKS = [
+  { href: "/real-food-reset", label: "Free Challenge" },
   { href: "/reclaim", label: "R.E.C.L.A.I.M." },
   { href: "/midlife-weight-loss-after-40", label: "Midlife Guides" },
   { href: "/financial-peace", label: "FPU" },

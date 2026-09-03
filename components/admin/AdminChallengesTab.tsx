@@ -17,6 +17,7 @@ export function AdminChallengesTab() {
   const [linkedBlogSlug, setLinkedBlogSlug] = useState("");
   const [themeTag, setThemeTag] = useState("");
   const [isFeatured, setIsFeatured] = useState(false);
+  const [meetUrl, setMeetUrl] = useState("");
   const [editId, setEditId] = useState<number | null>(null);
 
   const { data: challenges, refetch } = trpc.challenges.adminListChallenges.useQuery();
@@ -55,6 +56,7 @@ export function AdminChallengesTab() {
     setLinkedBlogSlug("");
     setThemeTag("");
     setIsFeatured(false);
+    setMeetUrl("");
   };
 
   const handleSave = () => {
@@ -71,6 +73,7 @@ export function AdminChallengesTab() {
       isFeatured,
       featuredOrder: 0,
       isActive: true,
+      meetUrl: meetUrl || null,
     };
     if (editId) {
       updateMutation.mutate({ id: editId, ...payload });
@@ -141,6 +144,14 @@ export function AdminChallengesTab() {
                 placeholder="patterns-not-the-belly-unlocking-weight-loss-success-after-40"
               />
             </div>
+            <div>
+              <label className="text-sm block mb-1">Google Meet URL (enrolled people only)</label>
+              <Input
+                value={meetUrl}
+                onChange={(e) => setMeetUrl(e.target.value)}
+                placeholder="https://meet.google.com/..."
+              />
+            </div>
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} />
               Featured in app
@@ -205,6 +216,7 @@ export function AdminChallengesTab() {
                       setLinkedBlogSlug(c.linkedBlogSlug || "");
                       setThemeTag(c.themeTag || "");
                       setIsFeatured(!!c.isFeatured);
+                      setMeetUrl(c.meetUrl || "");
                     }}
                   >
                     Edit

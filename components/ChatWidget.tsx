@@ -262,7 +262,8 @@ export default function ChatWidget() {
     pathname?.startsWith("/habit-tracker-invite") ||
     pathname?.startsWith("/snack-hack") ||
     pathname?.startsWith("/snack-hack-offer") ||
-    pathname?.startsWith("/reclaim-invite")
+    pathname?.startsWith("/reclaim-invite") ||
+    pathname?.startsWith("/real-food-reset")
   ) {
     return null;
   }

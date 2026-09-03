@@ -1,17 +1,109 @@
 import { z } from "zod";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { challenges, userChallenges, userChallengeLogs } from "../../drizzle/schema";
-import { eq, and, isNull, desc } from "drizzle-orm";
+import {
+  challenges,
+  userChallengeJournals,
+  userChallenges,
+  userChallengeLogs,
+} from "../../drizzle/schema";
+import { eq, and, isNull, desc, or } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { format } from "date-fns";
+import {
+  claimRealFoodResetEnrollment,
+  getChallengeToday,
+  mergeRealFoodResetToUser,
+} from "../realFoodResetChallenge";
 
 export const challengesRouter = router({
   getActiveChallenges: publicProcedure.query(async () => {
     const db = await getDb();
     if (!db) return [];
-    return db.select().from(challenges).where(eq(challenges.isActive, true));
+    const rows = await db.select().from(challenges).where(eq(challenges.isActive, true));
+    return rows.map(({ meetUrl: _meetUrl, ...rest }) => rest);
   }),
+
+  getToday: publicProcedure
+    .input(z.object({ deviceId: z.string().optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      return getChallengeToday({
+        userId: ctx.user?.id ?? null,
+        deviceId: input?.deviceId ?? null,
+        email: ctx.user?.email ?? null,
+      });
+    }),
+
+  claimEnrollment: publicProcedure
+    .input(z.object({ token: z.string().min(8), deviceId: z.string().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const claimed = await claimRealFoodResetEnrollment({
+        token: input.token,
+        deviceId: input.deviceId ?? null,
+        userId: ctx.user?.id ?? null,
+        email: ctx.user?.email ?? null,
+      });
+      if (!claimed.success) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Enrollment not found" });
+      }
+      return claimed;
+    }),
+
+  saveJournal: publicProcedure
+    .input(
+      z.object({
+        userChallengeId: z.number(),
+        dateStr: z.string(),
+        noticed: z.string().optional(),
+        glad: z.string().optional(),
+        hard: z.string().optional(),
+        deviceId: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("DB Error");
+      const [uc] = await db
+        .select()
+        .from(userChallenges)
+        .where(eq(userChallenges.id, input.userChallengeId))
+        .limit(1);
+      if (!uc) throw new TRPCError({ code: "NOT_FOUND", message: "Not enrolled" });
+      const owned =
+        (ctx.user?.id != null && uc.userId === ctx.user.id) ||
+        (input.deviceId != null && uc.deviceId === input.deviceId) ||
+        (ctx.user?.email != null && uc.email === ctx.user.email.toLowerCase());
+      if (!owned) throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized" });
+
+      const existing = await db
+        .select()
+        .from(userChallengeJournals)
+        .where(
+          and(
+            eq(userChallengeJournals.userChallengeId, input.userChallengeId),
+            eq(userChallengeJournals.dateStr, input.dateStr)
+          )
+        )
+        .limit(1);
+      const fields = {
+        noticed: input.noticed ?? "",
+        glad: input.glad ?? "",
+        hard: input.hard ?? "",
+      };
+      if (existing[0]) {
+        await db
+          .update(userChallengeJournals)
+          .set(fields)
+          .where(eq(userChallengeJournals.id, existing[0].id));
+      } else {
+        await db.insert(userChallengeJournals).values({
+          userChallengeId: input.userChallengeId,
+          dateStr: input.dateStr,
+          ...fields,
+        });
+      }
+      return { success: true };
+    }),
 
   getUserChallenges: publicProcedure
     .input(z.object({ deviceId: z.string().optional() }))
@@ -20,10 +112,12 @@ export const challengesRouter = router({
       if (!db) return { challenges: [], logs: [] };
 
       let uc: any[] = [];
-      if (ctx.user?.id) {
-        uc = await db.select().from(userChallenges).where(eq(userChallenges.userId, ctx.user.id));
-      } else if (input.deviceId) {
-        uc = await db.select().from(userChallenges).where(eq(userChallenges.deviceId, input.deviceId));
+      const clauses = [];
+      if (ctx.user?.id) clauses.push(eq(userChallenges.userId, ctx.user.id));
+      if (ctx.user?.email) clauses.push(eq(userChallenges.email, ctx.user.email.toLowerCase()));
+      if (input.deviceId) clauses.push(eq(userChallenges.deviceId, input.deviceId));
+      if (clauses.length > 0) {
+        uc = await db.select().from(userChallenges).where(or(...clauses));
       }
 
       if (uc.length === 0) return { challenges: [], logs: [] };
@@ -46,23 +140,36 @@ export const challengesRouter = router({
       if (!db) throw new Error("DB Error");
 
       const startDate = format(new Date(), "yyyy-MM-dd");
+      const email = ctx.user?.email?.toLowerCase() ?? null;
+      const match = [];
+      if (ctx.user?.id) match.push(eq(userChallenges.userId, ctx.user.id));
+      if (email) match.push(eq(userChallenges.email, email));
+      if (input.deviceId) match.push(eq(userChallenges.deviceId, input.deviceId));
 
-      let existing;
-      if (ctx.user?.id) {
-        existing = await db.select().from(userChallenges).where(
-          and(eq(userChallenges.challengeId, input.challengeId), eq(userChallenges.userId, ctx.user.id))
-        ).limit(1);
-      } else if (input.deviceId) {
-        existing = await db.select().from(userChallenges).where(
-          and(eq(userChallenges.challengeId, input.challengeId), eq(userChallenges.deviceId, input.deviceId))
-        ).limit(1);
+      let existing: typeof userChallenges.$inferSelect[] = [];
+      if (match.length > 0) {
+        existing = await db
+          .select()
+          .from(userChallenges)
+          .where(and(eq(userChallenges.challengeId, input.challengeId), or(...match)))
+          .limit(1);
       }
 
-      if (existing && existing.length > 0) return { success: true };
+      if (existing.length > 0) {
+        const patch: Partial<typeof userChallenges.$inferInsert> = {};
+        if (ctx.user?.id && !existing[0].userId) patch.userId = ctx.user.id;
+        if (input.deviceId && !existing[0].deviceId) patch.deviceId = input.deviceId;
+        if (email && !existing[0].email) patch.email = email;
+        if (Object.keys(patch).length > 0) {
+          await db.update(userChallenges).set(patch).where(eq(userChallenges.id, existing[0].id));
+        }
+        return { success: true };
+      }
 
       await db.insert(userChallenges).values({
         userId: ctx.user?.id || null,
         deviceId: input.deviceId || null,
+        email,
         challengeId: input.challengeId,
         startDate,
         status: "active"
@@ -94,7 +201,9 @@ export const challengesRouter = router({
 
       const owned =
         (ctx.user?.id != null && userChallenge.userId === ctx.user.id) ||
-        (input.deviceId != null && userChallenge.deviceId === input.deviceId);
+        (input.deviceId != null && userChallenge.deviceId === input.deviceId) ||
+        (ctx.user?.email != null &&
+          userChallenge.email === ctx.user.email.toLowerCase());
 
       if (!owned) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized to modify this challenge log" });
@@ -132,6 +241,12 @@ export const challengesRouter = router({
           and(eq(userChallenges.deviceId, input.deviceId), isNull(userChallenges.userId))
         );
 
+      await mergeRealFoodResetToUser(
+        ctx.user.id,
+        ctx.user.email ?? null,
+        input.deviceId
+      );
+
       return { success: true };
     }),
 
@@ -150,6 +265,7 @@ export const challengesRouter = router({
         isFeatured: z.boolean().default(false),
         featuredOrder: z.number().default(0),
         isActive: z.boolean().default(true),
+        meetUrl: z.string().optional().nullable(),
       })
     )
     .mutation(async ({ input }) => {
@@ -168,6 +284,7 @@ export const challengesRouter = router({
         isFeatured: input.isFeatured,
         featuredOrder: input.featuredOrder,
         isActive: input.isActive,
+        meetUrl: input.meetUrl || null,
       });
 
       return { success: true, challengeId: res.insertId };
@@ -188,6 +305,7 @@ export const challengesRouter = router({
         isFeatured: z.boolean().optional(),
         featuredOrder: z.number().optional(),
         isActive: z.boolean().optional(),
+        meetUrl: z.string().optional().nullable(),
       })
     )
     .mutation(async ({ input }) => {
