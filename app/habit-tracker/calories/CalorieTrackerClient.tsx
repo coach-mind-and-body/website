@@ -26,6 +26,7 @@ import { calendarDateStr, parseCalendarDate } from "@/lib/habitStreak";
 import { getDeviceId } from "@/lib/deviceId";
 import FoodHubNav from "@/components/habit/FoodHubNav";
 import FatSecretAttribution from "@/components/habit/FatSecretAttribution";
+import { FOOD_LOG_HINTS } from "@shared/food";
 
 type SelectedRecipe = {
   id: number;
@@ -683,9 +684,12 @@ export default function CalorieTrackerClient() {
 
               {/* Name + AI */}
               <div className="space-y-3">
+                {fsConfigured && (
+                  <p className="text-xs text-gray-500 leading-relaxed">{FOOD_LOG_HINTS.chooser}</p>
+                )}
                 <div>
                   <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">
-                    Food name
+                    {FOOD_LOG_HINTS.aiLabel}
                   </label>
                   <div className="flex gap-2">
                     <input
@@ -693,7 +697,7 @@ export default function CalorieTrackerClient() {
                       value={foodName}
                       onChange={(e) => setFoodName(e.target.value)}
                       className="flex-1 p-3 rounded-xl border text-sm focus:outline-none focus:ring-1 focus:ring-[#c9a96e]"
-                      placeholder="e.g. Greek yogurt + berries"
+                      placeholder={FOOD_LOG_HINTS.aiPlaceholder}
                       autoFocus
                     />
                     <button
@@ -710,13 +714,62 @@ export default function CalorieTrackerClient() {
                       )}
                     </button>
                   </div>
+                  <p className="text-[11px] text-gray-400 mt-1.5 leading-relaxed">{FOOD_LOG_HINTS.aiHint}</p>
+                </div>
+
+                {/* Photo AI — grouped with homemade, guests get a soft daily limit */}
+                <div
+                  className="p-3 rounded-2xl border border-dashed flex flex-col items-center gap-2"
+                  style={{ borderColor: "#e8c99a", background: "#fcfaf9" }}
+                >
+                  <p className="text-[11px] text-gray-500 text-center leading-relaxed">
+                    {FOOD_LOG_HINTS.photoHint}
+                  </p>
+                  <input
+                    type="text"
+                    placeholder="Optional hint: '1 cup rice'"
+                    value={userHint}
+                    onChange={(e) => setUserHint(e.target.value)}
+                    className="w-full p-2 rounded-xl border text-xs text-center"
+                  />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    ref={fileInputRef}
+                    className="hidden"
+                    onChange={handleImageCapture}
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={analyzeImageMutation.isPending}
+                    className="rounded-full"
+                    style={{ background: "#2d3b2d", color: "white" }}
+                  >
+                    {analyzeImageMutation.isPending ? (
+                      <Loader2 size={16} className="animate-spin mr-2" />
+                    ) : (
+                      <Camera size={16} className="mr-2" />
+                    )}
+                    Snap photo
+                  </Button>
+                  {!isAuthenticated && (
+                    <p className="text-[10px] text-gray-400 text-center">
+                      Guests: up to 8 AI estimates/day. Sign in for unlimited.
+                    </p>
+                  )}
                 </div>
 
                 {fsConfigured && (
                   <div>
                     <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">
-                      Packaged food
+                      {FOOD_LOG_HINTS.packagedLabel}
                     </label>
+                    <p className="text-[11px] text-gray-400 mb-1.5 leading-relaxed">
+                      {FOOD_LOG_HINTS.packagedHint}
+                    </p>
                     <div className="flex gap-2">
                       <input
                         type="search"
@@ -728,7 +781,7 @@ export default function CalorieTrackerClient() {
                             setFsSubmitted(fsInput.trim());
                           }
                         }}
-                        placeholder="Search FatSecret…"
+                        placeholder={FOOD_LOG_HINTS.packagedPlaceholder}
                         className="flex-1 p-3 rounded-xl border text-sm focus:outline-none focus:ring-1 focus:ring-[#c9a96e]"
                       />
                       <button
@@ -859,48 +912,6 @@ export default function CalorieTrackerClient() {
                   </div>
                 )}
 
-                {/* Photo AI — guests get a soft daily limit server-side */}
-                <div
-                  className="p-3 rounded-2xl border border-dashed flex flex-col items-center gap-2"
-                  style={{ borderColor: "#e8c99a", background: "#fcfaf9" }}
-                >
-                  <input
-                    type="text"
-                    placeholder="Optional hint: '1 cup rice'"
-                    value={userHint}
-                    onChange={(e) => setUserHint(e.target.value)}
-                    className="w-full p-2 rounded-xl border text-xs text-center"
-                  />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    ref={fileInputRef}
-                    className="hidden"
-                    onChange={handleImageCapture}
-                  />
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={analyzeImageMutation.isPending}
-                    className="rounded-full"
-                    style={{ background: "#2d3b2d", color: "white" }}
-                  >
-                    {analyzeImageMutation.isPending ? (
-                      <Loader2 size={16} className="animate-spin mr-2" />
-                    ) : (
-                      <Camera size={16} className="mr-2" />
-                    )}
-                    Snap photo
-                  </Button>
-                  {!isAuthenticated && (
-                    <p className="text-[10px] text-gray-400 text-center">
-                      Guests: up to 8 AI estimates/day. Sign in for unlimited.
-                    </p>
-                  )}
-                </div>
-
                 <Button
                   onClick={handleSave}
                   disabled={addLogMutation.isPending || updateLogMutation.isPending}
@@ -988,8 +999,8 @@ export default function CalorieTrackerClient() {
             <p className="font-bold text-sm mb-1" style={{ color: "#2d3b2d" }}>
               No food logged yet
             </p>
-            <p className="text-xs text-gray-500 mb-3">
-              Tap a meal chip above. Protein first — you can skip the rest.
+            <p className="text-xs text-gray-500 mb-3 leading-relaxed">
+              {fsConfigured ? FOOD_LOG_HINTS.empty : FOOD_LOG_HINTS.emptyAiOnly}
             </p>
             <Button
               onClick={() => openAdd("snack")}

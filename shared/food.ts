@@ -145,3 +145,20 @@ export function normalizeIngredientName(name: string): string {
 
 export const FATSECRET_ATTRIBUTION_URL = "https://www.fatsecret.com";
 export const FATSECRET_ATTRIBUTION_TEXT = "Powered by fatsecret Platform API";
+
+/** Short copy so calorie logging explains AI vs the packaged-food database. */
+export const FOOD_LOG_HINTS = {
+  empty:
+    "Tap a meal to log. Homemade or leftovers → ✨ AI or a photo. A bar, yogurt cup, or restaurant item → search packaged foods.",
+  emptyAiOnly:
+    "Tap a meal. Type what you ate and tap ✨ AI, snap a photo, or enter protein yourself.",
+  chooser:
+    "Homemade or leftovers → type it and tap ✨ AI, or snap a photo. Packaged or restaurant food → search the database.",
+  aiLabel: "Homemade or leftovers",
+  aiHint: "Type what you ate, then tap ✨ AI. You can tweak the numbers.",
+  aiPlaceholder: "e.g. leftover chicken + broccoli",
+  photoHint: "Snap the plate if you don’t want to type. Same AI estimate.",
+  packagedLabel: "Packaged or restaurant food",
+  packagedHint: "Search the food database for bars, yogurt cups, and labeled items.",
+  packagedPlaceholder: "Search packaged foods…",
+} as const;

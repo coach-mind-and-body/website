@@ -62,7 +62,7 @@ struct CaloriesView: View {
                     }
 
                     if food.logs.isEmpty && !showAdd {
-                        Text("Tap a meal, then use ✨ AI, a photo, or FatSecret — or type it yourself.")
+                        Text(food.fatSecretOn ? FoodLogHints.empty : FoodLogHints.emptyAiOnly)
                             .font(.subheadline)
                             .foregroundStyle(HTTheme.muted)
                     }
@@ -126,130 +126,156 @@ struct CaloriesView: View {
 
     private var addCard: some View {
         HTCard {
-            Text("Log \(meal)")
-                .font(.headline)
-                .foregroundStyle(HTTheme.forest)
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Log \(meal)")
+                    .font(.headline)
+                    .foregroundStyle(HTTheme.forest)
 
-            HStack(spacing: 8) {
-                TextField("e.g. Greek yogurt + berries", text: $name)
-                    .padding(10)
-                    .background(HTTheme.cream)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                Button {
-                    Task { await runTextAI() }
-                } label: {
-                    if food.estimateBusy {
-                        ProgressView()
-                    } else {
-                        Text("✨ AI")
-                            .font(.caption.weight(.bold))
-                    }
+                if food.fatSecretOn {
+                    Text(FoodLogHints.chooser)
+                        .font(.caption)
+                        .foregroundStyle(HTTheme.muted)
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 10)
-                .background(Color(red: 251 / 255, green: 238 / 255, blue: 233 / 255))
-                .foregroundStyle(HTTheme.gold)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || food.estimateBusy)
-            }
 
-            HStack(spacing: 8) {
-                PhotosPicker(selection: $photoItem, matching: .images) {
-                    Label("Photo", systemImage: "photo")
-                        .font(.caption.weight(.bold))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(Color.white)
-                        .clipShape(Capsule())
-                        .overlay(Capsule().stroke(HTTheme.roseBorder))
-                }
-                Button {
-                    showCamera = true
-                } label: {
-                    Label("Camera", systemImage: "camera")
-                        .font(.caption.weight(.bold))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(Color.white)
-                        .clipShape(Capsule())
-                        .overlay(Capsule().stroke(HTTheme.roseBorder))
-                }
-                .foregroundStyle(HTTheme.forest)
-            }
+                Text(FoodLogHints.aiLabel.uppercased())
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(HTTheme.muted)
 
-            if food.fatSecretOn {
-                HStack {
-                    TextField("Search FatSecret…", text: $fsQuery)
+                HStack(spacing: 8) {
+                    TextField(FoodLogHints.aiPlaceholder, text: $name)
                         .padding(10)
                         .background(HTTheme.cream)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
-                    Button("Search") {
-                        Task { await food.searchFatSecret(fsQuery) }
-                    }
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(HTTheme.forest)
-                }
-                ForEach(food.fatSecretHits.prefix(6)) { hit in
                     Button {
-                        name = hit.brand.map { "\(hit.name) (\($0))" } ?? hit.name
-                        calories = hit.calories
-                        protein = hit.protein
-                        carbs = hit.carbs
-                        fat = hit.fat
-                        fiber = 0
-                        showFullMacros = true
+                        Task { await runTextAI() }
                     } label: {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(hit.brand.map { "\(hit.name) · \($0)" } ?? hit.name)
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(HTTheme.forest)
-                            Text("\(hit.protein)p · \(hit.calories) kcal")
-                                .font(.caption)
-                                .foregroundStyle(HTTheme.muted)
+                        if food.estimateBusy {
+                            ProgressView()
+                        } else {
+                            Text("✨ AI")
+                                .font(.caption.weight(.bold))
                         }
                     }
-                    .buttonStyle(.plain)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 10)
+                    .background(Color(red: 251 / 255, green: 238 / 255, blue: 233 / 255))
+                    .foregroundStyle(HTTheme.gold)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || food.estimateBusy)
                 }
-            }
 
-            TextField("Protein (g)", value: $protein, format: .number)
-                .keyboardType(.numberPad)
-                .padding(10)
-                .background(HTTheme.cream)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-
-            if !showFullMacros {
-                Button("+ Calories & other macros") { showFullMacros = true }
-                    .font(.caption.weight(.bold))
+                Text(FoodLogHints.aiHint)
+                    .font(.caption2)
                     .foregroundStyle(HTTheme.muted)
-            } else {
-                HStack {
-                    field("kcal", $calories)
-                    field("carbs", $carbs)
-                }
-                HStack {
-                    field("fat", $fat)
-                    field("fiber", $fiber)
-                }
-            }
 
-            Button("Log \(meal)") {
-                Task {
-                    await food.addManual(
-                        name: name,
-                        meal: meal,
-                        calories: calories,
-                        protein: protein,
-                        carbs: carbs,
-                        fat: fat,
-                        fiber: fiber
-                    )
-                    resetForm()
+                HStack(spacing: 8) {
+                    PhotosPicker(selection: $photoItem, matching: .images) {
+                        Label("Photo", systemImage: "photo")
+                            .font(.caption.weight(.bold))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(Color.white)
+                            .clipShape(Capsule())
+                            .overlay(Capsule().stroke(HTTheme.roseBorder))
+                    }
+                    Button {
+                        showCamera = true
+                    } label: {
+                        Label("Camera", systemImage: "camera")
+                            .font(.caption.weight(.bold))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(Color.white)
+                            .clipShape(Capsule())
+                            .overlay(Capsule().stroke(HTTheme.roseBorder))
+                    }
+                    .foregroundStyle(HTTheme.forest)
                 }
+
+                Text(FoodLogHints.photoHint)
+                    .font(.caption2)
+                    .foregroundStyle(HTTheme.muted)
+
+                if food.fatSecretOn {
+                    Text(FoodLogHints.packagedLabel.uppercased())
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(HTTheme.muted)
+                    Text(FoodLogHints.packagedHint)
+                        .font(.caption2)
+                        .foregroundStyle(HTTheme.muted)
+                    HStack {
+                        TextField(FoodLogHints.packagedPlaceholder, text: $fsQuery)
+                            .padding(10)
+                            .background(HTTheme.cream)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        Button("Search") {
+                            Task { await food.searchFatSecret(fsQuery) }
+                        }
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(HTTheme.forest)
+                    }
+                    ForEach(food.fatSecretHits.prefix(6)) { hit in
+                        Button {
+                            name = hit.brand.map { "\(hit.name) (\($0))" } ?? hit.name
+                            calories = hit.calories
+                            protein = hit.protein
+                            carbs = hit.carbs
+                            fat = hit.fat
+                            fiber = 0
+                            showFullMacros = true
+                        } label: {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(hit.brand.map { "\(hit.name) · \($0)" } ?? hit.name)
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(HTTheme.forest)
+                                Text("\(hit.protein)p · \(hit.calories) kcal")
+                                    .font(.caption)
+                                    .foregroundStyle(HTTheme.muted)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
+                TextField("Protein (g)", value: $protein, format: .number)
+                    .keyboardType(.numberPad)
+                    .padding(10)
+                    .background(HTTheme.cream)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                if !showFullMacros {
+                    Button("+ Calories & other macros") { showFullMacros = true }
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(HTTheme.muted)
+                } else {
+                    HStack {
+                        field("kcal", $calories)
+                        field("carbs", $carbs)
+                    }
+                    HStack {
+                        field("fat", $fat)
+                        field("fiber", $fiber)
+                    }
+                }
+
+                Button("Log \(meal)") {
+                    Task {
+                        await food.addManual(
+                            name: name,
+                            meal: meal,
+                            calories: calories,
+                            protein: protein,
+                            carbs: carbs,
+                            fat: fat,
+                            fiber: fiber
+                        )
+                        resetForm()
+                    }
+                }
+                .font(.headline)
+                .foregroundStyle(HTTheme.forest)
+                .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
             }
-            .font(.headline)
-            .foregroundStyle(HTTheme.forest)
-            .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
         }
     }
 
@@ -309,6 +335,19 @@ struct CaloriesView: View {
         showFullMacros = false
         food.fatSecretHits = []
     }
+}
+
+private enum FoodLogHints {
+    static let empty = "Tap a meal to log. Homemade or leftovers → ✨ AI or a photo. A bar, yogurt cup, or restaurant item → search packaged foods."
+    static let emptyAiOnly = "Tap a meal. Type what you ate and tap ✨ AI, snap a photo, or enter protein yourself."
+    static let chooser = "Homemade or leftovers → type it and tap ✨ AI, or snap a photo. Packaged or restaurant food → search the database."
+    static let aiLabel = "Homemade or leftovers"
+    static let aiHint = "Type what you ate, then tap ✨ AI. You can tweak the numbers."
+    static let aiPlaceholder = "e.g. leftover chicken + broccoli"
+    static let photoHint = "Snap the plate if you don’t want to type. Same AI estimate."
+    static let packagedLabel = "Packaged or restaurant food"
+    static let packagedHint = "Search the food database for bars, yogurt cups, and labeled items."
+    static let packagedPlaceholder = "Search packaged foods…"
 }
 
 private struct CameraPicker: UIViewControllerRepresentable {
