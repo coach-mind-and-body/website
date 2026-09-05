@@ -94,6 +94,9 @@ def main() -> None:
     widget_link_ext = uid("build:widgetkit-ext")
     embed_widget = uid("build:embed-widget")
     assets_build = uid("build:assets")
+    privacy_build = uid("build:privacy")
+    widget_proxy = uid("proxy:widget")
+    widget_dep = uid("dep:widget")
 
     refs += [
         f'\t\t{assets} /* Assets.xcassets */ = {{isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; }};',
@@ -241,6 +244,7 @@ def main() -> None:
         f"\t\t{widget_link_ext} /* WidgetKit.framework in Frameworks */ = {{isa = PBXBuildFile; fileRef = {widget_fw} /* WidgetKit.framework */; }};",
         f"\t\t{embed_widget} /* HabitTrackerWidget.appex in Embed Foundation Extensions */ = {{isa = PBXBuildFile; fileRef = {widget_product} /* HabitTrackerWidget.appex */; settings = {{ATTRIBUTES = (RemoveHeadersOnCopy, ); }}; }};",
         f"\t\t{assets_build} /* Assets.xcassets in Resources */ = {{isa = PBXBuildFile; fileRef = {assets} /* Assets.xcassets */; }};",
+        f"\t\t{privacy_build} /* PrivacyInfo.xcprivacy in Resources */ = {{isa = PBXBuildFile; fileRef = {privacy} /* PrivacyInfo.xcprivacy */; }};",
     ]
 
     src_app = uid("phase:src-app")
@@ -323,6 +327,7 @@ def main() -> None:
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = HabitTracker/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Habit Tracker";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Take a photo of a meal so we can estimate protein and extras. You can always type it instead.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Habit Tracker reads steps, exercise minutes, workouts, mindful minutes, last night's sleep, and weight from Apple Health so Move Body, Mindful Minutes, and Restful Sleep can fill themselves in. This is a coaching tool, not medical advice. We do not sell Health data.";
@@ -358,6 +363,16 @@ def main() -> None:
 			runOnlyForDeploymentPostprocessing = 0;
 		}};
 /* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXContainerItemProxy section */
+		{widget_proxy} /* PBXContainerItemProxy */ = {{
+			isa = PBXContainerItemProxy;
+			containerPortal = {proj} /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = {target_wid};
+			remoteInfo = HabitTrackerWidget;
+		}};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 {chr(10).join(refs)}
@@ -395,10 +410,12 @@ def main() -> None:
 				{src_app} /* Sources */,
 				{fw_app} /* Frameworks */,
 				{res_app} /* Resources */,
+				{embed} /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				{widget_dep} /* PBXTargetDependency */,
 			);
 			name = HabitTracker;
 			productName = HabitTracker;
@@ -456,6 +473,7 @@ def main() -> None:
 			buildActionMask = 2147483647;
 			files = (
 				{assets_build} /* Assets.xcassets in Resources */,
+				{privacy_build} /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		}};
@@ -479,6 +497,14 @@ def main() -> None:
 			runOnlyForDeploymentPostprocessing = 0;
 		}};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		{widget_dep} /* PBXTargetDependency */ = {{
+			isa = PBXTargetDependency;
+			target = {target_wid} /* HabitTrackerWidget */;
+			targetProxy = {widget_proxy} /* PBXContainerItemProxy */;
+		}};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		{conf_proj_d} /* Debug */ = {{
@@ -542,9 +568,11 @@ def main() -> None:
 			isa = XCBuildConfiguration;
 			buildSettings = {{
 				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = HabitTrackerWidget/HabitTrackerWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HabitTrackerWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Today";
 				INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier = "com.apple.widgetkit-extension";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -561,9 +589,11 @@ def main() -> None:
 			isa = XCBuildConfiguration;
 			buildSettings = {{
 				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = HabitTrackerWidget/HabitTrackerWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HabitTrackerWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Today";
 				INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier = "com.apple.widgetkit-extension";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";

@@ -47,6 +47,7 @@
 		16A5F125472940660306E8DA /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 41EB91E7BA414D2BC395B1A3 /* WidgetKit.framework */; };
 		874C008267AE8F79F8EB039D /* HabitTrackerWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CD3B4A18D83458EA6541A373 /* HabitTrackerWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		FB90684E69A6C96ED866993E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B2B4367B873474FE1C68712A /* Assets.xcassets */; };
+		C33D44E5F60718293A4B5C6D /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 4381A0DC22C37DDDF75898F4 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -62,6 +63,16 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXContainerItemProxy section */
+		A11B22C33D44E5F60718293A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 98F54143AB4E86B28C3AFEE0 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E48DB3D36935AFE7CB9DE104;
+			remoteInfo = HabitTrackerWidget;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		A5A9F854C62B5DE4A2344CF5 /* HabitTracker/HabitTrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/HabitTrackerApp.swift; sourceTree = "<group>"; };
@@ -201,10 +212,12 @@
 				F8EFF7EC56C150FF02830114 /* Sources */,
 				20AAD423BB0665C318491789 /* Frameworks */,
 				90A6474316E0E239D8FFAC02 /* Resources */,
+				F0AB04EE052351C80F3286E9 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				B22C33D44E5F60718293A4B5 /* PBXTargetDependency */,
 			);
 			name = HabitTracker;
 			productName = HabitTracker;
@@ -262,6 +275,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				FB90684E69A6C96ED866993E /* Assets.xcassets in Resources */,
+				C33D44E5F60718293A4B5C6D /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -318,6 +332,14 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		B22C33D44E5F60718293A4B5 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E48DB3D36935AFE7CB9DE104 /* HabitTrackerWidget */;
+			targetProxy = A11B22C33D44E5F60718293A /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		CC5056AF61533E1ABEAF268F /* Debug */ = {
@@ -376,6 +398,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = HabitTracker/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Habit Tracker";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Take a photo of a meal so we can estimate protein and extras. You can always type it instead.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Habit Tracker reads steps, exercise minutes, workouts, mindful minutes, last night's sleep, and weight from Apple Health so Move Body, Mindful Minutes, and Restful Sleep can fill themselves in. This is a coaching tool, not medical advice. We do not sell Health data.";
@@ -405,6 +428,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = HabitTracker/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Habit Tracker";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Take a photo of a meal so we can estimate protein and extras. You can always type it instead.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Habit Tracker reads steps, exercise minutes, workouts, mindful minutes, last night's sleep, and weight from Apple Health so Move Body, Mindful Minutes, and Restful Sleep can fill themselves in. This is a coaching tool, not medical advice. We do not sell Health data.";
@@ -427,9 +451,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = HabitTrackerWidget/HabitTrackerWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HabitTrackerWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Today";
 				INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier = "com.apple.widgetkit-extension";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -446,9 +472,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = HabitTrackerWidget/HabitTrackerWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HabitTrackerWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Today";
 				INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier = "com.apple.widgetkit-extension";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
