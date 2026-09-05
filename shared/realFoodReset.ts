@@ -35,7 +35,7 @@ export const REAL_FOOD_RESET = {
   offerClosesDate: "2026-11-01",
   offerClosesLabel: "November 1",
   paidProgram: "6 Habits in 6 Weeks to Quiet Food Noise",
-  paidPrice: "$699",
+  paidPrice: "$597",
   segment: "leadgen_real_food_reset",
   days: [
     {

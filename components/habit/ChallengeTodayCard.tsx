@@ -7,10 +7,12 @@ import { REAL_FOOD_RESET, REAL_FOOD_RESET_CLAIM_KEY } from "@shared/realFoodRese
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Video, Check } from "lucide-react";
+import { Video, Check, Bell } from "lucide-react";
+import { useWebPush } from "@/hooks/useWebPush";
 
 export default function ChallengeTodayCard() {
   const deviceId = getDeviceId();
+  const { isSupported, isSubscribed, isSubscribing, subscribeToPush } = useWebPush();
   const { data, refetch } = trpc.challenges.getToday.useQuery({ deviceId });
   const claim = trpc.challenges.claimEnrollment.useMutation({
     onSuccess: () => refetch(),
@@ -72,6 +74,25 @@ export default function ChallengeTodayCard() {
         <p className="text-sm" style={{ color: "#6a7a6a" }}>
           You’re in. We start {REAL_FOOD_RESET.startLabel}. Lives are {REAL_FOOD_RESET.liveDays} at{" "}
           {REAL_FOOD_RESET.liveTime}.
+        </p>
+      )}
+
+      {isSupported && !isSubscribed && (
+        <button
+          type="button"
+          onClick={() => subscribeToPush()}
+          disabled={isSubscribing}
+          className="w-full flex items-center justify-center gap-2 text-sm font-bold rounded-xl py-3 border"
+          style={{ borderColor: "#e8c99a", background: "#fcfaf9", color: "#2d3b2d" }}
+        >
+          <Bell size={16} />
+          {isSubscribing ? "Enabling…" : "Turn on reminders for lives and daily check-ins"}
+        </button>
+      )}
+
+      {day && (
+        <p className="text-xs" style={{ color: "#8a9a8a" }}>
+          Logging a meal in Macros or saving your journal counts as today’s check-in.
         </p>
       )}
 

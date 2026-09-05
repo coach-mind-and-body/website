@@ -268,3 +268,52 @@ export async function getChallengeToday(opts: {
     guides: REAL_FOOD_RESET_GUIDES,
   };
 }
+
+/** Logging a meal or saving the journal counts as today's challenge check-in. */
+export async function creditChallengeDayFromActivity(opts: {
+  userId?: number | null;
+  email?: string | null;
+  deviceId?: string | null;
+  userChallengeId?: number | null;
+  dateStr: string;
+}) {
+  if (!realFoodResetDayForDate(opts.dateStr)) return { credited: false as const };
+
+  const db = await getDb();
+  if (!db) return { credited: false as const };
+
+  let enrollmentId = opts.userChallengeId ?? null;
+  if (!enrollmentId) {
+    const challengeId = await ensureRealFoodResetChallenge();
+    const match = [];
+    if (opts.userId) match.push(eq(userChallenges.userId, opts.userId));
+    if (opts.email) match.push(eq(userChallenges.email, normEmail(opts.email)));
+    if (opts.deviceId) match.push(eq(userChallenges.deviceId, opts.deviceId));
+    if (match.length === 0) return { credited: false as const };
+    const [row] = await db
+      .select({ id: userChallenges.id })
+      .from(userChallenges)
+      .where(and(eq(userChallenges.challengeId, challengeId), or(...match)))
+      .limit(1);
+    enrollmentId = row?.id ?? null;
+  }
+  if (!enrollmentId) return { credited: false as const };
+
+  const [existing] = await db
+    .select({ id: userChallengeLogs.id })
+    .from(userChallengeLogs)
+    .where(
+      and(
+        eq(userChallengeLogs.userChallengeId, enrollmentId),
+        eq(userChallengeLogs.dateStr, opts.dateStr)
+      )
+    )
+    .limit(1);
+  if (existing) return { credited: true as const, already: true as const };
+
+  await db.insert(userChallengeLogs).values({
+    userChallengeId: enrollmentId,
+    dateStr: opts.dateStr,
+  });
+  return { credited: true as const, already: false as const };
+}

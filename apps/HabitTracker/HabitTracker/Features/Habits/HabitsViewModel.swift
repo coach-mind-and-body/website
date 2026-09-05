@@ -210,6 +210,7 @@ final class HabitsViewModel {
             journalNoticed = today.journal?.noticed ?? ""
             journalGlad = today.journal?.glad ?? ""
             journalHard = today.journal?.hard ?? ""
+            await NotificationService.scheduleChallengeNudges(enrolled: today.enrolled)
         } else {
             todayChallenge = nil
         }

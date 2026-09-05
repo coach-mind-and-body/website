@@ -12,6 +12,7 @@ import { TRPCError } from "@trpc/server";
 import { format } from "date-fns";
 import {
   claimRealFoodResetEnrollment,
+  creditChallengeDayFromActivity,
   getChallengeToday,
   mergeRealFoodResetToUser,
 } from "../realFoodResetChallenge";
@@ -102,6 +103,10 @@ export const challengesRouter = router({
           ...fields,
         });
       }
+      await creditChallengeDayFromActivity({
+        userChallengeId: input.userChallengeId,
+        dateStr: input.dateStr,
+      });
       return { success: true };
     }),
 

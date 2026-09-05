@@ -2,6 +2,7 @@ import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { calorieLogs, userHabits, userHabitLogs } from "../../drizzle/schema";
+import { creditChallengeDayFromActivity } from "../realFoodResetChallenge";
 import { eq, and, desc, like } from "drizzle-orm";
 import { generateObject } from "ai";
 import { google } from "@ai-sdk/google";
@@ -124,6 +125,11 @@ export const caloriesRouter = router({
       });
       
       await syncMacrosToHabits(db, ctx.user.id, input.dateStr);
+      await creditChallengeDayFromActivity({
+        userId: ctx.user.id,
+        email: ctx.user.email ?? null,
+        dateStr: input.dateStr,
+      });
 
       return { success: true };
     }),
@@ -211,6 +217,11 @@ export const caloriesRouter = router({
       }
       for (const d of dates) {
         await syncMacrosToHabits(db, ctx.user.id, d);
+        await creditChallengeDayFromActivity({
+          userId: ctx.user.id,
+          email: ctx.user.email ?? null,
+          dateStr: d,
+        });
       }
       return { imported: input.logs.length };
     }),

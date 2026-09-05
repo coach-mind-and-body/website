@@ -312,6 +312,9 @@ struct HabitsView: View {
                             .font(.caption)
                             .foregroundStyle(HTTheme.muted)
                     }
+                    Text("Logging a meal in Macros or saving your journal counts as today’s check-in.")
+                        .font(.caption2)
+                        .foregroundStyle(HTTheme.muted)
                     Button {
                         Task { await model.toggleTodayChallenge() }
                     } label: {
