@@ -1,13 +1,15 @@
+import { createHmac, randomBytes } from "crypto";
 import { ENV } from "./_core/env";
 
-const TOKEN_URL = "https://oauth.fatsecret.com/connect/token";
 const API_URL = "https://platform.fatsecret.com/rest/server.api";
 
-type TokenCache = { token: string; expiresAt: number };
-let tokenCache: TokenCache | null = null;
-
 export function fatsecretConfigured(): boolean {
-  return Boolean(ENV.fatsecretClientId && ENV.fatsecretClientSecret);
+  return Boolean(ENV.fatsecretClientId && fatsecretSigningSecret());
+}
+
+function fatsecretSigningSecret(): string {
+  // Basic tier IP-locks OAuth 2.0. OAuth 1.0 (Consumer Secret) does not.
+  return ENV.fatsecretConsumerSecret || ENV.fatsecretClientSecret;
 }
 
 function asArray<T>(value: T | T[] | undefined | null): T[] {
@@ -15,57 +17,43 @@ function asArray<T>(value: T | T[] | undefined | null): T[] {
   return Array.isArray(value) ? value : [value];
 }
 
-async function getAccessToken(): Promise<string> {
-  if (!fatsecretConfigured()) {
-    throw new Error("FatSecret is not configured. Add FATSECRET_CLIENT_ID and FATSECRET_CLIENT_SECRET.");
-  }
-  const now = Date.now();
-  if (tokenCache && tokenCache.expiresAt > now + 60_000) {
-    return tokenCache.token;
-  }
-
-  const basic = Buffer.from(
-    `${ENV.fatsecretClientId}:${ENV.fatsecretClientSecret}`
-  ).toString("base64");
-
-  const res = await fetch(TOKEN_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${basic}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({
-      grant_type: "client_credentials",
-      scope: "basic",
-    }),
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`FatSecret token failed (${res.status}): ${text.slice(0, 200)}`);
-  }
-
-  const json = (await res.json()) as {
-    access_token: string;
-    expires_in?: number;
-  };
-  tokenCache = {
-    token: json.access_token,
-    expiresAt: now + (json.expires_in ?? 86400) * 1000,
-  };
-  return tokenCache.token;
+/** RFC 3986 percent-encoding used in OAuth 1.0 signature base strings. */
+function rfc3986(value: string): string {
+  return encodeURIComponent(value).replace(/[!'()*]/g, (c) =>
+    `%${c.charCodeAt(0).toString(16).toUpperCase()}`
+  );
 }
 
 async function fatsecretCall(params: Record<string, string>): Promise<unknown> {
-  const token = await getAccessToken();
-  const body = new URLSearchParams({ ...params, format: "json" });
+  if (!fatsecretConfigured()) {
+    throw new Error(
+      "FatSecret is not configured. Add FATSECRET_CLIENT_ID and FATSECRET_CONSUMER_SECRET."
+    );
+  }
+
+  const oauth: Record<string, string> = {
+    ...params,
+    format: "json",
+    oauth_consumer_key: ENV.fatsecretClientId,
+    oauth_nonce: randomBytes(16).toString("hex"),
+    oauth_signature_method: "HMAC-SHA1",
+    oauth_timestamp: String(Math.floor(Date.now() / 1000)),
+    oauth_version: "1.0",
+  };
+
+  const normalized = Object.keys(oauth)
+    .sort()
+    .map((key) => `${rfc3986(key)}=${rfc3986(oauth[key]!)}`)
+    .join("&");
+  const base = `POST&${rfc3986(API_URL)}&${rfc3986(normalized)}`;
+  const signature = createHmac("sha1", `${fatsecretSigningSecret()}&`)
+    .update(base)
+    .digest("base64");
+
   const res = await fetch(API_URL, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body,
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ ...oauth, oauth_signature: signature }),
   });
   if (!res.ok) {
     const text = await res.text();
@@ -232,7 +220,7 @@ export async function searchFoods(
   page = 0
 ): Promise<{ foods: FatSecretFoodHit[]; total: number; page: number }> {
   const data = (await fatsecretCall({
-    method: "foods.search.v3",
+    method: "foods.search",
     search_expression: query,
     page_number: String(page),
     max_results: "20",

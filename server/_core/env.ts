@@ -22,6 +22,8 @@ export const ENV = {
   resendWebhookSecret: process.env.RESEND_WEBHOOK_SECRET ?? "",
   fatsecretClientId: process.env.FATSECRET_CLIENT_ID ?? "",
   fatsecretClientSecret: process.env.FATSECRET_CLIENT_SECRET ?? "",
+  /** OAuth 1.0 shared secret — Basic tier. Do not use the OAuth 2.0 Client Secret here. */
+  fatsecretConsumerSecret: process.env.FATSECRET_CONSUMER_SECRET ?? "",
   ownerEmail: process.env.OWNER_EMAIL ?? "coach@mindandbodyresetcoach.com",
   metaConversionsApiToken: process.env.META_CONVERSIONS_API_TOKEN ?? "",
   metaPixelId: "1256633739205867",

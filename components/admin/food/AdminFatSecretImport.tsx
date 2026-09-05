@@ -74,7 +74,7 @@ export function AdminFatSecretImport({
         </h3>
         <p className="text-sm max-w-xl" style={{ color: "oklch(0.52 0.015 50)" }}>
           Add <code className="font-semibold">FATSECRET_CLIENT_ID</code> and{" "}
-          <code className="font-semibold">FATSECRET_CLIENT_SECRET</code> to the server environment, then reload this tab
+          <code className="font-semibold">FATSECRET_CONSUMER_SECRET</code> (OAuth 1.0) to the server environment, then reload this tab
           to search and import recipes.
         </p>
       </div>
