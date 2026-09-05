@@ -60,6 +60,14 @@ enum MountainDate {
         String(dateStr.split(separator: "-").last ?? "")
     }
 
+    static func shortMonthDay(_ dateStr: String) -> String {
+        guard let date = date(from: dateStr) else { return dateStr }
+        let f = DateFormatter()
+        f.timeZone = AppConfig.mountainTimeZone
+        f.dateFormat = "MMM d"
+        return f.string(from: date)
+    }
+
     static func monthTitle(_ dateStr: String) -> String {
         guard let date = date(from: dateStr) else { return dateStr }
         let f = DateFormatter()

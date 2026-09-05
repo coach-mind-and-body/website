@@ -9,6 +9,7 @@ struct HabitsView: View {
     @State private var mindfulRemaining = 0
     @State private var mindfulRunning = false
     @State private var showForYou = false
+    @State private var showLogin = false
     @Environment(\.openURL) private var openURL
 
     var body: some View {
@@ -49,26 +50,38 @@ struct HabitsView: View {
             .sheet(isPresented: $showForYou) {
                 forYouSheet
             }
+            .sheet(isPresented: $showLogin) {
+                LoginView(auth: auth, allowsSkip: true)
+            }
         }
     }
 
     private var guestBanner: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "info.circle")
-            Text("Tracking on this iPhone only. Sign in from the profile icon to sync.")
-                .font(.caption.weight(.medium))
+        Button {
+            showLogin = true
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "info.circle")
+                Text("Tracking on this iPhone only. Tap to sign in and sync.")
+                    .font(.caption.weight(.medium))
+                    .multilineTextAlignment(.leading)
+                Spacer(minLength: 8)
+                Text("Sign in")
+                    .font(.caption.weight(.bold))
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity)
+            .background(HTTheme.gold)
         }
-        .foregroundStyle(.white)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-        .frame(maxWidth: .infinity)
-        .background(HTTheme.gold)
+        .buttonStyle(.plain)
     }
 
     private var header: some View {
         HStack(alignment: .center, spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Today · \(MountainDate.dayNumber(MountainDate.today()))")
+                Text("Today · \(MountainDate.shortMonthDay(MountainDate.today()))")
                     .font(.caption2.weight(.bold))
                     .foregroundStyle(HTTheme.muted)
                     .textCase(.uppercase)
