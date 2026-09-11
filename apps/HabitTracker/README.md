@@ -82,7 +82,7 @@ Privacy policy URL when asked: `https://mindandbodyresetcoach.com/privacy`
 
 She installs the **TestFlight** app from the App Store, then opens the invite.
 
-Each new upload must bump **Build** (`CURRENT_PROJECT_VERSION` in the project — currently `1`). Version (`MARKETING_VERSION`) can stay `1.0` until App Store.
+Each new upload must bump **Build** (`CURRENT_PROJECT_VERSION` in the project — currently `2`). Version (`MARKETING_VERSION`) can stay `1.0` until App Store.
 
 ## If Xcode yells
 

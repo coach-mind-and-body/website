@@ -38,8 +38,8 @@ struct ProfileView: View {
                         }
                         LabeledContent("Steps today", value: "\(Int(health.stepsToday))")
                         LabeledContent("Sleep last night", value: String(format: "%.1f hr", health.sleepHoursLastNight))
-                        if let kg = health.weightKg {
-                            LabeledContent("Weight", value: String(format: "%.1f kg", kg))
+                        if let lb = health.weightPounds {
+                            LabeledContent("Weight", value: String(format: "%.0f lb", lb))
                         }
                         Text("We read exercise, mindfulness, sleep, steps, and weight — and write workouts and mindful sessions you start here back to Apple Health. We do not sell Health data. This is not a medical device.")
                             .font(.caption)
@@ -100,7 +100,18 @@ struct ProfileView: View {
             .sheet(isPresented: $showLogin) {
                 LoginView(auth: auth, allowsSkip: true)
             }
-            .task { await health.refreshToday() }
+            .task {
+                await health.refreshToday()
+                notifyOn = await NotificationService.isAuthorized()
+                if auth.isSignedIn {
+                    if let payload: HabitsPayload = try? await auth.client.query(
+                        "habit.getUserHabits",
+                        input: FromDateInput(fromDate: MountainDate.today())
+                    ) {
+                        shareWithCoach = payload.shareHabitsWithCoach ?? false
+                    }
+                }
+            }
             .refreshable { await auth.restore(); await health.refreshToday() }
         }
     }

@@ -9,12 +9,14 @@ struct CaloriesView: View {
     @State private var meal = "snack"
     @State private var calories = 0
     @State private var protein = 0
+    @State private var proteinText = ""
     @State private var carbs = 0
     @State private var fat = 0
     @State private var fiber = 0
     @State private var showAdd = false
     @State private var showFullMacros = false
     @State private var fsQuery = ""
+    @State private var fatSecretBusy = false
     @State private var photoItem: PhotosPickerItem?
     @State private var showCamera = false
     @State private var hint = ""
@@ -216,32 +218,43 @@ struct CaloriesView: View {
                     }
                     ForEach(food.fatSecretHits.prefix(6)) { hit in
                         Button {
-                            name = hit.brand.map { "\(hit.name) (\($0))" } ?? hit.name
-                            calories = hit.calories
-                            protein = hit.protein
-                            carbs = hit.carbs
-                            fat = hit.fat
-                            fiber = 0
-                            showFullMacros = true
+                            Task { await applyFatSecret(hit) }
                         } label: {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(hit.brand.map { "\(hit.name) · \($0)" } ?? hit.name)
                                     .font(.subheadline.weight(.semibold))
                                     .foregroundStyle(HTTheme.forest)
-                                Text("\(hit.protein)p · \(hit.calories) kcal")
+                                Text(fatSecretSubtitle(hit))
                                     .font(.caption)
                                     .foregroundStyle(HTTheme.muted)
                             }
                         }
                         .buttonStyle(.plain)
+                        .disabled(fatSecretBusy)
+                    }
+                    if fatSecretBusy {
+                        HStack(spacing: 8) {
+                            ProgressView()
+                            Text("Filling protein from FatSecret…")
+                                .font(.caption)
+                                .foregroundStyle(HTTheme.muted)
+                        }
                     }
                 }
 
-                TextField("Protein (g)", value: $protein, format: .number)
-                    .keyboardType(.numberPad)
-                    .padding(10)
-                    .background(HTTheme.cream)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Protein (g) — most important")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(HTTheme.gold)
+                    TextField("e.g. 25", text: $proteinText)
+                        .keyboardType(.numberPad)
+                        .padding(10)
+                        .background(HTTheme.cream)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .onChange(of: proteinText) { _, next in
+                            protein = Int(next.filter(\.isNumber)) ?? 0
+                        }
+                }
 
                 if !showFullMacros {
                     Button("+ Calories & other macros") { showFullMacros = true }
@@ -258,7 +271,7 @@ struct CaloriesView: View {
                     }
                 }
 
-                Button("Log \(meal)") {
+                Button {
                     Task {
                         await food.addManual(
                             name: name,
@@ -271,10 +284,17 @@ struct CaloriesView: View {
                         )
                         resetForm()
                     }
+                } label: {
+                    Text("Log \(meal.capitalized)")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(name.trimmingCharacters(in: .whitespaces).isEmpty || fatSecretBusy ? HTTheme.muted.opacity(0.35) : HTTheme.forest)
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
-                .font(.headline)
-                .foregroundStyle(HTTheme.forest)
-                .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                .buttonStyle(.plain)
+                .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || fatSecretBusy)
             }
         }
     }
@@ -317,20 +337,57 @@ struct CaloriesView: View {
     private func applyEstimate(_ est: FoodEstimate) {
         name = est.foodName
         calories = est.calories
-        protein = est.protein
+        setProteinGrams(est.protein)
         carbs = est.carbs
         fat = est.fat
         fiber = est.fiber
         showFullMacros = true
     }
 
+    private func applyFatSecret(_ hit: FatSecretFood) async {
+        applyHit(hit)
+        fsQuery = ""
+        food.fatSecretHits = []
+        fatSecretBusy = true
+        defer { fatSecretBusy = false }
+        guard let detail = await food.fatSecretDetail(hit.foodId) else { return }
+        applyHit(detail)
+    }
+
+    private func applyHit(_ hit: FatSecretFood) {
+        name = hit.brand.map { "\(hit.name) · \($0)" } ?? hit.name
+        calories = hit.calories
+        setProteinGrams(hit.protein)
+        carbs = hit.carbs
+        fat = hit.fat
+        if let grams = hit.fiber { fiber = grams }
+        showFullMacros = true
+    }
+
+    private func setProteinGrams(_ grams: Int) {
+        protein = grams
+        proteinText = "\(grams)"
+    }
+
+    private func fatSecretSubtitle(_ hit: FatSecretFood) -> String {
+        if hit.protein > 0 || hit.calories > 0 {
+            return "\(hit.protein)p · \(hit.calories) kcal — tap to fill"
+        }
+        if let desc = hit.description, !desc.isEmpty {
+            return desc
+        }
+        return "Tap to fill protein"
+    }
+
     private func resetForm() {
         name = ""
         calories = 0
         protein = 0
+        proteinText = ""
         carbs = 0
         fat = 0
         fiber = 0
+        fsQuery = ""
         showAdd = false
         showFullMacros = false
         food.fatSecretHits = []

@@ -98,7 +98,34 @@ export type FatSecretFoodHit = {
   protein: number;
   carbs: number;
   fat: number;
+  fiber: number;
 };
+
+function pickServing(servings: Record<string, unknown>[]): Record<string, unknown> {
+  if (servings.length === 0) return {};
+  const def = servings.find((s) => String(s.is_default ?? "") === "1");
+  return def ?? servings[0] ?? {};
+}
+
+function foodHitFromRaw(f: Record<string, unknown>, fallbackId = ""): FatSecretFoodHit {
+  const servings = asArray(
+    (f.servings as { serving?: unknown } | undefined)?.serving
+  ) as Record<string, unknown>[];
+  const s = pickServing(servings);
+  const desc = String(f.food_description ?? "");
+  const parsed = parseFoodDescription(desc);
+  return {
+    foodId: String(f.food_id ?? fallbackId),
+    name: String(f.food_name ?? "Food"),
+    brand: f.brand_name ? String(f.brand_name) : null,
+    description: desc,
+    calories: Math.round(num(s.calories) || parsed.calories),
+    protein: Math.round(num(s.protein) || parsed.protein),
+    carbs: Math.round(num(s.carbohydrate) || parsed.carbs),
+    fat: Math.round(num(s.fat) || parsed.fat),
+    fiber: Math.round(num(s.fiber)),
+  };
+}
 
 function num(v: unknown): number {
   const n = typeof v === "number" ? v : parseFloat(String(v ?? "0"));
@@ -215,6 +242,19 @@ export async function getRecipe(recipeId: string): Promise<FatSecretRecipeDetail
   };
 }
 
+export async function getFood(foodId: string): Promise<FatSecretFoodHit> {
+  const data = (await fatsecretCall({
+    method: "food.get.v2",
+    food_id: foodId,
+  })) as { food?: Record<string, unknown>; error?: { message?: string } };
+
+  if (data.error?.message) throw new Error(data.error.message);
+  const r = data.food;
+  if (!r) throw new Error("Food not found");
+
+  return foodHitFromRaw(r, foodId);
+}
+
 export async function searchFoods(
   query: string,
   page = 0
@@ -232,24 +272,7 @@ export async function searchFoods(
   if (data.error?.message) throw new Error(data.error.message);
 
   const raw = asArray(data.foods?.food) as Record<string, unknown>[];
-  const foods: FatSecretFoodHit[] = raw.map((f) => {
-    const servings = asArray(
-      (f.servings as { serving?: unknown } | undefined)?.serving
-    ) as Record<string, unknown>[];
-    const s = servings[0] ?? {};
-    const desc = String(f.food_description ?? "");
-    const parsed = parseFoodDescription(desc);
-    return {
-      foodId: String(f.food_id ?? ""),
-      name: String(f.food_name ?? "Food"),
-      brand: f.brand_name ? String(f.brand_name) : null,
-      description: desc,
-      calories: Math.round(num(s.calories) || parsed.calories),
-      protein: Math.round(num(s.protein) || parsed.protein),
-      carbs: Math.round(num(s.carbohydrate) || parsed.carbs),
-      fat: Math.round(num(s.fat) || parsed.fat),
-    };
-  });
+  const foods: FatSecretFoodHit[] = raw.map((f) => foodHitFromRaw(f));
 
   return {
     foods,
@@ -264,10 +287,10 @@ function parseFoodDescription(desc: string): {
   carbs: number;
   fat: number;
 } {
-  const cal = /Calories:\s*([\d.]+)kcal/i.exec(desc);
-  const fat = /Fat:\s*([\d.]+)g/i.exec(desc);
-  const carbs = /Carbs:\s*([\d.]+)g/i.exec(desc);
-  const protein = /Protein:\s*([\d.]+)g/i.exec(desc);
+  const cal = /Calories:\s*([\d.]+)\s*kcal/i.exec(desc);
+  const fat = /Fat:\s*([\d.]+)\s*g/i.exec(desc);
+  const carbs = /Carbs:\s*([\d.]+)\s*g/i.exec(desc);
+  const protein = /Protein:\s*([\d.]+)\s*g/i.exec(desc);
   return {
     calories: cal ? Math.round(parseFloat(cal[1])) : 0,
     fat: fat ? Math.round(parseFloat(fat[1])) : 0,

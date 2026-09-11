@@ -101,6 +101,34 @@ struct HabitsView: View {
             .background(model.currentStreak >= 3 ? Color.orange.opacity(0.15) : Color.white)
             .clipShape(Capsule())
             .overlay(Capsule().stroke(model.currentStreak >= 3 ? Color.orange.opacity(0.4) : HTTheme.roseBorder))
+            .accessibilityLabel("\(model.currentStreak)-day streak")
+            Button {
+                model.showUpdates = true
+                model.showChallenges = false
+                showForYou = true
+            } label: {
+                ZStack(alignment: .topTrailing) {
+                    Image(systemName: model.unreadUpdateCount > 0 ? "bell.fill" : "bell")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(HTTheme.forest)
+                        .frame(width: 40, height: 40)
+                        .background(Color.white)
+                        .clipShape(Circle())
+                        .overlay(Circle().stroke(HTTheme.roseBorder))
+                    if model.unreadUpdateCount > 0 {
+                        Text(model.unreadUpdateCount > 9 ? "9+" : "\(model.unreadUpdateCount)")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(HTTheme.gold)
+                            .clipShape(Capsule())
+                            .offset(x: 4, y: -4)
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Notes from Lee Anne")
             ProfileAvatarButton(auth: auth)
         }
         .padding(.horizontal, 16)
@@ -136,59 +164,32 @@ struct HabitsView: View {
     }
 
     private var dailyScroll: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                forYouRow
-                todayChallengeCard
-                challengeChips
-                habitsCard
-                victoriesCard
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    todayChallengeCard
+                    if model.todayChallenge?.enrolled != true {
+                        challengeChips
+                    }
+                    habitsCard
+                }
+                .padding(16)
             }
-            .padding(16)
+            .dockScrollClearance()
+            .onChange(of: model.notesExpanded) { _, open in
+                scrollOpen(proxy, to: "notes", open: open)
+            }
+            .onChange(of: model.victoriesExpanded) { _, open in
+                scrollOpen(proxy, to: "victories", open: open)
+            }
         }
-        .dockScrollClearance()
     }
 
-    private var forYouRow: some View {
-        let unread = model.unreadUpdateCount
-        return Group {
-            if unread > 0 {
-                Button {
-                    model.showUpdates = true
-                    model.showChallenges = false
-                    showForYou = true
-                } label: {
-                    HStack(spacing: 10) {
-                        Image(systemName: "megaphone.fill")
-                            .foregroundStyle(HTTheme.gold)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("From Lee Anne")
-                                .font(.subheadline.weight(.bold))
-                                .foregroundStyle(HTTheme.forest)
-                            Text(unread == 1 ? "1 new note" : "\(unread) new notes")
-                                .font(.caption)
-                                .foregroundStyle(HTTheme.muted)
-                        }
-                        Spacer()
-                        if unread > 0 {
-                            Text("\(unread)")
-                                .font(.caption2.weight(.bold))
-                                .padding(.horizontal, 7)
-                                .padding(.vertical, 3)
-                                .background(HTTheme.gold)
-                                .foregroundStyle(.white)
-                                .clipShape(Capsule())
-                        }
-                        Image(systemName: "chevron.right")
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(HTTheme.muted)
-                    }
-                    .padding(14)
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 18))
-                    .overlay(RoundedRectangle(cornerRadius: 18).stroke(HTTheme.roseBorder))
-                }
-                .buttonStyle(.plain)
+    private func scrollOpen(_ proxy: ScrollViewProxy, to id: String, open: Bool) {
+        guard open else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
+            withAnimation(.easeInOut(duration: 0.35)) {
+                proxy.scrollTo(id, anchor: UnitPoint(x: 0.5, y: 0.12))
             }
         }
     }
@@ -549,7 +550,12 @@ struct HabitsView: View {
     private var habitsCard: some View {
         HTCard {
             HStack {
-                Text("Today’s habits").font(.headline).foregroundStyle(HTTheme.forest)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Today’s checklist").font(.headline).foregroundStyle(HTTheme.forest)
+                    Text("Tap a row when you do it. Protein adds up from meals you log.")
+                        .font(.caption)
+                        .foregroundStyle(HTTheme.muted)
+                }
                 Spacer()
                 Button(model.showPastDays ? "Hide calendar" : "Edit past days") {
                     model.showPastDays.toggle()
@@ -623,12 +629,59 @@ struct HabitsView: View {
             } label: {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Daily notes").font(.headline).foregroundStyle(HTTheme.forest)
-                    Text("Reflect on \(MountainDate.friendly(model.dateStr))")
+                    Text("A few lines about \(MountainDate.friendly(model.dateStr))")
                         .font(.caption)
                         .foregroundStyle(HTTheme.muted)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
             }
             .tint(HTTheme.forest)
+            .id("notes")
+
+            DisclosureGroup(isExpanded: $model.victoriesExpanded) {
+                Text("Write three things that went right — even small ones.")
+                    .font(.caption)
+                    .foregroundStyle(HTTheme.muted)
+                    .padding(.top, 4)
+                TextField("Win 1 — walked, hit protein, paused a craving", text: $model.win1)
+                    .textFieldStyle(.roundedBorder)
+                TextField("Win 2", text: $model.win2)
+                    .textFieldStyle(.roundedBorder)
+                TextField("Win 3", text: $model.win3)
+                    .textFieldStyle(.roundedBorder)
+                if let err = model.victoriesError {
+                    Text(err).font(.caption).foregroundStyle(.red)
+                }
+                Button {
+                    Task { await model.saveVictories() }
+                } label: {
+                    Text(model.victoriesSaving ? "Saving…" : model.victoriesSaved ? "Saved" : "Save victories")
+                        .font(.subheadline.weight(.bold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(HTTheme.gold)
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .disabled(model.victoriesSaving)
+                .buttonStyle(.plain)
+            } label: {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("3 victories").font(.headline).foregroundStyle(HTTheme.forest)
+                    Text(filledWins == 0 ? "What did you do right today?" : "\(filledWins)/3 wins logged")
+                        .font(.caption)
+                        .foregroundStyle(HTTheme.muted)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .tint(HTTheme.forest)
+            .id("victories")
+
+            if model.notesExpanded || model.victoriesExpanded {
+                Color.clear.frame(height: 28)
+            }
         }
     }
 
@@ -711,7 +764,9 @@ struct HabitsView: View {
                     Text(habit.title)
                         .font(.headline)
                         .foregroundStyle(done ? Color.white : HTTheme.forest)
-                    if let d = habit.description, !d.isEmpty {
+                    if let how = habitHowTo(habit) {
+                        Text(how).font(.caption).foregroundStyle(done ? Color.white.opacity(0.85) : HTTheme.muted)
+                    } else if let d = habit.description, !d.isEmpty {
                         Text(d).font(.caption).foregroundStyle(done ? Color.white.opacity(0.85) : HTTheme.muted)
                     }
                     if let cap = model.healthCaption(for: habit) {
@@ -753,7 +808,7 @@ struct HabitsView: View {
                 let pct = min(1, Double(val) / Double(target))
                 ProgressView(value: pct)
                     .tint(done ? Color.white : HTTheme.gold)
-                Text("\(val) / \(target) \(habit.unit ?? "")")
+                Text(habitAmountLine(habit, val: val, goal: target))
                     .font(.caption.weight(.bold))
                     .foregroundStyle(done ? Color.white : HTTheme.muted)
                     .frame(maxWidth: .infinity, alignment: .trailing)
@@ -776,56 +831,27 @@ struct HabitsView: View {
         )
     }
 
-    private var victoriesCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Button {
-                model.victoriesExpanded.toggle()
-            } label: {
-                HStack {
-                    Image(systemName: "sparkles").foregroundStyle(HTTheme.gold)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("3 victories").font(.headline).foregroundStyle(HTTheme.forest)
-                        Text(filledWins == 0 ? "What did you do right today?" : "\(filledWins)/3 wins logged")
-                            .font(.caption)
-                            .foregroundStyle(HTTheme.muted)
-                    }
-                    Spacer()
-                    Image(systemName: model.victoriesExpanded ? "chevron.up" : "chevron.down")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(HTTheme.muted)
-                }
-            }
-            .buttonStyle(.plain)
+    private func habitHowTo(_ habit: Habit) -> String? {
+        let t = habit.title.lowercased()
+        if t.contains("protein") { return "Adds up from meals you log — you don’t type this in." }
+        if t.contains("fiber") { return "Adds up from meals you log." }
+        if t.contains("move") { return "A walk, a class, or anything that gets you moving." }
+        if t.contains("mindful") { return "Even one quiet minute counts. Tap Start to begin." }
+        if t.contains("sleep") { return "A restful night. Apple Health can check this." }
+        if t.contains("water") { return "What you drank today." }
+        return nil
+    }
 
-            if model.victoriesExpanded {
-                TextField("Win 1 — walked, hit protein, paused a craving", text: $model.win1)
-                    .textFieldStyle(.roundedBorder)
-                TextField("Win 2", text: $model.win2)
-                    .textFieldStyle(.roundedBorder)
-                TextField("Win 3", text: $model.win3)
-                    .textFieldStyle(.roundedBorder)
-                if let err = model.victoriesError {
-                    Text(err).font(.caption).foregroundStyle(.red)
-                }
-                Button {
-                    Task { await model.saveVictories() }
-                } label: {
-                    Text(model.victoriesSaving ? "Saving…" : model.victoriesSaved ? "Saved" : "Save victories")
-                        .font(.subheadline.weight(.bold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(HTTheme.gold)
-                        .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-                .disabled(model.victoriesSaving)
-                .buttonStyle(.plain)
-            }
+    private func habitAmountLine(_ habit: Habit, val: Int, goal: Int) -> String {
+        let unit = habit.unit ?? ""
+        let t = habit.title.lowercased()
+        if t.contains("protein") || t.contains("fiber") {
+            return "\(val)g so far · \(goal)g for the day"
         }
-        .padding(16)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 24))
-        .overlay(RoundedRectangle(cornerRadius: 24).stroke(HTTheme.roseBorder))
+        if !unit.isEmpty {
+            return "\(val) of \(goal) \(unit) today"
+        }
+        return "\(val) of \(goal) today"
     }
 
     private var filledWins: Int {

@@ -11,6 +11,10 @@ final class HealthKitService {
     var stepsToday: Double = 0
     var sleepHoursLastNight: Double = 0
     var weightKg: Double?
+    var weightPounds: Double? {
+        guard let kg = weightKg else { return nil }
+        return kg * 2.2046226218
+    }
     var exerciseMinutesToday: Double = 0
     var workoutMinutesToday: Double = 0
     var mindfulMinutesToday: Double = 0

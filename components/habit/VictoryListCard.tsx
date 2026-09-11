@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
@@ -29,6 +29,17 @@ export function VictoryListCard({
   const [win2, setWin2] = useState(initial?.win2 ?? "");
   const [win3, setWin3] = useState(initial?.win3 ?? "");
   const [open, setOpen] = useState(!!autoFocus);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  const toggleOpen = () => {
+    const next = !open;
+    setOpen(next);
+    if (next) {
+      window.setTimeout(() => {
+        rootRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 80);
+    }
+  };
 
   const utils = trpc.useUtils();
   const saveMutation = trpc.habit.saveVictoryList.useMutation({
@@ -47,6 +58,14 @@ export function VictoryListCard({
       setWin3(initial.win3);
     }
   }, [initial?.win1, initial?.win2, initial?.win3]);
+
+  useEffect(() => {
+    if (!autoFocus) return;
+    setOpen(true);
+    window.setTimeout(() => {
+      rootRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+  }, [autoFocus]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -97,12 +116,13 @@ export function VictoryListCard({
 
   return (
     <div
+      ref={rootRef}
       className="bg-white rounded-3xl border shadow-sm overflow-hidden"
       style={{ borderColor: "#f0e8e4" }}
     >
       <button
         type="button"
-        onClick={() => setOpen(!open)}
+        onClick={toggleOpen}
         className="w-full flex items-center justify-between p-4 md:p-5 text-left hover:bg-[#faf5f5] transition-colors"
       >
         <div className="flex items-center gap-3">

@@ -11,6 +11,11 @@ enum NotificationService {
         }
     }
 
+    static func isAuthorized() async -> Bool {
+        let status = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+        return status == .authorized || status == .provisional
+    }
+
     static func notifyCoachReply(preview: String) async {
         let granted = await requestAuthorization()
         guard granted else { return }

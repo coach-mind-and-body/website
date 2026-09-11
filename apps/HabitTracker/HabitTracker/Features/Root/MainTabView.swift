@@ -14,6 +14,8 @@ struct MainTabView: View {
     @State private var podcast: PodcastViewModel
     @State private var tab: AppTab
     @State private var showHealth = false
+    @State private var showNotifyPrompt = false
+    @State private var showSharePrompt = false
     @Environment(\.scenePhase) private var scenePhase
 
     init(auth: AuthStore, health: HealthKitService) {
@@ -60,6 +62,10 @@ struct MainTabView: View {
                 .padding(.horizontal, 14)
                 .padding(.bottom, 8)
                 .ignoresSafeArea(.container, edges: .bottom)
+            ConfettiBurst(token: habits.confettiBurst)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
         }
         .environment(\.openProfile) { tab = .profile }
         .onChange(of: auth.preferClientPreview) { _, preview in
@@ -69,10 +75,9 @@ struct MainTabView: View {
         }
         .tint(HTTheme.forest)
         .task {
+            await habits.load()
             await coach.refreshUnread()
-            if health.isAvailable && !UserDefaults.standard.bool(forKey: "health.prompted") {
-                showHealth = true
-            }
+            promptNextOnboarding()
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(30))
                 if tab == .coach { continue }
@@ -82,6 +87,14 @@ struct MainTabView: View {
                     await NotificationService.notifyCoachReply(preview: "New message in Coach")
                 }
             }
+        }
+        .onChange(of: tab) { _, next in
+            if next == .habits {
+                Task { await habits.onFoodLogged() }
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .mbrFoodLogged)) { _ in
+            Task { await habits.onFoodLogged() }
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
@@ -94,10 +107,32 @@ struct MainTabView: View {
                 }
             }
         }
+        .sheet(isPresented: $showNotifyPrompt, onDismiss: { promptNextOnboarding() }) {
+            NotifyPromptView(isPresented: $showNotifyPrompt)
+        }
+        .sheet(isPresented: $showSharePrompt, onDismiss: { promptNextOnboarding() }) {
+            ShareHabitsPromptView(auth: auth, isPresented: $showSharePrompt)
+        }
         .sheet(isPresented: $showHealth, onDismiss: {
             Task { await habits.syncFromHealth() }
+            promptNextOnboarding()
         }) {
             HealthPermissionView(health: health, isPresented: $showHealth)
+        }
+    }
+
+    private func promptNextOnboarding() {
+        if auth.usesAdminChrome { return }
+        if !UserDefaults.standard.bool(forKey: "notify.prompted") {
+            showNotifyPrompt = true
+            return
+        }
+        if auth.isSignedIn && !UserDefaults.standard.bool(forKey: "share.prompted") && !habits.shareHabitsWithCoach {
+            showSharePrompt = true
+            return
+        }
+        if health.isAvailable && !UserDefaults.standard.bool(forKey: "health.prompted") {
+            showHealth = true
         }
     }
 
@@ -239,6 +274,81 @@ struct RecipesHubView: View {
                 RecipeDetailView(slug: slug, food: food, auth: auth)
             }
         }
+    }
+}
+
+private struct NotifyPromptView: View {
+    @Binding var isPresented: Bool
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Evening check-in")
+                    .font(HTTheme.serif)
+                    .foregroundStyle(HTTheme.forest)
+                Text("A quiet reminder at 8:00 pm to look at today’s targets — no scoreboard, no streak shame. You can turn this off anytime in You.")
+                    .foregroundStyle(HTTheme.muted)
+                Spacer()
+                Button("Turn on reminders") {
+                    Task {
+                        UserDefaults.standard.set(true, forKey: "notify.prompted")
+                        let ok = await NotificationService.requestAuthorization()
+                        if ok { await NotificationService.scheduleEveningNudge() }
+                        isPresented = false
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(HTTheme.forest)
+                .frame(maxWidth: .infinity)
+                Button("Not now") {
+                    UserDefaults.standard.set(true, forKey: "notify.prompted")
+                    isPresented = false
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .padding(24)
+            .background(HTTheme.cream.ignoresSafeArea())
+        }
+        .presentationDetents([.medium])
+    }
+}
+
+private struct ShareHabitsPromptView: View {
+    var auth: AuthStore
+    @Binding var isPresented: Bool
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Share habits with Lee Anne?")
+                    .font(HTTheme.serif)
+                    .foregroundStyle(HTTheme.forest)
+                Text("If you say yes, Lee Anne can see your daily targets so she can coach you. You can change this later in You.")
+                    .foregroundStyle(HTTheme.muted)
+                Spacer()
+                Button("Share with Lee Anne") {
+                    Task {
+                        UserDefaults.standard.set(true, forKey: "share.prompted")
+                        _ = try? await auth.client.mutate(
+                            "habit.toggleShareHabits",
+                            input: ShareInput(share: true)
+                        ) as SuccessFlag
+                        isPresented = false
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(HTTheme.forest)
+                .frame(maxWidth: .infinity)
+                Button("Keep private") {
+                    UserDefaults.standard.set(true, forKey: "share.prompted")
+                    isPresented = false
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .padding(24)
+            .background(HTTheme.cream.ignoresSafeArea())
+        }
+        .presentationDetents([.medium])
     }
 }
 

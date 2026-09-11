@@ -114,6 +114,7 @@ final class FoodViewModel {
                     )
                 )
                 await loadLogs()
+                NotificationCenter.default.post(name: .mbrFoodLogged, object: nil)
             } catch {
                 errorMessage = error.localizedDescription
             }
@@ -123,6 +124,7 @@ final class FoodViewModel {
         all.insert(entry, at: 0)
         GuestLocalStore.saveCalories(all)
         logs = all.filter { $0.dateStr == dateStr }
+        NotificationCenter.default.post(name: .mbrFoodLogged, object: nil)
     }
 
     func buildShop() async {
@@ -189,6 +191,7 @@ final class FoodViewModel {
                     )
                 )
                 await loadLogs()
+                NotificationCenter.default.post(name: .mbrFoodLogged, object: nil)
             } catch {
                 errorMessage = error.localizedDescription
             }
@@ -211,6 +214,7 @@ final class FoodViewModel {
         )
         GuestLocalStore.saveCalories(all)
         logs = all.filter { $0.dateStr == dateStr }
+        NotificationCenter.default.post(name: .mbrFoodLogged, object: nil)
     }
 
     func deleteLog(_ log: CalorieLog) async {
@@ -220,16 +224,25 @@ final class FoodViewModel {
                 input: DeleteCalorieInput(id: log.id, dateStr: dateStr)
             ) as SuccessFlag
             await loadLogs()
+            NotificationCenter.default.post(name: .mbrFoodLogged, object: nil)
             return
         }
         var all = GuestLocalStore.loadCalories().filter { $0.id != log.id }
         GuestLocalStore.saveCalories(all)
         logs = all.filter { $0.dateStr == dateStr }
+        NotificationCenter.default.post(name: .mbrFoodLogged, object: nil)
     }
 
     func checkFatSecret() async {
         let status: FatSecretStatus? = try? await auth.client.query("food.fatsecretStatus")
         fatSecretOn = status?.configured == true
+    }
+
+    func fatSecretDetail(_ foodId: String) async -> FatSecretFood? {
+        try? await auth.client.query(
+            "food.fatsecretGetFood",
+            input: FatSecretFoodIdInput(foodId: foodId)
+        )
     }
 
     func searchFatSecret(_ q: String) async {

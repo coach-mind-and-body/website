@@ -584,6 +584,10 @@ struct FatSecretSearchInput: Encodable {
     var page: Int?
 }
 
+struct FatSecretFoodIdInput: Encodable {
+    let foodId: String
+}
+
 struct FatSecretFood: Codable, Identifiable, Hashable {
     var foodId: String
     var name: String
@@ -593,6 +597,7 @@ struct FatSecretFood: Codable, Identifiable, Hashable {
     var protein: Int
     var carbs: Int
     var fat: Int
+    var fiber: Int?
     var id: String { foodId }
 }
 

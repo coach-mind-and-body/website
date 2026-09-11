@@ -29,6 +29,7 @@ import {
 } from "@shared/food";
 import {
   fatsecretConfigured,
+  getFood as fatsecretGetFood,
   getRecipe as fatsecretGetRecipe,
   searchFoods,
   searchRecipes,
@@ -461,6 +462,18 @@ export const foodRouter = router({
         });
       }
       return searchFoods(input.q, input.page ?? 0);
+    }),
+
+  fatsecretGetFood: publicProcedure
+    .input(z.object({ foodId: z.string().min(1) }))
+    .query(async ({ input }) => {
+      if (!fatsecretConfigured()) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "FatSecret is not configured on this server.",
+        });
+      }
+      return fatsecretGetFood(input.foodId);
     }),
 
   listMealPlans: publicProcedure

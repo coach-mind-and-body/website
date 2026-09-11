@@ -28,6 +28,7 @@ final class HabitsViewModel {
     var journalHard = ""
     var journalSaving = false
     var showChallengeGuides = false
+    var shareHabitsWithCoach = false
 
     var updates: [AppUpdate] = []
     var dismissedUpdateIds: [Int] = GuestLocalStore.loadDismissedUpdates()
@@ -42,6 +43,7 @@ final class HabitsViewModel {
     var victoriesSaving = false
     var victoriesSaved = false
     var victoriesError: String?
+    var confettiBurst = 0
 
     var checklistHabits: [Habit] {
         habits.filter { !Self.isVictoryHabit($0.title) }
@@ -182,6 +184,7 @@ final class HabitsViewModel {
                 habits = payload.habits.filter { $0.isActive != false }
                 logs = payload.logs
                 notes = payload.notes ?? []
+                shareHabitsWithCoach = payload.shareHabitsWithCoach ?? false
                 noteDraft = notes.first(where: { $0.dateStr == dateStr })?.note ?? ""
                 publishWidget()
             } catch {
@@ -191,6 +194,48 @@ final class HabitsViewModel {
             await loadGuest()
         }
         await loadDashboard()
+        if !auth.isSignedIn {
+            await syncProteinFromMeals()
+        }
+    }
+
+    func onFoodLogged() async {
+        let previous = currentStreak
+        if auth.isSignedIn {
+            await load()
+        }
+        await syncProteinFromMeals()
+        celebrateStreakIfIncreased(from: previous)
+    }
+
+    func celebrate() {
+        confettiBurst += 1
+    }
+
+    func celebrateStreakIfIncreased(from previous: Int) {
+        if currentStreak > previous && currentStreak > 0 {
+            celebrate()
+        }
+    }
+
+    func syncProteinFromMeals() async {
+        let meals: [CalorieLog]
+        if auth.isSignedIn {
+            meals = (try? await auth.client.query("calories.getLogs", input: DateStrInput(dateStr: dateStr))) ?? []
+        } else {
+            meals = GuestLocalStore.loadCalories().filter { $0.dateStr == dateStr }
+        }
+        let proteinGrams = meals.reduce(0) { $0 + $1.protein }
+        let fiberGrams = meals.reduce(0) { $0 + $1.fiber }
+        await applyMealMacro(keyword: "protein", grams: proteinGrams)
+        await applyMealMacro(keyword: "fiber", grams: fiberGrams)
+    }
+
+    private func applyMealMacro(keyword: String, grams: Int) async {
+        guard let habit = habits.first(where: { $0.title.lowercased().contains(keyword) && $0.isNumeric }) else { return }
+        if numericValue(habit) != grams {
+            await setNumeric(habit, value: grams, reload: false, celebrate: false)
+        }
     }
 
     func loadDashboard() async {
@@ -261,8 +306,9 @@ final class HabitsViewModel {
         ) as SuccessFlag
     }
 
-    func toggle(_ habit: Habit, on day: String? = nil) async {
+    func toggle(_ habit: Habit, on day: String? = nil, celebrate: Bool = true) async {
         let day = day ?? dateStr
+        let previous = currentStreak
         let current = log(for: habit.id, on: day)
         let next = !(current?.completed ?? false)
         if auth.isSignedIn {
@@ -278,6 +324,7 @@ final class HabitsViewModel {
                 )
                 await load()
                 if next, !skipHealthWrite { await writeHealthIfNeeded(habit, on: day) }
+                if celebrate { celebrateStreakIfIncreased(from: previous) }
             } catch {
                 errorMessage = error.localizedDescription
             }
@@ -285,6 +332,7 @@ final class HabitsViewModel {
         }
         upsertGuestLog(habitId: habit.id, day: day, completed: next, numeric: current?.numericValue)
         if next, !skipHealthWrite { await writeHealthIfNeeded(habit, on: day) }
+        if celebrate { celebrateStreakIfIncreased(from: previous) }
     }
 
     func startMindfulSession(minutes: Int) async {
@@ -304,8 +352,9 @@ final class HabitsViewModel {
         }
     }
 
-    func setNumeric(_ habit: Habit, value: Int, on day: String? = nil) async {
+    func setNumeric(_ habit: Habit, value: Int, on day: String? = nil, reload: Bool = true, celebrate: Bool = true) async {
         let day = day ?? dateStr
+        let previous = currentStreak
         let completed = value >= (habit.targetValue ?? 0)
         if auth.isSignedIn {
             do {
@@ -318,13 +367,29 @@ final class HabitsViewModel {
                         numericValue: value
                     )
                 )
-                await load()
+                if reload {
+                    await load()
+                } else {
+                    patchLog(habitId: habit.id, day: day, completed: completed, numeric: value)
+                }
+                if celebrate { celebrateStreakIfIncreased(from: previous) }
             } catch {
                 errorMessage = error.localizedDescription
             }
             return
         }
         upsertGuestLog(habitId: habit.id, day: day, completed: completed, numeric: value)
+        if celebrate { celebrateStreakIfIncreased(from: previous) }
+    }
+
+    private func patchLog(habitId: Int, day: String, completed: Bool, numeric: Int?) {
+        if let i = logs.firstIndex(where: { $0.userHabitId == habitId && $0.dateStr == day }) {
+            logs[i].completed = completed
+            logs[i].numericValue = numeric
+        } else {
+            logs.append(HabitLog(id: nil, userHabitId: habitId, dateStr: day, completed: completed, numericValue: numeric))
+        }
+        publishWidget()
     }
 
     private func upsertGuestLog(habitId: Int, day: String, completed: Bool, numeric: Int?) {
@@ -400,11 +465,11 @@ final class HabitsViewModel {
     private func completeFromHealth(_ habit: Habit, numeric: Int?) async {
         if habit.isNumeric, let numeric {
             if numericValue(habit) >= numeric && isCompleted(habit) { return }
-            await setNumeric(habit, value: max(numeric, numericValue(habit)))
+            await setNumeric(habit, value: max(numeric, numericValue(habit)), celebrate: false)
             return
         }
         if !isCompleted(habit) {
-            await toggle(habit)
+            await toggle(habit, celebrate: false)
         }
     }
 
@@ -412,6 +477,7 @@ final class HabitsViewModel {
         dateStr = day
         noteDraft = notes.first(where: { $0.dateStr == dateStr })?.note ?? ""
         await loadVictories()
+        await syncProteinFromMeals()
     }
 
     func shiftWeek(_ delta: Int) {
@@ -477,6 +543,7 @@ final class HabitsViewModel {
                 )
             )
             await loadDashboard()
+            if next { celebrate() }
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -497,6 +564,7 @@ final class HabitsViewModel {
                 )
             )
             await loadDashboard()
+            if next { celebrate() }
         } catch {
             errorMessage = error.localizedDescription
         }

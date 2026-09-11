@@ -84,6 +84,47 @@ function saveLocal(logs: LocalCalLog[]) {
   localStorage.setItem(LOCAL_KEY, JSON.stringify(logs));
 }
 
+function syncGuestMacroHabits(dateStr: string) {
+  try {
+    const habits = JSON.parse(localStorage.getItem("mbr_habits") || "[]") as {
+      id: number;
+      title?: string;
+      type?: string;
+      targetValue?: number | null;
+    }[];
+    const meals = loadLocal().filter((l) => l.dateStr === dateStr);
+    const protein = meals.reduce((s, l) => s + (l.protein || 0), 0);
+    const fiber = meals.reduce((s, l) => s + (l.fiber || 0), 0);
+    const logs = JSON.parse(localStorage.getItem("mbr_habit_logs") || "[]") as {
+      userHabitId: number;
+      dateStr: string;
+      completed: boolean;
+      numericValue?: number;
+    }[];
+    const apply = (keyword: string, grams: number) => {
+      const habit = habits.find(
+        (h) => (h.title || "").toLowerCase().includes(keyword) && h.type === "numeric"
+      );
+      if (!habit) return;
+      const target = habit.targetValue ?? 0;
+      const next = {
+        userHabitId: habit.id,
+        dateStr,
+        completed: grams >= target,
+        numericValue: grams,
+      };
+      const idx = logs.findIndex((l) => l.userHabitId === habit.id && l.dateStr === dateStr);
+      if (idx >= 0) logs[idx] = { ...logs[idx], ...next };
+      else logs.push(next);
+    };
+    apply("protein", protein);
+    apply("fiber", fiber);
+    localStorage.setItem("mbr_habit_logs", JSON.stringify(logs));
+  } catch {
+    /* ignore */
+  }
+}
+
 function addDaysToDateStr(dateStr: string, delta: number): string {
   return calendarDateStr(addDays(parseCalendarDate(dateStr), delta));
 }
@@ -237,6 +278,39 @@ export default function CalorieTrackerClient() {
     setFsSubmitted("");
   };
 
+  const applyFatSecret = async (f: {
+    foodId: string;
+    name: string;
+    brand: string | null;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    fiber?: number;
+  }) => {
+    setSelectedRecipe(null);
+    setFoodName(f.brand ? `${f.name} (${f.brand})` : f.name);
+    setCalories(String(f.calories || 0));
+    setProtein(String(f.protein || 0));
+    setCarbs(String(f.carbs || 0));
+    setFat(String(f.fat || 0));
+    setFiber(String(f.fiber || 0));
+    setShowFullMacros(true);
+    setFsInput("");
+    setFsSubmitted("");
+    try {
+      const detail = await utils.food.fatsecretGetFood.fetch({ foodId: f.foodId });
+      setFoodName(detail.brand ? `${detail.name} (${detail.brand})` : detail.name);
+      setCalories(String(detail.calories || 0));
+      setProtein(String(detail.protein || 0));
+      setCarbs(String(detail.carbs || 0));
+      setFat(String(detail.fat || 0));
+      setFiber(String(detail.fiber || 0));
+    } catch {
+      // Keep search-hit macros if the serving lookup fails.
+    }
+  };
+
   const applyRecipeMacros = (recipe: SelectedRecipe, servings: number) => {
     setFoodName(recipe.title);
     setCalories(String(scaleMacro(recipe.calories, servings, recipe.servings)));
@@ -341,6 +415,7 @@ export default function CalorieTrackerClient() {
       id: editingLogId || undefined,
       ...payload,
     });
+    syncGuestMacroHabits(dateStr);
     toast.success(editingLogId ? "Updated on this device" : "Logged on this device");
     setIsAdding(false);
     resetForm();
@@ -354,6 +429,7 @@ export default function CalorieTrackerClient() {
     const next = loadLocal().filter((l) => l.id !== id);
     saveLocal(next);
     setLocalLogs(next);
+    syncGuestMacroHabits(dateStr);
     toast.success("Removed");
   };
 
@@ -805,14 +881,7 @@ export default function CalorieTrackerClient() {
                             key={f.foodId}
                             type="button"
                             onClick={() => {
-                              setSelectedRecipe(null);
-                              setFoodName(f.brand ? `${f.name} (${f.brand})` : f.name);
-                              setCalories(String(f.calories || 0));
-                              setProtein(String(f.protein || 0));
-                              setCarbs(String(f.carbs || 0));
-                              setFat(String(f.fat || 0));
-                              setFiber("0");
-                              setShowFullMacros(true);
+                              void applyFatSecret(f);
                             }}
                             className="w-full text-left px-3 py-2 rounded-xl hover:bg-white transition-colors"
                           >
