@@ -81,13 +81,66 @@ final class HealthKitService {
         guard isAvailable, minutes > 0 else { return }
         let end = endDate(on: dateStr)
         let start = end.addingTimeInterval(-Double(minutes) * 60)
-        let workout = HKWorkout(activityType: activityType(for: name), start: start, end: end)
+        let configuration = HKWorkoutConfiguration()
+        configuration.activityType = activityType(for: name)
+        let builder = HKWorkoutBuilder(healthStore: store, configuration: configuration, device: .local())
         do {
-            try await store.save(workout)
+            try await beginCollection(builder, at: start)
+            try await endCollection(builder, at: end)
+            try await finishWorkout(builder)
             await refreshToday()
         } catch {
             lastError = error.localizedDescription
         }
+    }
+
+    private func beginCollection(_ builder: HKWorkoutBuilder, at start: Date) async throws {
+        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+            builder.beginCollection(withStart: start) { success, error in
+                Self.resume(cont, success: success, error: error, fail: "Could not start the workout in Apple Health.")
+            }
+        }
+    }
+
+    private func endCollection(_ builder: HKWorkoutBuilder, at end: Date) async throws {
+        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+            builder.endCollection(withEnd: end) { success, error in
+                Self.resume(cont, success: success, error: error, fail: "Could not finish the workout in Apple Health.")
+            }
+        }
+    }
+
+    private func finishWorkout(_ builder: HKWorkoutBuilder) async throws {
+        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+            builder.finishWorkout { _, error in
+                if let error {
+                    cont.resume(throwing: error)
+                    return
+                }
+                cont.resume()
+            }
+        }
+    }
+
+    private static func resume(
+        _ cont: CheckedContinuation<Void, Error>,
+        success: Bool,
+        error: Error?,
+        fail: String
+    ) {
+        if let error {
+            cont.resume(throwing: error)
+            return
+        }
+        if success {
+            cont.resume()
+            return
+        }
+        cont.resume(throwing: NSError(
+            domain: "HabitTracker.Health",
+            code: 1,
+            userInfo: [NSLocalizedDescriptionKey: fail]
+        ))
     }
 
     func saveMindfulSession(minutes: Double, on dateStr: String = MountainDate.today()) async {

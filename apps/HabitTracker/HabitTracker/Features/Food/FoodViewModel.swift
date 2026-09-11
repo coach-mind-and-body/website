@@ -227,7 +227,7 @@ final class FoodViewModel {
             NotificationCenter.default.post(name: .mbrFoodLogged, object: nil)
             return
         }
-        var all = GuestLocalStore.loadCalories().filter { $0.id != log.id }
+        let all = GuestLocalStore.loadCalories().filter { $0.id != log.id }
         GuestLocalStore.saveCalories(all)
         logs = all.filter { $0.dateStr == dateStr }
         NotificationCenter.default.post(name: .mbrFoodLogged, object: nil)

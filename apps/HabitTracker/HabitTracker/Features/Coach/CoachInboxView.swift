@@ -464,12 +464,13 @@ struct CoachInboxView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
             HStack(spacing: 10) {
+                let uploading = model.uploading
                 PhotosPicker(selection: $photoItem, matching: .images) {
-                    Image(systemName: model.uploading ? "arrow.triangle.2.circlepath" : "photo")
+                    Image(systemName: uploading ? "arrow.triangle.2.circlepath" : "photo")
                         .font(.title3)
                         .foregroundStyle(HTTheme.forest)
                 }
-                .disabled(model.uploading)
+                .disabled(uploading)
 
                 Button {
                     model.showLibrary = true

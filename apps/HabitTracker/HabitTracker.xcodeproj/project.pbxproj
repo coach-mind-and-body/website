@@ -402,7 +402,7 @@
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = 8D3TJ8W8XK;
 				PROVISIONING_PROFILE_SPECIFIER = "HabitTracker App Store";
 
@@ -436,7 +436,7 @@
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = 8D3TJ8W8XK;
 				PROVISIONING_PROFILE_SPECIFIER = "HabitTracker App Store";
 
@@ -471,7 +471,7 @@
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = 8D3TJ8W8XK;
 				PROVISIONING_PROFILE_SPECIFIER = "HabitTracker Widget App Store";
 				GENERATE_INFOPLIST_FILE = YES;
@@ -496,7 +496,7 @@
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = 8D3TJ8W8XK;
 				PROVISIONING_PROFILE_SPECIFIER = "HabitTracker Widget App Store";
 				GENERATE_INFOPLIST_FILE = YES;

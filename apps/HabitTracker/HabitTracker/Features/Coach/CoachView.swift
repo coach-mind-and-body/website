@@ -283,8 +283,9 @@ struct CoachView: View {
                 }
                 .foregroundStyle(HTTheme.forest)
 
+                let uploading = model.uploading
                 PhotosPicker(selection: $photoItem, matching: .images) {
-                    Label(model.uploading ? "Sending…" : "Photo", systemImage: "photo")
+                    Label(uploading ? "Sending…" : "Photo", systemImage: "photo")
                         .font(.caption.weight(.bold))
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
@@ -292,7 +293,7 @@ struct CoachView: View {
                         .clipShape(Capsule())
                         .overlay(Capsule().stroke(HTTheme.roseBorder))
                 }
-                .disabled(model.uploading)
+                .disabled(uploading)
                 .foregroundStyle(HTTheme.forest)
             }
 

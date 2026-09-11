@@ -91,7 +91,7 @@ final class FitnessViewModel {
             await load()
             return
         }
-        var all = GuestLocalStore.loadFitness().filter { $0.id != log.id }
+        let all = GuestLocalStore.loadFitness().filter { $0.id != log.id }
         GuestLocalStore.saveFitness(all)
         logs = all.filter { $0.dateStr == dateStr }
     }
