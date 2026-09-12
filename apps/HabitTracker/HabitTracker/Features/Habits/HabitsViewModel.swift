@@ -86,42 +86,52 @@ final class HabitsViewModel {
             || (t.contains("walk") && !t.contains("mindful"))
     }
 
-    /// One protein, one fiber, one move — numeric macros win; move prefers a simple check row.
+    static func isWaterHabit(_ title: String) -> Bool {
+        let t = title.lowercased()
+        return t.contains("water") || t.contains("hydrate")
+    }
+
+    static func isSleepHabit(_ title: String) -> Bool {
+        title.lowercased().contains("sleep")
+    }
+
+    static func isMindfulHabit(_ title: String) -> Bool {
+        title.lowercased().contains("mindful")
+    }
+
+    /// Collapse lookalikes: Hydrate + Water, Move Body + Move 10+, two proteins, etc.
+    static func familyKey(_ title: String) -> String? {
+        if isProteinHabit(title) { return "protein" }
+        if isFiberHabit(title) { return "fiber" }
+        if isMoveHabit(title) { return "move" }
+        if isWaterHabit(title) { return "water" }
+        if isSleepHabit(title) { return "sleep" }
+        if isMindfulHabit(title) { return "mindful" }
+        return nil
+    }
+
     static func dedupeChecklist(_ habits: [Habit]) -> [Habit] {
         let ordered = habits.sorted { ($0.order ?? 0) < ($1.order ?? 0) }
-        func pickMacro(_ items: [Habit]) -> Habit? {
-            items.first(where: { $0.isNumeric }) ?? items.first
+        func preferNumeric(_ key: String) -> Bool {
+            key == "protein" || key == "fiber" || key == "water"
         }
-        func pickMove(_ items: [Habit]) -> Habit? {
-            items.first(where: { !$0.isNumeric }) ?? items.first
+        var chosen: [String: Habit] = [:]
+        for h in ordered {
+            guard let key = familyKey(h.title) else { continue }
+            if let existing = chosen[key] {
+                if preferNumeric(key), h.isNumeric, !existing.isNumeric { chosen[key] = h }
+                else if !preferNumeric(key), !h.isNumeric, existing.isNumeric { chosen[key] = h }
+            } else {
+                chosen[key] = h
+            }
         }
-        let protein = pickMacro(ordered.filter { isProteinHabit($0.title) })
-        let fiber = pickMacro(ordered.filter { isFiberHabit($0.title) })
-        let move = pickMove(ordered.filter { isMoveHabit($0.title) })
-        var seenProtein = false
-        var seenFiber = false
-        var seenMove = false
+        var seen = Set<String>()
         var out: [Habit] = []
         for h in ordered {
-            if isProteinHabit(h.title) {
-                if !seenProtein, h.id == protein?.id {
-                    out.append(h)
-                    seenProtein = true
-                }
-                continue
-            }
-            if isFiberHabit(h.title) {
-                if !seenFiber, h.id == fiber?.id {
-                    out.append(h)
-                    seenFiber = true
-                }
-                continue
-            }
-            if isMoveHabit(h.title) {
-                if !seenMove, h.id == move?.id {
-                    out.append(h)
-                    seenMove = true
-                }
+            if let key = familyKey(h.title) {
+                if seen.contains(key) { continue }
+                if let pick = chosen[key] { out.append(pick) }
+                seen.insert(key)
                 continue
             }
             out.append(h)
