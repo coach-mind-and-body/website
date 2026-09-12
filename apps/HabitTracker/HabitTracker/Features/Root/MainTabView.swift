@@ -40,9 +40,7 @@ struct MainTabView: View {
                     } else {
                         HabitsView(model: habits, health: health, auth: auth)
                     }
-                case .macros:
-                    CaloriesView(food: food, auth: auth)
-                case .recipes:
+                case .macros, .recipes:
                     RecipesHubView(food: food, auth: auth)
                 case .fitness:
                     FitnessView(model: fitness, auth: auth)
@@ -174,7 +172,6 @@ struct MainTabView: View {
                 HStack(spacing: 10) {
                     HStack(spacing: 0) {
                         tabButton(.habits, "square.grid.2x2")
-                        tabButton(.macros, "fork.knife")
                         tabButton(.recipes, "frying.pan")
                         tabButton(.fitness, "figure.strengthtraining.traditional")
                         tabButton(.podcast, "headphones")
@@ -256,15 +253,16 @@ struct MainTabView: View {
 struct RecipesHubView: View {
     @Bindable var food: FoodViewModel
     @Bindable var auth: AuthStore
-    @State private var page = 0
+    @State private var page = 1
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
                 Picker("", selection: $page) {
-                    Text("Recipes").tag(0)
-                    Text("Week").tag(1)
-                    Text("Shop").tag(2)
+                    Text("Today").tag(0)
+                    Text("Recipes").tag(1)
+                    Text("Week").tag(2)
+                    Text("Shop").tag(3)
                 }
                 .pickerStyle(.segmented)
                 .padding(.horizontal, 16)
@@ -273,9 +271,11 @@ struct RecipesHubView: View {
 
                 Group {
                     switch page {
-                    case 1:
-                        MealPlanView(food: food, auth: auth)
+                    case 0:
+                        CaloriesView(food: food, auth: auth)
                     case 2:
+                        MealPlanView(food: food, auth: auth)
+                    case 3:
                         ShopView(food: food)
                     default:
                         RecipesView(food: food, auth: auth)
@@ -283,7 +283,7 @@ struct RecipesHubView: View {
                 }
             }
             .background(HTTheme.cream.ignoresSafeArea())
-            .navigationTitle(page == 1 ? "This week" : page == 2 ? "Shop" : "Recipes")
+            .navigationTitle(page == 0 ? "Today" : page == 2 ? "This week" : page == 3 ? "Shop" : "Recipes")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {

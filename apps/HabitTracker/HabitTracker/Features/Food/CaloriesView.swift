@@ -24,7 +24,6 @@ struct CaloriesView: View {
     private let meals = ["breakfast", "lunch", "dinner", "snack", "drink"]
 
     var body: some View {
-        NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     HStack {
@@ -95,13 +94,6 @@ struct CaloriesView: View {
             }
             .dockScrollClearance()
             .background(HTTheme.cream.ignoresSafeArea())
-            .navigationTitle("Macros")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    ProfileAvatarButton(auth: auth)
-                }
-            }
             .task(id: food.sessionEpoch) {
                 await food.loadLogs()
                 await food.checkFatSecret()
@@ -123,7 +115,6 @@ struct CaloriesView: View {
                     photoItem = nil
                 }
             }
-        }
     }
 
     private var addCard: some View {
