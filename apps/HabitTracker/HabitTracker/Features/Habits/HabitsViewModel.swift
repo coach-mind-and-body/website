@@ -354,6 +354,7 @@ final class HabitsViewModel {
             insight = nil
         }
         await loadVictories()
+        publishWidget()
     }
 
     private func loadGuest() async {
@@ -785,7 +786,14 @@ final class HabitsViewModel {
                 updatedAt: Date(),
                 stepsToday: Int(health.stepsToday.rounded()),
                 moveMinutes: Int(health.moveMinutesToday.rounded()),
-                sleepHours: health.sleepHoursLastNight
+                sleepHours: health.sleepHoursLastNight,
+                challengeEnrolled: todayChallenge?.enrolled == true,
+                challengeBeforeStart: todayChallenge?.beforeStart == true,
+                challengeDayN: todayChallenge?.today?.n ?? 0,
+                challengeDayTitle: todayChallenge?.today?.title ?? "",
+                challengeIsLive: todayChallenge?.today?.format == "live",
+                challengeDone: todayChallenge?.today?.done == true,
+                challengeName: todayChallenge?.title ?? ""
             )
         )
         WidgetReloader.reload()

@@ -11,6 +11,13 @@ struct WidgetSnapshot: Codable, Equatable {
     var stepsToday: Int
     var moveMinutes: Int
     var sleepHours: Double
+    var challengeEnrolled: Bool
+    var challengeBeforeStart: Bool
+    var challengeDayN: Int
+    var challengeDayTitle: String
+    var challengeIsLive: Bool
+    var challengeDone: Bool
+    var challengeName: String
 
     static var empty: WidgetSnapshot {
         WidgetSnapshot(
@@ -23,8 +30,23 @@ struct WidgetSnapshot: Codable, Equatable {
             updatedAt: Date(),
             stepsToday: 0,
             moveMinutes: 0,
-            sleepHours: 0
+            sleepHours: 0,
+            challengeEnrolled: false,
+            challengeBeforeStart: false,
+            challengeDayN: 0,
+            challengeDayTitle: "",
+            challengeIsLive: false,
+            challengeDone: false,
+            challengeName: ""
         )
+    }
+
+    var inChallenge: Bool {
+        challengeEnrolled && (challengeDayN > 0 || challengeBeforeStart)
+    }
+
+    var mindsetLine: String {
+        MindsetLine.forDate(dateStr)
     }
 
     var habitLine: String {
@@ -43,6 +65,8 @@ struct WidgetSnapshot: Codable, Equatable {
     enum CodingKeys: String, CodingKey {
         case dateStr, habitsDone, habitsTotal, proteinGrams, proteinGoal
         case nextHabitTitle, updatedAt, stepsToday, moveMinutes, sleepHours
+        case challengeEnrolled, challengeBeforeStart, challengeDayN, challengeDayTitle
+        case challengeIsLive, challengeDone, challengeName
     }
 
     init(
@@ -55,7 +79,14 @@ struct WidgetSnapshot: Codable, Equatable {
         updatedAt: Date,
         stepsToday: Int = 0,
         moveMinutes: Int = 0,
-        sleepHours: Double = 0
+        sleepHours: Double = 0,
+        challengeEnrolled: Bool = false,
+        challengeBeforeStart: Bool = false,
+        challengeDayN: Int = 0,
+        challengeDayTitle: String = "",
+        challengeIsLive: Bool = false,
+        challengeDone: Bool = false,
+        challengeName: String = ""
     ) {
         self.dateStr = dateStr
         self.habitsDone = habitsDone
@@ -67,6 +98,13 @@ struct WidgetSnapshot: Codable, Equatable {
         self.stepsToday = stepsToday
         self.moveMinutes = moveMinutes
         self.sleepHours = sleepHours
+        self.challengeEnrolled = challengeEnrolled
+        self.challengeBeforeStart = challengeBeforeStart
+        self.challengeDayN = challengeDayN
+        self.challengeDayTitle = challengeDayTitle
+        self.challengeIsLive = challengeIsLive
+        self.challengeDone = challengeDone
+        self.challengeName = challengeName
     }
 
     init(from decoder: Decoder) throws {
@@ -81,6 +119,13 @@ struct WidgetSnapshot: Codable, Equatable {
         stepsToday = try c.decodeIfPresent(Int.self, forKey: .stepsToday) ?? 0
         moveMinutes = try c.decodeIfPresent(Int.self, forKey: .moveMinutes) ?? 0
         sleepHours = try c.decodeIfPresent(Double.self, forKey: .sleepHours) ?? 0
+        challengeEnrolled = try c.decodeIfPresent(Bool.self, forKey: .challengeEnrolled) ?? false
+        challengeBeforeStart = try c.decodeIfPresent(Bool.self, forKey: .challengeBeforeStart) ?? false
+        challengeDayN = try c.decodeIfPresent(Int.self, forKey: .challengeDayN) ?? 0
+        challengeDayTitle = try c.decodeIfPresent(String.self, forKey: .challengeDayTitle) ?? ""
+        challengeIsLive = try c.decodeIfPresent(Bool.self, forKey: .challengeIsLive) ?? false
+        challengeDone = try c.decodeIfPresent(Bool.self, forKey: .challengeDone) ?? false
+        challengeName = try c.decodeIfPresent(String.self, forKey: .challengeName) ?? ""
     }
 
     func encode(to encoder: Encoder) throws {
@@ -95,6 +140,32 @@ struct WidgetSnapshot: Codable, Equatable {
         try c.encode(stepsToday, forKey: .stepsToday)
         try c.encode(moveMinutes, forKey: .moveMinutes)
         try c.encode(sleepHours, forKey: .sleepHours)
+        try c.encode(challengeEnrolled, forKey: .challengeEnrolled)
+        try c.encode(challengeBeforeStart, forKey: .challengeBeforeStart)
+        try c.encode(challengeDayN, forKey: .challengeDayN)
+        try c.encode(challengeDayTitle, forKey: .challengeDayTitle)
+        try c.encode(challengeIsLive, forKey: .challengeIsLive)
+        try c.encode(challengeDone, forKey: .challengeDone)
+        try c.encode(challengeName, forKey: .challengeName)
+    }
+}
+
+enum MindsetLine {
+    static let lines = [
+        "Mind over problems.",
+        "Progress, not perfection.",
+        "Quiet the noise. Keep one promise.",
+        "What you do today is a vote.",
+        "Small kept promises rebuild trust.",
+        "No scoreboard. Just today.",
+        "The body follows the mind you practice.",
+        "You don’t have to win the day. Show up.",
+    ]
+
+    static func forDate(_ dateStr: String) -> String {
+        let sum = dateStr.unicodeScalars.reduce(0) { $0 + Int($1.value) }
+        let idx = lines.isEmpty ? 0 : abs(sum) % lines.count
+        return lines[idx]
     }
 }
 

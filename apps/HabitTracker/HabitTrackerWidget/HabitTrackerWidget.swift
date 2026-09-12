@@ -51,84 +51,166 @@ struct HabitTrackerWidgetEntryView: View {
     @Environment(\.widgetFamily) private var family
 
     var body: some View {
-        Group {
-            if family == .systemSmall {
-                small
-            } else {
-                medium
-            }
+        homeOrLock
+            .widgetURL(URL(string: snap.inChallenge ? "habittracker://challenge" : "habittracker://habits"))
+    }
+
+    @ViewBuilder
+    private var homeOrLock: some View {
+        switch family {
+        case .accessoryCircular:
+            lockCircle
+        case .accessoryRectangular:
+            lockRect
+        case .accessoryInline:
+            lockInline
+        case .systemSmall:
+            small.containerBackground(for: .widget) { WColor.cream }
+        default:
+            medium.containerBackground(for: .widget) { WColor.cream }
         }
-        .containerBackground(for: .widget) { WColor.cream }
-        .widgetURL(URL(string: "habittracker://habits"))
     }
 
     private var snap: WidgetSnapshot { entry.snapshot }
 
-    private var proteinPct: Double {
-        let goal = max(snap.proteinGoal, 1)
-        return min(1, Double(snap.proteinGrams) / Double(goal))
+    private var habitPct: Double {
+        min(1, Double(snap.habitsDone) / Double(max(snap.habitsTotal, 1)))
     }
 
-    private var habitPct: Double {
-        let total = max(snap.habitsTotal, 1)
-        return min(1, Double(snap.habitsDone) / Double(total))
+    private var proteinPct: Double {
+        min(1, Double(snap.proteinGrams) / Double(max(snap.proteinGoal, 1)))
+    }
+
+    private var liveSoon: Bool {
+        guard snap.inChallenge, snap.challengeIsLive, !snap.challengeDone else { return false }
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "America/Denver") ?? .current
+        let hour = cal.component(.hour, from: entry.date)
+        let minute = cal.component(.minute, from: entry.date)
+        return hour == 11 || (hour == 12 && minute < 20) || hour == 10
     }
 
     private var small: some View {
-        VStack(spacing: 0) {
-            Text("TODAY")
+        VStack(alignment: .leading, spacing: 6) {
+            Text(snap.inChallenge ? (liveSoon ? "CLASS" : "DAY \(max(snap.challengeDayN, 1))") : "TODAY")
                 .font(.system(size: 10, weight: .bold))
                 .foregroundStyle(WColor.gold)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            Spacer(minLength: 4)
-            ProteinRing(percent: proteinPct, grams: snap.proteinGrams, size: 86)
-            Spacer(minLength: 6)
-            Text("\(snap.habitsDone) of \(max(snap.habitsTotal, 0)) done")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(WColor.forest)
-            if snap.moveMinutes > 0 {
-                Text("\(snap.moveMinutes) min move")
-                    .font(.system(size: 11))
-                    .foregroundStyle(WColor.muted)
+            Spacer(minLength: 2)
+            if snap.inChallenge {
+                Text(liveSoon ? "12:00" : (snap.challengeBeforeStart ? "Soon" : "\(snap.habitsDone)/\(max(snap.habitsTotal, 0))"))
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundStyle(WColor.forest)
+                Text(liveSoon ? "pm Mountain" : (snap.challengeDayTitle.isEmpty ? snap.challengeName : snap.challengeDayTitle))
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(WColor.forest)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.8)
+            } else {
+                ProgressRing(percent: habitPct, center: "\(snap.habitsDone)/\(max(snap.habitsTotal, 0))", caption: "done", size: 86)
+                    .frame(maxWidth: .infinity)
             }
+            Spacer(minLength: 4)
+            Text(snap.mindsetLine)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(WColor.muted)
+                .lineLimit(2)
+                .minimumScaleFactor(0.85)
         }
         .padding(12)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 
     private var medium: some View {
         HStack(spacing: 16) {
-            ProteinRing(percent: proteinPct, grams: snap.proteinGrams, size: 112)
-            VStack(alignment: .leading, spacing: 8) {
-                Text("TODAY")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(WColor.gold)
-                metricRow(label: "Habits", value: "\(snap.habitsDone)/\(max(snap.habitsTotal, 0))", pct: habitPct)
-                metricRow(label: "Protein", value: "\(snap.proteinGrams)g", pct: proteinPct)
-                HStack(spacing: 12) {
-                    if snap.moveMinutes > 0 {
-                        Label("\(snap.moveMinutes) min", systemImage: "figure.walk")
-                    }
-                    if snap.stepsToday > 0 {
-                        Text("\(snap.stepsToday.formatted()) steps")
-                    }
-                }
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(WColor.forest)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-                Spacer(minLength: 0)
-                if snap.moveMinutes == 0, snap.stepsToday == 0, let next = snap.nextHabitTitle {
-                    Text(next)
-                        .font(.system(size: 12))
+            if snap.inChallenge {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(liveSoon ? "LIVE TODAY" : "DAY \(max(snap.challengeDayN, 1))")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(WColor.gold)
+                    Text(snap.challengeDayTitle.isEmpty ? (snap.challengeBeforeStart ? "We start soon" : snap.challengeName) : snap.challengeDayTitle)
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(WColor.forest)
+                        .lineLimit(3)
+                        .minimumScaleFactor(0.8)
+                    Text(liveSoon ? "Join at 12:00 pm Mountain" : (snap.challengeIsLive ? "Class 12:00 pm Mountain" : "Video + recipes in Challenge"))
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(WColor.forest.opacity(0.8))
+                    Spacer(minLength: 4)
+                    Text(snap.mindsetLine)
+                        .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(WColor.muted)
-                        .lineLimit(1)
+                        .lineLimit(2)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            } else {
+                ProgressRing(percent: habitPct, center: "\(snap.habitsDone)/\(max(snap.habitsTotal, 0))", caption: "today", size: 108)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("TODAY")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(WColor.gold)
+                    Text(snap.mindsetLine)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(WColor.forest)
+                        .lineLimit(2)
+                    metricRow(label: "Habits", value: "\(snap.habitsDone)/\(max(snap.habitsTotal, 0))", pct: habitPct)
+                    metricRow(label: "Protein", value: "\(snap.proteinGrams)g", pct: proteinPct)
+                    if snap.moveMinutes > 0 {
+                        Text("\(snap.moveMinutes) min move")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(WColor.forest)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         }
         .padding(16)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var lockCircle: some View {
+        ZStack {
+            AccessoryWidgetBackground()
+            VStack(spacing: 0) {
+                if snap.inChallenge {
+                    Text(liveSoon ? "LIVE" : "\(max(snap.challengeDayN, 1))")
+                        .font(.system(size: liveSoon ? 12 : 20, weight: .bold))
+                    Text(liveSoon ? "now" : "DAY")
+                        .font(.system(size: 9, weight: .bold))
+                } else {
+                    Text("\(snap.habitsDone)")
+                        .font(.system(size: 20, weight: .bold))
+                    Text("/\(max(snap.habitsTotal, 0))")
+                        .font(.system(size: 9, weight: .bold))
+                }
+            }
+        }
+    }
+
+    private var lockRect: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            if snap.inChallenge {
+                Text(liveSoon ? "Class 12:00 pm" : "Day \(max(snap.challengeDayN, 1)) · \(snap.challengeDayTitle)")
+                    .font(.headline)
+                    .lineLimit(1)
+                Text(snap.mindsetLine)
+                    .font(.caption)
+                    .lineLimit(1)
+            } else {
+                Text("\(snap.habitsDone)/\(max(snap.habitsTotal, 0)) · \(snap.proteinGrams)g")
+                    .font(.headline)
+                Text(snap.mindsetLine)
+                    .font(.caption)
+                    .lineLimit(1)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var lockInline: some View {
+        Text(snap.inChallenge
+             ? (liveSoon ? "Class 12:00 · tap to join" : "Day \(max(snap.challengeDayN, 1)) · \(snap.mindsetLine)")
+             : snap.mindsetLine)
     }
 
     private func metricRow(label: String, value: String, pct: Double) -> some View {
@@ -154,24 +236,24 @@ struct HabitTrackerWidgetEntryView: View {
     }
 }
 
-private struct ProteinRing: View {
+private struct ProgressRing: View {
     var percent: Double
-    var grams: Int
+    var center: String
+    var caption: String
     var size: CGFloat
 
     var body: some View {
         ZStack {
-            Circle()
-                .stroke(WColor.track, lineWidth: 10)
+            Circle().stroke(WColor.track, lineWidth: 10)
             Circle()
                 .trim(from: 0, to: max(0.02, percent))
                 .stroke(WColor.gold, style: StrokeStyle(lineWidth: 10, lineCap: .round))
                 .rotationEffect(.degrees(-90))
             VStack(spacing: 0) {
-                Text("\(grams)g")
-                    .font(.system(size: size > 100 ? 28 : 22, weight: .bold, design: .rounded))
+                Text(center)
+                    .font(.system(size: size > 100 ? 26 : 20, weight: .bold, design: .rounded))
                     .foregroundStyle(WColor.forest)
-                Text("protein")
+                Text(caption)
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(WColor.muted)
             }
@@ -188,7 +270,13 @@ struct HabitTrackerWidget: Widget {
             HabitTrackerWidgetEntryView(entry: entry)
         }
         .configurationDisplayName("Today")
-        .description("Protein, habits, and move — at a glance.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .description("Habits, mindset, and Challenge when you’re in one.")
+        .supportedFamilies([
+            .systemSmall,
+            .systemMedium,
+            .accessoryCircular,
+            .accessoryRectangular,
+            .accessoryInline,
+        ])
     }
 }
