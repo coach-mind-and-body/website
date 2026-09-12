@@ -75,7 +75,9 @@ struct MainTabView: View {
         }
         .tint(HTTheme.forest)
         .task {
+            applyDeepLink(DeepLink.consumePending())
             await habits.load()
+            applyDeepLink(DeepLink.consumePending())
             await coach.refreshUnread()
             promptNextOnboarding()
             while !Task.isCancelled {
@@ -97,16 +99,8 @@ struct MainTabView: View {
             Task { await habits.onFoodLogged() }
         }
         .onReceive(NotificationCenter.default.publisher(for: .mbrOpenDeepLink)) { note in
-            guard let link = note.object as? DeepLink else { return }
-            switch link {
-            case .challenge:
-                tab = .habits
-                Task { await habits.openChallengePane() }
-            case .coach:
-                tab = .coach
-            case .habits:
-                tab = .habits
-            }
+            let raw = note.userInfo?["link"] as? String
+            applyDeepLink(raw.flatMap(DeepLink.init(rawValue:)) ?? DeepLink.consumePending())
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
@@ -130,6 +124,20 @@ struct MainTabView: View {
             promptNextOnboarding()
         }) {
             HealthPermissionView(health: health, isPresented: $showHealth)
+        }
+    }
+
+    private func applyDeepLink(_ link: DeepLink?) {
+        guard let link else { return }
+        DeepLink.pending = nil
+        switch link {
+        case .challenge:
+            tab = .habits
+            Task { await habits.openChallengePane() }
+        case .coach:
+            tab = .coach
+        case .habits:
+            tab = .habits
         }
     }
 

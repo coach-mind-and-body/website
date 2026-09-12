@@ -5,30 +5,48 @@ extension Notification.Name {
     static let mbrOpenDeepLink = Notification.Name("mbr.openDeepLink")
 }
 
-enum DeepLink {
+enum DeepLink: String {
     case challenge
     case coach
     case habits
 
+    static var pending: DeepLink?
+
     static func post(_ link: DeepLink) {
-        NotificationCenter.default.post(name: .mbrOpenDeepLink, object: link)
+        DispatchQueue.main.async {
+            pending = link
+            NotificationCenter.default.post(
+                name: .mbrOpenDeepLink,
+                object: nil,
+                userInfo: ["link": link.rawValue]
+            )
+        }
+    }
+
+    static func consumePending() -> DeepLink? {
+        let link = pending
+        pending = nil
+        return link
     }
 
     static func fromNotification(_ userInfo: [AnyHashable: Any]) -> DeepLink? {
-        let tab = (userInfo["tab"] as? String ?? "").lowercased()
+        if let raw = userInfo["tab"] as? String, let link = DeepLink(rawValue: raw.lowercased()) {
+            return link
+        }
         let url = (userInfo["url"] as? String ?? "").lowercased()
-        if tab == "challenge" || url.contains("challenge") { return .challenge }
-        if tab == "coach" || url.contains("coach") { return .coach }
-        if tab == "habits" || url.contains("habit-tracker") { return .habits }
+        if url.contains("challenge") { return .challenge }
+        if url.contains("coach") { return .coach }
+        if url.contains("habit") { return .habits }
         return nil
     }
 
     static func fromURL(_ url: URL) -> DeepLink? {
         let host = (url.host ?? "").lowercased()
+        if host == "auth" { return nil }
+        if let link = DeepLink(rawValue: host) { return link }
         let path = url.path.lowercased()
-        if host == "challenge" || path.contains("challenge") { return .challenge }
-        if host == "coach" || path.contains("coach") { return .coach }
-        if host == "habits" || path.contains("habit") { return .habits }
+        if path.contains("challenge") { return .challenge }
+        if path.contains("coach") { return .coach }
         return nil
     }
 }

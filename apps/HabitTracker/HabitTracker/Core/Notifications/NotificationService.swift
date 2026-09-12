@@ -153,17 +153,23 @@ final class NotificationTapDelegate: NSObject, UNUserNotificationCenterDelegate 
 
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
-        willPresent notification: UNNotification
-    ) async -> UNNotificationPresentationOptions {
-        [.banner, .sound, .list]
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.banner, .sound, .list])
     }
 
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
-        didReceive response: UNNotificationResponse
-    ) async {
-        if let link = DeepLink.fromNotification(response.notification.request.content.userInfo) {
-            DeepLink.post(link)
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        let info = response.notification.request.content.userInfo
+        DispatchQueue.main.async {
+            if let link = DeepLink.fromNotification(info) {
+                DeepLink.post(link)
+            }
+            completionHandler()
         }
     }
 }
