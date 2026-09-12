@@ -159,7 +159,7 @@ final class HabitsViewModel {
     }
 
     var doneCount: Int {
-        habits.filter { isCompleted($0) }.count
+        checklistHabits.filter { isCompleted($0) }.count
     }
 
     var completedDateStrs: Set<String> {
@@ -761,14 +761,14 @@ final class HabitsViewModel {
     }
 
     private func publishWidget() {
-        let next = habits.first { log(for: $0.id)?.completed != true }
-        let proteinHabit = habits.first { $0.isNumeric && $0.title.lowercased().contains("protein") }
+        let next = checklistHabits.first { log(for: $0.id)?.completed != true }
+        let proteinHabit = checklistHabits.first { $0.isNumeric && Self.isProteinHabit($0.title) }
         let protein = proteinHabit.flatMap { log(for: $0.id)?.numericValue } ?? 0
         WidgetSnapshotStore.save(
             WidgetSnapshot(
                 dateStr: dateStr,
                 habitsDone: doneCount,
-                habitsTotal: habits.count,
+                habitsTotal: checklistHabits.count,
                 proteinGrams: protein,
                 proteinGoal: proteinHabit?.targetValue ?? 100,
                 nextHabitTitle: next?.title,
