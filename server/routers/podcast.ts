@@ -56,12 +56,46 @@ export function parseYouTubeRSS(xml: string): Episode[] {
 
 export async function fetchPlaylistEpisodes(): Promise<Episode[]> {
   const feedUrl = `https://www.youtube.com/feeds/videos.xml?playlist_id=${PLAYLIST_ID}`;
-  const response = await fetch(feedUrl, {
-    headers: { "User-Agent": "Mozilla/5.0 (compatible; MindBodyReset/1.0)" },
-  });
-  if (!response.ok) throw new Error(`RSS fetch failed: ${response.status}`);
-  const xml = await response.text();
-  return parseYouTubeRSS(xml);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 6000);
+  try {
+    const response = await fetch(feedUrl, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; MindBodyReset/1.0)" },
+      signal: controller.signal,
+    });
+    if (!response.ok) throw new Error(`RSS fetch failed: ${response.status}`);
+    const xml = await response.text();
+    return parseYouTubeRSS(xml);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function episodeFromRow(row: {
+  videoId: string;
+  slug: string;
+  title: string;
+  thumbnail: string | null;
+  publishedAt: Date | null;
+  youtubeDescription: string | null;
+  habitActionsJson: string | null;
+  linkedBlogSlug: string | null;
+  linkedChallengeId: number | null;
+  status: string;
+}): Episode {
+  return {
+    id: row.videoId,
+    videoId: row.videoId,
+    title: row.title,
+    description: row.youtubeDescription || "",
+    publishedAt: row.publishedAt ? new Date(row.publishedAt).toISOString() : "",
+    thumbnail: row.thumbnail || `https://i.ytimg.com/vi/${row.videoId}/hqdefault.jpg`,
+    slug: row.slug,
+    hasShowNotes: row.status === "published",
+    habitActionsJson: row.habitActionsJson,
+    linkedBlogSlug: row.linkedBlogSlug,
+    linkedChallengeId: row.linkedChallengeId,
+  } as Episode;
 }
 
 function adminOnly(role: string | undefined) {
@@ -153,66 +187,81 @@ export const podcastRouter = router({
     }),
 
   getEpisodes: publicProcedure.query(async () => {
+    const db = await getDb();
+    let yt: Episode[] = [];
     try {
-      const episodes = await fetchPlaylistEpisodes();
-      const db = await getDb();
-      if (db && episodes.length > 0) {
-        // Auto-seed default habit actions for newest episodes (does not overwrite admin edits)
-        const { ensureEpisodeDefaults, defaultHabitActionsJson } = await import(
-          "../podcastDefaults"
-        );
-        // Limit writes to the latest 12 so a cold cache doesn't hammer the DB
-        for (const ep of episodes.slice(0, 12)) {
-          try {
-            await ensureEpisodeDefaults(db, {
-              videoId: ep.videoId,
-              title: ep.title,
-              thumbnail: ep.thumbnail,
-              publishedAt: ep.publishedAt,
-              youtubeDescription: ep.description,
-            });
-          } catch (e) {
-            console.warn("[Podcast] ensure defaults failed for", ep.videoId, e);
-          }
-        }
-
-        const notes = await db
-          .select({
-            videoId: podcastEpisodes.videoId,
-            slug: podcastEpisodes.slug,
-            status: podcastEpisodes.status,
-            habitActionsJson: podcastEpisodes.habitActionsJson,
-            linkedBlogSlug: podcastEpisodes.linkedBlogSlug,
-            linkedChallengeId: podcastEpisodes.linkedChallengeId,
-          })
-          .from(podcastEpisodes);
-
-        const byVideo = new Map(notes.map((n) => [n.videoId, n]));
-        const fallbackActions = defaultHabitActionsJson();
-        for (const ep of episodes) {
-          const n = byVideo.get(ep.videoId);
-          if (n) {
-            if (n.status === "published") {
-              ep.slug = n.slug;
-              ep.hasShowNotes = true;
-            }
-            // Habit actions available even for draft rows (auto-defaults)
-            (ep as any).habitActionsJson =
-              n.habitActionsJson && n.habitActionsJson.trim()
-                ? n.habitActionsJson
-                : fallbackActions;
-            (ep as any).linkedBlogSlug = n.linkedBlogSlug;
-            (ep as any).linkedChallengeId = n.linkedChallengeId;
-          } else {
-            (ep as any).habitActionsJson = fallbackActions;
-          }
-        }
-      }
-      return { episodes };
+      yt = await fetchPlaylistEpisodes();
     } catch (err) {
       console.error("[Podcast RSS] Failed to fetch episodes:", err);
-      return { episodes: [] as Episode[] };
     }
+
+    if (db && yt.length > 0) {
+      const { ensureEpisodeDefaults, defaultHabitActionsJson } = await import(
+        "../podcastDefaults"
+      );
+      for (const ep of yt.slice(0, 12)) {
+        try {
+          await ensureEpisodeDefaults(db, {
+            videoId: ep.videoId,
+            title: ep.title,
+            thumbnail: ep.thumbnail,
+            publishedAt: ep.publishedAt,
+            youtubeDescription: ep.description,
+          });
+        } catch (e) {
+          console.warn("[Podcast] ensure defaults failed for", ep.videoId, e);
+        }
+      }
+
+      const notes = await db
+        .select({
+          videoId: podcastEpisodes.videoId,
+          slug: podcastEpisodes.slug,
+          status: podcastEpisodes.status,
+          habitActionsJson: podcastEpisodes.habitActionsJson,
+          linkedBlogSlug: podcastEpisodes.linkedBlogSlug,
+          linkedChallengeId: podcastEpisodes.linkedChallengeId,
+        })
+        .from(podcastEpisodes);
+
+      const byVideo = new Map(notes.map((n) => [n.videoId, n]));
+      const fallbackActions = defaultHabitActionsJson();
+      for (const ep of yt) {
+        const n = byVideo.get(ep.videoId);
+        if (n) {
+          if (n.status === "published") {
+            ep.slug = n.slug;
+            ep.hasShowNotes = true;
+          }
+          (ep as any).habitActionsJson =
+            n.habitActionsJson && n.habitActionsJson.trim()
+              ? n.habitActionsJson
+              : fallbackActions;
+          (ep as any).linkedBlogSlug = n.linkedBlogSlug;
+          (ep as any).linkedChallengeId = n.linkedChallengeId;
+        } else {
+          (ep as any).habitActionsJson = fallbackActions;
+        }
+      }
+      return { episodes: yt };
+    }
+
+    if (db) {
+      let rows = await db
+        .select()
+        .from(podcastEpisodes)
+        .where(eq(podcastEpisodes.status, "published"))
+        .orderBy(desc(podcastEpisodes.publishedAt), desc(podcastEpisodes.id));
+      if (rows.length === 0) {
+        rows = await db
+          .select()
+          .from(podcastEpisodes)
+          .orderBy(desc(podcastEpisodes.publishedAt), desc(podcastEpisodes.id));
+      }
+      return { episodes: rows.map(episodeFromRow) };
+    }
+
+    return { episodes: [] as Episode[] };
   }),
 
   getBySlug: publicProcedure
