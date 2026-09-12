@@ -164,6 +164,27 @@ final class FoodViewModel {
         }
     }
 
+    func removeShopItem(_ item: ShoppingItem) async {
+        do {
+            let _: SuccessFlag = try await auth.client.mutate(
+                "food.removeShoppingItem",
+                input: IdInput(id: item.id)
+            )
+            await loadShop()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func clearCheckedShop() async {
+        do {
+            let _: SuccessFlag = try await auth.client.mutateEmpty("food.clearCheckedShopping")
+            await loadShop()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     func addManual(
         name: String,
         meal: String,

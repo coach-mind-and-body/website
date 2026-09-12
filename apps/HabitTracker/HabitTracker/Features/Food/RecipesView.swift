@@ -143,10 +143,12 @@ struct RecipeDetailView: View {
                     }
                 }
                 .padding(16)
+                .padding(.bottom, HTTheme.dockClearance)
             } else {
                 ProgressView().padding(.top, 80)
             }
         }
+        .dockScrollClearance()
         .background(HTTheme.cream.ignoresSafeArea())
         .task { recipe = await food.recipe(slug: slug) }
     }

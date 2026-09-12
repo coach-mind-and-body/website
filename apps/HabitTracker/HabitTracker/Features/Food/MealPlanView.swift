@@ -56,43 +56,91 @@ struct MealPlanView: View {
 
 struct ShopView: View {
     @Bindable var food: FoodViewModel
+    @Bindable var auth: AuthStore
     @State private var newItem = ""
 
     var body: some View {
+        VStack(spacing: 0) {
+            if auth.isSignedIn {
+                HStack(spacing: 8) {
+                    TextField("Add something…", text: $newItem)
+                        .textFieldStyle(.roundedBorder)
+                        .onSubmit { addTapped() }
+                    Button("Add") { addTapped() }
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(HTTheme.forest)
+                        .disabled(newItem.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
+
+                if food.shop.contains(where: \.isChecked) {
+                    Button("Clear checked") {
+                        Task { await food.clearCheckedShop() }
+                    }
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(HTTheme.gold)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 6)
+                }
+            }
+
             List {
-                ForEach(food.shop) { item in
-                    Button {
-                        Task { await food.toggleShop(item) }
-                    } label: {
-                        HStack {
-                            Image(systemName: item.isChecked ? "checkmark.circle.fill" : "circle")
-                                .foregroundStyle(item.isChecked ? HTTheme.gold : HTTheme.muted)
-                            VStack(alignment: .leading) {
-                                Text(item.name)
-                                    .strikethrough(item.isChecked)
-                                    .foregroundStyle(HTTheme.forest)
-                                if let amt = item.amount {
-                                    Text("\(amt) \(item.unit ?? "")").font(.caption).foregroundStyle(HTTheme.muted)
+                if !auth.isSignedIn {
+                    Text("Sign in under You to keep a shopping list.")
+                        .foregroundStyle(HTTheme.muted)
+                        .listRowBackground(Color.clear)
+                } else if food.shop.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("The list is empty.")
+                            .font(.headline)
+                            .foregroundStyle(HTTheme.forest)
+                        Text("Type an item above. Or open Week and tap Build shopping list.")
+                            .font(.subheadline)
+                            .foregroundStyle(HTTheme.muted)
+                    }
+                    .listRowBackground(Color.clear)
+                } else {
+                    ForEach(food.shop) { item in
+                        Button {
+                            Task { await food.toggleShop(item) }
+                        } label: {
+                            HStack {
+                                Image(systemName: item.isChecked ? "checkmark.circle.fill" : "circle")
+                                    .foregroundStyle(item.isChecked ? HTTheme.gold : HTTheme.muted)
+                                VStack(alignment: .leading) {
+                                    Text(item.name)
+                                        .strikethrough(item.isChecked)
+                                        .foregroundStyle(HTTheme.forest)
+                                    if let amt = item.amount {
+                                        Text("\(amt) \(item.unit ?? "")").font(.caption).foregroundStyle(HTTheme.muted)
+                                    }
                                 }
                             }
                         }
                     }
-                }
-                HStack {
-                    TextField("Add item", text: $newItem)
-                    Button("Add") {
-                        let name = newItem
-                        newItem = ""
-                        Task { await food.addShopItem(name) }
+                    .onDelete { offsets in
+                        let items = offsets.map { food.shop[$0] }
+                        Task {
+                            for item in items { await food.removeShopItem(item) }
+                        }
                     }
-                    .disabled(newItem.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
             .scrollContentBackground(.hidden)
-            .dockScrollClearance()
-            .background(HTTheme.cream)
-            .task(id: food.sessionEpoch) { await food.loadShop() }
-            .refreshable { await food.loadShop() }
+        }
+        .dockScrollClearance()
+        .background(HTTheme.cream)
+        .task(id: food.sessionEpoch) { await food.loadShop() }
+        .refreshable { await food.loadShop() }
+    }
+
+    private func addTapped() {
+        let name = newItem.trimmingCharacters(in: .whitespaces)
+        guard !name.isEmpty else { return }
+        newItem = ""
+        Task { await food.addShopItem(name) }
     }
 }
 
