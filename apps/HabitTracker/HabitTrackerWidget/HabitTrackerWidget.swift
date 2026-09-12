@@ -25,7 +25,10 @@ struct Provider: TimelineProvider {
             proteinGrams: 62,
             proteinGoal: 100,
             nextHabitTitle: "Walk 10 minutes",
-            updatedAt: Date()
+            updatedAt: Date(),
+            stepsToday: 4218,
+            moveMinutes: 24,
+            sleepHours: 7.4
         )
     }
 }
@@ -40,18 +43,29 @@ struct HabitTrackerWidgetEntryView: View {
     @Environment(\.widgetFamily) private var family
 
     var body: some View {
+        let forest = Color(red: 45 / 255, green: 59 / 255, blue: 45 / 255)
+        let gold = Color(red: 201 / 255, green: 169 / 255, blue: 110 / 255)
         VStack(alignment: .leading, spacing: 6) {
-            Text("HABIT TRACKER")
+            Text("TODAY")
                 .font(.caption2.weight(.bold))
-                .foregroundStyle(Color(red: 201 / 255, green: 169 / 255, blue: 110 / 255))
+                .foregroundStyle(gold)
             Text(entry.snapshot.habitLine)
                 .font(.headline)
-                .foregroundStyle(Color(red: 45 / 255, green: 59 / 255, blue: 45 / 255))
+                .foregroundStyle(forest)
             Text(entry.snapshot.proteinLine)
                 .font(.subheadline)
-                .foregroundStyle(Color(red: 45 / 255, green: 59 / 255, blue: 45 / 255).opacity(0.8))
-            if family != .systemSmall, let next = entry.snapshot.nextHabitTitle {
-                Text("Next: \(next)")
+                .foregroundStyle(forest.opacity(0.85))
+            if entry.snapshot.moveMinutes > 0 || entry.snapshot.stepsToday > 0 {
+                Text(entry.snapshot.moveLine)
+                    .font(.caption)
+                    .foregroundStyle(forest.opacity(0.75))
+            }
+            if family != .systemSmall, entry.snapshot.sleepHours > 0 {
+                Text(String(format: "%.1fh sleep", entry.snapshot.sleepHours))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else if family != .systemSmall, let next = entry.snapshot.nextHabitTitle {
+                Text(next)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -60,6 +74,7 @@ struct HabitTrackerWidgetEntryView: View {
         .containerBackground(for: .widget) {
             Color(red: 250 / 255, green: 245 / 255, blue: 245 / 255)
         }
+        .widgetURL(URL(string: "habittracker://habits"))
     }
 }
 
@@ -71,7 +86,7 @@ struct HabitTrackerWidget: Widget {
             HabitTrackerWidgetEntryView(entry: entry)
         }
         .configurationDisplayName("Today")
-        .description("Habits checked and protein so far today.")
+        .description("Today’s habits, protein, and Apple Health move.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }

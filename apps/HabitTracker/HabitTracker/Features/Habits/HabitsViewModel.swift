@@ -534,17 +534,21 @@ final class HabitsViewModel {
 
     func healthCaption(for habit: Habit) -> String? {
         let key = habit.title.lowercased()
-        if key.contains("move") {
+        if Self.isMoveHabit(habit.title) {
             let mins = Int(health.moveMinutesToday.rounded())
-            return mins > 0 ? "Apple Health · \(mins) min move" : nil
+            let steps = Int(health.stepsToday.rounded())
+            if mins > 0 && steps > 0 { return "\(mins) min · \(steps.formatted()) steps" }
+            if mins > 0 { return "\(mins) min from Apple Health" }
+            if steps > 0 { return "\(steps.formatted()) steps today" }
+            return nil
         }
         if key.contains("mindful") {
             let mins = Int(health.mindfulMinutesToday.rounded())
-            return mins > 0 ? "Apple Health · \(mins) mindful min" : nil
+            return mins > 0 ? "\(mins) mindful min from Apple Health" : nil
         }
         if key.contains("sleep") {
             guard health.sleepHoursLastNight > 0 else { return nil }
-            return String(format: "Apple Health · %.1fh sleep", health.sleepHoursLastNight)
+            return String(format: "%.1fh last night from Apple Health", health.sleepHoursLastNight)
         }
         return nil
     }
@@ -565,6 +569,7 @@ final class HabitsViewModel {
                 await completeFromHealth(habit, numeric: habit.isNumeric ? hours : nil)
             }
         }
+        publishWidget()
     }
 
     private func completeFromHealth(_ habit: Habit, numeric: Int?) async {
@@ -767,7 +772,10 @@ final class HabitsViewModel {
                 proteinGrams: protein,
                 proteinGoal: proteinHabit?.targetValue ?? 100,
                 nextHabitTitle: next?.title,
-                updatedAt: Date()
+                updatedAt: Date(),
+                stepsToday: Int(health.stepsToday.rounded()),
+                moveMinutes: Int(health.moveMinutesToday.rounded()),
+                sleepHours: health.sleepHoursLastNight
             )
         )
         WidgetReloader.reload()

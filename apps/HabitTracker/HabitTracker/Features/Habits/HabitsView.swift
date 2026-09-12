@@ -174,6 +174,7 @@ struct HabitsView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
+                    healthStrip
                     habitsCard
                 }
                 .padding(16)
@@ -562,12 +563,55 @@ struct HabitsView: View {
         }
     }
 
+    private var healthStrip: some View {
+        let steps = Int(health.stepsToday.rounded())
+        let move = Int(health.moveMinutesToday.rounded())
+        let sleep = health.sleepHoursLastNight
+        let hasAny = steps > 0 || move > 0 || sleep > 0
+        return Group {
+            if hasAny {
+                HStack(spacing: 8) {
+                    healthChip("Steps", steps.formatted())
+                    healthChip("Move", "\(move)m")
+                    healthChip("Sleep", sleep > 0 ? String(format: "%.1fh", sleep) : "—")
+                }
+            } else if health.isAvailable {
+                Text("Apple Health can fill steps, move, and sleep here. Allow it in You.")
+                    .font(.caption)
+                    .foregroundStyle(HTTheme.muted)
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(HTTheme.roseBorder))
+            }
+        }
+    }
+
+    private func healthChip(_ label: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label.uppercased())
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(HTTheme.muted)
+            Text(value)
+                .font(.headline)
+                .foregroundStyle(HTTheme.forest)
+                .minimumScaleFactor(0.7)
+                .lineLimit(1)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(HTTheme.roseBorder))
+    }
+
     private var habitsCard: some View {
         HTCard {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Today’s checklist").font(.headline).foregroundStyle(HTTheme.forest)
-                    Text("Tap a row when you do it. Protein and fiber fill in from meals.")
+                    Text("Tap what you did. Meals fill protein. Apple Health fills move and sleep.")
                         .font(.caption)
                         .foregroundStyle(HTTheme.muted)
                 }
@@ -823,7 +867,17 @@ struct HabitsView: View {
                         .foregroundStyle(done ? Color.white : HTTheme.muted)
                 }
             }
-            if habit.isNumeric || mealMacro {
+            if HabitsViewModel.isMoveHabit(habit.title) {
+                let mins = Int(health.moveMinutesToday.rounded())
+                let goal = max(habit.targetValue ?? 20, 1)
+                let pct = min(1, Double(mins) / Double(goal))
+                ProgressView(value: pct)
+                    .tint(done ? Color.white : HTTheme.gold)
+                Text("\(mins) of \(goal) min today")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(done ? Color.white : HTTheme.muted)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+            } else if habit.isNumeric || mealMacro {
                 let val = model.numericValue(habit)
                 let target = max(habit.targetValue ?? 1, 1)
                 let pct = min(1, Double(val) / Double(target))
@@ -854,11 +908,17 @@ struct HabitsView: View {
 
     private func habitHowTo(_ habit: Habit) -> String? {
         let t = habit.title.lowercased()
-        if t.contains("protein") { return "Adds up from meals you log — you don’t type this in." }
-        if t.contains("fiber") { return "Adds up from meals you log." }
-        if t.contains("move") { return "A walk, a class, or anything that gets you moving." }
+        if t.contains("protein") { return "Fills in from meals you log." }
+        if t.contains("fiber") { return "Fills in from meals you log." }
+        if HabitsViewModel.isMoveHabit(habit.title) {
+            if health.moveMinutesToday > 0 || health.stepsToday > 0 { return nil }
+            return "A walk, a class, or anything that gets you moving."
+        }
         if t.contains("mindful") { return "Even one quiet minute counts. Tap Start to begin." }
-        if t.contains("sleep") { return "A restful night. Apple Health can check this." }
+        if t.contains("sleep") {
+            if health.sleepHoursLastNight > 0 { return nil }
+            return "Apple Health can mark this after a restful night."
+        }
         if t.contains("water") { return "What you drank today." }
         return nil
     }
