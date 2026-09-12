@@ -82,7 +82,7 @@ Privacy policy URL when asked: `https://mindandbodyresetcoach.com/privacy`
 
 She installs the **TestFlight** app from the App Store, then opens the invite.
 
-Each new upload must bump **Build** (`CURRENT_PROJECT_VERSION` in the project — currently `3`). Version (`MARKETING_VERSION`) can stay `1.0` until App Store.
+Each new upload must bump **Build** (`CURRENT_PROJECT_VERSION` in the project — currently `4`). Version (`MARKETING_VERSION`) can stay `1.0` until App Store.
 
 The Organizer line “not stripping binary because it is signed” on the widget is Apple’s archive pipeline. It is not an app warning and does not need a code change.
 

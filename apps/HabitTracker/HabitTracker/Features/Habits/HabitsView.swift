@@ -22,6 +22,8 @@ struct HabitsView: View {
                 tabPicker
                 if model.mainTab == 0 {
                     dailyScroll
+                } else if model.mainTab == 1, model.showsChallengePane {
+                    challengeScroll
                 } else {
                     HabitProgressView(model: model, auth: auth)
                 }
@@ -138,7 +140,10 @@ struct HabitsView: View {
     private var tabPicker: some View {
         HStack(spacing: 4) {
             pill("Today", tag: 0)
-            pill("Progress", tag: 1)
+            if model.showsChallengePane {
+                pill("Challenge", tag: 1)
+            }
+            pill("Progress", tag: 2)
         }
         .padding(4)
         .background(Color.white)
@@ -150,7 +155,9 @@ struct HabitsView: View {
     private func pill(_ title: String, tag: Int) -> some View {
         Button {
             model.mainTab = tag
-            Task { await model.load() }
+            if tag == 2 {
+                Task { await model.load() }
+            }
         } label: {
             Text(title)
                 .font(.caption.weight(.bold))
@@ -167,10 +174,6 @@ struct HabitsView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    todayChallengeCard
-                    if model.todayChallenge?.enrolled != true {
-                        challengeChips
-                    }
                     habitsCard
                 }
                 .padding(16)
@@ -192,6 +195,18 @@ struct HabitsView: View {
                 proxy.scrollTo(id, anchor: UnitPoint(x: 0.5, y: 0.12))
             }
         }
+    }
+
+    private var challengeScroll: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                todayChallengeCard
+                challengeChips
+                challengesSection
+            }
+            .padding(16)
+        }
+        .dockScrollClearance()
     }
 
     private var forYouSheet: some View {
@@ -552,7 +567,7 @@ struct HabitsView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Today’s checklist").font(.headline).foregroundStyle(HTTheme.forest)
-                    Text("Tap a row when you do it. Protein adds up from meals you log.")
+                    Text("Tap a row when you do it. Protein and fiber fill in from meals.")
                         .font(.caption)
                         .foregroundStyle(HTTheme.muted)
                 }
@@ -758,6 +773,9 @@ struct HabitsView: View {
 
     private func habitRow(_ habit: Habit) -> some View {
         let done = model.isCompleted(habit)
+        let mealMacro = HabitsViewModel.isMealMacroHabit(habit.title)
+        let showStepper = habit.isNumeric && !mealMacro && !HabitsViewModel.isMoveHabit(habit.title)
+        let showCheck = !habit.isNumeric && !mealMacro
         let card = VStack(alignment: .leading, spacing: 8) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
@@ -776,15 +794,18 @@ struct HabitsView: View {
                     }
                 }
                 Spacer()
-                if habit.isNumeric {
+                if showStepper {
                     let val = model.numericValue(habit)
                     Stepper("", value: Binding(
-                        get: { val },
-                        set: { new in Task { await model.setNumeric(habit, value: new) } }
+                        get: { model.numericValue(habit) },
+                        set: { new in model.applyNumericLocally(habit, value: new) }
                     ), in: 0...500)
                     .labelsHidden()
                     .tint(done ? .white : HTTheme.forest)
-                } else {
+                    Text("\(val)")
+                        .font(.headline.monospacedDigit())
+                        .foregroundStyle(done ? Color.white : HTTheme.forest)
+                } else if showCheck {
                     if habit.title.lowercased().contains("mindful") {
                         Button("Start") {
                             showMindful = true
@@ -802,7 +823,7 @@ struct HabitsView: View {
                         .foregroundStyle(done ? Color.white : HTTheme.muted)
                 }
             }
-            if habit.isNumeric {
+            if habit.isNumeric || mealMacro {
                 let val = model.numericValue(habit)
                 let target = max(habit.targetValue ?? 1, 1)
                 let pct = min(1, Double(val) / Double(target))
@@ -818,7 +839,7 @@ struct HabitsView: View {
         .background(done ? HTTheme.gold : HTTheme.cream)
         .clipShape(RoundedRectangle(cornerRadius: 16))
 
-        if habit.isNumeric {
+        if mealMacro || showStepper {
             return AnyView(card)
         }
         return AnyView(

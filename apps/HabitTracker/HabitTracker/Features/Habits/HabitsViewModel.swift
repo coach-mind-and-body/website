@@ -46,13 +46,78 @@ final class HabitsViewModel {
     var confettiBurst = 0
 
     var checklistHabits: [Habit] {
-        habits.filter { !Self.isVictoryHabit($0.title) }
+        Self.dedupeChecklist(habits.filter { !Self.isVictoryHabit($0.title) })
     }
+
+    var showsChallengePane: Bool { !challenges.isEmpty }
 
     static func isVictoryHabit(_ title: String) -> Bool {
         let t = title.trimmingCharacters(in: .whitespaces).lowercased()
         return t.contains("3 win") || t.contains("three win") || t.contains("3 victories")
             || t.contains("victory list") || t == "write 3 wins" || t == "write 3 wins tonight"
+    }
+
+    static func isProteinHabit(_ title: String) -> Bool {
+        title.lowercased().contains("protein")
+    }
+
+    static func isFiberHabit(_ title: String) -> Bool {
+        title.lowercased().contains("fiber")
+    }
+
+    static func isMealMacroHabit(_ title: String) -> Bool {
+        isProteinHabit(title) || isFiberHabit(title)
+    }
+
+    static func isMoveHabit(_ title: String) -> Bool {
+        let t = title.lowercased()
+        return t.contains("move")
+            || t.contains("exercise")
+            || t.contains("workout")
+            || (t.contains("walk") && !t.contains("mindful"))
+    }
+
+    /// One protein, one fiber, one move — numeric macros win; move prefers a simple check row.
+    static func dedupeChecklist(_ habits: [Habit]) -> [Habit] {
+        let ordered = habits.sorted { ($0.order ?? 0) < ($1.order ?? 0) }
+        func pickMacro(_ items: [Habit]) -> Habit? {
+            items.first(where: { $0.isNumeric }) ?? items.first
+        }
+        func pickMove(_ items: [Habit]) -> Habit? {
+            items.first(where: { !$0.isNumeric }) ?? items.first
+        }
+        let protein = pickMacro(ordered.filter { isProteinHabit($0.title) })
+        let fiber = pickMacro(ordered.filter { isFiberHabit($0.title) })
+        let move = pickMove(ordered.filter { isMoveHabit($0.title) })
+        var seenProtein = false
+        var seenFiber = false
+        var seenMove = false
+        var out: [Habit] = []
+        for h in ordered {
+            if isProteinHabit(h.title) {
+                if !seenProtein, h.id == protein?.id {
+                    out.append(h)
+                    seenProtein = true
+                }
+                continue
+            }
+            if isFiberHabit(h.title) {
+                if !seenFiber, h.id == fiber?.id {
+                    out.append(h)
+                    seenFiber = true
+                }
+                continue
+            }
+            if isMoveHabit(h.title) {
+                if !seenMove, h.id == move?.id {
+                    out.append(h)
+                    seenMove = true
+                }
+                continue
+            }
+            out.append(h)
+        }
+        return out
     }
 
     var progressMonth = MountainDate.today()
@@ -63,6 +128,7 @@ final class HabitsViewModel {
     private let health: HealthKitService
     private var didMergeGuest = false
     private var skipHealthWrite = false
+    @ObservationIgnored private var numericSaveTasks: [Int: Task<Void, Never>] = [:]
     var sessionEpoch: Int { auth.sessionEpoch }
 
     init(auth: AuthStore, health: HealthKitService) {
@@ -175,7 +241,7 @@ final class HabitsViewModel {
         if auth.isSignedIn {
             await mergeGuestIfNeeded()
             do {
-                let lookback = mainTab == 1 ? -400 : -21
+                let lookback = mainTab == 2 ? -400 : -21
                 let from = MountainDate.shift(MountainDate.today(), days: lookback)
                 let payload: HabitsPayload = try await auth.client.query(
                     "habit.getUserHabits",
@@ -260,6 +326,9 @@ final class HabitsViewModel {
             todayChallenge = nil
         }
         updates = (try? await auth.client.query("appUpdates.getUpdates")) ?? []
+        if !showsChallengePane, mainTab == 1 {
+            mainTab = 0
+        }
         if auth.isSignedIn {
             insight = try? await auth.client.query("habit.getWeeklyInsight")
         } else {
@@ -307,32 +376,34 @@ final class HabitsViewModel {
     }
 
     func toggle(_ habit: Habit, on day: String? = nil, celebrate: Bool = true) async {
+        if Self.isMealMacroHabit(habit.title) { return }
         let day = day ?? dateStr
         let previous = currentStreak
         let current = log(for: habit.id, on: day)
         let next = !(current?.completed ?? false)
-        if auth.isSignedIn {
-            do {
-                let _: SuccessFlag = try await auth.client.mutate(
-                    "habit.toggleLog",
-                    input: ToggleLogInput(
-                        userHabitId: habit.id,
-                        dateStr: day,
-                        completed: next,
-                        numericValue: current?.numericValue
-                    )
-                )
-                await load()
-                if next, !skipHealthWrite { await writeHealthIfNeeded(habit, on: day) }
-                if celebrate { celebrateStreakIfIncreased(from: previous) }
-            } catch {
-                errorMessage = error.localizedDescription
-            }
+        patchLog(habitId: habit.id, day: day, completed: next, numeric: current?.numericValue)
+        if !auth.isSignedIn {
+            upsertGuestLog(habitId: habit.id, day: day, completed: next, numeric: current?.numericValue)
+            if next, !skipHealthWrite { await writeHealthIfNeeded(habit, on: day) }
+            if celebrate { celebrateStreakIfIncreased(from: previous) }
             return
         }
-        upsertGuestLog(habitId: habit.id, day: day, completed: next, numeric: current?.numericValue)
-        if next, !skipHealthWrite { await writeHealthIfNeeded(habit, on: day) }
-        if celebrate { celebrateStreakIfIncreased(from: previous) }
+        do {
+            let _: SuccessFlag = try await auth.client.mutate(
+                "habit.toggleLog",
+                input: ToggleLogInput(
+                    userHabitId: habit.id,
+                    dateStr: day,
+                    completed: next,
+                    numericValue: current?.numericValue
+                )
+            )
+            if next, !skipHealthWrite { await writeHealthIfNeeded(habit, on: day) }
+            if celebrate { celebrateStreakIfIncreased(from: previous) }
+        } catch {
+            patchLog(habitId: habit.id, day: day, completed: current?.completed ?? false, numeric: current?.numericValue)
+            errorMessage = error.localizedDescription
+        }
     }
 
     func startMindfulSession(minutes: Int) async {
@@ -352,10 +423,40 @@ final class HabitsViewModel {
         }
     }
 
+    func applyNumericLocally(_ habit: Habit, value: Int, on day: String? = nil) {
+        let day = day ?? dateStr
+        let completed = value >= (habit.targetValue ?? 0)
+        patchLog(habitId: habit.id, day: day, completed: completed, numeric: value)
+        if !auth.isSignedIn {
+            upsertGuestLog(habitId: habit.id, day: day, completed: completed, numeric: value)
+        }
+        numericSaveTasks[habit.id]?.cancel()
+        numericSaveTasks[habit.id] = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(280))
+            guard !Task.isCancelled else { return }
+            await self?.persistNumeric(habit, value: value, on: day)
+        }
+    }
+
     func setNumeric(_ habit: Habit, value: Int, on day: String? = nil, reload: Bool = true, celebrate: Bool = true) async {
         let day = day ?? dateStr
         let previous = currentStreak
         let completed = value >= (habit.targetValue ?? 0)
+        patchLog(habitId: habit.id, day: day, completed: completed, numeric: value)
+        await persistNumeric(habit, value: value, on: day, celebrate: celebrate, previousStreak: previous)
+        if reload == false { return }
+    }
+
+    private func persistNumeric(
+        _ habit: Habit,
+        value: Int,
+        on day: String? = nil,
+        celebrate: Bool = true,
+        previousStreak: Int? = nil
+    ) async {
+        let day = day ?? dateStr
+        let completed = value >= (habit.targetValue ?? 0)
+        let previous = previousStreak ?? currentStreak
         if auth.isSignedIn {
             do {
                 let _: SuccessFlag = try await auth.client.mutate(
@@ -367,11 +468,6 @@ final class HabitsViewModel {
                         numericValue: value
                     )
                 )
-                if reload {
-                    await load()
-                } else {
-                    patchLog(habitId: habit.id, day: day, completed: completed, numeric: value)
-                }
                 if celebrate { celebrateStreakIfIncreased(from: previous) }
             } catch {
                 errorMessage = error.localizedDescription
