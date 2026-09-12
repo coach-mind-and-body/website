@@ -161,6 +161,11 @@ struct MealPlanIdInput: Encodable {
     let mealPlanId: Int
 }
 
+struct ShopBuildResult: Decodable {
+    var success: Bool?
+    var count: Int?
+}
+
 struct CheckInput: Encodable {
     let id: Int
     let checked: Bool

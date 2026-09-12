@@ -7,7 +7,10 @@ final class FoodViewModel {
     var recipes: [Recipe] = []
     var query = ""
     var mealPlan: MealPlan?
+    var plans: [MealPlan] = []
     var shop: [ShoppingItem] = []
+    var shopBusy = false
+    var shopNote: String?
     var logs: [CalorieLog] = []
     var dateStr = MountainDate.today()
     var isLoading = false
@@ -47,14 +50,29 @@ final class FoodViewModel {
     }
 
     func loadPlan() async {
+        plans = (try? await auth.client.query("food.listMealPlans")) ?? []
         if auth.isSignedIn {
             mealPlan = try? await auth.client.query("food.getMyMealPlan")
             return
         }
-        let plans: [MealPlan] = (try? await auth.client.query("food.listMealPlans")) ?? []
-        if let id = plans.first?.id {
+        if let id = mealPlan?.id ?? plans.first?.id {
             mealPlan = try? await auth.client.query("food.getMealPlan", input: IdInput(id: id))
         }
+    }
+
+    func choosePlan(_ id: Int) async {
+        if auth.isSignedIn {
+            do {
+                let _: SuccessFlag = try await auth.client.mutate(
+                    "food.chooseMealPlan",
+                    input: MealPlanIdInput(mealPlanId: id)
+                )
+                errorMessage = nil
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+        mealPlan = try? await auth.client.query("food.getMealPlan", input: IdInput(id: id))
     }
 
     func loadShop() async {
@@ -127,16 +145,35 @@ final class FoodViewModel {
         NotificationCenter.default.post(name: .mbrFoodLogged, object: nil)
     }
 
-    func buildShop() async {
-        guard let id = mealPlan?.id else { return }
+    func buildShop() async -> Bool {
+        guard auth.isSignedIn else {
+            errorMessage = "Sign in under You to keep a shopping list."
+            return false
+        }
+        guard let id = mealPlan?.id else {
+            errorMessage = "Pick a week first."
+            return false
+        }
+        shopBusy = true
+        shopNote = nil
+        defer { shopBusy = false }
         do {
-            let _: SuccessFlag = try await auth.client.mutate(
+            let result: ShopBuildResult = try await auth.client.mutate(
                 "food.regenerateShoppingList",
                 input: MealPlanIdInput(mealPlanId: id)
             )
             await loadShop()
+            let n = result.count ?? shop.count
+            if n == 0 {
+                shopNote = "This week’s recipes don’t have ingredients yet. Add items yourself on Shop."
+            } else {
+                shopNote = "Added \(n) item\(n == 1 ? "" : "s") from this week."
+            }
+            errorMessage = nil
+            return true
         } catch {
             errorMessage = error.localizedDescription
+            return false
         }
     }
 

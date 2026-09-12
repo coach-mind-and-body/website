@@ -3,19 +3,76 @@ import SwiftUI
 struct MealPlanView: View {
     @Bindable var food: FoodViewModel
     @Bindable var auth: AuthStore
+    var onGoShop: () -> Void = {}
 
     private let days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
     var body: some View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
+                    if food.plans.count > 1 {
+                        Text("This week")
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(HTTheme.muted)
+                        Menu {
+                            ForEach(food.plans) { plan in
+                                Button(plan.title) {
+                                    Task { await food.choosePlan(plan.id) }
+                                }
+                            }
+                        } label: {
+                            HStack {
+                                Text(food.mealPlan?.title ?? "Choose a week")
+                                    .font(.headline)
+                                    .foregroundStyle(HTTheme.forest)
+                                Spacer()
+                                Image(systemName: "chevron.up.chevron.down")
+                                    .font(.caption.weight(.bold))
+                                    .foregroundStyle(HTTheme.gold)
+                            }
+                            .padding(14)
+                            .background(Color.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                            .overlay(RoundedRectangle(cornerRadius: 14).stroke(HTTheme.roseBorder))
+                        }
+                        Text(food.mealPlan?.assigned == true
+                             ? "Lee Anne assigned this. You can still pick another published week."
+                             : "Pick a published week, or wait for Lee Anne to assign one.")
+                            .font(.caption)
+                            .foregroundStyle(HTTheme.muted)
+                    }
+
                     if let plan = food.mealPlan {
-                        Text(plan.title).font(.headline).foregroundStyle(HTTheme.forest)
-                        if let d = plan.description { Text(d).font(.subheadline).foregroundStyle(HTTheme.muted) }
+                        if food.plans.count <= 1 {
+                            Text(plan.title).font(.headline).foregroundStyle(HTTheme.forest)
+                            if let d = plan.description { Text(d).font(.subheadline).foregroundStyle(HTTheme.muted) }
+                        }
+                        if let err = food.errorMessage {
+                            Text(err).font(.caption).foregroundStyle(.red)
+                        }
+                        if let note = food.shopNote {
+                            Text(note).font(.caption).foregroundStyle(HTTheme.muted)
+                        }
                         if auth.isSignedIn {
-                            Button("Build shopping list") { Task { await food.buildShop() } }
-                                .font(.subheadline.weight(.bold))
-                                .foregroundStyle(HTTheme.gold)
+                            Button {
+                                Task {
+                                    if await food.buildShop() { onGoShop() }
+                                }
+                            } label: {
+                                Text(food.shopBusy ? "Building…" : "Build shopping list")
+                                    .font(.headline)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 14)
+                                    .background(food.shopBusy ? HTTheme.muted.opacity(0.35) : HTTheme.forest)
+                                    .foregroundStyle(.white)
+                                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(food.shopBusy)
+                        } else {
+                            Text("Sign in under You to build a shopping list from this week.")
+                                .font(.caption)
+                                .foregroundStyle(HTTheme.muted)
                         }
                         ForEach(0..<7, id: \.self) { day in
                             let slots = (plan.slots ?? []).filter { $0.dayOfWeek == day }
@@ -40,8 +97,8 @@ struct MealPlanView: View {
                                 }
                             }
                         }
-                    } else {
-                        Text("Lee Anne hasn’t assigned a week yet — browse the vault.")
+                    } else if food.plans.isEmpty {
+                        Text("No week is published yet. Browse Recipes, or wait for Lee Anne to assign a plan.")
                             .foregroundStyle(HTTheme.muted)
                     }
                 }
@@ -73,6 +130,14 @@ struct ShopView: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 8)
+
+                if let note = food.shopNote {
+                    Text(note)
+                        .font(.caption)
+                        .foregroundStyle(HTTheme.muted)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 6)
+                }
 
                 if food.shop.contains(where: \.isChecked) {
                     Button("Clear checked") {

@@ -588,6 +588,26 @@ export const foodRouter = router({
     };
   }),
 
+  chooseMealPlan: protectedProcedure
+    .input(z.object({ mealPlanId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await requireDb();
+      const [plan] = await db
+        .select()
+        .from(mealPlans)
+        .where(and(eq(mealPlans.id, input.mealPlanId), eq(mealPlans.isPublished, true)))
+        .limit(1);
+      if (!plan) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "That week isn’t available." });
+      }
+      await db.delete(mealPlanAssignments).where(eq(mealPlanAssignments.userId, ctx.user.id));
+      await db.insert(mealPlanAssignments).values({
+        mealPlanId: plan.id,
+        userId: ctx.user.id,
+      });
+      return { success: true };
+    }),
+
   adminCreateMealPlan: adminProcedure
     .input(
       z.object({
@@ -918,7 +938,7 @@ export const foodRouter = router({
         source: "plan" as const,
       }));
       if (values.length) await db.insert(shoppingListItems).values(values);
-      return { count: values.length };
+      return { success: true, count: values.length };
     }),
 
   setShoppingChecked: protectedProcedure

@@ -274,7 +274,7 @@ struct RecipesHubView: View {
                     case 0:
                         CaloriesView(food: food, auth: auth)
                     case 2:
-                        MealPlanView(food: food, auth: auth)
+                        MealPlanView(food: food, auth: auth) { page = 3 }
                     case 3:
                         ShopView(food: food, auth: auth)
                     default:
