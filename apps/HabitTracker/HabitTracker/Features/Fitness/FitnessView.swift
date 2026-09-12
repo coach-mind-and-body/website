@@ -135,7 +135,7 @@ struct FitnessView: View {
                 HStack {
                     Button("←") { Task { model.dateStr = MountainDate.shift(model.dateStr, days: -1); await model.load() } }
                     Spacer()
-                    Text(model.dateStr == MountainDate.today() ? "Today" : model.dateStr)
+                    Text(model.dateStr == MountainDate.today() ? "Today" : MountainDate.long(model.dateStr))
                         .font(.subheadline.weight(.semibold))
                     Spacer()
                     Button("→") { Task { model.dateStr = MountainDate.shift(model.dateStr, days: 1); await model.load() } }

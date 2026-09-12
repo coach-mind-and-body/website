@@ -9,6 +9,20 @@ final class PodcastViewModel {
     var selected: PodcastEpisode?
     var isLoading = false
     var errorMessage: String?
+    var page = 1
+    private let pageSize = 8
+
+    var visibleEpisodes: [PodcastEpisode] {
+        Array(episodes.prefix(page * pageSize))
+    }
+
+    var canShowMore: Bool {
+        visibleEpisodes.count < episodes.count
+    }
+
+    var remainingCount: Int {
+        max(0, episodes.count - visibleEpisodes.count)
+    }
     private let auth: AuthStore
     var sessionEpoch: Int { auth.sessionEpoch }
 
@@ -23,6 +37,7 @@ final class PodcastViewModel {
             guard !Task.isCancelled else { return }
             episodes = payload.episodes
             if selected == nil { selected = episodes.first }
+            if page < 1 { page = 1 }
             errorMessage = nil
         } catch {
             if Self.isCancellation(error) { return }
@@ -117,6 +132,9 @@ struct PodcastView: View {
                         }
 
                         Text(ep.title).font(.headline).foregroundStyle(HTTheme.forest)
+                        if let d = ep.publishedAt, !d.isEmpty {
+                            Text(MountainDate.long(d)).font(.caption).foregroundStyle(HTTheme.muted)
+                        }
                         if let d = ep.description, !d.isEmpty {
                             Text(d).font(.caption).foregroundStyle(HTTheme.muted).lineLimit(4)
                         }
@@ -145,7 +163,7 @@ struct PodcastView: View {
                         }
                     }
 
-                    ForEach(model.episodes) { ep in
+                    ForEach(model.visibleEpisodes) { ep in
                         Button {
                             model.selected = ep
                         } label: {
@@ -158,11 +176,28 @@ struct PodcastView: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 8))
                                 VStack(alignment: .leading) {
                                     Text(ep.title).font(.subheadline.weight(.semibold)).foregroundStyle(HTTheme.forest).multilineTextAlignment(.leading)
-                                    if let d = ep.publishedAt { Text(String(d.prefix(10))).font(.caption).foregroundStyle(HTTheme.muted) }
+                                    if let d = ep.publishedAt, !d.isEmpty {
+                                        Text(MountainDate.long(d)).font(.caption).foregroundStyle(HTTheme.muted)
+                                    }
                                 }
                                 Spacer()
                             }
                         }
+                    }
+                    if model.canShowMore {
+                        Button {
+                            model.page += 1
+                        } label: {
+                            Text("Show more (\(model.remainingCount) left)")
+                                .font(.subheadline.weight(.bold))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(Color.white)
+                                .foregroundStyle(HTTheme.forest)
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                                .overlay(RoundedRectangle(cornerRadius: 14).stroke(HTTheme.roseBorder))
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
                 .padding(16)

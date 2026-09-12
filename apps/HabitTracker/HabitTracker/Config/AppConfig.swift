@@ -31,7 +31,8 @@ enum MountainDate {
     }
 
     static func date(from string: String) -> Date? {
-        let parts = string.split(separator: "-").compactMap { Int($0) }
+        let day = String(string.prefix(10))
+        let parts = day.split(separator: "-").compactMap { Int($0) }
         guard parts.count == 3 else { return nil }
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = AppConfig.mountainTimeZone
@@ -81,6 +82,16 @@ enum MountainDate {
         let f = DateFormatter()
         f.timeZone = AppConfig.mountainTimeZone
         f.dateFormat = "EEEE, MMM d"
+        return f.string(from: date)
+    }
+
+    /// e.g. March 26, 2026
+    static func long(_ dateStr: String) -> String {
+        guard let date = date(from: dateStr) else { return dateStr }
+        let f = DateFormatter()
+        f.timeZone = AppConfig.mountainTimeZone
+        f.locale = Locale(identifier: "en_US")
+        f.dateFormat = "MMMM d, yyyy"
         return f.string(from: date)
     }
 
