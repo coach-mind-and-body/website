@@ -18,12 +18,17 @@ enum YouTubeID {
     static func watchURL(_ id: String) -> URL {
         URL(string: "https://www.youtube.com/watch?v=\(id)")!
     }
+
+    static func thumbURL(_ id: String) -> URL {
+        URL(string: "https://img.youtube.com/vi/\(id)/hqdefault.jpg")!
+    }
 }
 
 /// Plays in-app. YouTube error 152-4 is a missing Referer in WKWebView iframes —
 /// we load the embed URL directly with a Safari user agent and our site as Referer.
 struct YouTubeEmbed: UIViewRepresentable {
     let videoId: String
+    var startSeconds: Int = 0
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -41,9 +46,12 @@ struct YouTubeEmbed: UIViewRepresentable {
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {
-        guard context.coordinator.loadedId != videoId else { return }
-        context.coordinator.loadedId = videoId
-        let url = URL(string: "https://www.youtube.com/embed/\(videoId)?playsinline=1&rel=0&modestbranding=1&fs=1")!
+        let key = "\(videoId)-\(startSeconds)"
+        guard context.coordinator.loadedId != key else { return }
+        context.coordinator.loadedId = key
+        var urlStr = "https://www.youtube.com/embed/\(videoId)?playsinline=1&rel=0&modestbranding=1&fs=1"
+        if startSeconds > 0 { urlStr += "&start=\(startSeconds)" }
+        let url = URL(string: urlStr)!
         var request = URLRequest(url: url)
         request.setValue("https://mindandbodyresetcoach.com/", forHTTPHeaderField: "Referer")
         request.setValue("https://mindandbodyresetcoach.com", forHTTPHeaderField: "Origin")

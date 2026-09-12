@@ -385,12 +385,37 @@ struct FitnessAddInput: Encodable {
     var durationMinutes: Int = 0
 }
 
+struct WorkoutInterval: Codable, Hashable, Identifiable {
+    var startTime: Double
+    var endTime: Double
+    var title: String
+    var description: String?
+    var id: String { "\(startTime)-\(title)" }
+
+    var startSeconds: Int { Int(startTime) }
+    var durationSeconds: Int { max(1, Int(endTime - startTime)) }
+
+    var startLabel: String {
+        let m = startSeconds / 60
+        let s = startSeconds % 60
+        return String(format: "%d:%02d", m, s)
+    }
+}
+
 struct WorkoutVideo: Codable, Identifiable, Hashable {
     var id: Int
     var title: String
     var description: String?
     var videoUrl: String
     var category: String?
+    var intervalsJson: String?
+
+    var intervals: [WorkoutInterval] {
+        guard let raw = intervalsJson, let data = raw.data(using: .utf8),
+              let parsed = try? JSONDecoder().decode([WorkoutInterval].self, from: data)
+        else { return [] }
+        return parsed.sorted { $0.startTime < $1.startTime }
+    }
 }
 
 struct PodcastEpisode: Codable, Identifiable, Hashable {

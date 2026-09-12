@@ -100,7 +100,6 @@ final class FitnessViewModel {
 struct FitnessView: View {
     @Bindable var model: FitnessViewModel
     @Bindable var auth: AuthStore
-    @State private var playingId: String?
 
     var body: some View {
         NavigationStack {
@@ -121,6 +120,9 @@ struct FitnessView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     ProfileAvatarButton(auth: auth)
                 }
+            }
+            .navigationDestination(for: WorkoutVideo.self) { video in
+                WorkoutWatchView(video: video, model: model)
             }
             .task(id: model.sessionEpoch) { await model.load() }
             .refreshable { await model.load() }
@@ -256,25 +258,12 @@ struct FitnessView: View {
                         .foregroundStyle(HTTheme.muted)
                         .padding(16)
                 }
-                LazyVStack(alignment: .leading, spacing: 10) {
+                LazyVStack(alignment: .leading, spacing: 12) {
                     ForEach(model.filteredVideos) { video in
-                        let vid = YouTubeID.parse(video.videoUrl)
-                        HTCard {
-                            Text((video.category ?? "Workout").uppercased()).font(.caption2.weight(.bold)).foregroundStyle(HTTheme.gold)
-                            Text(video.title).foregroundStyle(HTTheme.forest)
-                            if let d = video.description { Text(d).font(.caption).foregroundStyle(HTTheme.muted).lineLimit(2) }
-                            if let vid, playingId == vid {
-                                YouTubePlayer(videoId: vid)
-                            } else if let vid {
-                                Button("Play") { playingId = vid }
-                                    .font(.caption.weight(.bold))
-                                    .foregroundStyle(HTTheme.gold)
-                            } else if let url = URL(string: video.videoUrl) {
-                                Link("Open video", destination: url)
-                                    .font(.caption.weight(.bold))
-                                    .foregroundStyle(HTTheme.gold)
-                            }
+                        NavigationLink(value: video) {
+                            videoCard(video)
                         }
+                        .buttonStyle(.plain)
                     }
                 }
                 .padding(.horizontal, 16)
@@ -282,5 +271,223 @@ struct FitnessView: View {
             }
             .dockScrollClearance()
         }
+    }
+
+    private func videoCard(_ video: WorkoutVideo) -> some View {
+        let vid = YouTubeID.parse(video.videoUrl)
+        let moves = video.intervals.count
+        return VStack(alignment: .leading, spacing: 0) {
+            ZStack(alignment: .topLeading) {
+                Group {
+                    if let vid {
+                        AsyncImage(url: YouTubeID.thumbURL(vid)) { phase in
+                            if case .success(let img) = phase {
+                                img.resizable().scaledToFill()
+                            } else {
+                                HTTheme.roseBorder
+                            }
+                        }
+                    } else {
+                        HTTheme.roseBorder
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 180)
+                .clipped()
+
+                Image(systemName: "play.circle.fill")
+                    .font(.system(size: 52))
+                    .foregroundStyle(.white)
+                    .shadow(radius: 8)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                Text((video.category ?? "Workout").uppercased())
+                    .font(.caption2.weight(.bold))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(.white.opacity(0.92))
+                    .foregroundStyle(HTTheme.forest)
+                    .clipShape(Capsule())
+                    .padding(10)
+
+                if moves > 0 {
+                    Text("\(moves) moves")
+                        .font(.caption2.weight(.bold))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(HTTheme.gold)
+                        .foregroundStyle(.white)
+                        .clipShape(Capsule())
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .padding(10)
+                }
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                Text(video.title).font(.headline).foregroundStyle(HTTheme.forest)
+                if let d = video.description, !d.isEmpty {
+                    Text(d).font(.caption).foregroundStyle(HTTheme.muted).lineLimit(2)
+                }
+            }
+            .padding(12)
+        }
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(HTTheme.roseBorder))
+    }
+}
+
+struct WorkoutWatchView: View {
+    let video: WorkoutVideo
+    @Bindable var model: FitnessViewModel
+    @State private var startSeconds = 0
+    @State private var activeIndex = 0
+    @State private var remaining = 0
+    @State private var running = false
+    @State private var logged = false
+
+    private var intervals: [WorkoutInterval] { video.intervals }
+    private var videoId: String? { YouTubeID.parse(video.videoUrl) }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                if let vid = videoId {
+                    YouTubeEmbed(videoId: vid, startSeconds: startSeconds)
+                        .frame(height: 210)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                }
+
+                if !intervals.isEmpty {
+                    timerCard
+                    Text("Lee Anne’s timestamps")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(HTTheme.muted)
+                    ForEach(Array(intervals.enumerated()), id: \.element.id) { i, inv in
+                        Button {
+                            jump(to: i, startTimer: true)
+                        } label: {
+                            HStack {
+                                Text(inv.startLabel)
+                                    .font(.caption.weight(.bold).monospacedDigit())
+                                    .foregroundStyle(HTTheme.gold)
+                                    .frame(width: 44, alignment: .leading)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(inv.title).font(.subheadline.weight(.semibold)).foregroundStyle(HTTheme.forest)
+                                    if let d = inv.description, !d.isEmpty {
+                                        Text(d).font(.caption).foregroundStyle(HTTheme.muted)
+                                    }
+                                }
+                                Spacer()
+                                if i == activeIndex {
+                                    Image(systemName: "play.fill").font(.caption).foregroundStyle(HTTheme.gold)
+                                }
+                            }
+                            .padding(10)
+                            .background(i == activeIndex ? HTTheme.cream : Color.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
+                if let d = video.description, !d.isEmpty {
+                    Text(d).font(.subheadline).foregroundStyle(HTTheme.muted)
+                }
+
+                Button {
+                    Task { await markComplete() }
+                } label: {
+                    Text(logged ? "Logged" : "Mark complete")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(HTTheme.forest)
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                }
+                .disabled(logged)
+                .buttonStyle(.plain)
+            }
+            .padding(16)
+            .padding(.bottom, HTTheme.dockClearance)
+        }
+        .dockScrollClearance()
+        .background(HTTheme.cream.ignoresSafeArea())
+        .navigationTitle(video.title)
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            if let first = intervals.first {
+                remaining = first.durationSeconds
+            }
+        }
+        .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { _ in
+            guard running, remaining > 0 else { return }
+            remaining -= 1
+            if remaining == 0 {
+                if activeIndex + 1 < intervals.count {
+                    jump(to: activeIndex + 1, startTimer: true)
+                } else {
+                    running = false
+                }
+            }
+        }
+    }
+
+    private var timerCard: some View {
+        VStack(spacing: 8) {
+            if let current = intervals[safe: activeIndex] {
+                Text(current.title.uppercased())
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(HTTheme.gold)
+                Text(clock(remaining))
+                    .font(.system(size: 48, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(HTTheme.forest)
+                if let next = intervals[safe: activeIndex + 1] {
+                    Text("Next: \(next.title)")
+                        .font(.caption)
+                        .foregroundStyle(HTTheme.muted)
+                }
+                Button(running ? "Pause" : "Start") {
+                    running.toggle()
+                    if running { startSeconds = current.startSeconds }
+                }
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(HTTheme.forest)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(16)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+    }
+
+    private func jump(to index: Int, startTimer: Bool) {
+        guard intervals.indices.contains(index) else { return }
+        activeIndex = index
+        remaining = intervals[index].durationSeconds
+        startSeconds = intervals[index].startSeconds
+        running = startTimer
+    }
+
+    private func clock(_ secs: Int) -> String {
+        String(format: "%d:%02d", secs / 60, secs % 60)
+    }
+
+    private func markComplete() async {
+        let mins: Int
+        if let last = intervals.last {
+            mins = max(1, Int((last.endTime + 59) / 60))
+        } else {
+            mins = 20
+        }
+        await model.add(name: video.title, minutes: mins)
+        logged = true
+    }
+}
+
+private extension Array {
+    subscript(safe index: Int) -> Element? {
+        indices.contains(index) ? self[index] : nil
     }
 }
