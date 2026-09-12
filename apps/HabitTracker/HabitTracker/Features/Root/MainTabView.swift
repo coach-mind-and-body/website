@@ -92,6 +92,9 @@ struct MainTabView: View {
             if next == .habits {
                 Task { await habits.onFoodLogged() }
             }
+            if next == .podcast {
+                Task { await podcast.load() }
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .mbrFoodLogged)) { _ in
             Task { await habits.onFoodLogged() }

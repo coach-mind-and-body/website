@@ -15,15 +15,26 @@ final class PodcastViewModel {
     init(auth: AuthStore) { self.auth = auth }
 
     func load() async {
-        isLoading = true
+        if Task.isCancelled { return }
+        isLoading = episodes.isEmpty
         defer { isLoading = false }
         do {
             let payload: PodcastPayload = try await auth.client.query("podcast.getEpisodes")
+            guard !Task.isCancelled else { return }
             episodes = payload.episodes
             if selected == nil { selected = episodes.first }
+            errorMessage = nil
         } catch {
+            if Self.isCancellation(error) { return }
             errorMessage = error.localizedDescription
         }
+    }
+
+    private static func isCancellation(_ error: Error) -> Bool {
+        if error is CancellationError { return true }
+        if (error as? URLError)?.code == .cancelled { return true }
+        let ns = error as NSError
+        return ns.domain == NSURLErrorDomain && ns.code == NSURLErrorCancelled
     }
 
     func actions(for episode: PodcastEpisode) -> [HabitAction] {
@@ -84,6 +95,9 @@ struct PodcastView: View {
                     if model.isLoading { ProgressView().frame(maxWidth: .infinity) }
                     if let err = model.errorMessage {
                         Text(err).font(.caption).foregroundStyle(.red)
+                        Button("Try again") { Task { await model.load() } }
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(HTTheme.gold)
                     } else if !model.isLoading && model.episodes.isEmpty {
                         Text("No episodes yet. Pull to refresh.")
                             .font(.subheadline)
@@ -162,7 +176,13 @@ struct PodcastView: View {
                     ProfileAvatarButton(auth: auth)
                 }
             }
-            .task(id: model.sessionEpoch) { await model.load() }
+            .task(id: model.sessionEpoch) {
+                await model.load()
+                if model.episodes.isEmpty {
+                    try? await Task.sleep(for: .milliseconds(400))
+                    await model.load()
+                }
+            }
             .refreshable { await model.load() }
         }
     }
