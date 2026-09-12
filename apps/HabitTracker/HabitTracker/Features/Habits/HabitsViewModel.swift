@@ -51,6 +51,15 @@ final class HabitsViewModel {
 
     var showsChallengePane: Bool { !challenges.isEmpty }
 
+    func openChallengePane() async {
+        if challenges.isEmpty {
+            await loadDashboard()
+        }
+        if showsChallengePane {
+            mainTab = 1
+        }
+    }
+
     static func isVictoryHabit(_ title: String) -> Bool {
         let t = title.trimmingCharacters(in: .whitespaces).lowercased()
         return t.contains("3 win") || t.contains("three win") || t.contains("3 victories")

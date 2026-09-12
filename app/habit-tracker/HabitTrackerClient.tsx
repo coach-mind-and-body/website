@@ -47,6 +47,7 @@ export default function HabitTrackerClient() {
   const { isAuthenticated } = useAuth();
   const searchParams = useSearchParams();
   const focusVictories = searchParams?.get("focus") === "victories";
+  const focusChallenge = searchParams?.get("focus") === "challenge";
   const { isSupported, isSubscribed, isSubscribing, subscribeToPush } = useWebPush();
   
   // Data State
@@ -136,6 +137,12 @@ export default function HabitTrackerClient() {
     },
     onError: (e) => toast.error(e.message)
   });
+
+  useEffect(() => {
+    if (!focusChallenge) return;
+    setMainTab("daily");
+    setShowChallenges(true);
+  }, [focusChallenge]);
 
   // Initialize Local Storage and Mount
   useEffect(() => {

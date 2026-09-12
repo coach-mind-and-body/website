@@ -96,6 +96,18 @@ struct MainTabView: View {
         .onReceive(NotificationCenter.default.publisher(for: .mbrFoodLogged)) { _ in
             Task { await habits.onFoodLogged() }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .mbrOpenDeepLink)) { note in
+            guard let link = note.object as? DeepLink else { return }
+            switch link {
+            case .challenge:
+                tab = .habits
+                Task { await habits.openChallengePane() }
+            case .coach:
+                tab = .coach
+            case .habits:
+                tab = .habits
+            }
+        }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 Task {

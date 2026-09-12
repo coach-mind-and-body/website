@@ -2,6 +2,35 @@ import SwiftUI
 
 extension Notification.Name {
     static let mbrFoodLogged = Notification.Name("mbr.foodLogged")
+    static let mbrOpenDeepLink = Notification.Name("mbr.openDeepLink")
+}
+
+enum DeepLink {
+    case challenge
+    case coach
+    case habits
+
+    static func post(_ link: DeepLink) {
+        NotificationCenter.default.post(name: .mbrOpenDeepLink, object: link)
+    }
+
+    static func fromNotification(_ userInfo: [AnyHashable: Any]) -> DeepLink? {
+        let tab = (userInfo["tab"] as? String ?? "").lowercased()
+        let url = (userInfo["url"] as? String ?? "").lowercased()
+        if tab == "challenge" || url.contains("challenge") { return .challenge }
+        if tab == "coach" || url.contains("coach") { return .coach }
+        if tab == "habits" || url.contains("habit-tracker") { return .habits }
+        return nil
+    }
+
+    static func fromURL(_ url: URL) -> DeepLink? {
+        let host = (url.host ?? "").lowercased()
+        let path = url.path.lowercased()
+        if host == "challenge" || path.contains("challenge") { return .challenge }
+        if host == "coach" || path.contains("coach") { return .coach }
+        if host == "habits" || path.contains("habit") { return .habits }
+        return nil
+    }
 }
 
 enum HTTheme {

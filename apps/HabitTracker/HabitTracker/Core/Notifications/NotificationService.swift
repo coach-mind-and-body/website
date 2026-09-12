@@ -23,7 +23,7 @@ enum NotificationService {
         content.title = "Lee Anne sent a message"
         content.body = preview
         content.sound = .default
-        content.userInfo = ["url": "/habit-tracker/coach"]
+        content.userInfo = ["tab": "coach", "url": "/habit-tracker/coach"]
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 0.5, repeats: false)
         let req = UNNotificationRequest(
             identifier: "coach-\(Int(Date().timeIntervalSince1970))",
@@ -40,6 +40,7 @@ enum NotificationService {
         content.title = "Evening check-in"
         content.body = "A quiet look at today's habits — no scoreboard."
         content.sound = .default
+        content.userInfo = ["tab": "habits", "url": "/habit-tracker"]
         var date = DateComponents()
         date.hour = 20
         date.minute = 0
@@ -75,7 +76,8 @@ enum NotificationService {
             hour: 19,
             minute: 0,
             title: "Real Food Reset starts tomorrow",
-            body: "We begin September 28. Lives Mon/Wed/Fri at 12:00 pm Mountain."
+            body: "We begin September 28. Lives Mon/Wed/Fri at 12:00 pm Mountain.",
+            tab: "challenge"
         )
 
         for (i, day) in days.enumerated() {
@@ -85,7 +87,10 @@ enum NotificationService {
                 hour: 8,
                 minute: 0,
                 title: "Day \(day.n): \(day.title)",
-                body: "Log your food and jot a few lines in the journal — progress, not perfection."
+                body: day.live
+                    ? "Class is at 12:00 pm Mountain. Open Challenge when you’re ready."
+                    : "Today’s video and recipes are in Challenge.",
+                tab: "challenge"
             )
             if day.live {
                 await addOnce(
@@ -93,8 +98,9 @@ enum NotificationService {
                     mountainDate: day.date,
                     hour: 11,
                     minute: 45,
-                    title: "We're live in 15 minutes",
-                    body: "Join from the app — 12:00 pm Mountain."
+                    title: "Class starts in 15 minutes",
+                    body: "Tap to join live — 12:00 pm Mountain.",
+                    tab: "challenge"
                 )
             }
             await addOnce(
@@ -103,7 +109,8 @@ enum NotificationService {
                 hour: 19,
                 minute: 0,
                 title: "Evening check-in",
-                body: "Log a meal or write three lines in your journal. That counts as today."
+                body: "Open Challenge to log today and write three lines. That counts.",
+                tab: "challenge"
             )
         }
     }
@@ -114,7 +121,8 @@ enum NotificationService {
         hour: Int,
         minute: Int,
         title: String,
-        body: String
+        body: String,
+        tab: String = "challenge"
     ) async {
         let parts = mountainDate.split(separator: "-").compactMap { Int($0) }
         guard parts.count == 3 else { return }
@@ -129,9 +137,33 @@ enum NotificationService {
         content.title = title
         content.body = body
         content.sound = .default
-        content.userInfo = ["url": "/habit-tracker"]
+        content.userInfo = ["tab": tab, "url": "/habit-tracker?focus=challenge"]
         let trigger = UNCalendarNotificationTrigger(dateMatching: local, repeats: false)
         let req = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
         try? await UNUserNotificationCenter.current().add(req)
+    }
+
+    static func installDelegate() {
+        UNUserNotificationCenter.current().delegate = NotificationTapDelegate.shared
+    }
+}
+
+final class NotificationTapDelegate: NSObject, UNUserNotificationCenterDelegate {
+    static let shared = NotificationTapDelegate()
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification
+    ) async -> UNNotificationPresentationOptions {
+        [.banner, .sound, .list]
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse
+    ) async {
+        if let link = DeepLink.fromNotification(response.notification.request.content.userInfo) {
+            DeepLink.post(link)
+        }
     }
 }

@@ -58,31 +58,34 @@ function shiftDateStr(dateStr: string, days: number): string {
 
 function payloadFor(kind: ChallengePushKind, dateStr: string): { title: string; body: string; url: string } {
   const day = realFoodResetDayForDate(dateStr);
-  const url = "/habit-tracker";
+  const url = "/habit-tracker?focus=challenge";
   if (kind === "eve-before") {
     return {
       title: `${REAL_FOOD_RESET.shortName} starts tomorrow`,
-      body: `We begin ${REAL_FOOD_RESET.startLabel}. Lives are ${REAL_FOOD_RESET.liveDays} at ${REAL_FOOD_RESET.liveTime}. Open the app.`,
+      body: `We begin ${REAL_FOOD_RESET.startLabel}. Lives are ${REAL_FOOD_RESET.liveDays} at ${REAL_FOOD_RESET.liveTime}.`,
       url,
     };
   }
   if (kind === "morning" && day) {
     return {
       title: `Day ${day.n}: ${day.title}`,
-      body: `${day.formatLabel}. Log your food and jot a few lines in the journal — progress, not perfection.`,
+      body:
+        day.format === "live"
+          ? `Class is at ${REAL_FOOD_RESET.liveTime}. Open Challenge when you're ready.`
+          : "Today's video and recipes are in Challenge.",
       url,
     };
   }
   if (kind === "live" && day) {
     return {
-      title: "We're live in 15 minutes",
-      body: `Join ${REAL_FOOD_RESET.shortName} from the app — ${REAL_FOOD_RESET.liveTime}.`,
+      title: "Class starts in 15 minutes",
+      body: `Tap to join live — ${REAL_FOOD_RESET.liveTime}.`,
       url,
     };
   }
   return {
     title: "Evening check-in",
-    body: "Log a meal or write three lines in your journal. That counts as today.",
+    body: "Open Challenge to log today and write three lines. That counts.",
     url,
   };
 }
