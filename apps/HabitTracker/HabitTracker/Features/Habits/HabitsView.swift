@@ -155,6 +155,9 @@ struct HabitsView: View {
     private func pill(_ title: String, tag: Int) -> some View {
         Button {
             model.mainTab = tag
+            if tag == 0 {
+                Task { await model.selectDay(MountainDate.today()) }
+            }
             if tag == 2 {
                 Task { await model.load() }
             }
@@ -608,64 +611,11 @@ struct HabitsView: View {
 
     private var habitsCard: some View {
         HTCard {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Today’s checklist").font(.headline).foregroundStyle(HTTheme.forest)
-                    Text("Tap what you did. Meals fill protein. Apple Health fills move and sleep.")
-                        .font(.caption)
-                        .foregroundStyle(HTTheme.muted)
-                }
-                Spacer()
-                Button(model.showPastDays ? "Hide calendar" : "Edit past days") {
-                    model.showPastDays.toggle()
-                }
-                .font(.caption.weight(.bold))
-                .foregroundStyle(HTTheme.muted)
-            }
-
-            if model.showPastDays {
-                HStack {
-                    Button("← Week") { model.shiftWeek(-1) }
-                    Spacer()
-                    Text("\(MountainDate.dayNumber(model.weekDays.first ?? ""))–\(MountainDate.dayNumber(model.weekDays.last ?? ""))")
-                        .font(.subheadline.weight(.semibold))
-                    Spacer()
-                    Button("Week →") { model.shiftWeek(1) }
-                }
-                .font(.caption.weight(.bold))
-                .foregroundStyle(HTTheme.gold)
-
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(model.weekDays, id: \.self) { day in
-                            let selected = day == model.dateStr
-                            let today = day == MountainDate.today()
-                            Button {
-                                Task { await model.selectDay(day) }
-                            } label: {
-                                VStack(spacing: 6) {
-                                    Text(MountainDate.weekdayShort(day))
-                                        .font(.caption2.weight(.bold))
-                                        .foregroundStyle(selected ? HTTheme.gold : HTTheme.muted)
-                                    Text(MountainDate.dayNumber(day))
-                                        .font(.subheadline.weight(.bold))
-                                        .frame(width: 36, height: 36)
-                                        .background(today ? HTTheme.gold : selected ? Color.white : Color.clear)
-                                        .foregroundStyle(today ? Color.white : HTTheme.forest)
-                                        .clipShape(Circle())
-                                }
-                                .padding(8)
-                                .background(selected ? HTTheme.cream : Color.clear)
-                                .clipShape(RoundedRectangle(cornerRadius: 14))
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-                Text("Habits for \(MountainDate.friendly(model.dateStr))")
-                    .font(.caption.weight(.bold))
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Today’s checklist").font(.headline).foregroundStyle(HTTheme.forest)
+                Text("Tap what you did. Meals fill protein. Apple Health fills move and sleep. Edit a past day on Progress.")
+                    .font(.caption)
                     .foregroundStyle(HTTheme.muted)
-                    .frame(maxWidth: .infinity)
             }
 
             if model.isLoading && model.habits.isEmpty {

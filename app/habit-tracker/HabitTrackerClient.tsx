@@ -5,9 +5,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { Check, Info, Calendar as CalendarIcon, Sparkles, Flame, Target, Plus, Megaphone } from "lucide-react";
+import { Check, Info, Sparkles, Flame, Target, Plus, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { format, subDays, addDays } from "date-fns";
+import { format, subDays } from "date-fns";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -58,13 +58,11 @@ export default function HabitTrackerClient() {
   const [isMounted, setIsMounted] = useState(false);
   const [mainTab, setMainTab] = useState<"daily" | "progress">("daily");
 
-  // Week / selection anchored to America/Denver calendar days
-  const [currentDate, setCurrentDate] = useState(() => parseCalendarDate(todayMountainDateStr()));
+  // Dashboard is always today. Past days live on Progress.
   const [selectedDate, setSelectedDate] = useState(() => parseCalendarDate(todayMountainDateStr()));
   const [isNotesExpanded, setIsNotesExpanded] = useState(false);
   const [showChallenges, setShowChallenges] = useState(false);
   const [showUpdates, setShowUpdates] = useState(false);
-  const [showPastDays, setShowPastDays] = useState(false);
   const [showDay1Modal, setShowDay1Modal] = useState(false);
   const [optimisticLogs, setOptimisticLogs] = useState<LocalLog[]>([]);
   const numericDebounceRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
@@ -483,9 +481,7 @@ export default function HabitTrackerClient() {
     return calculateCurrentStreak(completed);
   })();
 
-  // Generate 7 days around currentDate (Denver-anchored)
-  const days = Array.from({ length: 7 }).map((_, i) => subDays(currentDate, 3 - i));
-  const isSelectedDate = (day: Date) => calendarDateStr(day) === calendarDateStr(selectedDate);
+
 
   const getChallengeProgress = (challengeId: number) => {
     const uc = userChallengesData?.challenges?.find(u => u.challengeId === challengeId);
@@ -934,159 +930,10 @@ export default function HabitTrackerClient() {
             <h3 className="font-bold text-lg" style={{ color: "#2d3b2d" }}>
               Today&apos;s habits
             </h3>
-            <button
-              type="button"
-              onClick={() => setShowPastDays(!showPastDays)}
-              className="text-xs font-bold text-[#8a9a8a] hover:text-[#2d3b2d]"
-            >
-              {showPastDays ? "Hide calendar" : "Edit past days"}
-            </button>
           </div>
-          
-          {/* Date Navigator — collapsed unless past-days mode */}
-          {showPastDays && (
-          <div className="flex items-center justify-between mb-6 pb-4 border-b" style={{ borderColor: "#f0e8e4" }}>
-            <Button variant="ghost" onClick={() => setCurrentDate(subDays(currentDate, 7))} className="rounded-full hover:opacity-80 transition-opacity" style={{ color: "#c9a96e" }}>
-              &larr; <span className="hidden md:inline ml-1">Prev Week</span>
-            </Button>
-            <div className="font-bold text-lg md:text-xl flex items-center gap-2" style={{ color: "#2d3b2d" }}>
-              <CalendarIcon size={20} style={{ color: "#c9a96e" }} />
-              {format(days[0], "MMM d")} - {format(days[6], "MMM d, yyyy")}
-            </div>
-            <Button variant="ghost" onClick={() => setCurrentDate(addDays(currentDate, 7))} className="rounded-full hover:opacity-80 transition-opacity" style={{ color: "#c9a96e" }}>
-              <span className="hidden md:inline mr-1">Next Week</span> &rarr;
-            </Button>
-          </div>
-          )}
 
-          {/* Desktop Weekly Grid View — only in past-days mode */}
-          {showPastDays && (
-          <div className="hidden md:block overflow-x-auto mb-4">
-            <div className="min-w-[600px]">
-              {/* Header Row */}
-              <div className="grid grid-cols-8 gap-2 mb-4">
-                <div className="col-span-1"></div>
-                {days.map(day => {
-                  const isToday = calendarDateStr(day) === todayMountainDateStr();
-                  const isSelected = isSelectedDate(day);
-                  return (
-                    <button 
-                      key={day.toISOString()} 
-                      onClick={() => setSelectedDate(day)}
-                      className={`text-center py-2 px-1 rounded-xl transition-colors active:scale-95 ${isSelected ? 'shadow-sm' : 'hover:bg-gray-50'}`}
-                      style={{ background: isSelected ? "#fcfaf9" : "transparent", border: isSelected ? "1px solid #f0e8e4" : "1px solid transparent" }}
-                    >
-                      <div className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: "#8a9a8a" }}>{format(day, "EEE")}</div>
-                      <div className={`text-sm font-bold w-8 h-8 mx-auto flex items-center justify-center rounded-full`} style={{ background: isToday ? "#c9a96e" : "transparent", color: isToday ? "white" : "#2d3b2d" }}>
-                        {format(day, "d")}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Habits Rows */}
-              <div className="space-y-4">
-                {activeHabits.map((habit, index) => (
-                  <motion.div 
-                    key={habit.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="grid grid-cols-8 gap-2 items-center p-2 rounded-2xl transition-colors"
-                    style={{ background: "#faf5f5" }}
-                  >
-                    <div className="col-span-1 pr-2">
-                      <div className="font-semibold text-sm leading-tight" style={{ color: "#2d3b2d" }}>
-                        {habit.title}
-                      </div>
-                      {habit.description && (
-                        <p className="text-xs font-normal text-gray-500 mt-1 leading-snug">{habit.description}</p>
-                      )}
-                    </div>
-                    {days.map(day => {
-                      const dateStr = calendarDateStr(day);
-                      const completed = isLogCompleted(habit.id, dateStr);
-                      const isSelected = isSelectedDate(day);
-
-                      if (habit.type === "numeric") {
-                        const val = getNumericValue(habit.id, dateStr) || 0;
-                        const target = habit.targetValue || 100;
-                        return (
-                          <div key={dateStr} className={`flex flex-col items-center justify-center rounded-xl py-1 gap-1 ${isSelected ? 'bg-white/50 shadow-sm' : ''}`}>
-                            <input
-                              type="number"
-                              min={0}
-                              value={val || ""}
-                              onChange={(e) => logNumericHabit(habit.id, dateStr, parseInt(e.target.value) || 0, target)}
-                              className="w-12 h-8 text-center text-xs rounded-lg border focus:outline-none focus:ring-1 bg-white text-black"
-                              style={{ borderColor: "#e8e8e8" }}
-                            />
-                            <span className={`text-[9px] font-bold ${completed ? 'text-[#c9a96e]' : 'text-gray-400'}`}>
-                              {habit.unit || ""}
-                            </span>
-                          </div>
-                        );
-                      }
-
-                      return (
-                        <div key={dateStr} className={`flex justify-center rounded-xl py-1 ${isSelected ? 'bg-white/50 shadow-sm' : ''}`}>
-                          <button
-                            onClick={() => toggleLog(habit.id, dateStr)}
-                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
-                              completed 
-                                ? 'text-white shadow-md scale-110' 
-                                : 'bg-white text-transparent hover:scale-105'
-                            }`}
-                            style={{ 
-                              background: completed ? "linear-gradient(135deg, #c9a96e 0%, #e8c99a 100%)" : "white",
-                              border: completed ? "none" : "2px solid #f0e8e4"
-                            }}
-                          >
-                            <Check size={20} strokeWidth={completed ? 3 : 2} className={completed ? 'opacity-100' : 'opacity-0'} />
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </div>
-          )}
-
-          {/* Day strip when editing past days */}
-          {showPastDays && (
-            <div className="flex overflow-x-auto gap-2 mb-4 pb-2 snap-x scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
-              {days.map(day => {
-                const isSelected = isSelectedDate(day);
-                const isToday = calendarDateStr(day) === todayMountainDateStr();
-                return (
-                  <button
-                    key={day.toISOString()}
-                    onClick={() => setSelectedDate(day)}
-                    className={`min-w-[64px] snap-center p-3 rounded-2xl flex flex-col items-center justify-center transition-all active:scale-95 ${isSelected ? 'shadow-md scale-105' : 'opacity-70 hover:opacity-100'}`}
-                    style={{ background: isSelected ? "#faf5f5" : "transparent", border: isSelected ? "1px solid #f0e8e4" : "1px solid transparent" }}
-                  >
-                    <div className={`text-xs font-bold uppercase tracking-wider mb-2 ${isSelected ? 'text-[#c9a96e]' : 'text-[#8a9a8a]'}`}>
-                      {format(day, "EEE")}
-                    </div>
-                    <div className={`text-sm font-bold w-10 h-10 flex items-center justify-center rounded-full shadow-sm`} style={{ background: isToday ? "#c9a96e" : (isSelected ? "white" : "transparent"), color: isToday ? "white" : "#2d3b2d" }}>
-                      {format(day, "d")}
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-          )}
-
-          {/* Vertical habits list for selected date (today by default) */}
+          {/* Vertical habits list for today. Past days: Progress tab. */}
           <div className="space-y-3">
-              {showPastDays && (
-              <h3 className="font-bold text-sm mb-2 text-center text-gray-500">
-                Habits for {format(selectedDate, "MMM d")}
-              </h3>
-              )}
               {activeHabits.map((habit, index) => {
                 const completed = isLogCompleted(habit.id, currentNoteDateStr);
                 

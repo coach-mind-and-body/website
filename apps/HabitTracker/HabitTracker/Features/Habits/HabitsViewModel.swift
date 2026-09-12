@@ -13,7 +13,6 @@ final class HabitsViewModel {
     var errorMessage: String?
     var noteDraft = ""
     var notesExpanded = false
-    var showPastDays = false
     var mainTab = 0
     var weekAnchor = MountainDate.today()
 
