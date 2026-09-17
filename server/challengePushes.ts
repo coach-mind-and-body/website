@@ -45,7 +45,7 @@ export function challengePushKindNow(nowLocal = nowMountain()): ChallengePushKin
 
   if (!day) return null;
   if (inMinuteWindow(8, 0, nowLocal)) return "morning";
-  if (day.format === "live" && inMinuteWindow(11, 45, nowLocal)) return "live";
+  if (day.format === "live" && inMinuteWindow(12, 45, nowLocal)) return "live";
   if (inMinuteWindow(19, 0, nowLocal)) return "evening";
   return null;
 }

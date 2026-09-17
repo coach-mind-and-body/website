@@ -8,7 +8,11 @@ import { sendSnackHackEmail, sendTransactionalEmail } from "../notifications";
 import { enrollUserInSequence, SNACK_HACK_SEQUENCE_ID, FOOD_QUIZ_SEQUENCE_ID } from "../sequences";
 import { sendMarketingEmail } from "../emailMarketing";
 import { getRealFoodResetConfirmationEmail, getRealFoodResetReasonLine } from "../emails/realFoodReset";
-import { REAL_FOOD_RESET, REAL_FOOD_RESET_SEQUENCE_ID } from "@shared/realFoodReset";
+import {
+  REAL_FOOD_RESET,
+  REAL_FOOD_RESET_OFFER_SEQUENCE_ID,
+  REAL_FOOD_RESET_SEQUENCE_ID,
+} from "@shared/realFoodReset";
 import { enrollRealFoodResetByEmail } from "../realFoodResetChallenge";
 import { 
   getFoodQuizRebalancerEmail, 
@@ -242,6 +246,7 @@ export const leadgenRouter = router({
       }
       try {
         await enrollUserInSequence(input.email, firstName, REAL_FOOD_RESET_SEQUENCE_ID);
+        await enrollUserInSequence(input.email, firstName, REAL_FOOD_RESET_OFFER_SEQUENCE_ID);
       } catch (e) {
         console.error("[LeadGen] Real Food Reset email sequence enroll failed:", e);
       }

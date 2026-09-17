@@ -18,7 +18,14 @@ import {
   REAL_FOOD_RESET_DAY_DATES,
   REAL_FOOD_RESET_DAY_EMAILS,
 } from "./emails/realFoodReset";
-import { REAL_FOOD_RESET_SEQUENCE_ID } from "@shared/realFoodReset";
+import {
+  REAL_FOOD_RESET_OFFER_DATES,
+  REAL_FOOD_RESET_OFFER_EMAILS,
+} from "./emails/realFoodResetOffer";
+import {
+  REAL_FOOD_RESET_OFFER_SEQUENCE_ID,
+  REAL_FOOD_RESET_SEQUENCE_ID,
+} from "@shared/realFoodReset";
 import { todayMountainDateStr } from "../lib/mountainTime";
 
 export const SNACK_HACK_SEQUENCE_ID = "snack_hack_nurture";
@@ -77,6 +84,11 @@ const SEQUENCE_CONFIG: Record<string, SequenceConfig> = {
     type: "calendar_dates",
     emails: [...REAL_FOOD_RESET_DAY_EMAILS],
     dates: REAL_FOOD_RESET_DAY_DATES,
+  },
+  [REAL_FOOD_RESET_OFFER_SEQUENCE_ID]: {
+    type: "calendar_dates",
+    emails: [...REAL_FOOD_RESET_OFFER_EMAILS],
+    dates: REAL_FOOD_RESET_OFFER_DATES,
   },
 };
 
@@ -143,6 +155,8 @@ async function sendSequenceStep(
     reclaim_6_week: "You're receiving this as part of your R.E.C.L.A.I.M. program.",
     fpu_babystep_1: "You're receiving this as part of your Financial Peace journey.",
     [REAL_FOOD_RESET_SEQUENCE_ID]:
+      "You're receiving this because you registered for the 5-Day Real Food Reset.",
+    [REAL_FOOD_RESET_OFFER_SEQUENCE_ID]:
       "You're receiving this because you registered for the 5-Day Real Food Reset.",
   };
 

@@ -10,7 +10,7 @@ import { ensureRealFoodResetChallenge } from "../server/realFoodResetChallenge";
 async function main() {
   const id = await ensureRealFoodResetChallenge();
   console.log("Real Food Reset challenge id:", id);
-  console.log("Paste the Google Meet URL in Admin → Challenges (enrolled people only).");
+  console.log("Google Meet URL is stored on the challenge (enrolled people, live days only).");
   process.exit(0);
 }
 

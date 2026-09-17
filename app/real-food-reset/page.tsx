@@ -5,7 +5,7 @@ import RealFoodResetClient from "./RealFoodResetClient";
 export const metadata: Metadata = {
   title: { absolute: `${REAL_FOOD_RESET.name} | Free Challenge Starting Sept 28` },
   description:
-    "Free 5-day Real Food Reset for women 40+. Learn labels, added sugar, and how to build satisfying meals — progress, not perfection. Lives Mon/Wed/Fri at 12:00 pm Mountain. Starts September 28.",
+    "Free 5-day Real Food Reset for women 40+. Learn labels, added sugar, and how to build satisfying meals — progress, not perfection. Lives Mon/Wed/Fri at 1:00 pm Mountain. Starts September 28.",
   keywords: [
     "5 day real food reset",
     "no processed food challenge",

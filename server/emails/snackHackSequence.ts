@@ -13,7 +13,7 @@ export const getSnackHackDay2Email = (firstName: string) => ({
   html: `
     <div style="${baseStyle}">
       <div style="background:#FDFBF7;padding:24px;text-align:center;border-bottom:1px solid #f0e8e4;">
-        <img src="${ENV.appPublicUrl}/logo-wide.jpg" alt="${BRAND.name}" style="max-width:180px;height:auto;" />
+        <img src="${ENV.appPublicUrl}${BRAND.logoWideUrl}" alt="${BRAND.name}" style="max-width:280px;height:auto;" />
       </div>
       <div style="${headerStyle}">
         <h1 style="${h1Style}">A quick check-in, ${firstName}</h1>
@@ -49,7 +49,7 @@ export const getSnackHackDay4Email = (firstName: string) => ({
   html: `
     <div style="${baseStyle}">
       <div style="background:#FDFBF7;padding:24px;text-align:center;border-bottom:1px solid #f0e8e4;">
-        <img src="${ENV.appPublicUrl}/logo-wide.jpg" alt="${BRAND.name}" style="max-width:180px;height:auto;" />
+        <img src="${ENV.appPublicUrl}${BRAND.logoWideUrl}" alt="${BRAND.name}" style="max-width:280px;height:auto;" />
       </div>
       <div style="${headerStyle}">
         <h1 style="${h1Style}">It's not your fault, ${firstName}</h1>
@@ -78,7 +78,7 @@ export const getSnackHackDay7Email = (firstName: string) => ({
   html: `
     <div style="${baseStyle}">
       <div style="background:#FDFBF7;padding:24px;text-align:center;border-bottom:1px solid #f0e8e4;">
-        <img src="${ENV.appPublicUrl}/logo-wide.jpg" alt="${BRAND.name}" style="max-width:180px;height:auto;" />
+        <img src="${ENV.appPublicUrl}${BRAND.logoWideUrl}" alt="${BRAND.name}" style="max-width:280px;height:auto;" />
       </div>
       <div style="${headerStyle}">
         <h1 style="${h1Style}">${firstName}, you don't have to do this alone</h1>
@@ -105,7 +105,7 @@ export const getSnackHackDay10Email = (firstName: string) => ({
   html: `
     <div style="${baseStyle}">
       <div style="background:#FDFBF7;padding:24px;text-align:center;border-bottom:1px solid #f0e8e4;">
-        <img src="${ENV.appPublicUrl}/logo-wide.jpg" alt="${BRAND.name}" style="max-width:180px;height:auto;" />
+        <img src="${ENV.appPublicUrl}${BRAND.logoWideUrl}" alt="${BRAND.name}" style="max-width:280px;height:auto;" />
       </div>
       <div style="${headerStyle}">
         <h1 style="${h1Style}">Introducing R.E.C.L.A.I.M.</h1>

@@ -473,6 +473,13 @@ struct ChallengeJournalEntry: Codable, Hashable {
     var hard: String?
 }
 
+struct ChallengeGuideImage: Codable, Hashable, Identifiable {
+    var title: String
+    var alt: String?
+    var url: String
+    var id: String { url }
+}
+
 struct ChallengeTodayPayload: Codable, Hashable {
     var enrolled: Bool
     var challengeId: Int?
@@ -484,7 +491,9 @@ struct ChallengeTodayPayload: Codable, Hashable {
     var afterEnd: Bool?
     var today: ChallengeTodayDay?
     var meetUrl: String?
+    var liveTime: String?
     var journal: ChallengeJournalEntry?
+    var guideImages: [ChallengeGuideImage]?
 }
 
 struct ClaimEnrollmentInput: Encodable {

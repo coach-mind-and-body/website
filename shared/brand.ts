@@ -17,7 +17,7 @@ export const BRAND = {
   coachFullName: "Lee Anne Chapman",
   website: SITE_URL,
   logoUrl: "/logo-new.jpg",
-  logoWideUrl: "/logo-wide.jpg",
+  logoWideUrl: "/logo-horizontal.jpg",
   /** Public CloudFront portrait used on /about — also Person JSON-LD image */
   coachImageUrl:
     "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/3542web-rigeljackson(2)_83b0d4af.webp",

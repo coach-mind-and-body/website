@@ -73,7 +73,7 @@ export default function ChallengeTodayCard() {
       {data.beforeStart && (
         <p className="text-sm" style={{ color: "#6a7a6a" }}>
           You’re in. We start {REAL_FOOD_RESET.startLabel}. Lives are {REAL_FOOD_RESET.liveDays} at{" "}
-          {REAL_FOOD_RESET.liveTime}.
+          {data.liveTime || REAL_FOOD_RESET.liveTime}.
         </p>
       )}
 
@@ -199,6 +199,19 @@ export default function ChallengeTodayCard() {
             </Button>
           </div>
         </>
+      )}
+
+      {data.guideImages && data.guideImages.length > 0 && (
+        <div className="space-y-3">
+          {data.guideImages.map((img) => (
+            <figure key={img.url} className="rounded-2xl overflow-hidden border" style={{ borderColor: "#f0e8e4" }}>
+              <img src={img.url} alt={img.alt} className="w-full h-auto" />
+              <figcaption className="text-xs font-bold px-3 py-2" style={{ color: "#8a9a8a" }}>
+                {img.title}
+              </figcaption>
+            </figure>
+          ))}
+        </div>
       )}
 
       {data.guides && (

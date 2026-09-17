@@ -10,6 +10,13 @@ import { getDb } from "../server/db";
 import { emailNewsletters } from "../drizzle/schema";
 import { REAL_FOOD_RESET_EMAILS } from "../server/emails/realFoodReset";
 import { DEFAULT_GREETING, DEFAULT_SIGN_OFF_CLOSING, DEFAULT_SIGN_OFF_NAME, DEFAULT_SIGN_OFF_TITLE } from "../server/emails/newsletterShell";
+import { enrollUserInSequence } from "../server/sequences";
+import { subscribers } from "../drizzle/schema";
+import { parseSegments } from "../server/emailMarketing";
+import {
+  REAL_FOOD_RESET_OFFER_SEQUENCE_ID,
+  REAL_FOOD_RESET_SEQUENCE_ID,
+} from "@shared/realFoodReset";
 
 function mountainToUtc(local: string): Date {
   // Challenge window is MDT (UTC-6)
@@ -74,7 +81,22 @@ async function main() {
   }
 
   console.log(`Done. created=${created} updated=${updated}`);
-  console.log("Open Admin → Newsletter, review, then Schedule (do not send yet).");
+  console.log("Open Admin → Newsletter, review, then Schedule warmup/promo only.");
+  console.log("Reminder + daily + post-challenge emails send via sequence — do not also Schedule those.");
+
+  const people = await db.select().from(subscribers);
+  let enrolled = 0;
+  for (const person of people) {
+    const segs = parseSegments(person.segments);
+    const isRfr = segs.some(
+      (s) => s === "leadgen_real_food_reset" || s.includes("real_food_reset") || s.includes("real-food-reset")
+    );
+    if (!isRfr || !person.email) continue;
+    await enrollUserInSequence(person.email, person.firstName, REAL_FOOD_RESET_SEQUENCE_ID);
+    await enrollUserInSequence(person.email, person.firstName, REAL_FOOD_RESET_OFFER_SEQUENCE_ID);
+    enrolled++;
+  }
+  console.log(`Offer/day sequences: enrolled or already in for ${enrolled} Real Food Reset subscribers.`);
   process.exit(0);
 }
 

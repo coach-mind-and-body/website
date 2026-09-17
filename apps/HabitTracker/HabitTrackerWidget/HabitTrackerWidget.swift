@@ -87,7 +87,7 @@ struct HabitTrackerWidgetEntryView: View {
         cal.timeZone = TimeZone(identifier: "America/Denver") ?? .current
         let hour = cal.component(.hour, from: entry.date)
         let minute = cal.component(.minute, from: entry.date)
-        return hour == 11 || (hour == 12 && minute < 20) || hour == 10
+        return hour == 12 || (hour == 13 && minute < 20) || hour == 11
     }
 
     private var small: some View {
@@ -97,7 +97,7 @@ struct HabitTrackerWidgetEntryView: View {
                 .foregroundStyle(WColor.gold)
             Spacer(minLength: 2)
             if snap.inChallenge {
-                Text(liveSoon ? "12:00" : (snap.challengeBeforeStart ? "Soon" : "\(snap.habitsDone)/\(max(snap.habitsTotal, 0))"))
+                Text(liveSoon ? "1:00" : (snap.challengeBeforeStart ? "Soon" : "\(snap.habitsDone)/\(max(snap.habitsTotal, 0))"))
                     .font(.system(size: 28, weight: .bold, design: .rounded))
                     .foregroundStyle(WColor.forest)
                 Text(liveSoon ? "pm Mountain" : (snap.challengeDayTitle.isEmpty ? snap.challengeName : snap.challengeDayTitle))
@@ -132,7 +132,7 @@ struct HabitTrackerWidgetEntryView: View {
                         .foregroundStyle(WColor.forest)
                         .lineLimit(3)
                         .minimumScaleFactor(0.8)
-                    Text(liveSoon ? "Join at 12:00 pm Mountain" : (snap.challengeIsLive ? "Class 12:00 pm Mountain" : "Video + recipes in Challenge"))
+                    Text(liveSoon ? "Join at 1:00 pm Mountain" : (snap.challengeIsLive ? "Class 1:00 pm Mountain" : "Video + recipes in Challenge"))
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(WColor.forest.opacity(0.8))
                     Spacer(minLength: 4)
@@ -190,7 +190,7 @@ struct HabitTrackerWidgetEntryView: View {
     private var lockRect: some View {
         VStack(alignment: .leading, spacing: 2) {
             if snap.inChallenge {
-                Text(liveSoon ? "Class 12:00 pm" : "Day \(max(snap.challengeDayN, 1)) · \(snap.challengeDayTitle)")
+                Text(liveSoon ? "Class 1:00 pm" : "Day \(max(snap.challengeDayN, 1)) · \(snap.challengeDayTitle)")
                     .font(.headline)
                     .lineLimit(1)
                 Text(snap.mindsetLine)
@@ -209,7 +209,7 @@ struct HabitTrackerWidgetEntryView: View {
 
     private var lockInline: some View {
         Text(snap.inChallenge
-             ? (liveSoon ? "Class 12:00 · tap to join" : "Day \(max(snap.challengeDayN, 1)) · \(snap.mindsetLine)")
+             ? (liveSoon ? "Class 1:00 · tap to join" : "Day \(max(snap.challengeDayN, 1)) · \(snap.mindsetLine)")
              : snap.mindsetLine)
     }
 

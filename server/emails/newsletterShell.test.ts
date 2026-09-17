@@ -17,7 +17,7 @@ describe("newsletterShell", () => {
     expect(html).toContain("This week’s tip");
     expect(html).toContain("Stay consistent.");
     expect(html).toContain("Learn more");
-    expect(html).toContain("logo-wide.jpg");
+    expect(html).toContain("logo-horizontal.jpg");
     expect(html).toContain("<!--UNSUB_FOOTER-->");
     expect(html).toContain("Lee Anne");
   });

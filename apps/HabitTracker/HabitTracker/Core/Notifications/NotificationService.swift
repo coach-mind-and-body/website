@@ -76,7 +76,7 @@ enum NotificationService {
             hour: 19,
             minute: 0,
             title: "Real Food Reset starts tomorrow",
-            body: "We begin September 28. Lives Mon/Wed/Fri at 12:00 pm Mountain.",
+            body: "We begin September 28. Lives Mon/Wed/Fri at 1:00 pm Mountain.",
             tab: "challenge"
         )
 
@@ -88,7 +88,7 @@ enum NotificationService {
                 minute: 0,
                 title: "Day \(day.n): \(day.title)",
                 body: day.live
-                    ? "Class is at 12:00 pm Mountain. Open Challenge when you’re ready."
+                    ? "Class is at 1:00 pm Mountain. Open Challenge when you’re ready."
                     : "Today’s video and recipes are in Challenge.",
                 tab: "challenge"
             )
@@ -96,10 +96,10 @@ enum NotificationService {
                 await addOnce(
                     id: "rfr-live-\(i)",
                     mountainDate: day.date,
-                    hour: 11,
+                    hour: 12,
                     minute: 45,
                     title: "Class starts in 15 minutes",
-                    body: "Tap to join live — 12:00 pm Mountain.",
+                    body: "Tap to join live — 1:00 pm Mountain.",
                     tab: "challenge"
                 )
             }

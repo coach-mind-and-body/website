@@ -7,7 +7,7 @@ import { ENV } from "../_core/env";
 import { BRAND, PROGRAM, SITE_URL } from "@shared/brand";
 
 const base = (ENV.appPublicUrl || SITE_URL).replace(/\/$/, "");
-const LOGO = `${base}/logo-wide.jpg`;
+const LOGO = `${base}${BRAND.logoWideUrl}`;
 const CTA_JOIN = `${base}/reclaim-invite`;
 const CTA_DETAILS = `${base}/reclaim`;
 
@@ -26,7 +26,7 @@ const shell = {
 function logoHeader() {
   return `
     <div style="${shell.logoBar}">
-      <img src="${LOGO}" alt="${BRAND.name}" style="max-width:180px;height:auto;" />
+      <img src="${LOGO}" alt="${BRAND.name}" style="max-width:280px;height:auto;" />
     </div>`;
 }
 

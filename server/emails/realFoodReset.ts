@@ -6,7 +6,7 @@ const LANDING = `${SITE_URL}${REAL_FOOD_RESET.path}`;
 const APP = `${SITE_URL}/habit-tracker`;
 const NAME = REAL_FOOD_RESET.name;
 
-export type RealFoodResetEmailPhase = "warmup" | "promo" | "challenge_day" | "confirmation";
+export type RealFoodResetEmailPhase = "warmup" | "promo" | "reminder" | "challenge_day" | "confirmation" | "offer";
 
 export type RealFoodResetEmailDraft = {
   key: string;
@@ -26,6 +26,10 @@ export type RealFoodResetEmailDraft = {
 
 function p(text: string): string {
   return `<p>${text}</p>`;
+}
+
+function guideImg(path: string, alt: string): string {
+  return `<img src="${SITE_URL}${path}" alt="${alt}" width="560" style="max-width:100%;height:auto;border-radius:12px;display:block;margin:16px auto;border:1px solid #f0e8e4;" />`;
 }
 
 function joinHtml(parts: string[]): string {
@@ -130,11 +134,11 @@ export const REAL_FOOD_RESET_EMAILS: RealFoodResetEmailDraft[] = [
       p("Five days of getting curious about what's actually in your food. Five days of learning how to read labels differently. Five days of spotting where added sugars may be hiding. Five days of practicing how to put together satisfying meals with protein, fat, and fiber. Five days of making healthier choices in the real world — even when you're eating out."),
       p("Not because five days will magically fix everything. But because five days is enough time to start proving something incredibly important to yourself: <strong>I can do this.</strong>"),
       p("If you've spent years telling yourself “I always fail,” “I can't stick with anything,” “I've already tried everything” — maybe the first thing we need to change isn't your entire life. Maybe we need to give you an experience that shows you change is possible."),
-      p("That's exactly what I've been working on. I'll tell you all about it very soon."),
+      p("That's exactly what I've been working on. It's free. It starts September 28. And you can save your spot right now."),
       p("You don't have to wait until Monday. And you definitely don't have to be perfect."),
     ]),
-    ctaLabel: "",
-    ctaUrl: "",
+    ctaLabel: "Save my free spot",
+    ctaUrl: LANDING,
     audienceGroup: "health",
     suggestedSendAt: "2026-09-17T10:00:00",
   },
@@ -153,7 +157,7 @@ export const REAL_FOOD_RESET_EMAILS: RealFoodResetEmailDraft[] = [
       p("This isn't about counting every calorie, starving yourself, or adding another giant list of foods you “shouldn't” eat. For five days, we're doing something different. We're getting CURIOUS."),
       p("You'll learn what's actually considered processed food, how to read a food label, where added sugar may be hiding, how to build meals using protein, fat, and fiber, and how to make healthier swaps — even when you're eating out."),
       p("What I really want you to walk away with is <strong>confidence</strong>. I want you to finish these five days thinking: “Wait… I CAN do this.”"),
-      p("Home base is the app I built for you — daily check-ins, food logging, recipes, chat, and push reminders. We also meet live on Google Meet Monday, Wednesday, and Friday at 12:00 pm Mountain (one hour). Tuesday and Thursday you'll get a video plus recipes in the app."),
+      p("Home base is the app I built for you — daily check-ins, food logging, recipes, chat, and push reminders. We also meet live on Google Meet Monday, Wednesday, and Friday at 1:00 pm Mountain (one hour). Tuesday and Thursday you'll get a video plus recipes in the app."),
       p("Progress, not perfection. No Monday restart. Just five days to see what's possible."),
     ]),
     ctaLabel: "Save my free spot",
@@ -252,7 +256,7 @@ export const REAL_FOOD_RESET_EMAILS: RealFoodResetEmailDraft[] = [
       p("You don't need a refrigerator full of fancy ingredients. You don't need to spend Sunday meal-prepping 37 containers of chicken and broccoli. And you certainly don't need your family standing around the kitchen applauding your new food choices."),
       p("You need some simple skills. What am I buying? What's actually in it? What's a better swap? How can I put together a meal that satisfies me? What can I choose when I'm not eating at home?"),
       p(`That's what we're practicing inside my FREE <strong>${NAME}</strong>, starting September 28.`),
-      p("You'll have recipes, a food log in the app, daily check-ins, and live support Monday / Wednesday / Friday at 12:00 pm Mountain. You don't have to figure everything out yourself."),
+      p("You'll have recipes, a food log in the app, daily check-ins, and live support Monday / Wednesday / Friday at 1:00 pm Mountain. You don't have to figure everything out yourself."),
       p("And if you're already thinking “But what if I fail?” — good. Come anyway. We're not looking for perfect. We're looking for progress."),
     ]),
     ctaLabel: "Join the free challenge",
@@ -271,7 +275,7 @@ export const REAL_FOOD_RESET_EMAILS: RealFoodResetEmailDraft[] = [
       p("<strong>Join us.</strong> You don't need to get ready before you get ready. You don't need to clean out your entire pantry first. You don't need to lose five pounds before joining. You don't need to have your meal plan figured out."),
       p("That's what the challenge is FOR."),
       p("For five days, I'm going to help you understand processed vs. whole foods, read food labels with more confidence, recognize added sugars, build meals with protein, fat, and fiber, and navigate eating out and healthier swaps."),
-      p("Plus: recipes, a food log in the app, daily check-ins, three Google Meet lives (Mon/Wed/Fri at 12:00 pm Mountain), and support along the way."),
+      p("Plus: recipes, a food log in the app, daily check-ins, three Google Meet lives (Mon/Wed/Fri at 1:00 pm Mountain), and support along the way."),
       p("It's FREE. The only thing I'm asking you to bring is a willingness to get curious and try."),
       p("You have nothing to prove to me. But you might have something pretty important to prove to yourself: <strong>I can make a change.</strong>"),
     ]),
@@ -290,7 +294,7 @@ export const REAL_FOOD_RESET_EMAILS: RealFoodResetEmailDraft[] = [
       p(`This is it. <strong>Tomorrow we begin the FREE ${NAME}.</strong>`),
       p("If you've been sitting on the fence because you're worried you won't do it perfectly… I'm going to make this easy for you: <strong>Don't do it perfectly.</strong>"),
       p("Come do it imperfectly. Come learn. Come ask questions. Come discover what's actually in the foods you've been buying. Come try some different meals. Come notice your habits. Come see what happens when you stop waiting for the perfect Monday and simply take the next step."),
-      p("<strong>Day 1:</strong> Processed food vs. whole food (live, 12:00 pm Mountain)<br/><strong>Day 2:</strong> How to read a food label (video in the app)<br/><strong>Day 3:</strong> Let's talk sugar (live)<br/><strong>Day 4:</strong> Pairing protein, fat, and fiber (video in the app)<br/><strong>Day 5:</strong> Eating out, healthier swaps, Q&amp;A + your next steps (live)"),
+      p("<strong>Day 1:</strong> Processed food vs. whole food (live, 1:00 pm Mountain)<br/><strong>Day 2:</strong> How to read a food label (video in the app)<br/><strong>Day 3:</strong> Let's talk sugar (live)<br/><strong>Day 4:</strong> Pairing protein, fat, and fiber (video in the app)<br/><strong>Day 5:</strong> Eating out, healthier swaps, Q&amp;A + your next steps (live)"),
       p("This isn't about proving how “good” you can be for five days. It's about learning skills you can take with you long after the challenge ends."),
       p("If your brain is saying “I don't have time.” “I've tried before.” “I'll probably fail.” “I'll do the next one.” — here's my answer: <strong>Come anyway.</strong>"),
       p("Registration closes tonight. We start tomorrow. Let's stop starting over."),
@@ -301,17 +305,63 @@ export const REAL_FOOD_RESET_EMAILS: RealFoodResetEmailDraft[] = [
     suggestedSendAt: "2026-09-27T10:00:00",
   },
 
+  // ── Prep reminders (registrants only) ──────────────────────────────────────
+  {
+    key: "reminder-1",
+    phase: "reminder",
+    subject: "Here's what to have on hand",
+    previewText: "A simple whole-food list — not a perfect pantry.",
+    headline: "You don't need a perfect kitchen.",
+    subheadline: "Just a few foods you can actually eat next week",
+    bodyHtml: joinHtml([
+      p("We're a few days out. You do <strong>not</strong> need to clean out the whole pantry. You don't need 37 containers of chicken. You need a few whole foods you can actually grab."),
+      p("Use this list while you shop — or while you look at what's already in the fridge. Frozen veggies count. Eggs count. Leftover protein counts."),
+      guideImg(
+        "/real-food-reset/whole-foods.png",
+        "Foods to enjoy: vegetables, protein, nuts and seeds, fruits, healthy fats, beans, whole grains, drinks, and simple condiments"
+      ),
+      p("The same list lives in the app under Challenge. Open the habit tracker, start a shopping list from the week, and pick what you'll actually eat — not what a “perfect” week would eat."),
+      p("Progress, not perfection. If you buy three things from this list, that's a start."),
+    ]),
+    ctaLabel: "Open the app",
+    ctaUrl: APP,
+    audienceGroup: "real_food_reset",
+    suggestedSendAt: "2026-09-24T10:00:00",
+  },
+  {
+    key: "reminder-2",
+    phase: "reminder",
+    subject: "Simple meals for next week — we go live Monday at 1:00 pm",
+    previewText: "Stuck on what to eat? Here are breakfast, lunch, dinner, and snacks.",
+    headline: "Stuck on what to eat?",
+    subheadline: "A few plates. Not a meal-prep empire.",
+    bodyHtml: joinHtml([
+      p("If your brain is already saying “I don't know what I'm supposed to cook,” here's a short list. Mix and match. Leftovers count as lunch."),
+      guideImg(
+        "/real-food-reset/meal-ideas.png",
+        "Whole food meal ideas for breakfast, lunch, dinner, and snacks"
+      ),
+      p("These pictures are in the app too — Challenge tab — so you don't have to hunt through email while you're standing in the kitchen."),
+      p(`We start <strong>Monday, September 28</strong>. Lives are Monday, Wednesday, and Friday at <strong>${REAL_FOOD_RESET.liveTime}</strong>, one hour. The Google Meet button shows up in the app on live days after you're enrolled.`),
+      p("Open the tracker now so it's on your phone Monday morning. That's the whole homework."),
+    ]),
+    ctaLabel: "Open the habit tracker",
+    ctaUrl: APP,
+    audienceGroup: "real_food_reset",
+    suggestedSendAt: "2026-09-26T10:00:00",
+  },
+
   // ── Daily challenge (registrants only) ─────────────────────────────────────
   {
     key: "day-1",
     phase: "challenge_day",
-    subject: "Day 1: Processed vs. whole food — we go live at noon",
-    previewText: "Open the app, check in, and join us at 12:00 pm Mountain.",
+    subject: "Day 1: Processed vs. whole food — we go live at 1:00 pm",
+    previewText: "Open the app, check in, and join us at 1:00 pm Mountain.",
     headline: "Day 1 is here.",
     subheadline: "Processed food vs. whole food",
     bodyHtml: joinHtml([
       p("Welcome. Today we start with the basics: what do we actually mean when we say “processed food”?"),
-      p(`We go live at <strong>12:00 pm Mountain</strong> for one hour. The Google Meet button is in the app — join from there.`),
+      p(`We go live at <strong>1:00 pm Mountain</strong> for one hour. The Google Meet button is in the app — join from there.`),
       p("Your only job today: show up, get curious, and log what you eat in the app. Progress, not perfection. One “imperfect” choice does not cancel the day."),
       p("Open the habit tracker, join today's challenge check-in, and I'll see you on Meet."),
     ]),
@@ -339,13 +389,13 @@ export const REAL_FOOD_RESET_EMAILS: RealFoodResetEmailDraft[] = [
   {
     key: "day-3",
     phase: "challenge_day",
-    subject: "Day 3: Let's talk sugar — live at noon",
+    subject: "Day 3: Let's talk sugar — live at 1:00 pm",
     previewText: "No sugar police. Just awareness.",
     headline: "Day 3 — let's talk sugar",
     bodyHtml: joinHtml([
       p("Sugar shows up under a lot of names, in foods you might not expect. Today we look at that together — without turning you into the sugar police."),
-      p("Google Meet at <strong>12:00 pm Mountain</strong>, one hour. Log today's meals in the app so you can actually see the pattern, not just guess."),
-      p("See you at noon."),
+      p("Google Meet at <strong>1:00 pm Mountain</strong>, one hour. Log today's meals in the app so you can actually see the pattern, not just guess."),
+      p("See you at 1:00 pm."),
     ]),
     ctaLabel: "Open the app",
     ctaUrl: APP,
@@ -371,12 +421,12 @@ export const REAL_FOOD_RESET_EMAILS: RealFoodResetEmailDraft[] = [
   {
     key: "day-5",
     phase: "challenge_day",
-    subject: "Day 5: Real life — live at noon",
+    subject: "Day 5: Real life — live at 1:00 pm",
     previewText: "Eating out, swaps, Q&A, and what comes next.",
     headline: "Day 5 — real food in the real world",
     bodyHtml: joinHtml([
       p("Last day. This is the one that matters: what happens when you go out to eat, when the schedule gets crazy, when the “perfect” option isn't available."),
-      p("Google Meet at <strong>12:00 pm Mountain</strong>. Bring your questions. We'll talk swaps, eating out, and your next step after these five days."),
+      p("Google Meet at <strong>1:00 pm Mountain</strong>. Bring your questions. We'll talk swaps, eating out, and your next step after these five days."),
       p("You do not have to have been perfect to show up. Come anyway."),
     ]),
     ctaLabel: "Open the app",
@@ -400,20 +450,20 @@ export function getRealFoodResetConfirmationEmail(
   const bodyHtml = joinHtml([
     p(`You're registered for the FREE <strong>${NAME}</strong>. We start <strong>Monday, September 28</strong>.`),
     p("<strong>The app is home base.</strong> That's where you'll check in daily, log food, get Tuesday/Thursday videos and recipes, and message me. Push notifications will nudge you — you can turn those on in the app."),
-    p("<strong>Lives:</strong> Monday, Wednesday, and Friday at 12:00 pm Mountain, one hour. The Google Meet button is in the app after you’re enrolled — not on the signup page. Tuesday and Thursday are video + recipes in the app."),
+    p("<strong>Lives:</strong> Monday, Wednesday, and Friday at 1:00 pm Mountain, one hour. The Google Meet button is in the app after you’re enrolled — not on the signup page. Tuesday and Thursday are video + recipes in the app."),
     p("Progress, not perfection. One messy meal does not mean you start over on Monday."),
     p("Open the tracker now so it's on your phone before we begin:"),
   ]);
   const html = buildNewsletterHtml({
     firstName: name,
-    previewText: "App is home base. Lives are M/W/F at 12:00 pm Mountain.",
+    previewText: "App is home base. Lives are M/W/F at 1:00 pm Mountain.",
     headline: "You're in.",
     subheadline: `${NAME} · Sept 28–Oct 2`,
     bodyHtml,
     ctaLabel: "Open the habit tracker",
     ctaUrl: appUrl,
   });
-  const text = `Hi ${name},\n\nYou're registered for ${NAME}. We start Monday, September 28.\n\nThe app is home base: ${appUrl}\nLives: Mon/Wed/Fri at 12:00 pm Mountain in Google Meet (join from the app).\nTue/Thu: video + recipes in the app.\nOn iPhone, sign in to the Habit Tracker with this same email.\n\nProgress, not perfection.\n\n${BRAND.coachName}`;
+  const text = `Hi ${name},\n\nYou're registered for ${NAME}. We start Monday, September 28.\n\nThe app is home base: ${appUrl}\nLives: Mon/Wed/Fri at 1:00 pm Mountain in Google Meet (join from the app).\nTue/Thu: video + recipes in the app.\nOn iPhone, sign in to the Habit Tracker with this same email.\n\nProgress, not perfection.\n\n${BRAND.coachName}`;
   return { subject, html, text };
 }
 
@@ -439,10 +489,20 @@ function wrapDraft(draft: RealFoodResetEmailDraft, firstName: string): { subject
   };
 }
 
-const DAY_DRAFTS = REAL_FOOD_RESET_EMAILS.filter((e) => e.phase === "challenge_day");
+const SEQUENCE_DRAFTS = REAL_FOOD_RESET_EMAILS.filter(
+  (e) => e.phase === "reminder" || e.phase === "challenge_day"
+);
 
-export const REAL_FOOD_RESET_DAY_EMAILS = DAY_DRAFTS.map(
+export const REAL_FOOD_RESET_DAY_EMAILS = SEQUENCE_DRAFTS.map(
   (draft) => (firstName: string) => wrapDraft(draft, firstName)
 );
 
-export const REAL_FOOD_RESET_DAY_DATES = ["2026-09-28", "2026-09-29", "2026-09-30", "2026-10-01", "2026-10-02"] as const;
+export const REAL_FOOD_RESET_DAY_DATES = [
+  "2026-09-24",
+  "2026-09-26",
+  "2026-09-28",
+  "2026-09-29",
+  "2026-09-30",
+  "2026-10-01",
+  "2026-10-02",
+] as const;

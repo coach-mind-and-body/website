@@ -17,7 +17,7 @@ const globalForPoller = globalThis as typeof globalThis & {
  * - ~8:00 PM MT evening habit / victory push
  * - ~9:00 AM MT day-3 re-engage
  * - Sunday ~9:05 AM MT weekly insight email
- * - Real Food Reset: 8am morning, 11:45 live, 7pm check-in (America/Denver)
+ * - Real Food Reset: 8am morning, 12:45 live (1pm class), 7pm check-in (America/Denver)
  * Starts at most once per Node process.
  */
 export function startHabitReminderPoller() {

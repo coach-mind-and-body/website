@@ -307,7 +307,7 @@ struct HabitsView: View {
                     .font(.headline)
                     .foregroundStyle(HTTheme.forest)
                 if today.beforeStart == true {
-                    Text("You’re in. We start September 28. Lives Mon/Wed/Fri at 12:00 pm Mountain.")
+                    Text("You’re in. We start September 28. Lives Mon/Wed/Fri at \(today.liveTime ?? "1:00 pm Mountain").")
                         .font(.subheadline)
                         .foregroundStyle(HTTheme.muted)
                 }
@@ -393,6 +393,27 @@ struct HabitsView: View {
                     }
                     .buttonStyle(.plain)
                     .disabled(model.journalSaving)
+                }
+                if let images = today.guideImages, !images.isEmpty {
+                    Text("What to eat")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(HTTheme.forest)
+                        .padding(.top, 8)
+                    ForEach(images) { img in
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(img.title)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(HTTheme.muted)
+                            AsyncImage(url: URL(string: img.url)) { phase in
+                                if case .success(let image) = phase {
+                                    image.resizable().scaledToFit()
+                                } else {
+                                    HTTheme.roseBorder.frame(height: 160)
+                                }
+                            }
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                    }
                 }
             }
         }

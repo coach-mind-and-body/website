@@ -12,6 +12,7 @@ import {
   REAL_FOOD_RESET_GUIDES,
   REAL_FOOD_RESET_THEME,
   realFoodResetDayForDate,
+  realFoodResetGuideImages,
   type RealFoodResetDay,
 } from "@shared/realFoodReset";
 import { getDb } from "./db";
@@ -38,11 +39,12 @@ export async function ensureRealFoodResetChallenge() {
   const values = {
     title: REAL_FOOD_RESET.name,
     description:
-      "Five days of real food skills — lives Mon/Wed/Fri at 12:00 pm Mountain. Progress, not perfection.",
+      `Five days of real food skills — lives Mon/Wed/Fri at ${REAL_FOOD_RESET.liveTime}. Progress, not perfection.`,
     durationDays: 5,
     startDate: REAL_FOOD_RESET.startDate,
     endDate: REAL_FOOD_RESET.endDate,
     themeTag: REAL_FOOD_RESET_THEME,
+    meetUrl: REAL_FOOD_RESET.meetUrl,
     isFeatured: true,
     featuredOrder: 1,
     isActive: true,
@@ -177,8 +179,10 @@ export type ChallengeTodayPayload = {
   today: (RealFoodResetDay & { done: boolean }) | null;
   meetUrl: string | null;
   videoUrl: string | null;
+  liveTime: string;
   journal: { noticed: string; glad: string; hard: string } | null;
   guides: typeof REAL_FOOD_RESET_GUIDES | null;
+  guideImages: { title: string; alt: string; url: string }[];
 };
 
 export async function getChallengeToday(opts: {
@@ -199,8 +203,10 @@ export async function getChallengeToday(opts: {
     today: null,
     meetUrl: null,
     videoUrl: null,
+    liveTime: REAL_FOOD_RESET.liveTime,
     journal: null,
     guides: null,
+    guideImages: [],
   };
   if (!db) return empty;
 
@@ -258,6 +264,7 @@ export async function getChallengeToday(opts: {
     today: day ? { ...day, done } : null,
     meetUrl: showMeet ? challenge!.meetUrl! : null,
     videoUrl: null,
+    liveTime: REAL_FOOD_RESET.liveTime,
     journal: journalRow
       ? {
           noticed: journalRow.noticed || "",
@@ -266,6 +273,7 @@ export async function getChallengeToday(opts: {
         }
       : { noticed: "", glad: "", hard: "" },
     guides: REAL_FOOD_RESET_GUIDES,
+    guideImages: realFoodResetGuideImages(),
   };
 }
 

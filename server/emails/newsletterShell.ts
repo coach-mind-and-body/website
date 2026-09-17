@@ -8,7 +8,7 @@ import { BRAND, SITE_URL } from "@shared/brand";
 import { escapeHtml } from "../../lib/htmlEscape";
 
 const base = (ENV.appPublicUrl || SITE_URL).replace(/\/$/, "");
-const LOGO = `${base}/logo-wide.jpg`;
+const LOGO = `${base}${BRAND.logoWideUrl}`;
 
 export const DEFAULT_GREETING = "Hi {{firstName}},";
 export const DEFAULT_SIGN_OFF_CLOSING = "With love,";
@@ -128,7 +128,7 @@ function youtubeThumbnailBlock(src: string): string {
 function logoHeader(): string {
   return `
     <div style="${shell.logoBar}">
-      <img src="${LOGO}" alt="${escapeHtml(BRAND.name)}" style="max-width:180px;height:auto;" />
+      <img src="${LOGO}" alt="${escapeHtml(BRAND.name)}" style="max-width:280px;height:auto;" />
     </div>`;
 }
 
