@@ -19,7 +19,7 @@ export type RealFoodResetEmailDraft = {
   ctaLabel: string;
   ctaUrl: string;
   /** health = whole list; real_food_reset = people who registered */
-  audienceGroup: "health" | "real_food_reset";
+  audienceGroup: "health" | "snack_hack" | "real_food_reset";
   /** Suggested Mountain-time send, ISO local without Z */
   suggestedSendAt: string;
 };
@@ -37,7 +37,7 @@ function joinHtml(parts: string[]): string {
 }
 
 export const REAL_FOOD_RESET_EMAILS: RealFoodResetEmailDraft[] = [
-  // ── Warm-up (existing health list) ────────────────────────────────────────
+  // ── Warm-up (snack-hack leads → join the 5-day challenge) ──────────────────
   {
     key: "warmup-1",
     phase: "warmup",
@@ -58,8 +58,8 @@ export const REAL_FOOD_RESET_EMAILS: RealFoodResetEmailDraft[] = [
     ]),
     ctaLabel: "Save my free spot",
     ctaUrl: LANDING,
-    audienceGroup: "health",
-    suggestedSendAt: "2026-09-08T10:00:00",
+    audienceGroup: "snack_hack",
+    suggestedSendAt: "2026-09-18T10:00:00",
   },
   {
     key: "warmup-2",
@@ -80,8 +80,8 @@ export const REAL_FOOD_RESET_EMAILS: RealFoodResetEmailDraft[] = [
     ]),
     ctaLabel: "Save my free spot",
     ctaUrl: LANDING,
-    audienceGroup: "health",
-    suggestedSendAt: "2026-09-10T10:00:00",
+    audienceGroup: "snack_hack",
+    suggestedSendAt: "2026-09-20T10:00:00",
   },
   {
     key: "warmup-3",
@@ -102,8 +102,8 @@ export const REAL_FOOD_RESET_EMAILS: RealFoodResetEmailDraft[] = [
     ]),
     ctaLabel: "Save my free spot",
     ctaUrl: LANDING,
-    audienceGroup: "health",
-    suggestedSendAt: "2026-09-12T10:00:00",
+    audienceGroup: "snack_hack",
+    suggestedSendAt: "2026-09-22T10:00:00",
   },
   {
     key: "warmup-4",
@@ -122,8 +122,8 @@ export const REAL_FOOD_RESET_EMAILS: RealFoodResetEmailDraft[] = [
     ]),
     ctaLabel: "Save my free spot",
     ctaUrl: LANDING,
-    audienceGroup: "health",
-    suggestedSendAt: "2026-09-15T10:00:00",
+    audienceGroup: "snack_hack",
+    suggestedSendAt: "2026-09-24T10:00:00",
   },
   {
     key: "warmup-5",
@@ -142,8 +142,8 @@ export const REAL_FOOD_RESET_EMAILS: RealFoodResetEmailDraft[] = [
     ]),
     ctaLabel: "Save my free spot",
     ctaUrl: LANDING,
-    audienceGroup: "health",
-    suggestedSendAt: "2026-09-17T10:00:00",
+    audienceGroup: "snack_hack",
+    suggestedSendAt: "2026-09-26T10:00:00",
   },
 
   // ── Promo (health list, starts ~Sept 18) ───────────────────────────────────

@@ -59,6 +59,8 @@ async function main() {
       scheduledAt,
     };
 
+    const status = email.phase === "warmup" ? "scheduled" : "draft";
+
     if (existing.length > 0) {
       if (existing[0].status === "sent" || existing[0].status === "sending") {
         console.log(`skip sent: ${email.key}`);
@@ -66,23 +68,22 @@ async function main() {
       }
       await db
         .update(emailNewsletters)
-        .set({ ...values, updatedAt: new Date() })
+        .set({ ...values, status, updatedAt: new Date() })
         .where(eq(emailNewsletters.id, existing[0].id));
       updated++;
-      console.log(`updated draft: ${email.key} → ${email.subject}`);
+      console.log(`updated ${status}: ${email.key} → ${email.subject} @ ${email.suggestedSendAt}`);
     } else {
       await db.insert(emailNewsletters).values({
         ...values,
-        status: "draft",
+        status,
       });
       created++;
-      console.log(`created draft: ${email.key} → ${email.subject}`);
+      console.log(`created ${status}: ${email.key} → ${email.subject} @ ${email.suggestedSendAt}`);
     }
   }
 
   console.log(`Done. created=${created} updated=${updated}`);
-  console.log("Open Admin → Newsletter, review, then Schedule warmup/promo only.");
-  console.log("Reminder + daily + post-challenge emails send via sequence — do not also Schedule those.");
+  console.log("Warmups are scheduled to snack-hack leads. Promo/reminder/day stay drafts (sequence sends reminder/day).");
 
   const people = await db.select().from(subscribers);
   let enrolled = 0;
