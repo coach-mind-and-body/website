@@ -155,9 +155,9 @@ async function sendSequenceStep(
     reclaim_6_week: "You're receiving this as part of your R.E.C.L.A.I.M. program.",
     fpu_babystep_1: "You're receiving this as part of your Financial Peace journey.",
     [REAL_FOOD_RESET_SEQUENCE_ID]:
-      "You're receiving this because you registered for the 5-Day Real Food Reset.",
+      "You're receiving this because you registered for the 5-Day No Processed Food Challenge.",
     [REAL_FOOD_RESET_OFFER_SEQUENCE_ID]:
-      "You're receiving this because you registered for the 5-Day Real Food Reset.",
+      "You're receiving this because you registered for the 5-Day No Processed Food Challenge.",
   };
 
   const result = await sendMarketingEmail({

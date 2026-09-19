@@ -49,7 +49,7 @@ enum NotificationService {
         try? await center.add(req)
     }
 
-    /// Local reminders for the 5-Day Real Food Reset (Mountain Time).
+    /// Local reminders for the 5-Day No Processed Food Challenge (Mountain Time).
     /// Remote APNs still needs the paid Apple team + TestFlight; this covers the phone
     /// once the app has been opened and permission granted.
     static func scheduleChallengeNudges(enrolled: Bool) async {
@@ -75,7 +75,7 @@ enum NotificationService {
             mountainDate: "2026-09-27",
             hour: 19,
             minute: 0,
-            title: "Real Food Reset starts tomorrow",
+            title: "No Processed Food Challenge starts tomorrow",
             body: "We begin September 28. Lives Mon/Wed/Fri at 1:00 pm Mountain.",
             tab: "challenge"
         )

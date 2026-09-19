@@ -155,8 +155,11 @@ export default function RealFoodResetClient() {
             >
               Stop starting over.
             </h1>
-            <p className="text-xl md:text-2xl font-semibold mb-5" style={{ color: "#3a5a3a" }}>
+            <p className="text-xl md:text-2xl font-semibold mb-2" style={{ color: "#3a5a3a" }}>
               {REAL_FOOD_RESET.name}
+            </p>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] mb-5" style={{ color: "#8a9a8a" }}>
+              with {REAL_FOOD_RESET.hosts}
             </p>
             <p className="text-base md:text-lg leading-relaxed mb-6" style={{ color: "#555" }}>
               Five days to discover what’s really in your food, make simple whole-food choices, and prove to yourself that eating differently doesn’t have to be so complicated.

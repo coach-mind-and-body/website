@@ -242,7 +242,7 @@ export const REAL_FOOD_RESET_EMAILS: RealFoodResetEmailDraft[] = [
       p("You don't need another nutrition trend to obsess over. You need practical skills you can use after the challenge is over."),
       p("We start September 28, and it's completely FREE. And yes… we'll still eat protein."),
     ]),
-    ctaLabel: "Join the 5-day Real Food Reset",
+    ctaLabel: "Join the 5-Day No Processed Food Challenge",
     ctaUrl: LANDING,
     audienceGroup: "health",
     suggestedSendAt: "2026-09-23T10:00:00",
@@ -473,6 +473,9 @@ export function getRealFoodResetConfirmationEmail(
 export function getRealFoodResetReasonLine(audience: string): string {
   if (audience === "real_food_reset") {
     return `You're receiving this because you registered for ${NAME} at mindandbodyresetcoach.com.`;
+  }
+  if (audience === "snack_hack") {
+    return `You're receiving this because you downloaded the Snack Hack guide and ${NAME} is next.`;
   }
   return "You're receiving this because you joined our health & wellness list at mindandbodyresetcoach.com.";
 }

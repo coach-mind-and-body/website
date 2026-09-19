@@ -18,10 +18,11 @@ export type RealFoodResetDay = {
   journal: { noticed: string; glad: string; hard: string };
 };
 
-/** FREE 5-Day Real Food Reset — Sept 28–Oct 2, 2026 */
+/** FREE 5-Day No Processed Food Challenge — Sept 28–Oct 2, 2026 */
 export const REAL_FOOD_RESET = {
-  name: "The 5-Day Real Food Reset",
-  shortName: "Real Food Reset",
+  name: "The 5-Day No Processed Food Challenge",
+  shortName: "No Processed Food Challenge",
+  hosts: "Lee Anne & Sara",
   path: "/real-food-reset",
   thankYouPath: "/real-food-reset/thank-you",
   trackerPath: "/habit-tracker",
@@ -189,7 +190,7 @@ export const REAL_FOOD_RESET_GUIDES = {
   images: [
     {
       title: "Examples of whole foods",
-      alt: "Foods to enjoy during the Real Food Reset — vegetables, protein, fats, fruits, grains, drinks",
+      alt: "Foods to enjoy during the 5-Day No Processed Food Challenge — vegetables, protein, fats, fruits, grains, drinks",
       path: "/real-food-reset/whole-foods.png",
     },
     {

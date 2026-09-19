@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Real Food Reset static ads</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #d8d0c8;
+      font-family: Montserrat, Arial, sans-serif;
+      padding: 40px;
+    }
+    .ad {
+      width: 1080px;
+      height: 1350px;
+      background: #ffffff;
+      position: relative;
+      overflow: hidden;
+      margin: 0 auto 48px;
+      isolation: isolate;
+    }
+    .ad.square { height: 1080px; }
+    .photo {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 52%;
+      overflow: hidden;
+      z-index: 1;
+    }
+    .photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .photo.suit { width: 56%; }
+    .photo.suit img { object-position: 58% 8%; }
+    .photo.produce img { object-position: 42% 44%; transform: scale(1.28); transform-origin: 45% 50%; }
+    .copy {
+      position: absolute;
+      top: 0; right: 0; bottom: 0;
+      width: 50%;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: #fff;
+    }
+    .headline {
+      background: #f3c2b6;
+      color: #2d3b2d;
+      padding: 48px 40px 44px 36px;
+      font-weight: 800;
+      font-size: 52px;
+      line-height: 1.12;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+    .headline.small { font-size: 46px; }
+    .mid {
+      flex: 0 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 40px;
+      padding: 8px 40px 8px 36px;
+      margin-top: -36px;
+    }
+    .invite {
+      color: #2d3b2d;
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-weight: 700;
+      font-size: 50px;
+      line-height: 1.16;
+    }
+    .invite-join {
+      position: relative;
+      top: -120px;
+    }
+    .cta {
+      align-self: stretch;
+      background: #2d3b2d;
+      color: #fff;
+      text-align: center;
+      padding: 32px 28px 30px;
+      font-weight: 800;
+      font-size: 32px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      line-height: 1.2;
+    }
+    .wordmark {
+      padding: 24px 32px 48px;
+      margin-bottom: 36px;
+      text-align: center;
+    }
+    .wordmark .kicker {
+      font-size: 24px;
+      letter-spacing: 0.24em;
+      font-weight: 700;
+      color: #8a9a8a;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .wordmark h2 {
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-size: 44px;
+      font-weight: 600;
+      font-style: italic;
+      color: #2d3b2d;
+      line-height: 1.12;
+      text-transform: none;
+    }
+    .wordmark .by {
+      margin-top: 14px;
+      font-size: 22px;
+      letter-spacing: 0.12em;
+      font-weight: 700;
+      color: #8a9a8a;
+      text-transform: uppercase;
+    }
+    .date {
+      margin-top: 10px;
+      font-size: 20px;
+      letter-spacing: 0.04em;
+      font-weight: 600;
+      color: #8a7060;
+    }
+  </style>
+</head>
+<body>
+  <!-- 1. Produce / stop starting over -->
+  <div class="ad" id="ad-start-over">
+    <div class="photo produce"><img src="lee-anne-produce.jpg" alt="Lee Anne" /></div>
+    <div class="copy">
+      <div class="headline"><span style="white-space:nowrap">Learn how to</span><br/><span style="white-space:nowrap">stop starting</span><br/>over</div>
+      <div class="mid">
+        <p class="invite invite-join">Join the FREE 5-day<br/>no processed food challenge<br/>with Lee Anne &amp; Sara.</p>
+        <div class="cta">Join the<br/>challenge</div>
+      </div>
+      <div class="wordmark">
+        <div class="kicker">The 5-day</div>
+        <h2>no processed food challenge.</h2>
+        <div class="by">with Lee Anne &amp; Sara</div>
+        <div class="date">Starts September 28 • Free</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Produce / not another diet -->
+  <div class="ad" id="ad-not-a-diet">
+    <div class="photo produce"><img src="lee-anne-produce.jpg" alt="Lee Anne" /></div>
+    <div class="copy">
+      <div class="headline"><span style="white-space:nowrap">You don’t need</span><br/><span style="white-space:nowrap">another diet</span></div>
+      <div class="mid">
+        <p class="invite invite-join">Five days to get<br/>curious about what’s<br/>actually on your plate.</p>
+        <div class="cta">Save my<br/>free spot</div>
+      </div>
+      <div class="wordmark">
+        <div class="kicker">The 5-day</div>
+        <h2>no processed food challenge.</h2>
+        <div class="by">with Lee Anne &amp; Sara</div>
+        <div class="date">Starts September 28 • Free</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Produce / stop blaming yourself -->
+  <div class="ad" id="ad-curious">
+    <div class="photo produce"><img src="lee-anne-produce.jpg" alt="Lee Anne with whole foods" /></div>
+    <div class="copy">
+      <div class="headline small"><span style="white-space:nowrap">Stop blaming</span><br/><span style="white-space:nowrap">yourself for</span><br/><span style="white-space:nowrap">a minute</span></div>
+      <div class="mid">
+        <p class="invite invite-join">Join the FREE 5-day<br/>challenge. Progress,<br/>not perfection.</p>
+        <div class="cta">Join the<br/>challenge</div>
+      </div>
+      <div class="wordmark">
+        <div class="kicker">The 5-day</div>
+        <h2>no processed food challenge.</h2>
+        <div class="by">with Lee Anne &amp; Sara</div>
+        <div class="date">Starts September 28 • Free</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Suit alternate / not another diet -->
+  <div class="ad" id="ad-suit">
+    <div class="photo suit"><img src="lee-anne-suit.jpg" alt="Lee Anne" /></div>
+    <div class="copy">
+      <div class="headline"><span style="white-space:nowrap">You don’t need</span><br/><span style="white-space:nowrap">another diet</span></div>
+      <div class="mid">
+        <p class="invite invite-join">Five days to get<br/>curious about what’s<br/>actually on your plate.</p>
+        <div class="cta">Save my<br/>free spot</div>
+      </div>
+      <div class="wordmark">
+        <div class="kicker">The 5-day</div>
+        <h2>no processed food challenge.</h2>
+        <div class="by">with Lee Anne &amp; Sara</div>
+        <div class="date">Starts September 28 • Free</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

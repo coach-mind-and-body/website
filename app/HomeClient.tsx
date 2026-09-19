@@ -96,7 +96,7 @@ export default function Home() {
         className="block text-center px-4 py-3 text-sm font-semibold"
         style={{ background: "oklch(0.38 0.10 148)", color: "#fff" }}
       >
-        Free 5-Day Real Food Reset · starts September 28 · Save your spot →
+        Free 5-Day No Processed Food Challenge · starts September 28 · Save your spot →
       </Link>
 
       {/* ── HERO ── */}

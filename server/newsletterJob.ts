@@ -40,7 +40,7 @@ function reasonForAudience(group: string): string {
     return "You're receiving this because you downloaded The Midlife Mindset Snack Hack at mindandbodyresetcoach.com.";
   }
   if (group === "real_food_reset") {
-    return "You're receiving this because you registered for the 5-Day Real Food Reset at mindandbodyresetcoach.com.";
+    return "You're receiving this because you registered for the 5-Day No Processed Food Challenge at mindandbodyresetcoach.com.";
   }
   if (group === "health") {
     return "You're receiving this because you joined our health & wellness list at mindandbodyresetcoach.com.";

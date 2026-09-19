@@ -299,11 +299,11 @@ struct HabitsView: View {
     private var todayChallengeCard: some View {
         if let today = model.todayChallenge, today.enrolled {
             HTCard {
-                Text("Real Food Reset")
+                Text("No Processed Food Challenge")
                     .font(.caption2.weight(.bold))
                     .foregroundStyle(HTTheme.gold)
                     .textCase(.uppercase)
-                Text(today.title ?? "The 5-Day Real Food Reset")
+                Text(today.title ?? "The 5-Day No Processed Food Challenge")
                     .font(.headline)
                     .foregroundStyle(HTTheme.forest)
                 if today.beforeStart == true {
