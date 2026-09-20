@@ -494,6 +494,7 @@ struct ChallengeTodayPayload: Codable, Hashable {
     var liveTime: String?
     var journal: ChallengeJournalEntry?
     var guideImages: [ChallengeGuideImage]?
+    var documents: [ChallengeGuideImage]?
 }
 
 struct ClaimEnrollmentInput: Encodable {

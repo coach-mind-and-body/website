@@ -201,6 +201,45 @@ export default function ChallengeTodayCard() {
         </>
       )}
 
+      {data.documents && data.documents.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-sm font-bold" style={{ color: "#2d3b2d" }}>
+            Meal plan, shopping list &amp; recipes
+          </p>
+          {data.documents.map((doc) => (
+            <a
+              key={doc.url}
+              href={doc.url}
+              target="_blank"
+              rel="noreferrer"
+              className="block rounded-xl px-4 py-3 text-sm font-bold"
+              style={{ background: "#f9f5f0", color: "#2d3b2d", border: "1px solid #f0e8e4" }}
+            >
+              {doc.title} →
+            </a>
+          ))}
+        </div>
+      )}
+
+      {data.guides?.mealPlan && data.guides.mealPlan.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-sm font-bold" style={{ color: "#2d3b2d" }}>
+            This week’s plates
+          </p>
+          {data.guides.mealPlan.map((row) => (
+            <div key={row.weekday} className="rounded-xl p-3 text-xs" style={{ background: "#f9f5f0", color: "#555" }}>
+              <p className="font-bold mb-1" style={{ color: "#2d3b2d" }}>
+                {row.weekday}
+              </p>
+              <p>Breakfast: {row.breakfast}</p>
+              <p>Snack: {row.snack}</p>
+              <p>Lunch: {row.lunch}</p>
+              <p>Dinner: {row.dinner}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
       {data.guideImages && data.guideImages.length > 0 && (
         <div className="space-y-3">
           {data.guideImages.map((img) => (

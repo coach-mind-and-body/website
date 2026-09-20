@@ -135,6 +135,13 @@ export function realFoodResetGuideImages(): { title: string; alt: string; url: s
   }));
 }
 
+export function realFoodResetDocuments(): { title: string; url: string }[] {
+  return REAL_FOOD_RESET_GUIDES.documents.map((doc) => ({
+    title: doc.title,
+    url: `${SITE_URL}${doc.path}`,
+  }));
+}
+
 export const REAL_FOOD_RESET_GUIDES = {
   levels: [
     {
@@ -197,6 +204,57 @@ export const REAL_FOOD_RESET_GUIDES = {
       title: "Whole food meal ideas",
       alt: "Breakfast, lunch, dinner, and snack ideas made with whole foods",
       path: "/real-food-reset/meal-ideas.png",
+    },
+  ],
+  documents: [
+    {
+      title: "Week 1 meal plan",
+      path: "/real-food-reset/meal-plan.pdf",
+    },
+    {
+      title: "Shopping list",
+      path: "/real-food-reset/shopping-list.pdf",
+    },
+    {
+      title: "Recipe bundle",
+      path: "/real-food-reset/recipe-bundle.pdf",
+    },
+  ],
+  mealPlan: [
+    {
+      weekday: "Monday",
+      breakfast: "Turkey Sausage with Cucumber Tomato Salad",
+      snack: "Apple with Almond Butter",
+      lunch: "Nashville Hot Chicken Salad",
+      dinner: "Hearty Vegetable Chili",
+    },
+    {
+      weekday: "Tuesday",
+      breakfast: "Vibrant Breakfast Plate",
+      snack: "Edamame",
+      lunch: "Nashville Hot Chicken Salad",
+      dinner: "Chicken Burrito Bowl",
+    },
+    {
+      weekday: "Wednesday",
+      breakfast: "Vibrant Breakfast Plate",
+      snack: "Orange with Dry Roasted Mixed Nuts",
+      lunch: "Mediterranean Salmon Salad",
+      dinner: "Chicken Burrito Bowl",
+    },
+    {
+      weekday: "Thursday",
+      breakfast: "Eggs and Broccoli Slaw Salad",
+      snack: "Apple with Almond Butter",
+      lunch: "Mediterranean Salmon Salad",
+      dinner: "Curried Chicken Meatballs",
+    },
+    {
+      weekday: "Friday",
+      breakfast: "Eggs and Broccoli Slaw Salad",
+      snack: "Edamame",
+      lunch: "Lettuce Wrapped Turkey Burger",
+      dinner: "Curried Chicken Meatballs",
     },
   ],
 } as const;

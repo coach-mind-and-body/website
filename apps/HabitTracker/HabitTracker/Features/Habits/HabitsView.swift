@@ -394,6 +394,30 @@ struct HabitsView: View {
                     .buttonStyle(.plain)
                     .disabled(model.journalSaving)
                 }
+                if let docs = today.documents, !docs.isEmpty {
+                    Text("Meal plan, shopping list & recipes")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(HTTheme.forest)
+                        .padding(.top, 8)
+                    ForEach(docs) { doc in
+                        if let url = URL(string: doc.url) {
+                            Button {
+                                openURL(url)
+                            } label: {
+                                Text(doc.title)
+                                    .font(.subheadline.weight(.bold))
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.vertical, 10)
+                                    .padding(.horizontal, 12)
+                                    .background(Color.white)
+                                    .foregroundStyle(HTTheme.forest)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(HTTheme.roseBorder))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
                 if let images = today.guideImages, !images.isEmpty {
                     Text("What to eat")
                         .font(.caption.weight(.bold))

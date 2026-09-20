@@ -12,6 +12,7 @@ import {
   REAL_FOOD_RESET_GUIDES,
   REAL_FOOD_RESET_THEME,
   realFoodResetDayForDate,
+  realFoodResetDocuments,
   realFoodResetGuideImages,
   type RealFoodResetDay,
 } from "@shared/realFoodReset";
@@ -183,6 +184,7 @@ export type ChallengeTodayPayload = {
   journal: { noticed: string; glad: string; hard: string } | null;
   guides: typeof REAL_FOOD_RESET_GUIDES | null;
   guideImages: { title: string; alt: string; url: string }[];
+  documents: { title: string; url: string }[];
 };
 
 export async function getChallengeToday(opts: {
@@ -207,6 +209,7 @@ export async function getChallengeToday(opts: {
     journal: null,
     guides: null,
     guideImages: [],
+    documents: [],
   };
   if (!db) return empty;
 
@@ -274,6 +277,7 @@ export async function getChallengeToday(opts: {
       : { noticed: "", glad: "", hard: "" },
     guides: REAL_FOOD_RESET_GUIDES,
     guideImages: realFoodResetGuideImages(),
+    documents: realFoodResetDocuments(),
   };
 }
 
