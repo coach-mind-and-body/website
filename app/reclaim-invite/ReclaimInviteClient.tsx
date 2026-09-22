@@ -228,7 +228,7 @@ function CtaCard({
 
       <div className="text-center mb-4">
         <p className="text-sm font-semibold text-[#3a5a3a] mb-1">
-          R.E.C.L.A.I.M. · 6 weeks private coaching
+          6 Habits in 6 Weeks · private coaching
         </p>
         <div className="flex items-baseline justify-center gap-2.5 flex-wrap">
           <span className="text-5xl sm:text-6xl font-playfair font-bold text-[#3a5a3a] leading-none">
@@ -428,7 +428,7 @@ export default function ReclaimInviteClient() {
                 great way to start, with tools you can use right away.
               </p>
               <p className="text-base sm:text-lg text-gray-700 mb-6 leading-relaxed">
-                <strong>R.E.C.L.A.I.M.</strong> is where lasting change happens: 6 weeks of private
+                <strong>6 Habits in 6 Weeks to Quiet Food Noise</strong> is where lasting change happens: 6 weeks of private
                 coaching with {BRAND.coachFullName}. You get a clear system, personalized support, and
                 someone in your corner so peace with food and your body becomes how you live — not
                 just something you know about.
@@ -477,7 +477,7 @@ export default function ReclaimInviteClient() {
 
               {/* 8. Named mechanism */}
               <p className="text-sm font-semibold text-[#3a5a3a] mb-2 uppercase tracking-wide">
-                The R.E.C.L.A.I.M. system
+                The 6 habits
               </p>
               <p className="text-sm text-gray-600 mb-4 text-left leading-relaxed">
                 Not random tips — a 7-part framework that rewires the{" "}
@@ -601,11 +601,11 @@ export default function ReclaimInviteClient() {
                 },
                 {
                   q: "Do I need the free guide first?",
-                  a: "No. The free Snack Hack guide is a great way to start if you want tools tonight — but it's not required. R.E.C.L.A.I.M. is for women ready for private coaching and real change over 6 weeks.",
+                  a: "No. The free Snack Hack guide is a great way to start if you want tools tonight — but it's not required. 6 Habits in 6 Weeks is for women ready for private coaching and real change over 6 weeks.",
                 },
                 {
                   q: "What if I'm not sure?",
-                  a: "Book a free fit call. Lee Anne will be honest — if R.E.C.L.A.I.M. isn't right for you, she'll say so. No high-pressure pitch.",
+                  a: "Book a free fit call. Lee Anne will be honest — if 6 Habits in 6 Weeks isn't right for you, she'll say so. No high-pressure pitch.",
                 },
                 {
                   q: "Can I split the payment?",

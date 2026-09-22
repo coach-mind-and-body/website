@@ -78,7 +78,7 @@ export default function SiteFooter() {
               {[
                 { href: "/", label: "Home" },
                 { href: "/about", label: "About Mind & Body" },
-                { href: "/reclaim", label: "R.E.C.L.A.I.M. Program" },
+                { href: "/reclaim", label: "6 Habits in 6 Weeks" },
                 { href: "/health-wellness-blog", label: "Blog" },
                 { href: "/insulin-resistance-after-40", label: "Insulin Resistance After 40" },
                 { href: "/life-after-glp-1", label: "Life After GLP-1" },

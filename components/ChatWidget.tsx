@@ -23,7 +23,7 @@ const SITE_ORIGIN = typeof window !== "undefined" ? window.location.origin : "";
 const INTERNAL_HOSTS = typeof window !== "undefined" ? ["mindandbodyresetcoach.com", "www.mindandbodyresetcoach.com", window.location.hostname] : [];
 
 const SUGGESTED_PROMPTS = [
-  "What is the R.E.C.L.A.I.M. program?",
+  "What is 6 Habits in 6 Weeks?",
   "Tell me about Financial Peace University",
   "How do I book a free discovery call?",
   "What's the podcast about?",

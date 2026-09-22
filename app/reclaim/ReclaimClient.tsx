@@ -111,7 +111,7 @@ export default function Reclaim() {
           <div className="text-center mb-12">
             <span className="badge-forest mb-3 inline-block">The Framework</span>
             <h2 className="font-bold" style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(1.8rem, 3.5vw, 2.8rem)", color: "oklch(0.22 0.02 160)" }}>
-              What Does R.E.C.L.A.I.M. Mean?
+              The 6 habits (and the work underneath)
             </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

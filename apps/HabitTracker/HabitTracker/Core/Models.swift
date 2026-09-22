@@ -443,6 +443,8 @@ struct Challenge: Codable, Identifiable, Hashable {
     var title: String
     var description: String?
     var durationDays: Int?
+    var startDate: String?
+    var endDate: String?
     var isActive: Bool?
     var isFeatured: Bool?
     var linkedPodcastSlug: String?
@@ -497,6 +499,7 @@ struct ChallengeTodayPayload: Codable, Hashable {
     var journal: ChallengeJournalEntry?
     var guideImages: [ChallengeGuideImage]?
     var documents: [ChallengeGuideImage]?
+    var previewDays: [ChallengeTodayDay]?
 }
 
 struct ClaimEnrollmentInput: Encodable {

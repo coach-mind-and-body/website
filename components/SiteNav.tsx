@@ -11,7 +11,7 @@ const LOGO = BRAND.logoUrl;
 
 const NAV_LINKS = [
   { href: "/real-food-reset", label: "Free Challenge" },
-  { href: "/reclaim", label: "R.E.C.L.A.I.M." },
+  { href: "/reclaim", label: "6 Habits" },
   { href: "/midlife-weight-loss-after-40", label: "Midlife Guides" },
   { href: "/financial-peace", label: "FPU" },
   { href: "/unicity", label: "Unicity" },

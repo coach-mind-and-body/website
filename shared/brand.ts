@@ -36,9 +36,9 @@ export const GOOGLE_CALENDAR = {
 } as const;
 
 export const PROGRAM = {
-  name: "R.E.C.L.A.I.M.",
-  fullName: "R.E.C.L.A.I.M. 6-Week Mind & Body Reset",
-  tagline: "Experience transformation and empowerment",
+  name: "6 Habits in 6 Weeks",
+  fullName: "6 Habits in 6 Weeks to Quiet Food Noise",
+  tagline: "Private coaching to quiet food noise — not another diet",
   sessionCount: 6,
   sessionDurationMins: 50,
   fullPrice: 597,

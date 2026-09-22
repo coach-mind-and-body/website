@@ -7,13 +7,13 @@ import ReclaimInviteClient from "./ReclaimInviteClient";
  * noindex: keep organic traffic on /reclaim.
  */
 export const metadata: Metadata = {
-  title: { absolute: "R.E.C.L.A.I.M. Private Coaching | Intro $597" },
+  title: { absolute: "6 Habits in 6 Weeks to Quiet Food Noise | Intro $597" },
   description:
     "6 private coaching sessions for women 40+ ready to quiet food noise and rewire midlife habits. Intro pricing $597 (usually $1,200). Book a free fit call or enroll.",
   robots: { index: false, follow: false },
   alternates: { canonical: "/reclaim-invite" },
   openGraph: {
-    title: "R.E.C.L.A.I.M. · 6-Week Private Coaching",
+    title: "6 Habits in 6 Weeks · Private Coaching",
     description:
       "6 weeks of private midlife coaching. Intro $597 (usually $1,200). Enroll or book a free fit call.",
     url: "/reclaim-invite",
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "R.E.C.L.A.I.M. · Intro $597",
+    title: "6 Habits in 6 Weeks · Intro $597",
     description: "6 private sessions for midlife food noise and lasting habits.",
   },
 };

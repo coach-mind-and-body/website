@@ -71,10 +71,27 @@ export default function ChallengeTodayCard() {
       </div>
 
       {data.beforeStart && (
-        <p className="text-sm" style={{ color: "#6a7a6a" }}>
-          You’re in. We start {REAL_FOOD_RESET.startLabel}. Lives are {REAL_FOOD_RESET.liveDays} at{" "}
-          {data.liveTime || REAL_FOOD_RESET.liveTime}.
-        </p>
+        <div className="space-y-3">
+          <p className="text-sm" style={{ color: "#6a7a6a" }}>
+            You’re in. We start {REAL_FOOD_RESET.startLabel}. Lives are {REAL_FOOD_RESET.liveDays} at{" "}
+            {data.liveTime || REAL_FOOD_RESET.liveTime}. Check-off starts Monday — peek at the week below.
+          </p>
+          <ul className="space-y-2">
+            {(data.previewDays ?? REAL_FOOD_RESET.days).map((d) => (
+              <li key={d.n} className="rounded-xl p-3 text-sm" style={{ background: "#f9f5f0" }}>
+                <p className="text-xs font-bold" style={{ color: "#c9a96e" }}>
+                  Day {d.n} · {d.weekday} · {d.formatLabel}
+                </p>
+                <p className="font-bold mt-1" style={{ color: "#2d3b2d" }}>
+                  {d.title}
+                </p>
+                <p className="text-xs mt-1" style={{ color: "#555" }}>
+                  {d.assignmentTitle}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {isSupported && !isSubscribed && (

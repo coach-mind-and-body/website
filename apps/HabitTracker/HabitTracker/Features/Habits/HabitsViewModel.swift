@@ -13,6 +13,8 @@ final class HabitsViewModel {
     var errorMessage: String?
     var noteDraft = ""
     var notesExpanded = false
+    var noteSaving = false
+    var noteSaved = false
     var mainTab = 0
     var weekAnchor = MountainDate.today()
 
@@ -226,11 +228,6 @@ final class HabitsViewModel {
         userChallenges.first { $0.challengeId == challengeId }
     }
 
-    func challengeProgress(_ challenge: Challenge) -> Int {
-        guard let uc = userChallenge(for: challenge.id) else { return 0 }
-        return challengeLogs.filter { $0.userChallengeId == uc.id }.count
-    }
-
     func challengePercent(_ challenge: Challenge) -> Int {
         let days = max(challenge.durationDays ?? 7, 1)
         return min(100, Int((Double(challengeProgress(challenge)) / Double(days) * 100).rounded()))
@@ -238,7 +235,21 @@ final class HabitsViewModel {
 
     func challengeDoneToday(_ challenge: Challenge) -> Bool {
         guard let uc = userChallenge(for: challenge.id) else { return false }
-        return challengeLogs.contains { $0.userChallengeId == uc.id && $0.dateStr == MountainDate.today() }
+        let today = MountainDate.today()
+        if let start = challenge.startDate, today < start { return false }
+        if let end = challenge.endDate, today > end { return false }
+        return challengeLogs.contains { $0.userChallengeId == uc.id && $0.dateStr == today }
+    }
+
+    func challengeProgress(_ challenge: Challenge) -> Int {
+        guard let uc = userChallenge(for: challenge.id) else { return 0 }
+        let inWindow = challengeLogs.filter { log in
+            guard log.userChallengeId == uc.id else { return false }
+            if let start = challenge.startDate, log.dateStr < start { return false }
+            if let end = challenge.endDate, log.dateStr > end { return false }
+            return true
+        }
+        return Set(inWindow.map(\.dateStr)).count
     }
 
     var featuredChallenges: [Challenge] {
@@ -521,12 +532,17 @@ final class HabitsViewModel {
     }
 
     func saveNote() async {
+        noteSaving = true
+        noteSaved = false
+        defer { noteSaving = false }
         if auth.isSignedIn {
             do {
                 let _: SuccessFlag = try await auth.client.mutate(
                     "habit.saveDailyNote",
                     input: SaveNoteInput(dateStr: dateStr, note: noteDraft)
                 )
+                notes = notes.filter { $0.dateStr != dateStr } + [DailyNote(dateStr: dateStr, note: noteDraft)]
+                noteSaved = true
             } catch {
                 errorMessage = error.localizedDescription
             }
@@ -540,6 +556,7 @@ final class HabitsViewModel {
         }
         GuestLocalStore.saveNotes(all)
         notes = all
+        noteSaved = true
     }
 
     func healthCaption(for habit: Habit) -> String? {
@@ -670,6 +687,10 @@ final class HabitsViewModel {
     }
 
     func toggleChallenge(_ challenge: Challenge) async {
+        if let start = challenge.startDate, MountainDate.today() < start {
+            errorMessage = "This challenge starts \(start). Check-off opens that morning."
+            return
+        }
         guard let uc = userChallenge(for: challenge.id) else { return }
         let today = MountainDate.today()
         let next = !challengeDoneToday(challenge)

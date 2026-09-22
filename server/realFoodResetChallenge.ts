@@ -185,6 +185,7 @@ export type ChallengeTodayPayload = {
   guides: typeof REAL_FOOD_RESET_GUIDES | null;
   guideImages: { title: string; alt: string; url: string }[];
   documents: { title: string; url: string }[];
+  previewDays: RealFoodResetDay[];
 };
 
 export async function getChallengeToday(opts: {
@@ -210,6 +211,7 @@ export async function getChallengeToday(opts: {
     guides: null,
     guideImages: [],
     documents: [],
+    previewDays: [...REAL_FOOD_RESET.days],
   };
   if (!db) return empty;
 
@@ -278,6 +280,7 @@ export async function getChallengeToday(opts: {
     guides: REAL_FOOD_RESET_GUIDES,
     guideImages: realFoodResetGuideImages(),
     documents: realFoodResetDocuments(),
+    previewDays: [...REAL_FOOD_RESET.days],
   };
 }
 

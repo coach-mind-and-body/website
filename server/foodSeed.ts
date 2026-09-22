@@ -322,3 +322,196 @@ export const STARTER_RECIPES: StarterRecipe[] = [
     notes: "Leftovers become tomorrow's lunch over leftover quinoa or greens.",
   },
 ];
+
+function challengeRecipe(
+  slug: string,
+  title: string,
+  mealSlots: string[],
+  ingredients: RecipeIngredient[],
+  steps: string[],
+  extras: Partial<StarterRecipe> = {}
+): StarterRecipe {
+  return {
+    slug,
+    title,
+    description: extras.description ?? `From the 5-Day No Processed Food Challenge recipe bundle.`,
+    imageUrl: extras.imageUrl ?? "",
+    tags: extras.tags ?? ["challenge", "whole-food", ...mealSlots],
+    mealSlots,
+    prepMinutes: extras.prepMinutes ?? 10,
+    cookMinutes: extras.cookMinutes ?? 15,
+    servings: extras.servings ?? 1,
+    calories: extras.calories ?? 0,
+    protein: extras.protein ?? 0,
+    carbs: extras.carbs ?? 0,
+    fat: extras.fat ?? 0,
+    fiber: extras.fiber ?? 0,
+    ingredients,
+    steps: steps.map((text) => ({ text })),
+    notes: extras.notes ?? "Whole-food version from the challenge bundle. Adjust salt and heat to taste.",
+  };
+}
+
+/** Challenge bundle recipes — also live in the main vault after the 5 days. */
+export const CHALLENGE_RECIPES: StarterRecipe[] = [
+  challengeRecipe(
+    "eggs-broccoli-slaw-salad",
+    "Eggs and Broccoli Slaw Salad",
+    ["breakfast"],
+    [
+      { name: "eggs", amount: "2", unit: "" },
+      { name: "broccoli slaw", amount: "2", unit: "cups" },
+      { name: "olive oil", amount: "1", unit: "tbsp" },
+      { name: "lemon juice", amount: "1", unit: "tsp" },
+    ],
+    ["Cook eggs how you like (scrambled, fried, or hard-boiled).", "Toss slaw with olive oil and lemon.", "Plate eggs over the slaw."]
+  ),
+  challengeRecipe(
+    "green-egg-scramble",
+    "Green Egg Scramble",
+    ["breakfast"],
+    [
+      { name: "eggs", amount: "2-3", unit: "" },
+      { name: "spinach or mixed greens", amount: "2", unit: "cups" },
+      { name: "olive oil or butter", amount: "1", unit: "tsp" },
+    ],
+    ["Wilt greens in a little oil.", "Add beaten eggs and scramble until just set.", "Salt and pepper. Eat."]
+  ),
+  challengeRecipe(
+    "turkey-sausage-cucumber-tomato",
+    "Turkey Sausage with Cucumber Tomato Salad",
+    ["breakfast"],
+    [
+      { name: "turkey sausage", amount: "2", unit: "links" },
+      { name: "cucumber", amount: "1", unit: "" },
+      { name: "tomato", amount: "1", unit: "" },
+      { name: "olive oil", amount: "1", unit: "tsp" },
+    ],
+    ["Cook sausage.", "Chop cucumber and tomato, toss with oil and salt.", "Serve together."]
+  ),
+  challengeRecipe(
+    "vibrant-breakfast-plate",
+    "Vibrant Breakfast Plate",
+    ["breakfast"],
+    [
+      { name: "eggs", amount: "2", unit: "" },
+      { name: "avocado", amount: "1/2", unit: "" },
+      { name: "berries or tomato", amount: "1/2", unit: "cup" },
+    ],
+    ["Cook eggs.", "Add avocado and fruit or tomato on the side.", "That's a protein + fat + fiber plate."]
+  ),
+  challengeRecipe(
+    "lettuce-wrapped-turkey-burger",
+    "Lettuce Wrapped Turkey Burger",
+    ["lunch"],
+    [
+      { name: "ground turkey", amount: "4-6", unit: "oz" },
+      { name: "large lettuce leaves", amount: "2-3", unit: "" },
+      { name: "tomato, onion, mustard", amount: "", unit: "to taste" },
+    ],
+    ["Form and cook the turkey patty.", "Wrap in lettuce with tomato and onion.", "Skip the bun."]
+  ),
+  challengeRecipe(
+    "mediterranean-salmon-salad",
+    "Mediterranean Salmon Salad",
+    ["lunch"],
+    [
+      { name: "cooked salmon", amount: "4", unit: "oz" },
+      { name: "mixed greens", amount: "3", unit: "cups" },
+      { name: "cucumber, tomato, olives", amount: "", unit: "handful" },
+      { name: "olive oil + lemon", amount: "1", unit: "tbsp" },
+    ],
+    ["Flake salmon over greens.", "Add vegetables.", "Dress with olive oil and lemon."]
+  ),
+  challengeRecipe(
+    "mouth-watering-shrimp-salad",
+    "Mouth Watering Shrimp Salad",
+    ["lunch"],
+    [
+      { name: "shrimp, cooked", amount: "4-6", unit: "oz" },
+      { name: "greens", amount: "3", unit: "cups" },
+      { name: "avocado", amount: "1/4", unit: "" },
+      { name: "olive oil", amount: "1", unit: "tbsp" },
+    ],
+    ["Warm shrimp if needed.", "Pile on greens with avocado.", "Drizzle oil, salt, pepper."]
+  ),
+  challengeRecipe(
+    "nashville-hot-chicken-salad",
+    "Nashville Hot Chicken Salad",
+    ["lunch"],
+    [
+      { name: "cooked chicken", amount: "4-6", unit: "oz" },
+      { name: "greens", amount: "3", unit: "cups" },
+      { name: "hot paprika or cayenne + olive oil", amount: "1", unit: "tsp" },
+    ],
+    ["Toss chicken with a little oil and heat.", "Serve over greens.", "Keep the heat, skip the breading."]
+  ),
+  challengeRecipe(
+    "edamame-snack",
+    "Edamame",
+    ["snack"],
+    [{ name: "shelled edamame", amount: "1", unit: "cup" }],
+    ["Steam or microwave until hot.", "Salt. That's the snack."],
+    { prepMinutes: 2, cookMinutes: 5 }
+  ),
+  challengeRecipe(
+    "orange-dry-roasted-nuts",
+    "Orange with Dry Roasted Mixed Nuts",
+    ["snack"],
+    [
+      { name: "orange", amount: "1", unit: "" },
+      { name: "dry roasted mixed nuts (no sugar)", amount: "1", unit: "oz" },
+    ],
+    ["Peel the orange.", "Eat with a small handful of nuts."],
+    { prepMinutes: 2, cookMinutes: 0 }
+  ),
+  challengeRecipe(
+    "chicken-burrito-bowl",
+    "Chicken Burrito Bowl",
+    ["dinner"],
+    [
+      { name: "cooked chicken", amount: "4-6", unit: "oz" },
+      { name: "cauliflower rice or leftover rice", amount: "1", unit: "cup" },
+      { name: "black beans", amount: "1/2", unit: "cup" },
+      { name: "salsa, lettuce, avocado", amount: "", unit: "to taste" },
+    ],
+    ["Warm chicken, beans, and rice.", "Top with salsa, lettuce, and avocado.", "No tortilla needed."]
+  ),
+  challengeRecipe(
+    "curried-chicken-meatballs",
+    "Curried Chicken Meatballs",
+    ["dinner"],
+    [
+      { name: "ground chicken", amount: "1", unit: "lb" },
+      { name: "curry powder", amount: "1-2", unit: "tsp" },
+      { name: "egg", amount: "1", unit: "" },
+      { name: "vegetables for serving", amount: "", unit: "" },
+    ],
+    ["Mix chicken, curry, egg, salt.", "Roll into meatballs and bake at 400°F until cooked through (~18 min).", "Serve with vegetables."],
+    { servings: 4, cookMinutes: 20 }
+  ),
+  challengeRecipe(
+    "hearty-vegetable-chili",
+    "Hearty Vegetable Chili",
+    ["dinner"],
+    [
+      { name: "onion, peppers, garlic", amount: "", unit: "to sauté" },
+      { name: "canned tomatoes", amount: "1", unit: "can" },
+      { name: "beans (kidney or black)", amount: "1", unit: "can" },
+      { name: "chili powder", amount: "1", unit: "tbsp" },
+    ],
+    ["Sauté onion, peppers, garlic.", "Add tomatoes, beans, chili powder, simmer 20 minutes.", "Taste for salt."],
+    { servings: 4, cookMinutes: 25 }
+  ),
+  challengeRecipe(
+    "salmon-mango-salsa",
+    "Salmon with Mango Salsa",
+    ["dinner"],
+    [
+      { name: "salmon fillet", amount: "5", unit: "oz" },
+      { name: "mango, diced", amount: "1/2", unit: "" },
+      { name: "red onion, cilantro, lime", amount: "", unit: "to taste" },
+    ],
+    ["Bake or pan-sear salmon.", "Toss mango with onion, cilantro, lime.", "Spoon salsa over the fish."]
+  ),
+];

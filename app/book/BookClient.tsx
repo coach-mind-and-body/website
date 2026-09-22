@@ -115,7 +115,7 @@ export default function Book() {
             }}
           >
             {fromReclaim
-              ? "Book your free R.E.C.L.A.I.M. fit call"
+              ? "Book your free 6 Habits fit call"
               : "Book Your Free Discovery Call"}
           </h1>
           <p
@@ -124,7 +124,7 @@ export default function Book() {
           >
             {fromReclaim
               ? "Pick a time below. In this free 30-minute call, Lee Anne will help you see if private 6-week coaching is the right next step — no pressure pitch."
-              : "Pick a time that works for you. Google will ask for your name and email so we can send the Meet link. In this free 30-minute call, you'll learn a new way women just like you are losing the weight and keeping it off — and whether R.E.C.L.A.I.M. is right for you."}
+              : "Pick a time that works for you. Google will ask for your name and email so we can send the Meet link. In this free 30-minute call, you'll learn a new way women just like you are losing the weight and keeping it off — and whether 6 Habits in 6 Weeks is right for you."}
           </p>
           {fromReclaim && (
             <p className="mt-3 text-sm font-semibold" style={{ color: "oklch(0.38 0.10 148)" }}>
@@ -176,7 +176,7 @@ export default function Book() {
             {[
               "No sales pressure — just a real conversation",
               "Learn what's actually keeping you stuck",
-              "Find out if R.E.C.L.A.I.M. is right for you",
+              "Find out if 6 Habits in 6 Weeks is right for you",
               "Walk away with at least one actionable insight",
             ].map((item) => (
               <div key={item} className="flex items-start gap-2 justify-center sm:justify-start">

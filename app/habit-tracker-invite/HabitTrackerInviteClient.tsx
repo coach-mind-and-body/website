@@ -57,7 +57,7 @@ const WHY_US = [
   "Lee Anne's recipe vault, this-week meal plan, and shopping list",
   "Optional free account to sync across phones",
   "Challenges, reminders, and coach-friendly privacy options",
-  "From the same team as the Snack Hack & R.E.C.L.A.I.M. coaching",
+  "From the same team as the Snack Hack & 6 Habits coaching",
 ];
 
 const FOR_YOU = [

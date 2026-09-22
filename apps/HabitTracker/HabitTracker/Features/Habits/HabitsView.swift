@@ -10,6 +10,7 @@ struct HabitsView: View {
     @State private var mindfulRunning = false
     @State private var showForYou = false
     @State private var showLogin = false
+    @FocusState private var noteFocused: Bool
     @Environment(\.openURL) private var openURL
 
     var body: some View {
@@ -30,6 +31,12 @@ struct HabitsView: View {
             }
             .background(HTTheme.cream.ignoresSafeArea())
             .navigationBarHidden(true)
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") { noteFocused = false }
+                }
+            }
             .task(id: model.sessionEpoch) {
                 await model.load()
                 await health.refreshToday()
@@ -307,9 +314,27 @@ struct HabitsView: View {
                     .font(.headline)
                     .foregroundStyle(HTTheme.forest)
                 if today.beforeStart == true {
-                    Text("You’re in. We start September 28. Lives Mon/Wed/Fri at \(today.liveTime ?? "1:00 pm Mountain").")
+                    Text("You’re in. We start September 28. Lives Mon/Wed/Fri at \(today.liveTime ?? "1:00 pm Mountain"). Check-off opens Monday — here’s the week.")
                         .font(.subheadline)
                         .foregroundStyle(HTTheme.muted)
+                    if let preview = today.previewDays {
+                        ForEach(preview, id: \.n) { d in
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Day \(d.n) · \(d.weekday)")
+                                    .font(.caption2.weight(.bold))
+                                    .foregroundStyle(HTTheme.gold)
+                                Text(d.title)
+                                    .font(.caption.weight(.bold))
+                                    .foregroundStyle(HTTheme.forest)
+                                if let assignment = d.assignmentTitle {
+                                    Text(assignment)
+                                        .font(.caption)
+                                        .foregroundStyle(HTTheme.muted)
+                                }
+                            }
+                            .padding(.top, 4)
+                        }
+                    }
                 }
                 if today.afterEnd == true {
                     Text("The five days are complete. Your journal is still here.")
@@ -597,7 +622,13 @@ struct HabitsView: View {
                         }
                     }
                     .frame(height: 8)
-                    if pct < 100 {
+                    if let start = challenge.startDate, MountainDate.today() < start {
+                        Text("Starts \(start). Check-off opens that morning.")
+                            .font(.subheadline.weight(.bold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .foregroundStyle(HTTheme.muted)
+                    } else if pct < 100 {
                         Button(done ? "Completed for today" : "Complete for today") {
                             Task { await model.toggleChallenge(challenge) }
                         }
@@ -688,9 +719,21 @@ struct HabitsView: View {
                     .padding(10)
                     .background(HTTheme.cream)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
-                Button("Save note") { Task { await model.saveNote() } }
-                    .font(.subheadline.weight(.bold))
-                    .foregroundStyle(HTTheme.forest)
+                    .focused($noteFocused)
+                Button {
+                    noteFocused = false
+                    Task { await model.saveNote() }
+                } label: {
+                    Text(model.noteSaving ? "Saving…" : model.noteSaved ? "Saved" : "Save note")
+                        .font(.subheadline.weight(.bold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(HTTheme.gold)
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .disabled(model.noteSaving)
+                .buttonStyle(.plain)
             } label: {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Daily notes").font(.headline).foregroundStyle(HTTheme.forest)
@@ -744,9 +787,7 @@ struct HabitsView: View {
             .tint(HTTheme.forest)
             .id("victories")
 
-            if model.notesExpanded || model.victoriesExpanded {
-                Color.clear.frame(height: 28)
-            }
+
         }
     }
 

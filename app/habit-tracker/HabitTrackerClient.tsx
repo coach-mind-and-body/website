@@ -130,7 +130,9 @@ export default function HabitTrackerClient() {
 
   const saveNoteMutation = trpc.habit.saveDailyNote.useMutation({
     onSuccess: () => {
-      toast.success("Note saved!");
+      toast.success("Note saved");
+      setNoteSaved(true);
+      window.setTimeout(() => setNoteSaved(false), 2500);
       refetchUserSync();
     },
     onError: (e) => toast.error(e.message)
@@ -339,6 +341,7 @@ export default function HabitTrackerClient() {
   const currentNote = notes.find(n => n.dateStr === currentNoteDateStr)?.note || "";
 
   const [noteText, setNoteText] = useState("");
+  const [noteSaved, setNoteSaved] = useState(false);
 
   // Sync noteText state when selectedDate changes
   useEffect(() => {
@@ -346,6 +349,9 @@ export default function HabitTrackerClient() {
   }, [currentNote, selectedDate]);
 
   const handleSaveNote = () => {
+    if (typeof document !== "undefined") {
+      (document.activeElement as HTMLElement | null)?.blur();
+    }
     if (isAuthenticated) {
       saveNoteMutation.mutate({ dateStr: currentNoteDateStr, note: noteText });
     } else {
@@ -358,7 +364,9 @@ export default function HabitTrackerClient() {
       }
       setLocalNotes(newNotes);
       localStorage.setItem("mbr_daily_notes", JSON.stringify(newNotes));
-      toast.success("Note saved locally!");
+      toast.success("Note saved");
+      setNoteSaved(true);
+      window.setTimeout(() => setNoteSaved(false), 2500);
     }
   };
 
@@ -1045,7 +1053,7 @@ export default function HabitTrackerClient() {
                         className="rounded-full px-8 py-6 shadow-md hover:shadow-lg transition-all" 
                         style={{ background: "#c9a96e", color: "white" }}
                       >
-                        {saveNoteMutation.isPending ? "Saving..." : "Save Note"}
+                        {saveNoteMutation.isPending ? "Saving..." : noteSaved ? "Saved" : "Save Note"}
                       </Button>
                     </div>
                   </div>

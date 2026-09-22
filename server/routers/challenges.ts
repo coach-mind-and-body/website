@@ -16,6 +16,7 @@ import {
   getChallengeToday,
   mergeRealFoodResetToUser,
 } from "../realFoodResetChallenge";
+import { realFoodResetDayForDate } from "@shared/realFoodReset";
 
 export const challengesRouter = router({
   getActiveChallenges: publicProcedure.query(async () => {
@@ -212,6 +213,13 @@ export const challengesRouter = router({
 
       if (!owned) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized to modify this challenge log" });
+      }
+
+      if (!realFoodResetDayForDate(input.dateStr)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Check-off is only for challenge days (Sept 28–Oct 2).",
+        });
       }
 
       if (input.completed) {

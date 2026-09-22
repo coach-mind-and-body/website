@@ -4,7 +4,7 @@ import { absoluteUrl, PROGRAM, SITE_URL } from "@shared/brand";
 
 export const metadata: Metadata = {
   title: {
-    absolute: "1:1 Health Coaching for Women Over 40 | R.E.C.L.A.I.M.",
+    absolute: "1:1 Health Coaching for Women Over 40 | 6 Habits in 6 Weeks",
   },
   description:
     "1:1 health coaching for women over 40: break free from diet culture, calm food noise, support hormones and insulin resistance, and build lasting habits. Book a free discovery call.",
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     "mind body coach",
   ],
   openGraph: {
-    title: "1:1 Health Coaching for Women Over 40 | R.E.C.L.A.I.M.",
+    title: "1:1 Health Coaching for Women Over 40 | 6 Habits in 6 Weeks",
     description:
       "6 private sessions to reclaim your body, rewire your mind, and reset your life — without another diet plan.",
     url: "/reclaim",
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "1:1 Health Coaching for Women Over 40 | R.E.C.L.A.I.M.",
+    title: "1:1 Health Coaching for Women Over 40 | 6 Habits in 6 Weeks",
     description:
       "6-session 1:1 coaching for midlife health, hormones, and food freedom with Lee Anne Chapman.",
   },
