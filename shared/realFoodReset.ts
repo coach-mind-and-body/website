@@ -163,6 +163,145 @@ export function realFoodResetDayForDate(dateStr: string): RealFoodResetDay | nul
   return REAL_FOOD_RESET.days.find((d) => d.dateStr === dateStr) ?? null;
 }
 
+export type RealFoodResetPushKind = "morning" | "live" | "evening" | "eve-before";
+
+export type RealFoodResetPushPayload = { title: string; body: string; url: string };
+
+const CHALLENGE_PUSH_URL = "/habit-tracker?focus=challenge";
+
+/** Short phone copy — same days as the emails, not the email pasted into a banner. */
+const PREP_MORNING_PUSH: Record<string, { title: string; body: string }> = {
+  "2026-09-22": {
+    title: "Don't clean the pantry",
+    body: "Just open it. How much of what you eat comes from a package? No throwing anything away.",
+  },
+  "2026-09-23": {
+    title: "Look at breakfast first",
+    body: "Tomorrow morning, see it before you eat it. Don't change it yet. Curiosity, not shoulds.",
+  },
+  "2026-09-24": {
+    title: "One “healthy” package",
+    body: "Find a food you bought because the front looked good. Don't toss it. Notice why you chose it.",
+  },
+  "2026-09-25": {
+    title: "Follow the packages today",
+    body: "Every time you open one to eat, just notice. After dinner too. No scorekeeping.",
+  },
+  "2026-09-26": {
+    title: "Please don't throw your food out",
+    body: "What whole foods do you already like? That's enough to start. Simple beats fancy.",
+  },
+  "2026-09-27": {
+    title: "Tomorrow we start seeing",
+    body: "No last supper. No proving anything. Come as you are — live is 1:00 pm Mountain, in the app.",
+  },
+};
+
+const DAY_PUSH: Record<
+  number,
+  { morning: { title: string; body: string }; evening: { title: string; body: string }; live?: { title: string; body: string } }
+> = {
+  1: {
+    morning: {
+      title: "Day 1 — start seeing",
+      body: "Notice one ultra-processed food. Swap one. That's the whole job. Live at 1:00.",
+    },
+    live: {
+      title: "We're live in 15 minutes",
+      body: "Processed vs whole. Come curious, not perfect. Tap to join.",
+    },
+    evening: {
+      title: "What actually surprised you?",
+      body: "One swap. One “I didn't realize.” Write it in Challenge — messy days count.",
+    },
+  },
+  2: {
+    morning: {
+      title: "Day 2 — flip it",
+      body: "Grab two of the same kind of food. Turn them over. The front is marketing.",
+    },
+    evening: {
+      title: "Which would you choose now?",
+      body: "Two labels. One why. Log it in Challenge before you forget.",
+    },
+  },
+  3: {
+    morning: {
+      title: "Day 3 — sugar detective",
+      body: "Find 3 foods you already eat with added sugar. No food police. Live at 1:00.",
+    },
+    live: {
+      title: "Sugar talk in 15 minutes",
+      body: "We're naming what's on the label — not judging your pantry. Tap to join.",
+    },
+    evening: {
+      title: "Wait… sugar was in THAT?",
+      body: "Keep it, swap it, or choose it on purpose. Write the sneakiest one in Challenge.",
+    },
+  },
+  4: {
+    morning: {
+      title: "Day 4 — build it",
+      body: "Protein + fat + fiber. One real plate. Ugly broccoli and paper plates count.",
+    },
+    evening: {
+      title: "What was on the plate?",
+      body: "Protein, fat, fiber — then where you still get stuck even when you know what to eat.",
+    },
+  },
+  5: {
+    morning: {
+      title: "Day 5 — keep going",
+      body: "Restaurants. 9pm. Weekends. Live at 1:00. You do not have to have been perfect to show up.",
+    },
+    live: {
+      title: "Last live in 15 minutes",
+      body: "How you keep going when life isn't perfect. Questions welcome. Tap to join.",
+    },
+    evening: {
+      title: "Don't start over Monday",
+      body: "Five days. Your next choice is your next choice. Journal's in Challenge if you want it.",
+    },
+  },
+};
+
+export function realFoodResetPrepPushDates(): string[] {
+  return Object.keys(PREP_MORNING_PUSH);
+}
+
+export function realFoodResetPushPayload(
+  kind: RealFoodResetPushKind,
+  dateStr: string
+): RealFoodResetPushPayload | null {
+  if (kind === "eve-before") {
+    return {
+      title: "Tomorrow we start seeing",
+      body: "Don't clean the pantry tonight. Just show up. Live is 1:00 pm Mountain — join from the app.",
+      url: CHALLENGE_PUSH_URL,
+    };
+  }
+  const day = realFoodResetDayForDate(dateStr);
+  if (kind === "morning") {
+    if (day) {
+      const copy = DAY_PUSH[day.n]?.morning;
+      if (!copy) return null;
+      return { ...copy, url: CHALLENGE_PUSH_URL };
+    }
+    const prep = PREP_MORNING_PUSH[dateStr];
+    if (!prep) return null;
+    return { ...prep, url: CHALLENGE_PUSH_URL };
+  }
+  if (!day) return null;
+  if (kind === "live") {
+    const copy = DAY_PUSH[day.n]?.live;
+    if (!copy) return null;
+    return { ...copy, url: CHALLENGE_PUSH_URL };
+  }
+  const copy = DAY_PUSH[day.n]?.evening;
+  if (!copy) return null;
+  return { ...copy, url: CHALLENGE_PUSH_URL };
+}
+
 export function realFoodResetGuideImages(): { title: string; alt: string; url: string }[] {
   return REAL_FOOD_RESET_GUIDES.images.map((img) => ({
     title: img.title,

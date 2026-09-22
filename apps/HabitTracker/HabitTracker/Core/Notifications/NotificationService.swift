@@ -55,19 +55,42 @@ enum NotificationService {
     static func scheduleChallengeNudges(enrolled: Bool) async {
         let ids = (0..<5).flatMap { n -> [String] in
             ["rfr-morning-\(n)", "rfr-live-\(n)", "rfr-evening-\(n)"]
-        } + ["rfr-eve-before"]
+        } + (0..<6).map { "rfr-prep-\($0)" } + ["rfr-eve-before"]
         let center = UNUserNotificationCenter.current()
         center.removePendingNotificationRequests(withIdentifiers: ids)
         guard enrolled else { return }
         let granted = await requestAuthorization()
         guard granted else { return }
 
-        let days: [(date: String, n: Int, title: String, live: Bool)] = [
-            ("2026-09-28", 1, "Processed food vs. whole food", true),
-            ("2026-09-29", 2, "Become a food-label detective", false),
-            ("2026-09-30", 3, "Let’s talk sugar", true),
-            ("2026-10-01", 4, "Protein is not the answer", false),
-            ("2026-10-02", 5, "Real food in the real world", true),
+        let prep: [(date: String, title: String, body: String)] = [
+            ("2026-09-22", "Don't clean the pantry", "Just open it. How much of what you eat comes from a package? No throwing anything away."),
+            ("2026-09-23", "Look at breakfast first", "Tomorrow morning, see it before you eat it. Don't change it yet. Curiosity, not shoulds."),
+            ("2026-09-24", "One “healthy” package", "Find a food you bought because the front looked good. Don't toss it. Notice why you chose it."),
+            ("2026-09-25", "Follow the packages today", "Every time you open one to eat, just notice. After dinner too. No scorekeeping."),
+            ("2026-09-26", "Please don't throw your food out", "What whole foods do you already like? That's enough to start. Simple beats fancy."),
+            ("2026-09-27", "Tomorrow we start seeing", "No last supper. No proving anything. Come as you are — live is 1:00 pm Mountain, in the app."),
+        ]
+        let days: [(date: String, n: Int, live: Bool, morningTitle: String, morningBody: String, liveTitle: String, liveBody: String, eveningTitle: String, eveningBody: String)] = [
+            ("2026-09-28", 1, true,
+             "Day 1 — start seeing", "Notice one ultra-processed food. Swap one. That's the whole job. Live at 1:00.",
+             "We're live in 15 minutes", "Processed vs whole. Come curious, not perfect. Tap to join.",
+             "What actually surprised you?", "One swap. One “I didn't realize.” Write it in Challenge — messy days count."),
+            ("2026-09-29", 2, false,
+             "Day 2 — flip it", "Grab two of the same kind of food. Turn them over. The front is marketing.",
+             "", "",
+             "Which would you choose now?", "Two labels. One why. Log it in Challenge before you forget."),
+            ("2026-09-30", 3, true,
+             "Day 3 — sugar detective", "Find 3 foods you already eat with added sugar. No food police. Live at 1:00.",
+             "Sugar talk in 15 minutes", "We're naming what's on the label — not judging your pantry. Tap to join.",
+             "Wait… sugar was in THAT?", "Keep it, swap it, or choose it on purpose. Write the sneakiest one in Challenge."),
+            ("2026-10-01", 4, false,
+             "Day 4 — build it", "Protein + fat + fiber. One real plate. Ugly broccoli and paper plates count.",
+             "", "",
+             "What was on the plate?", "Protein, fat, fiber — then where you still get stuck even when you know what to eat."),
+            ("2026-10-02", 5, true,
+             "Day 5 — keep going", "Restaurants. 9pm. Weekends. Live at 1:00. You do not have to have been perfect to show up.",
+             "Last live in 15 minutes", "How you keep going when life isn't perfect. Questions welcome. Tap to join.",
+             "Don't start over Monday", "Five days. Your next choice is your next choice. Journal's in Challenge if you want it."),
         ]
 
         await addOnce(
@@ -75,10 +98,22 @@ enum NotificationService {
             mountainDate: "2026-09-27",
             hour: 19,
             minute: 0,
-            title: "No Processed Food Challenge starts tomorrow",
-            body: "We begin September 28. Lives Mon/Wed/Fri at 1:00 pm Mountain.",
+            title: "Tomorrow we start seeing",
+            body: "Don't clean the pantry tonight. Just show up. Live is 1:00 pm Mountain — join from the app.",
             tab: "challenge"
         )
+
+        for (i, p) in prep.enumerated() {
+            await addOnce(
+                id: "rfr-prep-\(i)",
+                mountainDate: p.date,
+                hour: 8,
+                minute: 0,
+                title: p.title,
+                body: p.body,
+                tab: "challenge"
+            )
+        }
 
         for (i, day) in days.enumerated() {
             await addOnce(
@@ -86,10 +121,8 @@ enum NotificationService {
                 mountainDate: day.date,
                 hour: 8,
                 minute: 0,
-                title: "Day \(day.n): \(day.title)",
-                body: day.live
-                    ? "Class is at 1:00 pm Mountain. Open Challenge when you’re ready."
-                    : "Today’s video and recipes are in Challenge.",
+                title: day.morningTitle,
+                body: day.morningBody,
                 tab: "challenge"
             )
             if day.live {
@@ -98,8 +131,8 @@ enum NotificationService {
                     mountainDate: day.date,
                     hour: 12,
                     minute: 45,
-                    title: "Class starts in 15 minutes",
-                    body: "Tap to join live — 1:00 pm Mountain.",
+                    title: day.liveTitle,
+                    body: day.liveBody,
                     tab: "challenge"
                 )
             }
@@ -108,8 +141,8 @@ enum NotificationService {
                 mountainDate: day.date,
                 hour: 19,
                 minute: 0,
-                title: "Evening check-in",
-                body: "Open Challenge to log today and write three lines. That counts.",
+                title: day.eveningTitle,
+                body: day.eveningBody,
                 tab: "challenge"
             )
         }

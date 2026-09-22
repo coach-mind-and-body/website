@@ -4,6 +4,7 @@ import {
   REAL_FOOD_RESET_OFFER_EMAILS,
 } from "./realFoodResetOffer";
 import { REAL_FOOD_RESET_DAY_DATES, REAL_FOOD_RESET_DAY_EMAILS } from "./realFoodReset";
+import { realFoodResetPushPayload } from "@shared/realFoodReset";
 
 describe("real food reset sequences", () => {
   it("has a matching reminder + daily email for each calendar date", () => {
@@ -32,5 +33,18 @@ describe("real food reset sequences", () => {
     expect(pitch.html).toContain("/book");
     const day5 = REAL_FOOD_RESET_DAY_EMAILS[REAL_FOOD_RESET_DAY_EMAILS.length - 1]("Sarah");
     expect(day5.html).toContain("/book");
+  });
+
+  it("push copy is short and not a paste of the daily email", () => {
+    const morning = realFoodResetPushPayload("morning", "2026-09-28");
+    expect(morning?.title).toContain("start seeing");
+    expect(morning?.body.length).toBeLessThan(160);
+    const email = REAL_FOOD_RESET_DAY_EMAILS[6]("Sarah");
+    expect(email.html).toContain("NOTICE");
+    expect(morning?.body).not.toContain("NOTICE → SWAP ONE → TRACK");
+    const prep = realFoodResetPushPayload("morning", "2026-09-22");
+    expect(prep?.title).toMatch(/pantry/i);
+    expect(realFoodResetPushPayload("live", "2026-09-29")).toBeNull();
+    expect(realFoodResetPushPayload("live", "2026-09-28")?.title).toMatch(/15 minutes/i);
   });
 });

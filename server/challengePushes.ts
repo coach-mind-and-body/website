@@ -11,6 +11,8 @@ import {
   REAL_FOOD_RESET,
   REAL_FOOD_RESET_THEME,
   realFoodResetDayForDate,
+  realFoodResetPrepPushDates,
+  realFoodResetPushPayload,
 } from "@shared/realFoodReset";
 import { getDb } from "./db";
 import { nowMountain, todayMountainDateStr } from "../lib/mountainTime";
@@ -34,16 +36,16 @@ function inMinuteWindow(hour: number, startMinute: number, nowLocal = nowMountai
 export function challengePushKindNow(nowLocal = nowMountain()): ChallengePushKind | null {
   const dateStr = nowLocal.slice(0, 10);
   const day = realFoodResetDayForDate(dateStr);
+  const eveBefore = shiftDateStr(REAL_FOOD_RESET.startDate, -1);
 
-  if (dateStr === REAL_FOOD_RESET.startDate) {
-    // fall through — still a challenge day
-  } else if (!day) {
-    const eveBefore = shiftDateStr(REAL_FOOD_RESET.startDate, -1);
+  if (!day) {
     if (dateStr === eveBefore && inMinuteWindow(19, 0, nowLocal)) return "eve-before";
+    if (realFoodResetPrepPushDates().includes(dateStr) && inMinuteWindow(8, 0, nowLocal)) {
+      return "morning";
+    }
     return null;
   }
 
-  if (!day) return null;
   if (inMinuteWindow(8, 0, nowLocal)) return "morning";
   if (day.format === "live" && inMinuteWindow(12, 45, nowLocal)) return "live";
   if (inMinuteWindow(19, 0, nowLocal)) return "evening";
@@ -57,37 +59,13 @@ function shiftDateStr(dateStr: string, days: number): string {
 }
 
 function payloadFor(kind: ChallengePushKind, dateStr: string): { title: string; body: string; url: string } {
-  const day = realFoodResetDayForDate(dateStr);
-  const url = "/habit-tracker?focus=challenge";
-  if (kind === "eve-before") {
-    return {
-      title: `${REAL_FOOD_RESET.shortName} starts tomorrow`,
-      body: `We begin ${REAL_FOOD_RESET.startLabel}. Lives are ${REAL_FOOD_RESET.liveDays} at ${REAL_FOOD_RESET.liveTime}.`,
-      url,
-    };
-  }
-  if (kind === "morning" && day) {
-    return {
-      title: `Day ${day.n}: ${day.title}`,
-      body:
-        day.format === "live"
-          ? `Class is at ${REAL_FOOD_RESET.liveTime}. Open Challenge when you're ready.`
-          : "Today's video and recipes are in Challenge.",
-      url,
-    };
-  }
-  if (kind === "live" && day) {
-    return {
-      title: "Class starts in 15 minutes",
-      body: `Tap to join live — ${REAL_FOOD_RESET.liveTime}.`,
-      url,
-    };
-  }
-  return {
-    title: "Evening check-in",
-    body: "Open Challenge to log today and write three lines. That counts.",
-    url,
-  };
+  return (
+    realFoodResetPushPayload(kind, dateStr) ?? {
+      title: REAL_FOOD_RESET.shortName,
+      body: "Open Challenge in the app.",
+      url: "/habit-tracker?focus=challenge",
+    }
+  );
 }
 
 async function ensureRunsTable(db: NonNullable<Awaited<ReturnType<typeof getDb>>>) {
