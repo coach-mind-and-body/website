@@ -88,6 +88,17 @@ export default function ChallengeTodayCard() {
                 <p className="text-xs mt-1" style={{ color: "#555" }}>
                   {d.assignmentTitle}
                 </p>
+                {d.videoId ? (
+                  <div className="mt-2 rounded-lg overflow-hidden" style={{ aspectRatio: "16 / 9", background: "#000" }}>
+                    <iframe
+                      title={`${d.title} lesson`}
+                      src={`https://www.youtube.com/embed/${d.videoId}?rel=0`}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="w-full h-full border-0"
+                    />
+                  </div>
+                ) : null}
               </li>
             ))}
           </ul>
