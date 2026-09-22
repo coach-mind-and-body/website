@@ -14,7 +14,7 @@ export async function GET(
   if (!member || !member.active) {
     return NextResponse.redirect(new URL("/this-week", url.origin));
   }
-  const res = NextResponse.redirect(new URL("/this-week/me", url.origin));
+  const res = NextResponse.redirect(new URL("/this-week", url.origin));
   applyMemberCookie(res, member.token);
   return res;
 }

@@ -47,14 +47,14 @@ export async function claimIdentity(formData: FormData) {
     throw new Error("That name isn't on the list.");
   }
   await setMemberToken(member.token);
-  redirect("/this-week/me");
+  redirect("/this-week");
 }
 
 export async function usePersonalLink(token: string) {
   const member = await memberByToken(token);
   if (!member) redirect("/this-week");
   await setMemberToken(member.token);
-  redirect("/this-week/me");
+  redirect("/this-week");
 }
 
 export async function adminSetRsvp(formData: FormData) {
@@ -93,7 +93,7 @@ export async function setRsvp(formData: FormData) {
   await upsertRsvp(week.id, member.id, status);
   await setMemberToken(member.token);
   refresh();
-  redirect("/this-week/me");
+  redirect("/this-week");
 }
 
 export async function adminLogin(formData: FormData) {
