@@ -496,7 +496,7 @@ export const REAL_FOOD_RESET_EMAILS: RealFoodResetEmailDraft[] = [
       p("Yesterday, you started seeing what you're actually eating. Today? We're turning it around. Literally."),
       p("Welcome to Day 2: <strong>FLIP IT.</strong>"),
       p("Food packages are really good at getting our attention. High protein! Natural! Low fat! Made with whole grains! But today I want you to start building a new habit: <strong>don't just read the front. Flip it.</strong>"),
-      p("No live call today. There's a short video in the app showing you exactly where I want you to look. You do NOT need a nutrition degree. We're keeping this simple."),
+      p(`No live call today. Watch the Flip It lesson here: <a href="https://www.youtube.com/watch?v=fJOmAsa-xpc">Play today's video</a>. It's also embedded in the app. You do NOT need a nutrition degree. We're keeping this simple.`),
       p("Today we're looking at: ingredients, added sugar, serving size, protein, fiber, total carbohydrate, and fat."),
       h3("Your FLIP IT challenge"),
       p("Find TWO versions of the same type of food. Two yogurts. Two protein bars. Two breads. Two cereals. Two plant milks. Two coffee creamers. Whatever YOU actually buy."),

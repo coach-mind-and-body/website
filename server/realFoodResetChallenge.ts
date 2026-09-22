@@ -268,7 +268,7 @@ export async function getChallengeToday(opts: {
     afterEnd,
     today: day ? { ...day, done } : null,
     meetUrl: showMeet ? challenge!.meetUrl! : null,
-    videoUrl: null,
+    videoUrl: day?.videoId ? `https://www.youtube.com/watch?v=${day.videoId}` : null,
     liveTime: REAL_FOOD_RESET.liveTime,
     journal: journalRow
       ? {

@@ -362,6 +362,9 @@ struct HabitsView: View {
                                 .foregroundStyle(HTTheme.muted)
                         }
                     }
+                    if let vid = YouTubeID.parse(today.videoUrl) {
+                        YouTubePlayer(videoId: vid)
+                    }
                     if let meet = today.meetUrl, let url = URL(string: meet) {
                         Button {
                             openURL(url)

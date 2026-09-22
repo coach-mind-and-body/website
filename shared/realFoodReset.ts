@@ -18,6 +18,7 @@ export type RealFoodResetDay = {
   assignmentTitle: string;
   assignmentSteps: string[];
   journal: { noticed: string; glad: string; hard: string };
+  videoId?: string;
 };
 
 /** FREE 5-Day No Processed Food Challenge — Sept 28–Oct 2, 2026 */
@@ -79,6 +80,7 @@ export const REAL_FOOD_RESET = {
       win: "Turn two packages around and choose with information, not the front of the box.",
       format: "video" as const,
       formatLabel: "Video + recipes in the app",
+      videoId: "fJOmAsa-xpc",
       assignmentTitle: "FLIP IT challenge",
       assignmentSteps: [
         "Pick TWO similar products you actually buy (yogurt, bars, bread, cereal, creamer…).",
