@@ -8,7 +8,6 @@ import SiteFooter from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
 
 const CDN = "https://cdn.mindandbodyresetcoach.com/blog-images";
-const CF = "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG";
 
 const FAQ = [
   {
@@ -80,7 +79,7 @@ const RELATED = [
     href: "/food-quiz",
     title: "Free Food & Mindset Quiz",
     blurb: "60 seconds to spot what is keeping you stuck.",
-    image: `${CF}/QuizResultsImageTransparent_917137c5.webp`,
+    image: "/quiz-results.webp",
   },
 ];
 
@@ -216,7 +215,7 @@ export default function InsulinHubClient() {
                 { src: `${CDN}/fuel-system-reset-switching-from-sugar-to-fat-burning.jpg`, alt: "Fuel and energy after 40" },
                 { src: `${CDN}/how-to-stop-sugar-cravings-at-night-a-midlife-strategy-that-actually-works.png`, alt: "Sugar cravings at night" },
                 { src: `${CDN}/the-midlife-permission-slip-why-you-need-a-new-perimenopause-health-strategy.jpg`, alt: "Perimenopause health strategy" },
-                { src: `${CF}/fpu-can-you-relate-LRquhXRPb6JDxJMEKYRtRh.webp`, alt: "Lee Anne — real midlife coaching" },
+                { src: "/photos/lee-anne-table.jpg", alt: "Lee Anne — real midlife coaching" },
               ].map((img) => (
                 <div key={img.src} className="rounded-2xl overflow-hidden h-36 md:h-44 shadow-sm">
                   <img src={img.src} alt={img.alt} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" loading="lazy" />
@@ -333,7 +332,7 @@ export default function InsulinHubClient() {
         <section className="relative py-20 md:py-28 overflow-hidden">
           <div className="absolute inset-0">
             <img
-              src={`${CF}/3542web-rigeljackson(2)_83b0d4af.webp`}
+              src="/photos/lee-anne.jpg"
               alt="Lee Anne Chapman — midlife health coach"
               className="w-full h-full object-cover object-top"
             />
@@ -457,7 +456,7 @@ export default function InsulinHubClient() {
         <section className="py-20 text-center">
           <div className="container max-w-2xl mx-auto px-4">
             <img
-              src={`${CF}/3542web-rigeljackson(2)_83b0d4af.webp`}
+              src="/photos/lee-anne.jpg"
               alt="Lee Anne Chapman"
               className="w-24 h-24 rounded-full object-cover object-top mx-auto mb-6 shadow-md border-4 border-white"
             />

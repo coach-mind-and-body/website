@@ -169,7 +169,7 @@ export default function Home() {
                 Take This Free Quiz
               </p>
               <Image
-                src="https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/QuizResultsImageTransparent_917137c5.webp"
+                src="/quiz-results.webp"
                 alt="Take the Free Quiz — Find Your Food & Mindset Type"
                 className="w-full max-w-lg lg:max-w-2xl object-contain drop-shadow-xl"
                 width={640}

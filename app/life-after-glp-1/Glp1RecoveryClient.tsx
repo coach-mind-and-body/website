@@ -18,7 +18,6 @@ import SiteFooter from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
 
 const CDN = "https://cdn.mindandbodyresetcoach.com/blog-images";
-const CF = "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG";
 
 const FAQ = [
   {
@@ -98,7 +97,7 @@ const BRIDGE_CARDS = [
     desc: "Start with clarity: the free food and mindset quiz highlights what is driving the loop — not just what to eat.",
     link: "/food-quiz",
     linkText: "Take the free quiz",
-    image: `${CF}/QuizResultsImageTransparent_917137c5.webp`,
+    image: "/quiz-results.webp",
   },
 ];
 
@@ -457,7 +456,7 @@ export default function Glp1Recovery() {
         <section className="relative py-24 overflow-hidden">
           <div className="absolute inset-0">
             <img
-              src={`${CF}/3542web-rigeljackson(2)_83b0d4af.webp`}
+              src="/photos/lee-anne.jpg"
               alt="Lee Anne Chapman"
               className="w-full h-full object-cover object-top"
             />
