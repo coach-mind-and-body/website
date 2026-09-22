@@ -17,17 +17,17 @@ import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
 
 // CDN photos
 const PHOTO_LEEANNE_CHAIR =
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/4Z7A6694_5487dc73.jpg";
+  "/photos/lee-anne-chair.jpg";
 const PHOTO_LEEANNE_TABLE =
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/4Z7A6598_af959cd9.webp";
+  "/photos/lee-anne-table.jpg";
 const PHOTO_CONSULT_FORM =
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/4Z7A6579_90834f37.jpg";
+  "/photos/consult.jpg";
 const PHOTO_COUCH =
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/4Z7A6652_f211af63.webp";
+  "/photos/sara.jpg";
 const PHOTO_LEEANNE_VEGGIES =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/fpu-can-you-relate-LRquhXRPb6JDxJMEKYRtRh.webp";
 const LEEANNE_PHOTO =
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/3542web-rigeljackson(2)_83b0d4af.webp";
+  "/photos/lee-anne.jpg";
 
 /** Fall 2026 virtual class — buy kit + join Lee Anne's group (Ramsey class page) */
 export const FPU_CLASS_URL = "https://www.financialpeace.com/app/classes/833B7A";

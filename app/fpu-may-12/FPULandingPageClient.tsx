@@ -16,12 +16,12 @@ import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
 
 
 // CDN photos
-const PHOTO_LEEANNE_CHAIR = "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/4Z7A6694_5487dc73.jpg";
-const PHOTO_LEEANNE_TABLE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/4Z7A6598_af959cd9.webp";
-const PHOTO_CONSULT_FORM = "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/4Z7A6579_90834f37.jpg";
-const PHOTO_COUCH = "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/4Z7A6652_f211af63.webp";
+const PHOTO_LEEANNE_CHAIR = "/photos/lee-anne-chair.jpg";
+const PHOTO_LEEANNE_TABLE = "/photos/lee-anne-table.jpg";
+const PHOTO_CONSULT_FORM = "/photos/consult.jpg";
+const PHOTO_COUCH = "/photos/sara.jpg";
 const PHOTO_LEEANNE_VEGGIES = "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/fpu-can-you-relate-LRquhXRPb6JDxJMEKYRtRh.webp";
-const LEEANNE_PHOTO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/3542web-rigeljackson(2)_83b0d4af.webp";
+const LEEANNE_PHOTO = "/photos/lee-anne.jpg";
 
 // â”€â”€ Coaching checkout button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function CoachingCheckoutButton({ label = "Add 1:1 Coaching — $249 ?", className = "" }: { label?: string; className?: string; }) {

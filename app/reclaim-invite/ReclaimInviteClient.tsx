@@ -24,7 +24,7 @@ const SPOTS = 10;
 const COHORT_WINDOW = "September 30, 2026";
 
 const LEEANNE_IMG =
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/3542web-rigeljackson(2)_83b0d4af.webp";
+  "/photos/lee-anne.jpg";
 const LIFESTYLE_IMG =
   "https://cdn.mindandbodyresetcoach.com/blog-images/calming-food-noise-drop-the-food-courtroom.jpg";
 

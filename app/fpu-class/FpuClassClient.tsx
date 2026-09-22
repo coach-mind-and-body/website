@@ -18,7 +18,7 @@ export const FPU_CLASS_URL = "https://www.financialpeace.com/app/classes/833B7A"
  * - Sage green text: #3a5a3a
  */
 const LEEANNE_IMG =
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/3542web-rigeljackson(2)_83b0d4af.webp";
+  "/photos/lee-anne.jpg";
 
 const PAIN = [
   "You’re tired of dreading the bank app",

@@ -11,7 +11,7 @@ const TRACKER_HREF =
   "/habit-tracker?utm_source=meta&utm_medium=paid&utm_campaign=ht_invite&utm_content=open_app";
 const OG_IMG = "/og-habit-tracker.jpg";
 const LEEANNE_IMG =
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/3542web-rigeljackson(2)_83b0d4af.webp";
+  "/photos/lee-anne.jpg";
 
 const PILLARS = [
   {

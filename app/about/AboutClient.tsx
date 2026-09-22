@@ -8,11 +8,9 @@ import Link from 'next/link';
 ;
 
 
-// Stable CloudFront portraits (Manus signed URLs expire / 403)
-const CF = "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG";
-const SARA_IMG = `${CF}/4Z7A6652_f211af63.webp`;
-const LEEANNE_IMG = `${CF}/3542web-rigeljackson(2)_83b0d4af.webp`;
-const BRITTANY_IMG = `${CF}/4Z7A6598_af959cd9.webp`;
+const SARA_IMG = "/photos/sara.jpg";
+const LEEANNE_IMG = "/photos/lee-anne.jpg";
+const BRITTANY_IMG = "/photos/lee-anne-table.jpg";
 
 interface CoachCardProps {
   name: string;

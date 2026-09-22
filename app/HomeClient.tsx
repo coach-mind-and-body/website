@@ -269,7 +269,7 @@ export default function Home() {
             <div className="fade-up">
               <div className="rounded-2xl overflow-hidden shadow-xl">
                 <Image
-                  src="https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/3542web-rigeljackson(2)_83b0d4af.webp"
+                  src="/photos/lee-anne.jpg"
                   alt="Lee Anne — Certified Life & Health Coach"
                   className="w-full object-cover"
                   style={{ maxHeight: "560px", objectPosition: "top" }}
