@@ -330,4 +330,52 @@ export const leadgenRouter = router({
 
       return { success: true };
     }),
+
+  adminListRealFoodReset: adminProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return [];
+
+    const rows = await db
+      .select({
+        id: subscribers.id,
+        email: subscribers.email,
+        firstName: subscribers.firstName,
+        segments: subscribers.segments,
+        createdAt: subscribers.createdAt,
+      })
+      .from(subscribers)
+      .where(like(subscribers.segments, `%${REAL_FOOD_RESET.segment}%`))
+      .orderBy(desc(subscribers.createdAt));
+
+    return rows;
+  }),
+
+  adminDeleteRealFoodReset: adminProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("DB unavailable");
+
+      const [row] = await db
+        .select()
+        .from(subscribers)
+        .where(eq(subscribers.id, input.id))
+        .limit(1);
+
+      if (!row) return { success: true };
+
+      const segments: string[] = row.segments ? JSON.parse(row.segments) : [];
+      const remaining = segments.filter((s) => s !== REAL_FOOD_RESET.segment);
+
+      if (remaining.length === 0) {
+        await db.delete(subscribers).where(eq(subscribers.id, input.id));
+      } else {
+        await db
+          .update(subscribers)
+          .set({ segments: JSON.stringify(remaining) })
+          .where(eq(subscribers.id, input.id));
+      }
+
+      return { success: true };
+    }),
 });

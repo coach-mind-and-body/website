@@ -1,6 +1,6 @@
 "use client";
 
-import { Users, BookOpen, CreditCard, Bell, Video, Cookie, Plus, RefreshCw, ExternalLink } from "lucide-react";
+import { Users, BookOpen, CreditCard, Bell, Video, Cookie, Salad, Plus, RefreshCw, ExternalLink } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useInbox } from "@/components/admin/messaging/InboxContext";
 import ChannelBadge from "@/components/admin/ChannelBadge";
@@ -38,6 +38,7 @@ export function AdminOverviewTab() {
   const { data: blogPosts } = trpc.blog.adminList.useQuery();
   const { data: fpuClients } = trpc.fpu.adminListCoaching.useQuery();
   const { data: snackHackLeads } = trpc.leadgen.adminListSnackHack.useQuery();
+  const { data: challengeLeads } = trpc.leadgen.adminListRealFoodReset.useQuery();
 
   const {
     data: calendar,
@@ -83,6 +84,7 @@ export function AdminOverviewTab() {
           { label: "FPU Clients", value: fpuClients?.length ?? 0, icon: <Video size={18} /> },
           { label: "New Leads", value: leadsData?.filter((l) => l.status === "new").length ?? 0, icon: <Bell size={18} /> },
           { label: "Snack Hack Leads", value: snackHackLeads?.length ?? 0, icon: <Cookie size={18} /> },
+          { label: "Challenge Leads", value: challengeLeads?.length ?? 0, icon: <Salad size={18} /> },
           { label: "Blog Posts", value: blogPosts?.length ?? 0, icon: <BookOpen size={18} /> },
           { label: "Total Enrollments", value: enrollments?.length ?? 0, icon: <CreditCard size={18} /> },
         ].map((stat) => (

@@ -8,6 +8,7 @@ import {
   ClipboardList,
   Cookie,
   CreditCard,
+  Salad,
   FolderOpen,
   Layers,
   Link2,
@@ -26,6 +27,7 @@ export type AdminTab =
   | "crm-automations"
   | "newsletters"
   | "snackhack"
+  | "challenge"
   | "fpu"
   | "fpugroup"
   | "programbuilder"
@@ -44,6 +46,7 @@ export const ADMIN_TAB_IDS: AdminTab[] = [
   "crm-automations",
   "newsletters",
   "snackhack",
+  "challenge",
   "fpu",
   "fpugroup",
   "programbuilder",
@@ -63,6 +66,7 @@ export const TABS: { id: AdminTab; label: string; icon: LucideIcon }[] = [
   { id: "crm-automations", label: "CRM & AI", icon: Megaphone },
   { id: "newsletters", label: "Newsletters", icon: Mail },
   { id: "snackhack", label: "Snack Hack Leads", icon: Cookie },
+  { id: "challenge", label: "Challenge Leads", icon: Salad },
   { id: "fpu", label: "FPU Coaching", icon: Video },
   { id: "fpugroup", label: "FPU Sign-Ups", icon: UserPlus },
   { id: "programbuilder", label: "Program Builder", icon: Layers },

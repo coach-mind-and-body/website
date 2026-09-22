@@ -13,6 +13,7 @@ import { AdminMessagingSettingsTab } from "@/components/admin/AdminMessagingSett
 import AdminCrmAutomationsTab from "@/components/admin/AdminCrmAutomationsTab";
 import { AdminOverviewTab } from "@/components/admin/tabs/AdminOverviewTab";
 import { AdminSnackHackTab } from "@/components/admin/tabs/AdminSnackHackTab";
+import { AdminRealFoodResetTab } from "@/components/admin/tabs/AdminRealFoodResetTab";
 import { AdminFpuCoachingTab } from "@/components/admin/tabs/AdminFpuCoachingTab";
 import { AdminFpuGroupTab } from "@/components/admin/tabs/AdminFpuGroupTab";
 import { AdminBlogTab } from "@/components/admin/tabs/AdminBlogTab";
@@ -196,6 +197,7 @@ export default function Admin() {
         )}
 
         {tab === "snackhack" && <AdminSnackHackTab />}
+        {tab === "challenge" && <AdminRealFoodResetTab />}
         {tab === "fpu" && <AdminFpuCoachingTab />}
         {tab === "fpugroup" && <AdminFpuGroupTab />}
         {tab === "pageeditor" && <PageEditorTab />}

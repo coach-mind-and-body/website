@@ -1503,7 +1503,7 @@ export function AdminNewsletterTab() {
                 [
                   { id: "health" as const, label: "Health", desc: "Leads, clients, health list" },
                   { id: "snack_hack" as const, label: "Snack Hack", desc: "Guide downloads only" },
-                  { id: "real_food_reset" as const, label: "No Processed Food Challenge", desc: "Challenge registrants only" },
+                  { id: "real_food_reset" as const, label: "No Processed Food Challenge", desc: "Landing-page form only" },
                   { id: "finance" as const, label: "Finance", desc: "FPU + manual finance list" },
                   { id: "all" as const, label: "Everyone", desc: "All emails we have" },
                 ] as const
