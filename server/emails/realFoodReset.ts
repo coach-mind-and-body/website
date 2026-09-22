@@ -455,6 +455,13 @@ export function getRealFoodResetConfirmationEmail(
     p("<strong>The app is home base.</strong> That's where you'll check in daily, log food, get Tuesday/Thursday videos and recipes, and message me. Push notifications will nudge you — you can turn those on in the app."),
     p("<strong>Lives:</strong> Monday, Wednesday, and Friday at 1:00 pm Mountain, one hour. The Google Meet button is in the app after you’re enrolled — not on the signup page. Tuesday and Thursday are video + recipes in the app."),
     p("Progress, not perfection. One messy meal does not mean you start over on Monday."),
+    p(`Watch Lee Anne’s welcome (one minute): <a href="${REAL_FOOD_RESET.welcomeVideoWatchUrl}">Play the welcome video</a>`),
+    `<div style="text-align:center;margin:20px 0;">
+      <a href="${REAL_FOOD_RESET.welcomeVideoWatchUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;text-decoration:none;">
+        <img src="https://img.youtube.com/vi/${REAL_FOOD_RESET.welcomeVideoId}/hqdefault.jpg" alt="Watch the welcome video" width="560" style="max-width:100%;height:auto;border-radius:12px;display:block;" />
+        <span style="display:inline-block;margin-top:10px;background:#c9a96e;color:#fff;padding:10px 22px;border-radius:9999px;font-weight:700;font-size:14px;">▶ Watch the welcome video</span>
+      </a>
+    </div>`,
     p("Open the tracker now so it's on your phone before we begin:"),
   ]);
   const html = buildNewsletterHtml({
@@ -466,7 +473,7 @@ export function getRealFoodResetConfirmationEmail(
     ctaLabel: "Open the habit tracker",
     ctaUrl: appUrl,
   });
-  const text = `Hi ${name},\n\nYou're registered for ${NAME}. We start Monday, September 28.\n\nThe app is home base: ${appUrl}\nLives: Mon/Wed/Fri at 1:00 pm Mountain in Google Meet (join from the app).\nTue/Thu: video + recipes in the app.\nOn iPhone, sign in to the Habit Tracker with this same email.\n\nProgress, not perfection.\n\n${BRAND.coachName}`;
+  const text = `Hi ${name},\n\nYou're registered for ${NAME}. We start Monday, September 28.\n\nWatch the welcome video: ${REAL_FOOD_RESET.welcomeVideoWatchUrl}\n\nThe app is home base: ${appUrl}\nLives: Mon/Wed/Fri at 1:00 pm Mountain in Google Meet (join from the app).\nTue/Thu: video + recipes in the app.\nOn iPhone, sign in to the Habit Tracker with this same email.\n\nProgress, not perfection.\n\n${BRAND.coachName}`;
   return { subject, html, text };
 }
 

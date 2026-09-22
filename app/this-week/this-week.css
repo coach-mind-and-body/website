@@ -1,0 +1,91 @@
+.this-week {
+  --tw-forest: #2d3b2d;
+  --tw-gold: #c9a96e;
+  --tw-cream: #fcfaf9;
+  min-height: 100dvh;
+  background: var(--tw-cream);
+  color: #2d3b2d;
+  font-family: "Nunito Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+.this-week .font-display {
+  font-family: "Cormorant Garamond", ui-serif, Georgia, serif;
+}
+
+.this-week .btn-primary {
+  display: inline-flex;
+  height: 3rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: #2d3b2d;
+  padding: 0 1.25rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.this-week .btn-secondary {
+  display: inline-flex;
+  height: 3rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1px solid #e8ddd0;
+  background: #fff;
+  padding: 0 1.25rem;
+  font-weight: 700;
+  color: #2d3b2d;
+}
+
+.this-week .btn-danger {
+  display: inline-flex;
+  height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: #9a4a3a;
+  padding: 0 1rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.this-week .field {
+  width: 100%;
+  border-radius: 0.9rem;
+  border: 1px solid #e8ddd0;
+  background: #fff;
+  padding: 0.7rem 0.85rem;
+}
+
+.this-week .card {
+  border-radius: 1.5rem;
+  border: 1px solid #f0e8e4;
+  background: #fff;
+  padding: 1.25rem 1.35rem;
+}
+
+.this-week .text-teal-800 {
+  color: #2d3b2d;
+}
+.this-week .text-teal-900 {
+  color: #2d3b2d;
+}
+.this-week .bg-teal-800 {
+  background: #2d3b2d;
+}
+.this-week .hover\:bg-teal-900:hover {
+  background: #1f2a1f;
+}
+.this-week .text-cream {
+  color: #fcfaf9;
+}
+.this-week .bg-cream {
+  background: #fcfaf9;
+}
+.this-week .text-terracotta {
+  color: #9a4a3a;
+}
+.this-week .text-ink {
+  color: #2d3b2d;
+}

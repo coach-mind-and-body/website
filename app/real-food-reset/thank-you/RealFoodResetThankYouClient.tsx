@@ -61,6 +61,26 @@ export default function RealFoodResetThankYouClient() {
         <p className="text-base leading-relaxed mb-6" style={{ color: "#555" }}>
           Check your inbox for confirmation. <strong>The app is home base</strong> — open it now so daily check-ins, food logging, chat, and live reminders are ready.
         </p>
+        <div className="mx-auto mb-8 w-full max-w-[280px] overflow-hidden rounded-2xl bg-black" style={{ aspectRatio: "9 / 16" }}>
+          <iframe
+            title="Welcome to the 5-Day No Processed Food Challenge"
+            src={`https://www.youtube.com/embed/${REAL_FOOD_RESET.welcomeVideoId}?rel=0`}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            className="h-full w-full border-0"
+          />
+        </div>
+        <p className="mb-6 text-sm">
+          <a
+            href={REAL_FOOD_RESET.welcomeVideoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-bold underline"
+            style={{ color: "#c9a96e" }}
+          >
+            Watch the welcome video on YouTube →
+          </a>
+        </p>
         <ul className="text-left text-sm space-y-2 mb-8 mx-auto max-w-sm" style={{ color: "#3a5a3a" }}>
           <li>✓ Lives {REAL_FOOD_RESET.liveDays} at {REAL_FOOD_RESET.liveTime}</li>
           <li>✓ Tue/Thu: video + recipes in the app</li>

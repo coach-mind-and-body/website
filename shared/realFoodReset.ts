@@ -44,6 +44,9 @@ export const REAL_FOOD_RESET = {
   paidPrice: "$597",
   paidProgramPath: "/reclaim-invite",
   segment: "leadgen_real_food_reset",
+  welcomeVideoId: "-c7-sQUW46M",
+  welcomeVideoUrl: "https://youtube.com/shorts/-c7-sQUW46M",
+  welcomeVideoWatchUrl: "https://www.youtube.com/watch?v=-c7-sQUW46M",
   days: [
     {
       n: 1,
