@@ -173,14 +173,22 @@ export default function RealFoodResetClient() {
               <li>✓ Daily check-ins, food log, and chat — app is home base</li>
             </ul>
           </div>
-          <div className="p-6 md:p-8 rounded-3xl" style={{ background: "#fbeee9" }}>
-            <h2 className="font-bold text-2xl mb-2" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-              Save your free spot
-            </h2>
-            <p className="text-sm mb-5" style={{ color: "#6a5a50" }}>
-              We start {REAL_FOOD_RESET.startLabel}. You’ll get the app link and live times as soon as you register.
-            </p>
-            <SignupForm id="join" />
+          <div>
+            <img
+              src="/photos/lee-anne-sara.jpg"
+              alt="Sara and Lee Anne — The 5-Day No Processed Food Challenge"
+              className="w-full rounded-3xl object-cover mb-6 h-[280px] sm:h-[380px] lg:h-[520px]"
+              style={{ objectPosition: "center 40%" }}
+            />
+            <div className="p-6 md:p-8 rounded-3xl" style={{ background: "#fbeee9" }}>
+              <h2 className="font-bold text-2xl mb-2" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+                Save your free spot
+              </h2>
+              <p className="text-sm mb-5" style={{ color: "#6a5a50" }}>
+                We start {REAL_FOOD_RESET.startLabel}. You’ll get the app link and live times as soon as you register.
+              </p>
+              <SignupForm id="join" />
+            </div>
           </div>
         </div>
       </section>

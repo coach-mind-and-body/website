@@ -4,7 +4,14 @@ import { buildNewsletterHtml } from "./newsletterShell";
 
 const LANDING = `${SITE_URL}${REAL_FOOD_RESET.path}`;
 const APP = `${SITE_URL}/habit-tracker`;
+const BOOK = `${SITE_URL}/book`;
 const NAME = REAL_FOOD_RESET.name;
+
+function bookLine(): string {
+  return p(
+    `Want a one-on-one conversation? Book a free discovery call here: <a href="${BOOK}">mindandbodyresetcoach.com/book</a>.`
+  );
+}
 
 export type RealFoodResetEmailPhase = "warmup" | "promo" | "reminder" | "challenge_day" | "confirmation" | "offer";
 
@@ -431,6 +438,7 @@ export const REAL_FOOD_RESET_EMAILS: RealFoodResetEmailDraft[] = [
       p("Last day. This is the one that matters: what happens when you go out to eat, when the schedule gets crazy, when the “perfect” option isn't available."),
       p("Google Meet at <strong>1:00 pm Mountain</strong>. Bring your questions. We'll talk swaps, eating out, and your next step after these five days."),
       p("You do not have to have been perfect to show up. Come anyway."),
+      bookLine(),
     ]),
     ctaLabel: "Open the app",
     ctaUrl: APP,
@@ -455,6 +463,7 @@ export function getRealFoodResetConfirmationEmail(
     p("<strong>The app is home base.</strong> That's where you'll check in daily, log food, get Tuesday/Thursday videos and recipes, and message me. Push notifications will nudge you — you can turn those on in the app."),
     p("<strong>Lives:</strong> Monday, Wednesday, and Friday at 1:00 pm Mountain, one hour. The Google Meet button is in the app after you’re enrolled — not on the signup page. Tuesday and Thursday are video + recipes in the app."),
     p("Progress, not perfection. One messy meal does not mean you start over on Monday."),
+    bookLine(),
     p(`Watch Lee Anne’s welcome (one minute): <a href="${REAL_FOOD_RESET.welcomeVideoWatchUrl}">Play the welcome video</a>`),
     `<div style="text-align:center;margin:20px 0;">
       <a href="${REAL_FOOD_RESET.welcomeVideoWatchUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;text-decoration:none;">
@@ -473,7 +482,7 @@ export function getRealFoodResetConfirmationEmail(
     ctaLabel: "Open the habit tracker",
     ctaUrl: appUrl,
   });
-  const text = `Hi ${name},\n\nYou're registered for ${NAME}. We start Monday, September 28.\n\nWatch the welcome video: ${REAL_FOOD_RESET.welcomeVideoWatchUrl}\n\nThe app is home base: ${appUrl}\nLives: Mon/Wed/Fri at 1:00 pm Mountain in Google Meet (join from the app).\nTue/Thu: video + recipes in the app.\nOn iPhone, sign in to the Habit Tracker with this same email.\n\nProgress, not perfection.\n\n${BRAND.coachName}`;
+  const text = `Hi ${name},\n\nYou're registered for ${NAME}. We start Monday, September 28.\n\nWatch the welcome video: ${REAL_FOOD_RESET.welcomeVideoWatchUrl}\n\nThe app is home base: ${appUrl}\nLives: Mon/Wed/Fri at 1:00 pm Mountain in Google Meet (join from the app).\nTue/Thu: video + recipes in the app.\nOn iPhone, sign in to the Habit Tracker with this same email.\n\nWant a one-on-one conversation? Book a free discovery call: ${BOOK}\n\nProgress, not perfection.\n\n${BRAND.coachName}`;
   return { subject, html, text };
 }
 

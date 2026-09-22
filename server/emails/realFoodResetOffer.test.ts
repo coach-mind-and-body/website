@@ -23,5 +23,8 @@ describe("real food reset sequences", () => {
     const pitch = REAL_FOOD_RESET_OFFER_EMAILS[1]("Sarah");
     expect(pitch.html).toContain("$597");
     expect(pitch.html).toContain("reclaim-invite");
+    expect(pitch.html).toContain("/book");
+    const day5 = REAL_FOOD_RESET_DAY_EMAILS[REAL_FOOD_RESET_DAY_EMAILS.length - 1]("Sarah");
+    expect(day5.html).toContain("/book");
   });
 });
