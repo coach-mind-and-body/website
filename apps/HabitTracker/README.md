@@ -78,13 +78,51 @@ Privacy policy URL when asked: `https://mindandbodyresetcoach.com/privacy`
 3. **Distribute App** → App Store Connect → Upload → defaults are fine.
 4. Processing takes 5–15 minutes. Refresh TestFlight.
 5. **Internal testers** (anyone already on the App Store Connect team) can install immediately. No Beta Review.
-6. **External testers** (Lee Anne if she is not on the team) need **Beta App Review** (often 24–48h). Faster path: add her as a user on the team, then Internal.
+6. **External testers** (anyone not on the App Store Connect team) need **Beta App Review**. Fill Test Information **before** submitting:
+
+   - TestFlight → Test Information → Beta App Review Information
+   - Check **Sign-in required**
+   - User name: `apple.review@mindandbodyresetcoach.com`
+   - Password: `Review2026App`
+   - Notes: use **Sign in with email** (not Apple/Google, not Continue without an account). Then Habits (challenge + check-ins), Food, Fitness, Podcast, and the Coach circle.
+
+   Family who should skip review belong in an **Internal** group (Users and Access), not “Initial Testers- External”.
 
 She installs the **TestFlight** app from the App Store, then opens the invite.
 
-Each new upload must bump **Build** (`CURRENT_PROJECT_VERSION` in the project — currently `5`). Version (`MARKETING_VERSION`) can stay `1.0` until App Store.
+### 7. Everyone on TestFlight (public link) + App Store
+
+Do **not** paste 200 emails into a tester group. After **this build** passes Beta App Review:
+
+1. TestFlight → the **external** group → **Enable Public Link**.
+2. Copy the link (`https://testflight.apple.com/join/…`).
+3. Put that link in the challenge confirmation email, thank-you page, and Facebook. Cap is 10,000 testers. They install TestFlight, tap the link, sign in with the **same email they used on the website**.
+
+Same build, same day: App Store Connect → the iOS app → **+ Version** if 1.0 is not created → this build → **Add for Review** → **Submit**. Fill:
+
+- Description, keywords, support URL `https://mindandbodyresetcoach.com`, privacy `https://mindandbodyresetcoach.com/privacy`
+- Screenshots (6.7" and 6.1" at minimum)
+- App Review notes: same demo login as Test Information
+- Age rating, HealthKit purpose (already in the binary)
+
+Public TestFlight can be live in **24–48 hours**. The App Store listing is a second review — often the same window, sometimes longer. Challenge week uses the TestFlight link even if the store is still sitting.
+
+Each new upload must bump **Build**. App Store Connect already had **12**; this repo is set to **13**. If 13 is already used, bump again on the Mac. Version (`MARKETING_VERSION`) stays `1.0` until the public store listing.
 
 The Organizer line “not stripping binary because it is signed” on the widget is Apple’s archive pipeline. It is not an app warning and does not need a code change.
+
+### If TestFlight / App Store Connect rejects the upload
+
+| Apple message | What to do |
+|---|---|
+| Redundant Binary Upload / build already used | Bump **Build** (we are on `6`). Version can stay `1.0`. |
+| Invalid entitlements / `aps-environment` is `development` | App Store archives need `production`. That is already set in `HabitTracker.entitlements`. |
+| Entitlements do not match the provisioning profile | In Xcode, both targets must use the **App Store** profiles (`HabitTracker App Store` and `HabitTracker Widget App Store`), Team `8D3TJ8W8XK`, identity **Apple Distribution**. Destination **Any iOS Device (arm64)**, not a simulator. |
+| Missing privacy manifest (`ITMS-91061`) | Main app and widget both ship `PrivacyInfo.xcprivacy`. `git pull` on the Mac before archiving. |
+| Missing compliance / encryption | Already `ITSAppUsesNonExemptEncryption = NO`. In App Store Connect, pick None / exempt if it still asks. |
+| Guideline 2.1(a) Information Needed | Demo login is missing from Test Information. Use `apple.review@mindandbodyresetcoach.com` / `Review2026App`, save, upload a **new** build (13+), submit that build, then reply in Resolution Center. |
+
+Internal testers (people already on the App Store Connect team) install as soon as processing finishes. External testers (Sara if she is not on the team) wait on Beta App Review — that is a different “reject” than a failed upload.
 
 ## If Xcode yells
 

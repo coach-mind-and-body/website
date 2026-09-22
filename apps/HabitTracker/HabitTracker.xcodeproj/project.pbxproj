@@ -48,6 +48,7 @@
 		874C008267AE8F79F8EB039D /* HabitTrackerWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CD3B4A18D83458EA6541A373 /* HabitTrackerWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		FB90684E69A6C96ED866993E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B2B4367B873474FE1C68712A /* Assets.xcassets */; };
 		C33D44E5F60718293A4B5C6D /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 4381A0DC22C37DDDF75898F4 /* PrivacyInfo.xcprivacy */; };
+		B22C33D44E5F60718293A4B6 /* Widget PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A11B22C33D44E5F607182941 /* Widget PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -111,6 +112,7 @@
 		84E44159FF12EF01743D4F5F /* HabitTracker.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HabitTracker/HabitTracker.entitlements; sourceTree = "<group>"; };
 		2318C953EF7ADA6763E30C08 /* HabitTrackerWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HabitTrackerWidget/HabitTrackerWidget.entitlements; sourceTree = "<group>"; };
 		4381A0DC22C37DDDF75898F4 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = HabitTracker/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		A11B22C33D44E5F607182941 /* Widget PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = HabitTrackerWidget/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		1049A9000660D9A3E911B791 /* HabitTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HabitTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CD3B4A18D83458EA6541A373 /* HabitTrackerWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HabitTrackerWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		1A68AE34BBD09FB61A0E997E /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
@@ -178,6 +180,7 @@
 				84E44159FF12EF01743D4F5F /* HabitTracker.entitlements */,
 				2318C953EF7ADA6763E30C08 /* HabitTrackerWidget.entitlements */,
 				4381A0DC22C37DDDF75898F4 /* PrivacyInfo.xcprivacy */,
+				A11B22C33D44E5F607182941 /* Widget PrivacyInfo.xcprivacy */,
 				4EF5BA7BD40E319BE3847E3A /* Frameworks */,
 				00C45FD35CB0F9C5F764F070 /* Products */,
 			);
@@ -230,6 +233,7 @@
 			buildPhases = (
 				D9CAE0BEB5DBFC679C701E56 /* Sources */,
 				5E481E50C4C8E8DAED41676C /* Frameworks */,
+				C33D44E5F60718293A4B5C6E /* Resources */,
 			);
 			buildRules = (
 			);
@@ -276,6 +280,14 @@
 			files = (
 				FB90684E69A6C96ED866993E /* Assets.xcassets in Resources */,
 				C33D44E5F60718293A4B5C6D /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C33D44E5F60718293A4B5C6E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B22C33D44E5F60718293A4B6 /* Widget PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -418,7 +430,7 @@
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 13;
 				DEVELOPMENT_TEAM = 8D3TJ8W8XK;
 				PROVISIONING_PROFILE_SPECIFIER = "HabitTracker App Store";
 
@@ -452,7 +464,7 @@
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 13;
 				DEVELOPMENT_TEAM = 8D3TJ8W8XK;
 				PROVISIONING_PROFILE_SPECIFIER = "HabitTracker App Store";
 
@@ -487,7 +499,7 @@
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 13;
 				DEVELOPMENT_TEAM = 8D3TJ8W8XK;
 				PROVISIONING_PROFILE_SPECIFIER = "HabitTracker Widget App Store";
 				GENERATE_INFOPLIST_FILE = YES;
@@ -512,7 +524,7 @@
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 13;
 				DEVELOPMENT_TEAM = 8D3TJ8W8XK;
 				PROVISIONING_PROFILE_SPECIFIER = "HabitTracker Widget App Store";
 				GENERATE_INFOPLIST_FILE = YES;
