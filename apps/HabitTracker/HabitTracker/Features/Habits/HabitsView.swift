@@ -326,6 +326,17 @@ struct HabitsView: View {
                     Text(day.win)
                         .font(.caption)
                         .foregroundStyle(HTTheme.muted)
+                    if let assignmentTitle = day.assignmentTitle, let steps = day.assignmentSteps, !steps.isEmpty {
+                        Text(assignmentTitle)
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(HTTheme.gold)
+                            .padding(.top, 4)
+                        ForEach(Array(steps.enumerated()), id: \.offset) { _, step in
+                            Text("• \(step)")
+                                .font(.caption)
+                                .foregroundStyle(HTTheme.muted)
+                        }
+                    }
                     if let meet = today.meetUrl, let url = URL(string: meet) {
                         Button {
                             openURL(url)
@@ -361,7 +372,7 @@ struct HabitsView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                     .buttonStyle(.plain)
-                    Text("Daily journal")
+                    Text("What did I notice?")
                         .font(.caption.weight(.bold))
                         .foregroundStyle(HTTheme.forest)
                         .padding(.top, 4)

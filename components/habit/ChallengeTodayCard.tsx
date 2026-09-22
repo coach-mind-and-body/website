@@ -116,6 +116,23 @@ export default function ChallengeTodayCard() {
             </p>
           </div>
 
+          <div className="rounded-xl p-3 space-y-2" style={{ background: "#f9f5f0" }}>
+            <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "#c9a96e" }}>
+              Today’s assignment
+            </p>
+            <p className="text-sm font-bold" style={{ color: "#2d3b2d" }}>
+              {day.assignmentTitle}
+            </p>
+            <ol className="list-decimal pl-4 text-sm space-y-1" style={{ color: "#555" }}>
+              {day.assignmentSteps.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+            </ol>
+            <p className="text-xs italic" style={{ color: "#8a9a8a" }}>
+              {REAL_FOOD_RESET.philosophy}
+            </p>
+          </div>
+
           {data.meetUrl && (
             <a
               href={data.meetUrl}
@@ -163,9 +180,64 @@ export default function ChallengeTodayCard() {
             )}
           </Button>
 
+          {day.n === 2 && data.guides?.flipIt && (
+            <div className="rounded-xl p-3 space-y-2 text-sm" style={{ background: "#fcfaf9", border: "1px solid #f0e8e4" }}>
+              <p className="font-bold" style={{ color: "#2d3b2d" }}>
+                {data.guides.flipIt.headline}
+              </p>
+              <ol className="list-decimal pl-4 space-y-1" style={{ color: "#555" }}>
+                {data.guides.flipIt.checks.map((c) => (
+                  <li key={c}>{c}</li>
+                ))}
+              </ol>
+              <p className="text-xs" style={{ color: "#8a9a8a" }}>
+                Compare: {data.guides.flipIt.compareRows.join(" · ")}
+              </p>
+              <p className="font-bold uppercase tracking-widest text-center pt-1" style={{ color: "#c9a96e" }}>
+                {data.guides.flipIt.mantra}
+              </p>
+            </div>
+          )}
+
+          {day.n === 4 && data.guides?.plate && (
+            <div className="rounded-xl p-3 space-y-2 text-sm" style={{ background: "#fcfaf9", border: "1px solid #f0e8e4" }}>
+              <p className="font-bold" style={{ color: "#2d3b2d" }}>
+                Where’s my protein / fat / fiber?
+              </p>
+              <p style={{ color: "#555" }}>
+                <strong>Protein:</strong> {data.guides.plate.protein}
+              </p>
+              <p style={{ color: "#555" }}>
+                <strong>Fat:</strong> {data.guides.plate.fat}
+              </p>
+              <p style={{ color: "#555" }}>
+                <strong>Fiber:</strong> {data.guides.plate.fiber}
+              </p>
+              <p style={{ color: "#555" }}>{data.guides.plate.carbsNote}</p>
+              <p className="text-xs" style={{ color: "#8a9a8a" }}>
+                {data.guides.plate.unicityNote}
+              </p>
+              <p className="font-bold pt-1" style={{ color: "#2d3b2d" }}>
+                Ideas, not rules
+              </p>
+              <p className="text-xs" style={{ color: "#555" }}>
+                Breakfast: {data.guides.plate.combos.breakfast.join(" · ")}
+              </p>
+              <p className="text-xs" style={{ color: "#555" }}>
+                Lunch: {data.guides.plate.combos.lunch.join(" · ")}
+              </p>
+              <p className="text-xs" style={{ color: "#555" }}>
+                Dinner: {data.guides.plate.combos.dinner.join(" · ")}
+              </p>
+              <p className="text-xs" style={{ color: "#555" }}>
+                Snacks: {data.guides.plate.combos.snacks.join(" · ")}
+              </p>
+            </div>
+          )}
+
           <div className="space-y-3 pt-2">
             <p className="text-sm font-bold" style={{ color: "#2d3b2d" }}>
-              Daily journal
+              What did I notice?
             </p>
             <label className="block text-xs font-semibold" style={{ color: "#6a7a6a" }}>
               {day.journal.noticed}

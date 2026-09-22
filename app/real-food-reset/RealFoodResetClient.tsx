@@ -228,7 +228,7 @@ export default function RealFoodResetClient() {
                     Day {d.n} · {d.weekday}
                   </span>
                   <span className="text-xs" style={{ color: "#8a9a8a" }}>
-                    {d.format}
+                    {d.formatLabel}
                   </span>
                 </div>
                 <h3 className="font-bold text-lg mb-1">{d.title}</h3>

@@ -8,8 +8,14 @@ import { REAL_FOOD_RESET_DAY_DATES, REAL_FOOD_RESET_DAY_EMAILS } from "./realFoo
 describe("real food reset sequences", () => {
   it("has a matching reminder + daily email for each calendar date", () => {
     expect(REAL_FOOD_RESET_DAY_EMAILS.length).toBe(REAL_FOOD_RESET_DAY_DATES.length);
-    expect(REAL_FOOD_RESET_DAY_DATES[0]).toBe("2026-09-24");
+    expect(REAL_FOOD_RESET_DAY_DATES[0]).toBe("2026-09-22");
     expect(REAL_FOOD_RESET_DAY_DATES.at(-1)).toBe("2026-10-02");
+    const day1 = REAL_FOOD_RESET_DAY_EMAILS[6]("Sarah");
+    expect(day1.html).toContain("NOTICE");
+    expect(day1.html).toContain("SWAP ONE");
+    const day5 = REAL_FOOD_RESET_DAY_EMAILS[REAL_FOOD_RESET_DAY_EMAILS.length - 1]("Sarah");
+    expect(day5.html).toContain("/book");
+    expect(day5.html).toContain("reclaim-invite");
   });
 
   it("has five post-challenge offer emails after the challenge", () => {

@@ -463,6 +463,8 @@ struct ChallengeTodayDay: Codable, Hashable {
     var win: String
     var format: String
     var formatLabel: String
+    var assignmentTitle: String?
+    var assignmentSteps: [String]?
     var done: Bool?
     var journal: ChallengeJournalPrompts?
 }
