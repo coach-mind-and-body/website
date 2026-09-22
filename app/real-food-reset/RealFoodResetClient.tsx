@@ -144,8 +144,8 @@ export default function RealFoodResetClient() {
       </header>
 
       <section className="px-4 pb-12">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-          <div>
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-stretch">
+          <div className="flex flex-col">
             <p className="text-xs font-bold uppercase tracking-[0.2em] mb-4" style={{ color: "#c9a96e" }}>
               Free · 5 days · Starts {REAL_FOOD_RESET.startLabel}
             </p>
@@ -167,20 +167,18 @@ export default function RealFoodResetClient() {
             <p className="text-sm leading-relaxed mb-8" style={{ color: "#6a7a6a" }}>
               For women 40+ who are tired of diets, food rules, and promising themselves, “I’ll start again Monday.”
             </p>
-            <ul className="space-y-2 text-sm mb-2" style={{ color: "#3a5a3a" }}>
+            <ul className="space-y-2 text-sm mb-8" style={{ color: "#3a5a3a" }}>
               <li>✓ Lives {REAL_FOOD_RESET.liveDays} at {REAL_FOOD_RESET.liveTime}</li>
               <li>✓ Tuesday &amp; Thursday: video + recipes in the app</li>
               <li>✓ Daily check-ins, food log, and chat — app is home base</li>
             </ul>
-          </div>
-          <div>
             <img
               src="/photos/lee-anne-sara.jpg"
               alt="Sara and Lee Anne — The 5-Day No Processed Food Challenge"
-              className="w-full rounded-3xl object-cover mb-6 h-[280px] sm:h-[380px] lg:h-[520px]"
-              style={{ objectPosition: "center 40%" }}
+              className="w-full rounded-3xl object-cover mb-6 h-[280px] sm:h-[340px] lg:hidden"
+              style={{ objectPosition: "center 38%" }}
             />
-            <div className="p-6 md:p-8 rounded-3xl" style={{ background: "#fbeee9" }}>
+            <div className="p-6 md:p-8 rounded-3xl mt-auto" style={{ background: "#fbeee9" }}>
               <h2 className="font-bold text-2xl mb-2" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
                 Save your free spot
               </h2>
@@ -189,6 +187,14 @@ export default function RealFoodResetClient() {
               </p>
               <SignupForm id="join" />
             </div>
+          </div>
+          <div className="hidden lg:block min-h-[640px]">
+            <img
+              src="/photos/lee-anne-sara.jpg"
+              alt="Sara and Lee Anne — The 5-Day No Processed Food Challenge"
+              className="w-full h-full rounded-3xl object-cover"
+              style={{ objectPosition: "center 36%" }}
+            />
           </div>
         </div>
       </section>
