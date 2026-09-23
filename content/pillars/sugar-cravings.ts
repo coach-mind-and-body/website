@@ -96,7 +96,7 @@ export const SUGAR_CRAVINGS_PILLAR = {
 <p>If insulin resistance or metabolic health is part of your story, pair this mindset work with education on <a href="/insulin-resistance-after-40">insulin resistance after 40</a> — body and mind together.</p>
 
 <h2>When coaching helps</h2>
-<p>If every night feels like a fight, and you are tired of starting over, you do not need a harsher plan. You need a new relationship with food, stress, and self-talk. That is the work we do in <a href="/reclaim">R.E.C.L.A.I.M.</a> coaching for women 40+.</p>
+<p>If every night feels like a fight, and you are tired of starting over, you do not need a harsher plan. You need a new relationship with food, stress, and self-talk. That is the work we do in <a href="/reclaim">6 Habits in 6 Weeks</a> coaching for women 40+.</p>
 <p><a href="/book">Book a free discovery call</a> if you want a human guide — or start with the <a href="/food-quiz">free food &amp; mindset quiz</a> to see what is keeping you stuck.</p>
 
 <h2>Key takeaways</h2>

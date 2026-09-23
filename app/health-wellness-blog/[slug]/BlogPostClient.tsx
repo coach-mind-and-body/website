@@ -231,7 +231,7 @@ This is the work we do in coaching — not just changing what you eat, but chang
 
 The goal is a life that feels like yours. A body you can live in with some degree of peace. A relationship with food and yourself that doesn't consume your mental energy.
 
-That's what we work toward in the R.E.C.L.A.I.M. program. Not a before and after. A beginning.`,
+That's what we work toward in 6 Habits in 6 Weeks. Not a before and after. A beginning.`,
   },
   "calming-food-noise": {
     title: "Calming Food Noise: Drop the Mental Food Fight",
@@ -266,7 +266,7 @@ This is not a character flaw. It's neuroscience.
 
 ## The Quiet Is Possible
 
-Women who go through the R.E.C.L.A.I.M. program consistently report that the food noise gets quieter — not because they're following stricter rules, but because they've addressed the root cause. The mental fight ends when you stop fighting.`,
+Women who go through 6 Habits in 6 Weeks consistently report that the food noise gets quieter — not because they're following stricter rules, but because they've addressed the root cause. The mental fight ends when you stop fighting.`,
   },
 };
 
@@ -588,7 +588,7 @@ export default function BlogPost({ initialPost = null }: { initialPost?: Initial
             Ready to Do This Work Together?
           </h2>
           <p className="text-base mb-6" style={{ color: "oklch(0.45 0.02 160)" }}>
-            Book a free 30-minute discovery call with Lee Anne and find out if R.E.C.L.A.I.M. is right for you.
+            Book a free 30-minute discovery call with Lee Anne and find out if 6 Habits in 6 Weeks is right for you.
           </p>
           <Link href="/book" className="inline-flex items-center gap-2 px-8 py-4 rounded-full font-bold text-base transition-all hover:shadow-xl hover:-translate-y-1" style={{ background: "oklch(0.22 0.02 160)", color: "oklch(0.97 0.008 10)" }}>
             Book Free Discovery Call <ArrowRight size={18} />
