@@ -550,7 +550,7 @@ export const REAL_FOOD_RESET_EMAILS: RealFoodResetEmailDraft[] = [
       p("Because today I'm going to show you a ridiculously simple way to BUILD a meal instead of constantly wondering, “What am I supposed to eat?”"),
       p("Today's formula: <strong>protein + fat + fiber</strong>."),
       p("You do NOT need to count calories. You don't need a macro calculator. You don't need to weigh your chicken breast. And after yesterday's sugar conversation, we're definitely NOT declaring all carbohydrates bad. We're learning how to look at the WHOLE meal."),
-      p("No live call today. Your video, the “where's my protein / fat / fiber?” guide, and recipes are in the app."),
+      p(`No live call today. Watch the Build It lesson here: <a href="https://www.youtube.com/watch?v=oB9FGOsksmU">Play today's video</a>. It's also embedded in the app, with the protein / fat / fiber guide and recipes.`),
       h3("BUILD IT → SNAP IT → SHARE IT"),
       ul([
         "Build ONE meal using today's formula. Breakfast, lunch, or dinner.",

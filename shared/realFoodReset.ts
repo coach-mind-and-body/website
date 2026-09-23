@@ -121,6 +121,7 @@ export const REAL_FOOD_RESET = {
       win: "One real plate: protein + fat + fiber. Snap it. Notice how you feel.",
       format: "video" as const,
       formatLabel: "Video + recipes in the app",
+      videoId: "oB9FGOsksmU",
       assignmentTitle: "BUILD IT → SNAP IT → SHARE IT",
       assignmentSteps: [
         "Build ONE meal (breakfast, lunch, or dinner) with protein + fat + fiber. No calorie counting.",
