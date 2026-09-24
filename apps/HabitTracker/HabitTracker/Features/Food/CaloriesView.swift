@@ -178,14 +178,27 @@ private struct LogFoodSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 10) {
                         Text("Which meal?")
                             .font(.headline)
                             .foregroundStyle(HTTheme.forest)
-                        Picker("Meal", selection: $meal) {
-                            ForEach(meals, id: \.self) { Text($0.capitalized).tag($0) }
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                            ForEach(meals, id: \.self) { slot in
+                                Button {
+                                    meal = slot
+                                } label: {
+                                    Text(slot.capitalized)
+                                        .font(.subheadline.weight(.bold))
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 12)
+                                        .background(meal == slot ? HTTheme.forest : Color.white)
+                                        .foregroundStyle(meal == slot ? Color.white : HTTheme.forest)
+                                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(HTTheme.roseBorder))
+                                }
+                                .buttonStyle(.plain)
+                            }
                         }
-                        .pickerStyle(.segmented)
                     }
 
                     VStack(alignment: .leading, spacing: 8) {
@@ -264,6 +277,7 @@ private struct LogFoodSheet: View {
                                 }
                             }
                             .padding(.top, 8)
+                            FatSecretBadge()
                         }
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(HTTheme.forest)
@@ -300,6 +314,10 @@ private struct LogFoodSheet: View {
                         Button("Add calories and other macros") { showFullMacros = true }
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(HTTheme.muted)
+                    }
+
+                    if food.fatSecretOn {
+                        FatSecretBadge()
                     }
 
                     Button {
@@ -446,6 +464,27 @@ private struct LogFoodSheet: View {
             return "\(hit.protein)g protein · \(hit.calories) cal"
         }
         return "Tap to fill"
+    }
+}
+
+struct FatSecretBadge: View {
+    var body: some View {
+        Link(destination: URL(string: "https://www.fatsecret.com")!) {
+            VStack(spacing: 4) {
+                AsyncImage(url: URL(string: "https://platform.fatsecret.com/api/static/images/powered_by_fatsecret_horizontal_brand.png")) { phase in
+                    if case .success(let img) = phase {
+                        img.resizable().scaledToFit().frame(height: 22)
+                    } else {
+                        Text("Powered by fatsecret")
+                            .font(.caption)
+                            .foregroundStyle(HTTheme.muted)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, 8)
+        }
+        .accessibilityLabel("Powered by fatsecret")
     }
 }
 

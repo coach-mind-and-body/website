@@ -11,6 +11,25 @@ struct RecipesView: View {
                         .textFieldStyle(.roundedBorder)
                         .onSubmit { Task { await food.loadRecipes() } }
 
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(["All", "Breakfast", "Lunch", "Dinner", "Snack"], id: \.self) { label in
+                                let slot = label == "All" ? nil : label.lowercased()
+                                Button(label) {
+                                    food.mealSlot = slot
+                                    Task { await food.loadRecipes() }
+                                }
+                                .font(.subheadline.weight(.bold))
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 8)
+                                .background(food.mealSlot == slot ? HTTheme.forest : Color.white)
+                                .foregroundStyle(food.mealSlot == slot ? Color.white : HTTheme.forest)
+                                .clipShape(Capsule())
+                                .overlay(Capsule().stroke(HTTheme.roseBorder))
+                            }
+                        }
+                    }
+
                     if let err = food.errorMessage {
                         Text(err).font(.caption).foregroundStyle(.red)
                     } else if food.isLoading && food.recipes.isEmpty {
@@ -124,6 +143,7 @@ struct RecipeDetailView: View {
                             Text("Lunch").tag("lunch")
                             Text("Dinner").tag("dinner")
                             Text("Snack").tag("snack")
+                            Text("Drink").tag("drink")
                         }
                         .pickerStyle(.segmented)
                         Stepper("Servings: \(servings)", value: $servings, in: 1...8)
@@ -136,6 +156,9 @@ struct RecipeDetailView: View {
                         .buttonStyle(.borderedProminent)
                         .tint(HTTheme.forest)
                         .disabled(logged)
+                    if recipe.source == "fatsecret" {
+                        FatSecretBadge()
+                    }
                     if !auth.isSignedIn {
                         Text("Saved on this iPhone. Sign in under You to sync.")
                             .font(.caption)

@@ -16,6 +16,7 @@ final class FoodViewModel {
     var isLoading = false
     var errorMessage: String?
     var selectedTag: String?
+    var mealSlot: String?
     var fatSecretOn = false
     var fatSecretHits: [FatSecretFood] = []
     var estimateBusy = false
@@ -35,7 +36,7 @@ final class FoodViewModel {
             let input = RecipeListInput(
                 q: query.isEmpty ? nil : query,
                 tag: selectedTag,
-                mealSlot: nil,
+                mealSlot: mealSlot,
                 favoritesOnly: nil
             )
             recipes = try await auth.client.query("food.listRecipes", input: input)
