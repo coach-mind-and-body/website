@@ -183,7 +183,6 @@ struct HabitsView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    healthStrip
                     habitsCard
                 }
                 .padding(16)
@@ -651,54 +650,11 @@ struct HabitsView: View {
         }
     }
 
-    private var healthStrip: some View {
-        let steps = Int(health.stepsToday.rounded())
-        let move = Int(health.moveMinutesToday.rounded())
-        let sleep = health.sleepHoursLastNight
-        let hasAny = steps > 0 || move > 0 || sleep > 0
-        return Group {
-            if hasAny {
-                HStack(spacing: 8) {
-                    healthChip("Steps", steps.formatted())
-                    healthChip("Move", "\(move)m")
-                    healthChip("Sleep", sleep > 0 ? String(format: "%.1fh", sleep) : "—")
-                }
-            } else if health.isAvailable {
-                Text("Apple Health can fill steps, move, and sleep here. Allow it in You.")
-                    .font(.caption)
-                    .foregroundStyle(HTTheme.muted)
-                    .padding(12)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(HTTheme.roseBorder))
-            }
-        }
-    }
-
-    private func healthChip(_ label: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label.uppercased())
-                .font(.caption2.weight(.bold))
-                .foregroundStyle(HTTheme.muted)
-            Text(value)
-                .font(.headline)
-                .foregroundStyle(HTTheme.forest)
-                .minimumScaleFactor(0.7)
-                .lineLimit(1)
-        }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(HTTheme.roseBorder))
-    }
-
     private var habitsCard: some View {
         HTCard {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Today’s checklist").font(.headline).foregroundStyle(HTTheme.forest)
-                Text("Tap what you did. Meals fill protein. Apple Health fills move and sleep. Edit a past day on Progress.")
+                Text("Tap what you did. Meals fill protein. Edit a past day on Progress.")
                     .font(.caption)
                     .foregroundStyle(HTTheme.muted)
             }
