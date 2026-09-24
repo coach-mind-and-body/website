@@ -435,23 +435,29 @@ struct HabitsView: View {
                 }
                 if let docs = today.documents, !docs.isEmpty {
                     Text("Meal plan, shopping list & recipes")
-                        .font(.caption.weight(.bold))
+                        .font(.title3.weight(.bold))
                         .foregroundStyle(HTTheme.forest)
-                        .padding(.top, 8)
+                        .padding(.top, 12)
                     ForEach(docs) { doc in
                         if let url = URL(string: doc.url) {
                             Button {
                                 openURL(url)
                             } label: {
-                                Text(doc.title)
-                                    .font(.subheadline.weight(.bold))
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(.vertical, 10)
-                                    .padding(.horizontal, 12)
-                                    .background(Color.white)
-                                    .foregroundStyle(HTTheme.forest)
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(HTTheme.roseBorder))
+                                HStack {
+                                    Text(doc.title)
+                                        .font(.body.weight(.bold))
+                                        .multilineTextAlignment(.leading)
+                                    Spacer()
+                                    Image(systemName: "arrow.up.right")
+                                        .font(.body.weight(.bold))
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.vertical, 16)
+                                .padding(.horizontal, 16)
+                                .background(Color.white)
+                                .foregroundStyle(HTTheme.forest)
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                                .overlay(RoundedRectangle(cornerRadius: 14).stroke(HTTheme.roseBorder, lineWidth: 1.5))
                             }
                             .buttonStyle(.plain)
                         }
@@ -459,22 +465,23 @@ struct HabitsView: View {
                 }
                 if let images = today.guideImages, !images.isEmpty {
                     Text("What to eat")
-                        .font(.caption.weight(.bold))
+                        .font(.title3.weight(.bold))
                         .foregroundStyle(HTTheme.forest)
-                        .padding(.top, 8)
+                        .padding(.top, 12)
                     ForEach(images) { img in
-                        VStack(alignment: .leading, spacing: 6) {
+                        VStack(alignment: .leading, spacing: 8) {
                             Text(img.title)
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(HTTheme.muted)
+                                .font(.body.weight(.semibold))
+                                .foregroundStyle(HTTheme.forest)
                             AsyncImage(url: URL(string: img.url)) { phase in
                                 if case .success(let image) = phase {
                                     image.resizable().scaledToFit()
                                 } else {
-                                    HTTheme.roseBorder.frame(height: 160)
+                                    HTTheme.roseBorder.frame(height: 240)
                                 }
                             }
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .frame(maxWidth: .infinity)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
                     }
                 }
