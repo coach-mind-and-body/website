@@ -22,7 +22,52 @@ final class FitnessViewModel {
         self.health = health
     }
 
-    var minutesToday: Int { logs.reduce(0) { $0 + $1.durationMinutes } }
+    var healthWorkouts: [HealthKitService.HealthWorkout] = []
+
+    struct Session: Identifiable {
+        var id: String
+        var name: String
+        var minutes: Int
+        var fromHealth: Bool
+        var log: FitnessLog?
+    }
+
+    var sessions: [Session] {
+        var used = Set<UUID>()
+        var rows: [Session] = []
+        for log in logs {
+            if let match = healthWorkouts.first(where: { !used.contains($0.id) && abs($0.minutes - log.durationMinutes) <= 2 }) {
+                used.insert(match.id)
+                rows.append(Session(
+                    id: "log-\(log.id)",
+                    name: log.exerciseName,
+                    minutes: log.durationMinutes,
+                    fromHealth: match.fromWatch,
+                    log: log
+                ))
+            } else {
+                rows.append(Session(
+                    id: "log-\(log.id)",
+                    name: log.exerciseName,
+                    minutes: log.durationMinutes,
+                    fromHealth: false,
+                    log: log
+                ))
+            }
+        }
+        for workout in healthWorkouts where !used.contains(workout.id) && !workout.fromThisApp {
+            rows.append(Session(
+                id: "hk-\(workout.id.uuidString)",
+                name: workout.name,
+                minutes: workout.minutes,
+                fromHealth: true,
+                log: nil
+            ))
+        }
+        return rows
+    }
+
+    var minutesToday: Int { sessions.reduce(0) { $0 + $1.minutes } }
 
     var categories: [String] {
         ["All"] + Array(Set(videos.map { $0.category ?? "Workout" })).sorted()
@@ -39,6 +84,7 @@ final class FitnessViewModel {
         } else {
             logs = GuestLocalStore.loadFitness().filter { $0.dateStr == dateStr }
         }
+        healthWorkouts = await health.workouts(on: dateStr)
         do {
             videos = try await auth.client.query("fitness.getVideos")
         } catch {
@@ -145,7 +191,7 @@ struct FitnessView: View {
                 Text("\(model.minutesToday) min today")
                     .font(HTTheme.title)
                     .foregroundStyle(HTTheme.forest)
-                Text("Walks and workouts you log here are saved to Apple Health.")
+                Text("Apple Watch workouts show up here. Logging in the app writes to Health only if Watch didn’t already record it.")
                     .font(.caption)
                     .foregroundStyle(HTTheme.muted)
 
@@ -200,16 +246,20 @@ struct FitnessView: View {
                     }
                 }
 
-                ForEach(model.logs) { log in
+                ForEach(model.sessions) { session in
                     HTCard {
                         HStack {
                             VStack(alignment: .leading) {
-                                Text(log.exerciseName).font(.headline).foregroundStyle(HTTheme.forest)
-                                Text("\(log.durationMinutes) min").font(.caption).foregroundStyle(HTTheme.muted)
+                                Text(session.name).font(.headline).foregroundStyle(HTTheme.forest)
+                                Text(session.fromHealth ? "\(session.minutes) min · Apple Watch" : "\(session.minutes) min")
+                                    .font(.caption)
+                                    .foregroundStyle(HTTheme.muted)
                             }
                             Spacer()
-                            Button(role: .destructive) { Task { await model.delete(log) } } label: {
-                                Image(systemName: "trash")
+                            if let log = session.log {
+                                Button(role: .destructive) { Task { await model.delete(log) } } label: {
+                                    Image(systemName: "trash")
+                                }
                             }
                         }
                     }

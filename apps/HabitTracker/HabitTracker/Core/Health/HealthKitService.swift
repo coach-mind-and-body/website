@@ -77,8 +77,46 @@ final class HealthKitService {
         mindfulMinutesToday = (try? await mindful) ?? 0
     }
 
+    struct HealthWorkout: Identifiable, Hashable {
+        var id: UUID
+        var name: String
+        var minutes: Int
+        var fromWatch: Bool
+        var fromThisApp: Bool
+    }
+
+    func workouts(on dateStr: String) async -> [HealthWorkout] {
+        guard isAvailable else { return [] }
+        let (start, end) = dayRange(dateStr)
+        do {
+            let samples = try await workoutSamples(from: start, to: end)
+            return samples.map { workout in
+                let mins = max(1, Int((workout.duration / 60).rounded()))
+                let bundle = workout.sourceRevision.source.bundleIdentifier.lowercased()
+                let sourceName = workout.sourceRevision.source.name.lowercased()
+                let fromThisApp = bundle.contains("mindandbodyreset") || workout.metadata?[Self.appSourceKey] as? String == Self.appSourceValue
+                let fromWatch = bundle.contains("watch") || sourceName.contains("watch")
+                return HealthWorkout(
+                    id: workout.uuid,
+                    name: displayName(for: workout.workoutActivityType, fallback: workout.metadata?[Self.appNameKey] as? String),
+                    minutes: mins,
+                    fromWatch: fromWatch,
+                    fromThisApp: fromThisApp
+                )
+            }
+            .sorted { $0.minutes > $1.minutes }
+        } catch {
+            lastError = error.localizedDescription
+            return []
+        }
+    }
+
     func saveWorkout(named name: String, minutes: Int, on dateStr: String = MountainDate.today()) async {
         guard isAvailable, minutes > 0 else { return }
+        let existing = await workouts(on: dateStr)
+        if existing.contains(where: { abs($0.minutes - minutes) <= 2 }) {
+            return
+        }
         let end = endDate(on: dateStr)
         let start = end.addingTimeInterval(-Double(minutes) * 60)
         let configuration = HKWorkoutConfiguration()
@@ -86,6 +124,10 @@ final class HealthKitService {
         let builder = HKWorkoutBuilder(healthStore: store, configuration: configuration, device: .local())
         do {
             try await beginCollection(builder, at: start)
+            try await addMetadata(builder, [
+                Self.appSourceKey: Self.appSourceValue,
+                Self.appNameKey: name,
+            ])
             try await endCollection(builder, at: end)
             try await finishWorkout(builder)
             await refreshToday()
@@ -93,6 +135,10 @@ final class HealthKitService {
             lastError = error.localizedDescription
         }
     }
+
+    private static let appSourceKey = "MBRSource"
+    private static let appSourceValue = "habit-tracker"
+    private static let appNameKey = "MBRWorkoutName"
 
     private func beginCollection(_ builder: HKWorkoutBuilder, at start: Date) async throws {
         try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
@@ -158,11 +204,34 @@ final class HealthKitService {
         }
     }
 
+    private func addMetadata(_ builder: HKWorkoutBuilder, _ metadata: [String: Any]) async throws {
+        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+            builder.add(metadata) { success, error in
+                Self.resume(cont, success: success, error: error, fail: "Could not tag the workout.")
+            }
+        }
+    }
+
     private func endDate(on dateStr: String) -> Date {
         let today = MountainDate.today()
         if dateStr == today { return Date() }
         guard let day = MountainDate.date(from: dateStr) else { return Date() }
         return day.addingTimeInterval(12 * 60 * 60)
+    }
+
+    private func displayName(for type: HKWorkoutActivityType, fallback: String?) -> String {
+        if let fallback, !fallback.trimmingCharacters(in: .whitespaces).isEmpty { return fallback }
+        switch type {
+        case .walking: return "Walk"
+        case .running: return "Run"
+        case .traditionalStrengthTraining, .functionalStrengthTraining: return "Strength"
+        case .yoga, .flexibility: return "Stretch"
+        case .cycling: return "Cycle"
+        case .hiking: return "Hike"
+        case .elliptical: return "Elliptical"
+        case .coreTraining: return "Core"
+        default: return "Workout"
+        }
     }
 
     private func activityType(for name: String) -> HKWorkoutActivityType {
@@ -173,6 +242,15 @@ final class HealthKitService {
         if key.contains("yoga") || key.contains("stretch") { return .yoga }
         if key.contains("cycle") || key.contains("bike") { return .cycling }
         return .other
+    }
+
+    private func dayRange(_ dateStr: String) -> (Date, Date) {
+        let day = MountainDate.date(from: dateStr) ?? Date()
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = AppConfig.mountainTimeZone
+        let start = cal.startOfDay(for: day)
+        let end = cal.date(byAdding: .day, value: 1, to: start) ?? start.addingTimeInterval(86400)
+        return (start, end)
     }
 
     private func startOfToday() -> Date {
@@ -230,12 +308,16 @@ final class HealthKitService {
     }
 
     private func workoutMinutes(from start: Date) async throws -> Double {
-        let pred = HKQuery.predicateForSamples(withStart: start, end: Date())
+        let samples = try await workoutSamples(from: start, to: Date())
+        return samples.reduce(0.0) { $0 + $1.duration } / 60
+    }
+
+    private func workoutSamples(from start: Date, to end: Date) async throws -> [HKWorkout] {
+        let pred = HKQuery.predicateForSamples(withStart: start, end: end)
         return try await withCheckedThrowingContinuation { cont in
             let q = HKSampleQuery(sampleType: .workoutType(), predicate: pred, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { _, samples, err in
                 if let err { cont.resume(throwing: err); return }
-                let seconds = (samples as? [HKWorkout] ?? []).reduce(0.0) { $0 + $1.duration }
-                cont.resume(returning: seconds / 60)
+                cont.resume(returning: samples as? [HKWorkout] ?? [])
             }
             store.execute(q)
         }
