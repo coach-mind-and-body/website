@@ -5,100 +5,342 @@ import UIKit
 struct CaloriesView: View {
     @Bindable var food: FoodViewModel
     @Bindable var auth: AuthStore
+    @State private var showLog = false
+    @State private var meal = "lunch"
+
+    private let meals = ["breakfast", "lunch", "dinner", "snack", "drink"]
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                dateRow
+
+                HStack(spacing: 12) {
+                    macroChip("Protein", "\(food.proteinTotal)g")
+                    macroChip("Calories", "\(food.calorieTotal)")
+                }
+
+                Button {
+                    meal = suggestedMeal
+                    showLog = true
+                } label: {
+                    Text("Log food")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(HTTheme.forest)
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                }
+                .buttonStyle(.plain)
+
+                if let err = food.errorMessage {
+                    Text(err).font(.subheadline).foregroundStyle(.red)
+                }
+
+                if food.logs.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Nothing logged yet")
+                            .font(.headline)
+                            .foregroundStyle(HTTheme.forest)
+                        Text("Tap Log food. Type what you ate, snap the plate, or search a packaged item. Protein matters most.")
+                            .font(.subheadline)
+                            .foregroundStyle(HTTheme.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(18)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 18))
+                    .overlay(RoundedRectangle(cornerRadius: 18).stroke(HTTheme.roseBorder))
+                } else {
+                    ForEach(meals, id: \.self) { slot in
+                        let items = food.logs.filter { $0.mealType == slot }
+                        if !items.isEmpty {
+                            Text(slot.capitalized)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(HTTheme.gold)
+                                .padding(.top, 4)
+                            ForEach(items) { log in
+                                logRow(log)
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(16)
+        }
+        .dockScrollClearance()
+        .background(HTTheme.cream.ignoresSafeArea())
+        .task(id: food.sessionEpoch) {
+            await food.loadLogs()
+            await food.checkFatSecret()
+        }
+        .refreshable { await food.loadLogs() }
+        .sheet(isPresented: $showLog) {
+            LogFoodSheet(food: food, meal: $meal)
+        }
+    }
+
+    private var suggestedMeal: String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        switch hour {
+        case 0..<10: return "breakfast"
+        case 10..<15: return "lunch"
+        case 15..<21: return "dinner"
+        default: return "snack"
+        }
+    }
+
+    private var dateRow: some View {
+        HStack {
+            Button("←") {
+                Task {
+                    food.dateStr = MountainDate.shift(food.dateStr, days: -1)
+                    await food.loadLogs()
+                }
+            }
+            Spacer()
+            Text(food.dateStr == MountainDate.today() ? "Today" : MountainDate.friendly(food.dateStr))
+                .font(.title3.weight(.semibold))
+            Spacer()
+            Button("→") {
+                Task {
+                    food.dateStr = MountainDate.shift(food.dateStr, days: 1)
+                    await food.loadLogs()
+                }
+            }
+        }
+        .foregroundStyle(HTTheme.gold)
+    }
+
+    private func logRow(_ log: CalorieLog) -> some View {
+        HTCard {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(log.foodName)
+                        .font(.headline)
+                        .foregroundStyle(HTTheme.forest)
+                    Text("\(log.protein)g protein · \(log.calories) cal")
+                        .font(.subheadline)
+                        .foregroundStyle(HTTheme.muted)
+                }
+                Spacer()
+                Button(role: .destructive) {
+                    Task { await food.deleteLog(log) }
+                } label: {
+                    Image(systemName: "trash")
+                }
+            }
+        }
+    }
+
+    private func macroChip(_ label: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label.uppercased())
+                .font(.caption.weight(.bold))
+                .foregroundStyle(HTTheme.muted)
+            Text(value)
+                .font(.title.weight(.bold))
+                .foregroundStyle(HTTheme.forest)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(HTTheme.roseBorder))
+    }
+}
+
+private struct LogFoodSheet: View {
+    @Bindable var food: FoodViewModel
+    @Binding var meal: String
+    @Environment(\.dismiss) private var dismiss
+    @FocusState private var focused: Bool
+
     @State private var name = ""
-    @State private var meal = "snack"
     @State private var calories = 0
     @State private var protein = 0
     @State private var proteinText = ""
     @State private var carbs = 0
     @State private var fat = 0
     @State private var fiber = 0
-    @State private var showAdd = false
     @State private var showFullMacros = false
     @State private var fsQuery = ""
     @State private var fatSecretBusy = false
     @State private var photoItem: PhotosPickerItem?
     @State private var showCamera = false
-    @State private var hint = ""
+    @State private var showPackaged = false
 
     private let meals = ["breakfast", "lunch", "dinner", "snack", "drink"]
 
     var body: some View {
+        NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
-                    HStack {
-                        Button("←") { Task { food.dateStr = MountainDate.shift(food.dateStr, days: -1); await food.loadLogs() } }
-                        Spacer()
-                        Text(food.dateStr == MountainDate.today() ? "Today" : MountainDate.friendly(food.dateStr))
-                            .font(.subheadline.weight(.semibold))
-                        Spacer()
-                        Button("→") { Task { food.dateStr = MountainDate.shift(food.dateStr, days: 1); await food.loadLogs() } }
-                    }
-                    .foregroundStyle(HTTheme.gold)
-
-                    HStack(spacing: 10) {
-                        macroChip("Protein", "\(food.proteinTotal)g")
-                        macroChip("Calories", "\(food.calorieTotal)")
+                VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Which meal?")
+                            .font(.headline)
+                            .foregroundStyle(HTTheme.forest)
+                        Picker("Meal", selection: $meal) {
+                            ForEach(meals, id: \.self) { Text($0.capitalized).tag($0) }
+                        }
+                        .pickerStyle(.segmented)
                     }
 
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack {
-                            ForEach(meals, id: \.self) { m in
-                                Button(m.capitalized) { meal = m; showAdd = true }
-                                    .font(.caption.weight(.bold))
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 8)
-                                    .background(meal == m && showAdd ? HTTheme.forest : Color.white)
-                                    .foregroundStyle(meal == m && showAdd ? Color.white : HTTheme.forest)
-                                    .clipShape(Capsule())
-                                    .overlay(Capsule().stroke(HTTheme.roseBorder))
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("What did you eat?")
+                            .font(.headline)
+                            .foregroundStyle(HTTheme.forest)
+                        TextField("Chicken, leftover chili, yogurt…", text: $name, axis: .vertical)
+                            .lineLimit(2...4)
+                            .padding(14)
+                            .background(HTTheme.cream)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                            .focused($focused)
+
+                        HStack(spacing: 10) {
+                            actionButton(title: "Estimate", system: "sparkles") {
+                                Task { await runTextAI() }
+                            }
+                            .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || food.estimateBusy)
+
+                            PhotosPicker(selection: $photoItem, matching: .images) {
+                                actionLabel(title: "Photo", system: "photo")
+                            }
+
+                            Button {
+                                showCamera = true
+                            } label: {
+                                actionLabel(title: "Camera", system: "camera")
+                            }
+                            .buttonStyle(.plain)
+                        }
+
+                        if food.estimateBusy {
+                            HStack(spacing: 8) {
+                                ProgressView()
+                                Text("Estimating…")
+                                    .font(.subheadline)
+                                    .foregroundStyle(HTTheme.muted)
                             }
                         }
                     }
 
-                    if showAdd { addCard }
-
-                    if let err = food.errorMessage {
-                        Text(err).font(.caption).foregroundStyle(.red)
+                    if food.fatSecretOn {
+                        DisclosureGroup("Search a packaged food instead", isExpanded: $showPackaged) {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text("Bars, yogurt cups, restaurant items with a label.")
+                                    .font(.subheadline)
+                                    .foregroundStyle(HTTheme.muted)
+                                HStack {
+                                    TextField("Search…", text: $fsQuery)
+                                        .padding(12)
+                                        .background(HTTheme.cream)
+                                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                                    Button("Search") {
+                                        Task { await food.searchFatSecret(fsQuery) }
+                                    }
+                                    .font(.subheadline.weight(.bold))
+                                    .foregroundStyle(HTTheme.forest)
+                                }
+                                ForEach(food.fatSecretHits.prefix(6)) { hit in
+                                    Button {
+                                        Task { await applyFatSecret(hit) }
+                                    } label: {
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(hit.brand.map { "\(hit.name) · \($0)" } ?? hit.name)
+                                                .font(.subheadline.weight(.semibold))
+                                                .foregroundStyle(HTTheme.forest)
+                                            Text(fatSecretSubtitle(hit))
+                                                .font(.caption)
+                                                .foregroundStyle(HTTheme.muted)
+                                        }
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(.vertical, 6)
+                                    }
+                                    .buttonStyle(.plain)
+                                    .disabled(fatSecretBusy)
+                                }
+                            }
+                            .padding(.top, 8)
+                        }
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(HTTheme.forest)
                     }
 
-                    if food.logs.isEmpty && !showAdd {
-                        Text(food.fatSecretOn ? FoodLogHints.empty : FoodLogHints.emptyAiOnly)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Protein (grams)")
+                            .font(.headline)
+                            .foregroundStyle(HTTheme.forest)
+                        Text("This is the number that matters most.")
                             .font(.subheadline)
+                            .foregroundStyle(HTTheme.muted)
+                        TextField("e.g. 25", text: $proteinText)
+                            .keyboardType(.numberPad)
+                            .font(.title2)
+                            .padding(14)
+                            .background(HTTheme.cream)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                            .onChange(of: proteinText) { _, next in
+                                protein = Int(next.filter(\.isNumber)) ?? 0
+                            }
+                    }
+
+                    if showFullMacros {
+                        HStack {
+                            field("Calories", $calories)
+                            field("Carbs", $carbs)
+                        }
+                        HStack {
+                            field("Fat", $fat)
+                            field("Fiber", $fiber)
+                        }
+                    } else {
+                        Button("Add calories and other macros") { showFullMacros = true }
+                            .font(.subheadline.weight(.semibold))
                             .foregroundStyle(HTTheme.muted)
                     }
 
-                    ForEach(food.logs) { log in
-                        HTCard {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(log.mealType.capitalized)
-                                        .font(.caption2.weight(.bold))
-                                        .foregroundStyle(HTTheme.gold)
-                                    Text(log.foodName).font(.headline).foregroundStyle(HTTheme.forest)
-                                    Text("\(log.protein)p · \(log.calories) kcal")
-                                        .font(.caption)
-                                        .foregroundStyle(HTTheme.muted)
-                                }
-                                Spacer()
-                                Button(role: .destructive) {
-                                    Task { await food.deleteLog(log) }
-                                } label: {
-                                    Image(systemName: "trash")
-                                }
-                            }
+                    Button {
+                        Task {
+                            await food.addManual(
+                                name: name,
+                                meal: meal,
+                                calories: calories,
+                                protein: protein,
+                                carbs: carbs,
+                                fat: fat,
+                                fiber: fiber
+                            )
+                            dismiss()
                         }
+                    } label: {
+                        Text("Save \(meal)")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(name.trimmingCharacters(in: .whitespaces).isEmpty || fatSecretBusy ? HTTheme.muted.opacity(0.35) : HTTheme.forest)
+                            .foregroundStyle(.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
                     }
+                    .buttonStyle(.plain)
+                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || fatSecretBusy)
                 }
-                .padding(16)
+                .padding(20)
             }
-            .dockScrollClearance()
             .background(HTTheme.cream.ignoresSafeArea())
-            .task(id: food.sessionEpoch) {
-                await food.loadLogs()
-                await food.checkFatSecret()
+            .navigationTitle("Log food")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") { focused = false }
+                }
             }
-            .refreshable { await food.loadLogs() }
             .sheet(isPresented: $showCamera) {
                 CameraPicker { image in
                     showCamera = false
@@ -115,202 +357,41 @@ struct CaloriesView: View {
                     photoItem = nil
                 }
             }
+        }
     }
 
-    private var addCard: some View {
-        HTCard {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Log \(meal)")
-                    .font(.headline)
-                    .foregroundStyle(HTTheme.forest)
-
-                if food.fatSecretOn {
-                    Text(FoodLogHints.chooser)
-                        .font(.caption)
-                        .foregroundStyle(HTTheme.muted)
-                }
-
-                Text(FoodLogHints.aiLabel.uppercased())
-                    .font(.caption2.weight(.bold))
-                    .foregroundStyle(HTTheme.muted)
-
-                HStack(spacing: 8) {
-                    TextField(FoodLogHints.aiPlaceholder, text: $name)
-                        .padding(10)
-                        .background(HTTheme.cream)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                    Button {
-                        Task { await runTextAI() }
-                    } label: {
-                        if food.estimateBusy {
-                            ProgressView()
-                        } else {
-                            Text("✨ AI")
-                                .font(.caption.weight(.bold))
-                        }
-                    }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 10)
-                    .background(Color(red: 251 / 255, green: 238 / 255, blue: 233 / 255))
-                    .foregroundStyle(HTTheme.gold)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || food.estimateBusy)
-                }
-
-                Text(FoodLogHints.aiHint)
-                    .font(.caption2)
-                    .foregroundStyle(HTTheme.muted)
-
-                HStack(spacing: 8) {
-                    PhotosPicker(selection: $photoItem, matching: .images) {
-                        Label("Photo", systemImage: "photo")
-                            .font(.caption.weight(.bold))
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(Color.white)
-                            .clipShape(Capsule())
-                            .overlay(Capsule().stroke(HTTheme.roseBorder))
-                    }
-                    Button {
-                        showCamera = true
-                    } label: {
-                        Label("Camera", systemImage: "camera")
-                            .font(.caption.weight(.bold))
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(Color.white)
-                            .clipShape(Capsule())
-                            .overlay(Capsule().stroke(HTTheme.roseBorder))
-                    }
-                    .foregroundStyle(HTTheme.forest)
-                }
-
-                Text(FoodLogHints.photoHint)
-                    .font(.caption2)
-                    .foregroundStyle(HTTheme.muted)
-
-                if food.fatSecretOn {
-                    Text(FoodLogHints.packagedLabel.uppercased())
-                        .font(.caption2.weight(.bold))
-                        .foregroundStyle(HTTheme.muted)
-                    Text(FoodLogHints.packagedHint)
-                        .font(.caption2)
-                        .foregroundStyle(HTTheme.muted)
-                    HStack {
-                        TextField(FoodLogHints.packagedPlaceholder, text: $fsQuery)
-                            .padding(10)
-                            .background(HTTheme.cream)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                        Button("Search") {
-                            Task { await food.searchFatSecret(fsQuery) }
-                        }
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(HTTheme.forest)
-                    }
-                    ForEach(food.fatSecretHits.prefix(6)) { hit in
-                        Button {
-                            Task { await applyFatSecret(hit) }
-                        } label: {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(hit.brand.map { "\(hit.name) · \($0)" } ?? hit.name)
-                                    .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(HTTheme.forest)
-                                Text(fatSecretSubtitle(hit))
-                                    .font(.caption)
-                                    .foregroundStyle(HTTheme.muted)
-                            }
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(fatSecretBusy)
-                    }
-                    if fatSecretBusy {
-                        HStack(spacing: 8) {
-                            ProgressView()
-                            Text("Filling protein from FatSecret…")
-                                .font(.caption)
-                                .foregroundStyle(HTTheme.muted)
-                        }
-                    }
-                }
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Protein (g) — most important")
-                        .font(.caption2.weight(.bold))
-                        .foregroundStyle(HTTheme.gold)
-                    TextField("e.g. 25", text: $proteinText)
-                        .keyboardType(.numberPad)
-                        .padding(10)
-                        .background(HTTheme.cream)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .onChange(of: proteinText) { _, next in
-                            protein = Int(next.filter(\.isNumber)) ?? 0
-                        }
-                }
-
-                if !showFullMacros {
-                    Button("+ Calories & other macros") { showFullMacros = true }
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(HTTheme.muted)
-                } else {
-                    HStack {
-                        field("kcal", $calories)
-                        field("carbs", $carbs)
-                    }
-                    HStack {
-                        field("fat", $fat)
-                        field("fiber", $fiber)
-                    }
-                }
-
-                Button {
-                    Task {
-                        await food.addManual(
-                            name: name,
-                            meal: meal,
-                            calories: calories,
-                            protein: protein,
-                            carbs: carbs,
-                            fat: fat,
-                            fiber: fiber
-                        )
-                        resetForm()
-                    }
-                } label: {
-                    Text("Log \(meal.capitalized)")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(name.trimmingCharacters(in: .whitespaces).isEmpty || fatSecretBusy ? HTTheme.muted.opacity(0.35) : HTTheme.forest)
-                        .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                }
-                .buttonStyle(.plain)
-                .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || fatSecretBusy)
-            }
+    private func actionButton(title: String, system: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            actionLabel(title: title, system: system)
         }
+        .buttonStyle(.plain)
+    }
+
+    private func actionLabel(title: String, system: String) -> some View {
+        VStack(spacing: 6) {
+            Image(systemName: system)
+            Text(title)
+                .font(.caption.weight(.bold))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 14)
+        .background(Color.white)
+        .foregroundStyle(HTTheme.forest)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(HTTheme.roseBorder))
     }
 
     private func field(_ label: String, _ value: Binding<Int>) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(label.uppercased()).font(.caption2.weight(.bold)).foregroundStyle(HTTheme.muted)
+        VStack(alignment: .leading, spacing: 6) {
+            Text(label)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(HTTheme.muted)
             TextField("0", value: value, format: .number)
                 .keyboardType(.numberPad)
-                .padding(10)
+                .padding(12)
                 .background(HTTheme.cream)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
         }
-    }
-
-    private func macroChip(_ label: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(label.uppercased()).font(.caption2.weight(.bold)).foregroundStyle(HTTheme.muted)
-            Text(value).font(.title2.weight(.bold)).foregroundStyle(HTTheme.forest)
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-        .overlay(RoundedRectangle(cornerRadius: 18).stroke(HTTheme.roseBorder))
     }
 
     private func runTextAI() async {
@@ -321,7 +402,7 @@ struct CaloriesView: View {
     private func applyImage(_ image: UIImage) async {
         guard let data = image.jpegData(compressionQuality: 0.7) else { return }
         let b64 = "data:image/jpeg;base64," + data.base64EncodedString()
-        guard let est = await food.estimateImage(b64, hint: hint.isEmpty ? name : hint) else { return }
+        guard let est = await food.estimateImage(b64, hint: name) else { return }
         applyEstimate(est)
     }
 
@@ -362,40 +443,10 @@ struct CaloriesView: View {
 
     private func fatSecretSubtitle(_ hit: FatSecretFood) -> String {
         if hit.protein > 0 || hit.calories > 0 {
-            return "\(hit.protein)p · \(hit.calories) kcal — tap to fill"
+            return "\(hit.protein)g protein · \(hit.calories) cal"
         }
-        if let desc = hit.description, !desc.isEmpty {
-            return desc
-        }
-        return "Tap to fill protein"
+        return "Tap to fill"
     }
-
-    private func resetForm() {
-        name = ""
-        calories = 0
-        protein = 0
-        proteinText = ""
-        carbs = 0
-        fat = 0
-        fiber = 0
-        fsQuery = ""
-        showAdd = false
-        showFullMacros = false
-        food.fatSecretHits = []
-    }
-}
-
-private enum FoodLogHints {
-    static let empty = "Tap a meal to log. Homemade or leftovers → ✨ AI or a photo. A bar, yogurt cup, or restaurant item → search packaged foods."
-    static let emptyAiOnly = "Tap a meal. Type what you ate and tap ✨ AI, snap a photo, or enter protein yourself."
-    static let chooser = "Homemade or leftovers → type it and tap ✨ AI, or snap a photo. Packaged or restaurant food → search the database."
-    static let aiLabel = "Homemade or leftovers"
-    static let aiHint = "Type what you ate, then tap ✨ AI. You can tweak the numbers."
-    static let aiPlaceholder = "e.g. leftover chicken + broccoli"
-    static let photoHint = "Snap the plate if you don’t want to type. Same AI estimate."
-    static let packagedLabel = "Packaged or restaurant food"
-    static let packagedHint = "Search the food database for bars, yogurt cups, and labeled items."
-    static let packagedPlaceholder = "Search packaged foods…"
 }
 
 private struct CameraPicker: UIViewControllerRepresentable {
@@ -415,7 +466,10 @@ private struct CameraPicker: UIViewControllerRepresentable {
     final class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
         let onImage: (UIImage) -> Void
         init(onImage: @escaping (UIImage) -> Void) { self.onImage = onImage }
-        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+        func imagePickerController(
+            _ picker: UIImagePickerController,
+            didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
+        ) {
             if let image = info[.originalImage] as? UIImage { onImage(image) }
             picker.dismiss(animated: true)
         }
