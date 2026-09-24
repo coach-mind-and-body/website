@@ -30,6 +30,9 @@ final class HealthKitService {
         if let mindful = HKObjectType.categoryType(forIdentifier: .mindfulSession) {
             set.insert(mindful)
         }
+        for id in Self.cycleCategoryIds {
+            if let t = HKObjectType.categoryType(forIdentifier: id) { set.insert(t) }
+        }
         return set
     }
 
@@ -42,7 +45,25 @@ final class HealthKitService {
         if let s = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) { set.insert(s) }
         if let s = HKObjectType.categoryType(forIdentifier: .mindfulSession) { set.insert(s) }
         set.insert(HKObjectType.workoutType())
+        for id in Self.cycleCategoryIds {
+            if let t = HKObjectType.categoryType(forIdentifier: id) { set.insert(t) }
+        }
         return set
+    }
+
+    private static var cycleCategoryIds: [HKCategoryTypeIdentifier] {
+        var ids: [HKCategoryTypeIdentifier] = [
+            .menstrualFlow,
+            .intermenstrualBleeding,
+            .abdominalCramps,
+            .headache,
+            .breastPain,
+            .hotFlashes,
+            .moodChanges,
+            .sleepChanges,
+        ]
+        ids.append(.nightSweats)
+        return ids
     }
 
     func requestAccess() async {
@@ -202,6 +223,136 @@ final class HealthKitService {
         } catch {
             lastError = error.localizedDescription
         }
+    }
+
+    func menstrualBleeding(from startStr: String, to endStr: String) async -> [String: CycleBleeding] {
+        guard isAvailable, let type = HKObjectType.categoryType(forIdentifier: .menstrualFlow) else { return [:] }
+        let start = MountainDate.date(from: startStr) ?? Date()
+        let endExclusive = (MountainDate.date(from: endStr) ?? Date()).addingTimeInterval(86400)
+        do {
+            let samples = try await categorySamples(type, from: start, to: endExclusive)
+            var map: [String: CycleBleeding] = [:]
+            for sample in samples.sorted(by: { $0.endDate < $1.endDate }) {
+                let key = MountainDate.string(from: sample.startDate)
+                map[key] = mapFlow(sample.value)
+            }
+            let spotting = try await spottingDates(from: start, to: endExclusive)
+            for day in spotting where map[day] == nil || map[day] == .none {
+                map[day] = .spotting
+            }
+            return map
+        } catch {
+            lastError = error.localizedDescription
+            return [:]
+        }
+    }
+
+    func saveCycle(_ day: CycleDay) async {
+        guard isAvailable else { return }
+        let (start, end) = dayRange(day.dateStr)
+        let sampleEnd = end.addingTimeInterval(-60)
+        do {
+            try await deleteOurCycleSamples(from: start, to: end)
+            if day.bleeding != .none, let flowType = HKObjectType.categoryType(forIdentifier: .menstrualFlow) {
+                let existing = try await categorySamples(flowType, from: start, to: end)
+                let others = existing.filter { $0.metadata?[Self.appSourceKey] as? String != Self.appSourceValue }
+                let alreadyMatches = others.contains { mapFlow($0.value) == day.bleeding }
+                if !alreadyMatches {
+                    let sample = HKCategorySample(
+                        type: flowType,
+                        value: flowValue(day.bleeding),
+                        start: start,
+                        end: sampleEnd,
+                        metadata: [Self.appSourceKey: Self.appSourceValue]
+                    )
+                    try await store.save(sample)
+                }
+                if day.bleeding == .spotting, let bleed = HKObjectType.categoryType(forIdentifier: .intermenstrualBleeding) {
+                    let sample = HKCategorySample(
+                        type: bleed,
+                        value: HKCategoryValue.notApplicable.rawValue,
+                        start: start,
+                        end: sampleEnd,
+                        metadata: [Self.appSourceKey: Self.appSourceValue]
+                    )
+                    try await store.save(sample)
+                }
+            }
+            for symptom in day.symptoms {
+                if let type = categoryType(for: symptom) {
+                    let sample = HKCategorySample(
+                        type: type,
+                        value: HKCategoryValue.notApplicable.rawValue,
+                        start: start,
+                        end: sampleEnd,
+                        metadata: [Self.appSourceKey: Self.appSourceValue]
+                    )
+                    try await store.save(sample)
+                }
+            }
+        } catch {
+            lastError = error.localizedDescription
+        }
+    }
+
+    private func spottingDates(from start: Date, to end: Date) async throws -> [String] {
+        guard let type = HKObjectType.categoryType(forIdentifier: .intermenstrualBleeding) else { return [] }
+        let samples = try await categorySamples(type, from: start, to: end)
+        return samples.map { MountainDate.string(from: $0.startDate) }
+    }
+
+    private func deleteOurCycleSamples(from start: Date, to end: Date) async throws {
+        for id in Self.cycleCategoryIds {
+            guard let type = HKObjectType.categoryType(forIdentifier: id) else { continue }
+            let samples = try await categorySamples(type, from: start, to: end)
+            let ours = samples.filter { $0.metadata?[Self.appSourceKey] as? String == Self.appSourceValue }
+            if !ours.isEmpty {
+                try await store.delete(ours)
+            }
+        }
+    }
+
+    private func categorySamples(_ type: HKCategoryType, from start: Date, to end: Date) async throws -> [HKCategorySample] {
+        let pred = HKQuery.predicateForSamples(withStart: start, end: end)
+        return try await withCheckedThrowingContinuation { cont in
+            let q = HKSampleQuery(sampleType: type, predicate: pred, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { _, samples, err in
+                if let err { cont.resume(throwing: err); return }
+                cont.resume(returning: samples as? [HKCategorySample] ?? [])
+            }
+            store.execute(q)
+        }
+    }
+
+    private func mapFlow(_ value: Int) -> CycleBleeding {
+        switch HKCategoryValueMenstrualFlow(rawValue: value) {
+        case .light: return .light
+        case .medium: return .medium
+        case .heavy: return .heavy
+        default: return .none
+        }
+    }
+
+    private func flowValue(_ bleeding: CycleBleeding) -> Int {
+        switch bleeding {
+        case .none: return HKCategoryValueMenstrualFlow.unspecified.rawValue
+        case .spotting, .light: return HKCategoryValueMenstrualFlow.light.rawValue
+        case .medium: return HKCategoryValueMenstrualFlow.medium.rawValue
+        case .heavy: return HKCategoryValueMenstrualFlow.heavy.rawValue
+        }
+    }
+
+    private func categoryType(for symptom: CycleSymptom) -> HKCategoryType? {
+        let id: HKCategoryTypeIdentifier
+        switch symptom {
+        case .hotFlash: id = .hotFlashes
+        case .nightSweats: id = .nightSweats
+        case .sleepOff: id = .sleepChanges
+        case .mood: id = .moodChanges
+        case .cramps: id = .abdominalCramps
+        case .headache: id = .headache
+        case .breast: id = .breastPain
+        }
+        return HKObjectType.categoryType(forIdentifier: id)
     }
 
     private func addMetadata(_ builder: HKWorkoutBuilder, _ metadata: [String: Any]) async throws {

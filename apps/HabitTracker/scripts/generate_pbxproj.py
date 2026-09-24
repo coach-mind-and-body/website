@@ -15,6 +15,7 @@ APP_SWIFT = [
     "HabitTracker/Core/InAppBrowser.swift",
     "HabitTracker/Core/KeychainStore.swift",
     "HabitTracker/Core/GuestLocalStore.swift",
+    "HabitTracker/Core/CycleStore.swift",
     "HabitTracker/Core/Models.swift",
     "HabitTracker/Core/API/SuperJSON.swift",
     "HabitTracker/Core/API/APIError.swift",
@@ -27,6 +28,7 @@ APP_SWIFT = [
     "HabitTracker/Features/Habits/HabitsView.swift",
     "HabitTracker/Features/Habits/HabitsViewModel.swift",
     "HabitTracker/Features/Habits/HabitProgressView.swift",
+    "HabitTracker/Features/Habits/CycleLogView.swift",
     "HabitTracker/Features/Food/FoodViewModel.swift",
     "HabitTracker/Features/Food/RecipesView.swift",
     "HabitTracker/Features/Food/MealPlanView.swift",
@@ -331,8 +333,8 @@ def main() -> None:
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Take a photo of a meal so we can estimate protein and extras. You can always type it instead.";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "Habit Tracker reads steps, exercise minutes, workouts, mindful minutes, last night's sleep, and weight from Apple Health so Move Body, Mindful Minutes, and Restful Sleep can fill themselves in. This is a coaching tool, not medical advice. We do not sell Health data.";
-				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "When you log a walk, workout, or mindful minutes in Habit Tracker, we save that session to Apple Health so your rings and Mindfulness stay in sync. We never sell Health data.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Habit Tracker reads steps, exercise minutes, workouts, mindful minutes, last night's sleep, weight, and cycle data (if you allow it) from Apple Health. Cycle stays on this iPhone and is not shared with your coach. This is a coaching tool, not medical advice. We do not sell Health data.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "When you log a walk, workout, mindful minutes, or a cycle day in Habit Tracker, we can save that to Apple Health so it stays in one place. Cycle is never sent to Lee Anne. We never sell Health data.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Attach an existing meal photo if you prefer not to use the camera.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";

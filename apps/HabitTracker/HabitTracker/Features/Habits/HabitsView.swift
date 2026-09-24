@@ -12,6 +12,9 @@ struct HabitsView: View {
     @State private var showLogin = false
     @FocusState private var noteFocused: Bool
     @State private var inAppURL: IdentifiedURL?
+    @State private var cycle = CycleStore()
+    @State private var showCycle = false
+    @State private var cycleDate = MountainDate.today()
     @Environment(\.openURL) private var openURL
 
     var body: some View {
@@ -36,6 +39,12 @@ struct HabitsView: View {
                 await model.load()
                 await health.refreshToday()
                 await model.syncFromHealth()
+                cycle.load()
+                let dates = cycle.historyDates(months: 6)
+                if let first = dates.first, let last = dates.last {
+                    let fromHealth = await health.menstrualBleeding(from: first, to: last)
+                    cycle.mergeHealth(fromHealth)
+                }
             }
             .refreshable {
                 await model.load()
@@ -60,6 +69,9 @@ struct HabitsView: View {
             .sheet(item: $inAppURL) { item in
                 InAppSafari(url: item.url)
                     .ignoresSafeArea()
+            }
+            .sheet(isPresented: $showCycle) {
+                CycleLogSheet(store: cycle, health: health, dateStr: cycleDate)
             }
         }
     }
@@ -184,6 +196,7 @@ struct HabitsView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     healthStrip
+                    CycleCard(store: cycle, logDate: $cycleDate, showLog: $showCycle)
                     habitsCard
                 }
                 .padding(16)

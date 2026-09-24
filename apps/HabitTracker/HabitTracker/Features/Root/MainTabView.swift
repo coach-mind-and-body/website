@@ -385,7 +385,7 @@ struct HealthPermissionView: View {
                 Text("Apple Health")
                     .font(HTTheme.serif)
                     .foregroundStyle(HTTheme.forest)
-                Text("With your permission, Habit Tracker reads exercise, workouts, mindful minutes, sleep, steps, and weight — and writes back workouts and mindful sessions you start here, so Apple Health stays in sync. Move Body, Mindful Minutes, and Restful Sleep can check themselves. We never sell Health data. This is a coaching tool, not a medical device.")
+                Text("With your permission, Habit Tracker reads exercise, workouts, mindful minutes, sleep, steps, weight, and cycle data — and writes back workouts, mindful sessions, and cycle days you log here. Cycle stays on this iPhone; Lee Anne cannot see it. We never sell Health data. This is a coaching tool, not a medical device.")
                     .foregroundStyle(HTTheme.muted)
                 if let err = health.lastError {
                     Text(err).foregroundStyle(.red).font(.caption)

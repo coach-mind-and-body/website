@@ -41,7 +41,7 @@ struct ProfileView: View {
                         if let lb = health.weightPounds {
                             LabeledContent("Weight", value: String(format: "%.0f lb", lb))
                         }
-                        Text("We read exercise, mindfulness, sleep, steps, and weight — and write workouts and mindful sessions you start here back to Apple Health. Those numbers also show on Today and the home-screen widget. We do not sell Health data. This is not a medical device.")
+                        Text("We read exercise, mindfulness, sleep, steps, weight, and cycle data if you allow it — and write workouts, mindful sessions, and cycle days you log here back to Apple Health. Cycle stays on this iPhone; Lee Anne cannot see it. We do not sell Health data. This is not a medical device.")
                             .font(.caption)
                             .foregroundStyle(HTTheme.muted)
                         Text("Add the widget: long-press the Home Screen → tap Edit → Add Widget → Habit Tracker.")

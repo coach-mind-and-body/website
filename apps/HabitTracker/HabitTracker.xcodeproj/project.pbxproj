@@ -13,6 +13,8 @@
 		03FFD4BE053B197D4159D3B6 /* HabitTracker/Core/Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C58044D3B055E28F45FD56D4 /* HabitTracker/Core/Theme.swift */; };
 		48CD18E0817A133FD1FFBFF1 /* HabitTracker/Core/YouTubeEmbed.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19134045713AE24A5C95E205 /* HabitTracker/Core/YouTubeEmbed.swift */; };
 		71356D5D470A3D7812F5EBD3 /* HabitTracker/Core/InAppBrowser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35B7A2A1EC49E5C267572495 /* HabitTracker/Core/InAppBrowser.swift */; };
+		D77AC8024136F425827A1AB5 /* HabitTracker/Core/CycleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19E16AD6B91659DFA6B72642 /* HabitTracker/Core/CycleStore.swift */; };
+		E2F63BD6F2DAEDDAF4DCA855 /* HabitTracker/Features/Habits/CycleLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE8EDD070E2213F88E957C0E /* HabitTracker/Features/Habits/CycleLogView.swift */; };
 		2973E27B5DACCDA261C7F1B4 /* HabitTracker/Core/KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E7C70699A277E64749959D0 /* HabitTracker/Core/KeychainStore.swift */; };
 		ECEB72280CA7224BC1D98F07 /* HabitTracker/Core/GuestLocalStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E5A85FE1EB9073BCED1396D /* HabitTracker/Core/GuestLocalStore.swift */; };
 		42CBBFFE0375886BBD7DBD09 /* HabitTracker/Core/Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3BC2B1B669EA2FB0EC7B4E9 /* HabitTracker/Core/Models.swift */; };
@@ -83,6 +85,8 @@
 		C58044D3B055E28F45FD56D4 /* HabitTracker/Core/Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Core/Theme.swift; sourceTree = "<group>"; };
 		19134045713AE24A5C95E205 /* HabitTracker/Core/YouTubeEmbed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Core/YouTubeEmbed.swift; sourceTree = "<group>"; };
 		35B7A2A1EC49E5C267572495 /* HabitTracker/Core/InAppBrowser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Core/InAppBrowser.swift; sourceTree = "<group>"; };
+		19E16AD6B91659DFA6B72642 /* HabitTracker/Core/CycleStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Core/CycleStore.swift; sourceTree = "<group>"; };
+		FE8EDD070E2213F88E957C0E /* HabitTracker/Features/Habits/CycleLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Features/Habits/CycleLogView.swift; sourceTree = "<group>"; };
 		8E7C70699A277E64749959D0 /* HabitTracker/Core/KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Core/KeychainStore.swift; sourceTree = "<group>"; };
 		1E5A85FE1EB9073BCED1396D /* HabitTracker/Core/GuestLocalStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Core/GuestLocalStore.swift; sourceTree = "<group>"; };
 		F3BC2B1B669EA2FB0EC7B4E9 /* HabitTracker/Core/Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Core/Models.swift; sourceTree = "<group>"; };
@@ -152,6 +156,8 @@
 				C58044D3B055E28F45FD56D4 /* HabitTracker/Core/Theme.swift */,
 				19134045713AE24A5C95E205 /* HabitTracker/Core/YouTubeEmbed.swift */,
 				35B7A2A1EC49E5C267572495 /* HabitTracker/Core/InAppBrowser.swift */,
+				19E16AD6B91659DFA6B72642 /* HabitTracker/Core/CycleStore.swift */,
+				FE8EDD070E2213F88E957C0E /* HabitTracker/Features/Habits/CycleLogView.swift */,
 				8E7C70699A277E64749959D0 /* HabitTracker/Core/KeychainStore.swift */,
 				1E5A85FE1EB9073BCED1396D /* HabitTracker/Core/GuestLocalStore.swift */,
 				F3BC2B1B669EA2FB0EC7B4E9 /* HabitTracker/Core/Models.swift */,
@@ -307,6 +313,8 @@
 				03FFD4BE053B197D4159D3B6 /* HabitTracker/Core/Theme.swift in Sources */,
 				48CD18E0817A133FD1FFBFF1 /* HabitTracker/Core/YouTubeEmbed.swift in Sources */,
 				71356D5D470A3D7812F5EBD3 /* HabitTracker/Core/InAppBrowser.swift in Sources */,
+				D77AC8024136F425827A1AB5 /* HabitTracker/Core/CycleStore.swift in Sources */,
+				E2F63BD6F2DAEDDAF4DCA855 /* HabitTracker/Features/Habits/CycleLogView.swift in Sources */,
 				2973E27B5DACCDA261C7F1B4 /* HabitTracker/Core/KeychainStore.swift in Sources */,
 				ECEB72280CA7224BC1D98F07 /* HabitTracker/Core/GuestLocalStore.swift in Sources */,
 				42CBBFFE0375886BBD7DBD09 /* HabitTracker/Core/Models.swift in Sources */,
@@ -445,8 +453,8 @@
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Take a photo of a meal so we can estimate protein and extras. You can always type it instead.";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "Habit Tracker reads steps, exercise minutes, workouts, mindful minutes, last night's sleep, and weight from Apple Health so Move Body, Mindful Minutes, and Restful Sleep can fill themselves in. This is a coaching tool, not medical advice. We do not sell Health data.";
-				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "When you log a walk, workout, or mindful minutes in Habit Tracker, we save that session to Apple Health so your rings and Mindfulness stay in sync. We never sell Health data.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Habit Tracker reads steps, exercise minutes, workouts, mindful minutes, last night's sleep, weight, and cycle data (if you allow it) from Apple Health. Cycle stays on this iPhone and is not shared with your coach. This is a coaching tool, not medical advice. We do not sell Health data.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "When you log a walk, workout, mindful minutes, or a cycle day in Habit Tracker, we can save that to Apple Health so it stays in one place. Cycle is never sent to Lee Anne. We never sell Health data.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Attach an existing meal photo if you prefer not to use the camera.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -479,8 +487,8 @@
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Take a photo of a meal so we can estimate protein and extras. You can always type it instead.";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "Habit Tracker reads steps, exercise minutes, workouts, mindful minutes, last night's sleep, and weight from Apple Health so Move Body, Mindful Minutes, and Restful Sleep can fill themselves in. This is a coaching tool, not medical advice. We do not sell Health data.";
-				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "When you log a walk, workout, or mindful minutes in Habit Tracker, we save that session to Apple Health so your rings and Mindfulness stay in sync. We never sell Health data.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Habit Tracker reads steps, exercise minutes, workouts, mindful minutes, last night's sleep, weight, and cycle data (if you allow it) from Apple Health. Cycle stays on this iPhone and is not shared with your coach. This is a coaching tool, not medical advice. We do not sell Health data.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "When you log a walk, workout, mindful minutes, or a cycle day in Habit Tracker, we can save that to Apple Health so it stays in one place. Cycle is never sent to Lee Anne. We never sell Health data.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Attach an existing meal photo if you prefer not to use the camera.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
