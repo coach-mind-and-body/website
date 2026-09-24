@@ -305,10 +305,6 @@ struct HabitsView: View {
     private var todayChallengeCard: some View {
         if let today = model.todayChallenge, today.enrolled {
             HTCard {
-                Text("No Processed Food Challenge")
-                    .font(.caption2.weight(.bold))
-                    .foregroundStyle(HTTheme.gold)
-                    .textCase(.uppercase)
                 Text(today.title ?? "The 5-Day No Processed Food Challenge")
                     .font(.headline)
                     .foregroundStyle(HTTheme.forest)
@@ -434,7 +430,7 @@ struct HabitsView: View {
                 }
                 if let docs = today.documents, !docs.isEmpty {
                     Text("Meal plan, shopping list & recipes")
-                        .font(.title3.weight(.bold))
+                        .font(.subheadline.weight(.semibold))
                         .foregroundStyle(HTTheme.forest)
                         .padding(.top, 8)
                     ForEach(docs) { doc in
@@ -458,7 +454,7 @@ struct HabitsView: View {
                 }
                 if let images = today.guideImages, !images.isEmpty {
                     Text("What to eat")
-                        .font(.title3.weight(.bold))
+                        .font(.subheadline.weight(.semibold))
                         .foregroundStyle(HTTheme.forest)
                         .padding(.top, 8)
                     ForEach(images) { img in
