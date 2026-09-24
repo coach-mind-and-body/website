@@ -12,6 +12,7 @@ APP_SWIFT = [
     "HabitTracker/Core/AppGroup.swift",
     "HabitTracker/Core/Theme.swift",
     "HabitTracker/Core/YouTubeEmbed.swift",
+    "HabitTracker/Core/InAppBrowser.swift",
     "HabitTracker/Core/KeychainStore.swift",
     "HabitTracker/Core/GuestLocalStore.swift",
     "HabitTracker/Core/Models.swift",

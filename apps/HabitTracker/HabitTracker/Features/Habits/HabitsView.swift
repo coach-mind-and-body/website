@@ -11,6 +11,7 @@ struct HabitsView: View {
     @State private var showForYou = false
     @State private var showLogin = false
     @FocusState private var noteFocused: Bool
+    @State private var inAppURL: IdentifiedURL?
     @Environment(\.openURL) private var openURL
 
     var body: some View {
@@ -31,12 +32,6 @@ struct HabitsView: View {
             }
             .background(HTTheme.cream.ignoresSafeArea())
             .navigationBarHidden(true)
-            .toolbar {
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button("Done") { noteFocused = false }
-                }
-            }
             .task(id: model.sessionEpoch) {
                 await model.load()
                 await health.refreshToday()
@@ -61,6 +56,10 @@ struct HabitsView: View {
             }
             .sheet(isPresented: $showLogin) {
                 LoginView(auth: auth, allowsSkip: true)
+            }
+            .sheet(item: $inAppURL) { item in
+                InAppSafari(url: item.url)
+                    .ignoresSafeArea()
             }
         }
     }
@@ -437,27 +436,21 @@ struct HabitsView: View {
                     Text("Meal plan, shopping list & recipes")
                         .font(.title3.weight(.bold))
                         .foregroundStyle(HTTheme.forest)
-                        .padding(.top, 12)
+                        .padding(.top, 8)
                     ForEach(docs) { doc in
                         if let url = URL(string: doc.url) {
                             Button {
-                                openURL(url)
+                                inAppURL = IdentifiedURL(url: url)
                             } label: {
-                                HStack {
-                                    Text(doc.title)
-                                        .font(.body.weight(.bold))
-                                        .multilineTextAlignment(.leading)
-                                    Spacer()
-                                    Image(systemName: "arrow.up.right")
-                                        .font(.body.weight(.bold))
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.vertical, 16)
-                                .padding(.horizontal, 16)
-                                .background(Color.white)
-                                .foregroundStyle(HTTheme.forest)
-                                .clipShape(RoundedRectangle(cornerRadius: 14))
-                                .overlay(RoundedRectangle(cornerRadius: 14).stroke(HTTheme.roseBorder, lineWidth: 1.5))
+                                Text(doc.title)
+                                    .font(.subheadline.weight(.bold))
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.vertical, 10)
+                                    .padding(.horizontal, 12)
+                                    .background(Color.white)
+                                    .foregroundStyle(HTTheme.forest)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(HTTheme.roseBorder))
                             }
                             .buttonStyle(.plain)
                         }
@@ -467,21 +460,20 @@ struct HabitsView: View {
                     Text("What to eat")
                         .font(.title3.weight(.bold))
                         .foregroundStyle(HTTheme.forest)
-                        .padding(.top, 12)
+                        .padding(.top, 8)
                     ForEach(images) { img in
-                        VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: .leading, spacing: 6) {
                             Text(img.title)
-                                .font(.body.weight(.semibold))
-                                .foregroundStyle(HTTheme.forest)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(HTTheme.muted)
                             AsyncImage(url: URL(string: img.url)) { phase in
                                 if case .success(let image) = phase {
                                     image.resizable().scaledToFit()
                                 } else {
-                                    HTTheme.roseBorder.frame(height: 240)
+                                    HTTheme.roseBorder.frame(height: 160)
                                 }
                             }
-                            .frame(maxWidth: .infinity)
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
                     }
                 }
@@ -730,6 +722,12 @@ struct HabitsView: View {
                     .background(HTTheme.cream)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .focused($noteFocused)
+                    .toolbar {
+                        ToolbarItemGroup(placement: .keyboard) {
+                            Spacer()
+                            Button("Done") { noteFocused = false }
+                        }
+                    }
                 Button {
                     noteFocused = false
                     Task { await model.saveNote() }

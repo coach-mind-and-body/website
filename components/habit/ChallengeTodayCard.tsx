@@ -314,7 +314,7 @@ export default function ChallengeTodayCard() {
 
       {data.documents && data.documents.length > 0 && (
         <div className="space-y-2">
-          <p className="text-lg font-bold" style={{ color: "#2d3b2d" }}>
+          <p className="text-sm font-bold" style={{ color: "#2d3b2d" }}>
             Meal plan, shopping list &amp; recipes
           </p>
           {data.documents.map((doc) => (
@@ -323,7 +323,7 @@ export default function ChallengeTodayCard() {
               href={doc.url}
               target="_blank"
               rel="noreferrer"
-              className="block rounded-xl px-5 py-4 text-base font-bold"
+              className="block rounded-xl px-4 py-3 text-sm font-bold"
               style={{ background: "#f9f5f0", color: "#2d3b2d", border: "1px solid #f0e8e4" }}
             >
               {doc.title} →
@@ -353,13 +353,10 @@ export default function ChallengeTodayCard() {
 
       {data.guideImages && data.guideImages.length > 0 && (
         <div className="space-y-3">
-          <p className="text-lg font-bold" style={{ color: "#2d3b2d" }}>
-            What to eat
-          </p>
           {data.guideImages.map((img) => (
             <figure key={img.url} className="rounded-2xl overflow-hidden border" style={{ borderColor: "#f0e8e4" }}>
               <img src={img.url} alt={img.alt} className="w-full h-auto" />
-              <figcaption className="text-sm font-bold px-3 py-2" style={{ color: "#8a9a8a" }}>
+              <figcaption className="text-xs font-bold px-3 py-2" style={{ color: "#8a9a8a" }}>
                 {img.title}
               </figcaption>
             </figure>

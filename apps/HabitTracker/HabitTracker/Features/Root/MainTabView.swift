@@ -58,7 +58,7 @@ struct MainTabView: View {
             }
             tabBar
                 .padding(.horizontal, 14)
-                .padding(.bottom, 8)
+                .padding(.bottom, 2)
                 .ignoresSafeArea(.container, edges: .bottom)
             ConfettiBurst(token: habits.confettiBurst)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
