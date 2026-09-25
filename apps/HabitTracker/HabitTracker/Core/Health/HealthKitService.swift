@@ -189,7 +189,7 @@ final class HealthKitService {
         }
     }
 
-    private static func resume(
+    nonisolated private static func resume(
         _ cont: CheckedContinuation<Void, Error>,
         success: Bool,
         error: Error?,
@@ -237,7 +237,7 @@ final class HealthKitService {
                 map[key] = mapFlow(sample.value)
             }
             let spotting = try await spottingDates(from: start, to: endExclusive)
-            for day in spotting where map[day] == nil || map[day] == .none {
+            for day in spotting where map[day] == nil || map[day] == CycleBleeding.none {
                 map[day] = .spotting
             }
             return map
@@ -324,20 +324,20 @@ final class HealthKitService {
     }
 
     private func mapFlow(_ value: Int) -> CycleBleeding {
-        switch HKCategoryValueMenstrualFlow(rawValue: value) {
+        switch HKCategoryValueVaginalBleeding(rawValue: value) {
         case .light: return .light
         case .medium: return .medium
         case .heavy: return .heavy
-        default: return .none
+        default: return CycleBleeding.none
         }
     }
 
     private func flowValue(_ bleeding: CycleBleeding) -> Int {
         switch bleeding {
-        case .none: return HKCategoryValueMenstrualFlow.unspecified.rawValue
-        case .spotting, .light: return HKCategoryValueMenstrualFlow.light.rawValue
-        case .medium: return HKCategoryValueMenstrualFlow.medium.rawValue
-        case .heavy: return HKCategoryValueMenstrualFlow.heavy.rawValue
+        case .none: return HKCategoryValueVaginalBleeding.unspecified.rawValue
+        case .spotting, .light: return HKCategoryValueVaginalBleeding.light.rawValue
+        case .medium: return HKCategoryValueVaginalBleeding.medium.rawValue
+        case .heavy: return HKCategoryValueVaginalBleeding.heavy.rawValue
         }
     }
 
@@ -357,7 +357,7 @@ final class HealthKitService {
 
     private func addMetadata(_ builder: HKWorkoutBuilder, _ metadata: [String: Any]) async throws {
         try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
-            builder.add(metadata) { success, error in
+            builder.addMetadata(metadata) { success, error in
                 Self.resume(cont, success: success, error: error, fail: "Could not tag the workout.")
             }
         }

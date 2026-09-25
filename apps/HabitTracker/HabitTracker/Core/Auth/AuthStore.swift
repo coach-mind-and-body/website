@@ -129,7 +129,7 @@ final class AuthStore {
     func deleteAccount() async {
         errorMessage = nil
         do {
-            let _: SuccessFlag = try await client.mutate("auth.deleteAccount")
+            let _: SuccessFlag = try await client.mutateEmpty("auth.deleteAccount")
             signOut()
         } catch {
             errorMessage = error.localizedDescription
