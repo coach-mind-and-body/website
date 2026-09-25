@@ -29,6 +29,8 @@ struct HabitsView: View {
                     dailyScroll
                 } else if model.mainTab == 1, model.showsChallengePane {
                     challengeScroll
+                } else if model.mainTab == 3 {
+                    cycleScroll
                 } else {
                     HabitProgressView(model: model, auth: auth)
                 }
@@ -162,6 +164,7 @@ struct HabitsView: View {
                 pill("Challenge", tag: 1)
             }
             pill("Progress", tag: 2)
+            pill("Cycle", tag: 3)
         }
         .padding(4)
         .background(Color.white)
@@ -182,7 +185,7 @@ struct HabitsView: View {
         } label: {
             Text(title)
                 .font(.caption.weight(.bold))
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 12)
                 .padding(.vertical, 8)
                 .background(model.mainTab == tag ? HTTheme.forest : Color.clear)
                 .foregroundStyle(model.mainTab == tag ? Color.white : HTTheme.muted)
@@ -191,12 +194,19 @@ struct HabitsView: View {
         .buttonStyle(.plain)
     }
 
+    private var cycleScroll: some View {
+        ScrollView {
+            CycleCard(store: cycle, logDate: $cycleDate, showLog: $showCycle)
+                .padding(16)
+        }
+        .dockScrollClearance()
+    }
+
     private var dailyScroll: some View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     healthStrip
-                    CycleCard(store: cycle, logDate: $cycleDate, showLog: $showCycle)
                     habitsCard
                 }
                 .padding(16)

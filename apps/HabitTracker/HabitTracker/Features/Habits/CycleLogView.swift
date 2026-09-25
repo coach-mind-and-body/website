@@ -53,10 +53,10 @@ struct CycleMonthStrip: View {
     var onSelect: (String) -> Void
 
     var body: some View {
-        let dates = store.historyDates(months: 6)
+        let dates = store.historyDates(months: 3)
         let padded = pad(dates)
         VStack(alignment: .leading, spacing: 8) {
-            Text("Last 6 months")
+            Text("History")
                 .font(.caption.weight(.bold))
                 .foregroundStyle(HTTheme.muted)
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 7), spacing: 4) {
