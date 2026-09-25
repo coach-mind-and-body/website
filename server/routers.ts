@@ -2,7 +2,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { cookies } from "next/headers";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, router } from "./_core/trpc";
+import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { paymentRouter } from "./routers/payment";
 import { blogRouter } from "./routers/blog";
 import { leadsRouter } from "./routers/leads";
@@ -53,6 +53,37 @@ export const appRouter = router({
       return user;
     }),
     logout: publicProcedure.mutation(async ({ ctx }) => {
+      const cookieStore = await cookies();
+      cookieStore.delete(COOKIE_NAME);
+      return { success: true } as const;
+    }),
+    deleteAccount: protectedProcedure.mutation(async ({ ctx }) => {
+      const { TRPCError } = await import("@trpc/server");
+      if (ctx.user.role === "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin accounts cannot be deleted in the app." });
+      }
+      const { getDb } = await import("./db");
+      const schema = await import("../drizzle/schema");
+      const { eq } = await import("drizzle-orm");
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable." });
+      const uid = ctx.user.id;
+      const enrolled = await db
+        .select({ id: schema.userChallenges.id })
+        .from(schema.userChallenges)
+        .where(eq(schema.userChallenges.userId, uid));
+      for (const row of enrolled) {
+        await db.delete(schema.userChallengeLogs).where(eq(schema.userChallengeLogs.userChallengeId, row.id));
+        await db.delete(schema.userChallengeJournals).where(eq(schema.userChallengeJournals.userChallengeId, row.id));
+      }
+      await db.delete(schema.userHabitLogs).where(eq(schema.userHabitLogs.userId, uid));
+      await db.delete(schema.userHabits).where(eq(schema.userHabits.userId, uid));
+      await db.delete(schema.userDailyNotes).where(eq(schema.userDailyNotes.userId, uid));
+      await db.delete(schema.calorieLogs).where(eq(schema.calorieLogs.userId, uid));
+      await db.delete(schema.fitnessLogs).where(eq(schema.fitnessLogs.userId, uid));
+      await db.delete(schema.userVictoryLists).where(eq(schema.userVictoryLists.userId, uid));
+      await db.delete(schema.userChallenges).where(eq(schema.userChallenges.userId, uid));
+      await db.delete(schema.users).where(eq(schema.users.id, uid));
       const cookieStore = await cookies();
       cookieStore.delete(COOKIE_NAME);
       return { success: true } as const;

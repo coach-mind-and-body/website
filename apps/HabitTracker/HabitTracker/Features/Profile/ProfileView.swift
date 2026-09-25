@@ -6,6 +6,8 @@ struct ProfileView: View {
     @State private var notifyOn = false
     @State private var shareWithCoach = false
     @State private var showLogin = false
+    @State private var showDelete = false
+    @State private var deleting = false
 
     var body: some View {
         NavigationStack {
@@ -95,6 +97,7 @@ struct ProfileView: View {
                     Link("Privacy policy", destination: AppConfig.privacyURL)
                     if auth.isSignedIn {
                         Button("Sign out", role: .destructive) { auth.signOut() }
+                        Button("Delete account", role: .destructive) { showDelete = true }
                     }
                 }
             }
@@ -102,6 +105,18 @@ struct ProfileView: View {
             .navigationTitle("You")
             .sheet(isPresented: $showLogin) {
                 LoginView(auth: auth, allowsSkip: true)
+            }
+            .alert("Delete account?", isPresented: $showDelete) {
+                Button("Delete", role: .destructive) {
+                    deleting = true
+                    Task {
+                        await auth.deleteAccount()
+                        deleting = false
+                    }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This permanently deletes your Habit Tracker account and app data on our servers. Cycle logs stay only on this iPhone until you delete the app. This cannot be undone.")
             }
             .task {
                 await health.refreshToday()

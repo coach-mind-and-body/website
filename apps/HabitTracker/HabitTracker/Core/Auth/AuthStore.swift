@@ -126,6 +126,16 @@ final class AuthStore {
         errorMessage = "Signed in, but your profile did not load. Pull to refresh on the You screen."
     }
 
+    func deleteAccount() async {
+        errorMessage = nil
+        do {
+            let _: SuccessFlag = try await client.mutate("auth.deleteAccount")
+            signOut()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     func signOut() {
         KeychainStore.deleteToken()
         token = nil
