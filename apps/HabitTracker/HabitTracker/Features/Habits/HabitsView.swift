@@ -42,7 +42,7 @@ struct HabitsView: View {
                 await health.refreshToday()
                 await model.syncFromHealth()
                 cycle.load()
-                let dates = cycle.historyDates(months: 6)
+                let dates = cycle.historyDates(months: 3)
                 if let first = dates.first, let last = dates.last {
                     let fromHealth = await health.menstrualBleeding(from: first, to: last)
                     cycle.mergeHealth(fromHealth)
