@@ -1,6 +1,8 @@
 import crypto from "crypto";
 import { and, eq, or } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
+  challengeDayVideos,
   challenges,
   userChallengeJournals,
   userChallengeLogs,
@@ -18,6 +20,75 @@ import {
 } from "@shared/realFoodReset";
 import { getDb } from "./db";
 import { todayMountainDateStr } from "../lib/mountainTime";
+import { youtubeWatchUrl } from "@shared/youtube";
+
+async function ensureDayVideosTable() {
+  const db = await getDb();
+  if (!db) return;
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS challenge_day_videos (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      challengeId INT NOT NULL,
+      dateStr VARCHAR(10) NOT NULL,
+      videoId VARCHAR(32) NOT NULL,
+      title VARCHAR(255) NULL,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+      UNIQUE KEY uniq_challenge_day (challengeId, dateStr)
+    )
+  `);
+}
+
+export async function getChallengeDayVideo(challengeId: number, dateStr: string) {
+  const db = await getDb();
+  if (!db) return null;
+  await ensureDayVideosTable();
+  const [row] = await db
+    .select()
+    .from(challengeDayVideos)
+    .where(and(eq(challengeDayVideos.challengeId, challengeId), eq(challengeDayVideos.dateStr, dateStr)))
+    .limit(1);
+  return row ?? null;
+}
+
+export async function listChallengeDayVideos(challengeId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  await ensureDayVideosTable();
+  return db.select().from(challengeDayVideos).where(eq(challengeDayVideos.challengeId, challengeId));
+}
+
+export async function upsertChallengeDayVideo(opts: {
+  challengeId: number;
+  dateStr: string;
+  videoId: string;
+  title?: string | null;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB Error");
+  await ensureDayVideosTable();
+  const existing = await getChallengeDayVideo(opts.challengeId, opts.dateStr);
+  if (existing) {
+    await db
+      .update(challengeDayVideos)
+      .set({ videoId: opts.videoId, title: opts.title ?? existing.title })
+      .where(eq(challengeDayVideos.id, existing.id));
+    return { ...existing, videoId: opts.videoId, title: opts.title ?? existing.title };
+  }
+  const [res] = await db.insert(challengeDayVideos).values({
+    challengeId: opts.challengeId,
+    dateStr: opts.dateStr,
+    videoId: opts.videoId,
+    title: opts.title ?? null,
+  });
+  return {
+    id: res.insertId,
+    challengeId: opts.challengeId,
+    dateStr: opts.dateStr,
+    videoId: opts.videoId,
+    title: opts.title ?? null,
+  };
+}
 
 function newClaimToken() {
   return crypto.randomBytes(24).toString("hex");
@@ -180,6 +251,7 @@ export type ChallengeTodayPayload = {
   today: (RealFoodResetDay & { done: boolean }) | null;
   meetUrl: string | null;
   videoUrl: string | null;
+  replayVideoId: string | null;
   liveTime: string;
   journal: { noticed: string; glad: string; hard: string } | null;
   guides: typeof REAL_FOOD_RESET_GUIDES | null;
@@ -206,6 +278,7 @@ export async function getChallengeToday(opts: {
     today: null,
     meetUrl: null,
     videoUrl: null,
+    replayVideoId: null,
     liveTime: REAL_FOOD_RESET.liveTime,
     journal: null,
     guides: null,
@@ -256,6 +329,8 @@ export async function getChallengeToday(opts: {
     : [undefined];
 
   const showMeet = !!(enrollment && day?.format === "live" && challenge?.meetUrl);
+  const replay = await getChallengeDayVideo(challengeId, todayStr);
+  const videoId = replay?.videoId || day?.videoId || null;
 
   return {
     enrolled: true,
@@ -266,9 +341,10 @@ export async function getChallengeToday(opts: {
     endsOn: REAL_FOOD_RESET.endDate,
     beforeStart,
     afterEnd,
-    today: day ? { ...day, done } : null,
+    today: day ? { ...day, done, videoId: videoId || day.videoId } : null,
     meetUrl: showMeet ? challenge!.meetUrl! : null,
-    videoUrl: day?.videoId ? `https://www.youtube.com/watch?v=${day.videoId}` : null,
+    videoUrl: videoId ? youtubeWatchUrl(videoId) : null,
+    replayVideoId: replay?.videoId ?? null,
     liveTime: REAL_FOOD_RESET.liveTime,
     journal: journalRow
       ? {

@@ -13,10 +13,15 @@ import { format } from "date-fns";
 import {
   claimRealFoodResetEnrollment,
   creditChallengeDayFromActivity,
+  ensureRealFoodResetChallenge,
+  getChallengeDayVideo,
   getChallengeToday,
+  listChallengeDayVideos,
   mergeRealFoodResetToUser,
+  upsertChallengeDayVideo,
 } from "../realFoodResetChallenge";
 import { realFoodResetDayForDate } from "@shared/realFoodReset";
+import { youtubeIdFromUrl, youtubeWatchUrl } from "@shared/youtube";
 
 export const challengesRouter = router({
   getActiveChallenges: publicProcedure.query(async () => {
@@ -355,4 +360,77 @@ export const challengesRouter = router({
     }
     return result;
   }),
+
+  adminListDayVideos: adminProcedure.query(async () => {
+    const challengeId = await ensureRealFoodResetChallenge();
+    const rows = await listChallengeDayVideos(challengeId);
+    return rows.map((r) => ({
+      ...r,
+      watchUrl: youtubeWatchUrl(r.videoId),
+    }));
+  }),
+
+  adminSetDayVideo: adminProcedure
+    .input(
+      z.object({
+        dateStr: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        url: z.string().min(8),
+        title: z.string().max(255).optional().nullable(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const videoId = youtubeIdFromUrl(input.url);
+      if (!videoId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Paste a YouTube link (youtu.be or youtube.com/watch?v=…).",
+        });
+      }
+      const challengeId = await ensureRealFoodResetChallenge();
+      const row = await upsertChallengeDayVideo({
+        challengeId,
+        dateStr: input.dateStr,
+        videoId,
+        title: input.title?.trim() || `Live replay · ${input.dateStr}`,
+      });
+      return { ...row, watchUrl: youtubeWatchUrl(videoId) };
+    }),
+
+  adminDraftDayVideoEmail: adminProcedure
+    .input(
+      z.object({
+        dateStr: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        subject: z.string().min(1).max(200).optional(),
+        extraNote: z.string().max(2000).optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const challengeId = await ensureRealFoodResetChallenge();
+      const row = await getChallengeDayVideo(challengeId, input.dateStr);
+      if (!row) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Save the YouTube link first.",
+        });
+      }
+      const watchUrl = youtubeWatchUrl(row.videoId);
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const { emailNewsletters } = await import("../../drizzle/schema");
+      const note = input.extraNote?.trim()
+        ? `<p>${input.extraNote.trim().replace(/</g, "")}</p>`
+        : "";
+      const [res] = await db.insert(emailNewsletters).values({
+        subject: input.subject?.trim() || `Today's live is up — watch the replay`,
+        previewText: "Click to watch today's call in your browser.",
+        headline: "Today's live, on replay",
+        bodyHtml: `${note}<p>We recorded today's call. Watch it in your browser — same link is in the app under Challenge.</p>`,
+        ctaLabel: "Watch today's call",
+        ctaUrl: watchUrl,
+        audienceGroup: "real_food_reset",
+        status: "draft",
+        createdByUserId: ctx.user.id,
+      });
+      return { newsletterId: res.insertId, watchUrl };
+    }),
 });

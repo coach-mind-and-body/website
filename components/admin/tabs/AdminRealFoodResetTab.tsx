@@ -1,11 +1,32 @@
 "use client";
 
+import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { REAL_FOOD_RESET } from "@shared/realFoodReset";
+import { todayMountainDateStr } from "@/lib/mountainTime";
 
 export function AdminRealFoodResetTab() {
   const { data: leads, refetch } = trpc.leadgen.adminListRealFoodReset.useQuery();
+  const { data: videos, refetch: refetchVideos } = trpc.challenges.adminListDayVideos.useQuery();
+  const [dateStr, setDateStr] = useState(todayMountainDateStr());
+  const [url, setUrl] = useState("");
+  const [title, setTitle] = useState("");
+  const [extraNote, setExtraNote] = useState("");
+  const saveVideo = trpc.challenges.adminSetDayVideo.useMutation({
+    onSuccess: () => {
+      toast.success("Replay is in the app under Challenge");
+      refetchVideos();
+      setUrl("");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const draftEmail = trpc.challenges.adminDraftDayVideoEmail.useMutation({
+    onSuccess: () => {
+      toast.success("Email draft created — open Newsletters to send it");
+    },
+    onError: (e) => toast.error(e.message),
+  });
   const removeLead = trpc.leadgen.adminDeleteRealFoodReset.useMutation({
     onSuccess: () => {
       toast.success("Challenge lead removed");
@@ -51,6 +72,94 @@ export function AdminRealFoodResetTab() {
           </div>
         </div>
       </div>
+      <div
+        className="rounded-2xl p-5 mb-8 space-y-3"
+        style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.93 0.02 50)" }}
+      >
+        <h3 className="font-bold text-lg" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+          Today’s live replay
+        </h3>
+        <p className="text-sm" style={{ color: "oklch(0.52 0.015 50)" }}>
+          Paste the YouTube link after you upload the recording. It shows in Habit Tracker (web + app) for that day.
+          Then create an email draft — the button is a link people open in the browser. Send it from Newsletters.
+        </p>
+        <div className="grid gap-3 md:grid-cols-2">
+          <label className="text-xs font-bold uppercase tracking-wide" style={{ color: "oklch(0.52 0.015 50)" }}>
+            Date
+            <input
+              type="date"
+              value={dateStr}
+              onChange={(e) => setDateStr(e.target.value)}
+              className="mt-1 w-full rounded-lg border px-3 py-2 text-sm font-normal"
+            />
+          </label>
+          <label className="text-xs font-bold uppercase tracking-wide" style={{ color: "oklch(0.52 0.015 50)" }}>
+            Label (optional)
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Monday live replay"
+              className="mt-1 w-full rounded-lg border px-3 py-2 text-sm font-normal"
+            />
+          </label>
+        </div>
+        <label className="text-xs font-bold uppercase tracking-wide block" style={{ color: "oklch(0.52 0.015 50)" }}>
+          YouTube link
+          <input
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://youtu.be/…"
+            className="mt-1 w-full rounded-lg border px-3 py-2 text-sm font-normal"
+          />
+        </label>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={saveVideo.isPending || !url.trim()}
+            onClick={() => saveVideo.mutate({ dateStr, url: url.trim(), title: title.trim() || null })}
+            className="rounded-full px-4 py-2 text-sm font-bold text-white"
+            style={{ background: "oklch(0.32 0.04 145)" }}
+          >
+            {saveVideo.isPending ? "Saving…" : "Save to Challenge"}
+          </button>
+        </div>
+        <label className="text-xs font-bold uppercase tracking-wide block" style={{ color: "oklch(0.52 0.015 50)" }}>
+          Extra line for the email (optional)
+          <textarea
+            value={extraNote}
+            onChange={(e) => setExtraNote(e.target.value)}
+            rows={2}
+            placeholder="Sorry we missed you at 1:00 — here’s the recording."
+            className="mt-1 w-full rounded-lg border px-3 py-2 text-sm font-normal"
+          />
+        </label>
+        <button
+          type="button"
+          disabled={draftEmail.isPending}
+          onClick={() => draftEmail.mutate({ dateStr, extraNote: extraNote.trim() || undefined })}
+          className="rounded-full px-4 py-2 text-sm font-bold"
+          style={{ background: "oklch(0.97 0.02 80)", color: "oklch(0.32 0.04 145)" }}
+        >
+          {draftEmail.isPending ? "Creating…" : "Create email draft"}
+        </button>
+        {videos && videos.length > 0 ? (
+          <ul className="text-sm space-y-1 pt-2" style={{ color: "oklch(0.40 0.02 50)" }}>
+            {videos
+              .slice()
+              .sort((a, b) => (a.dateStr < b.dateStr ? 1 : -1))
+              .map((v) => (
+                <li key={v.id}>
+                  {v.dateStr}
+                  {v.title ? ` · ${v.title}` : ""} —{" "}
+                  <a href={v.watchUrl} className="underline" target="_blank" rel="noreferrer">
+                    watch
+                  </a>
+                </li>
+              ))}
+          </ul>
+        ) : null}
+      </div>
+
       <p className="text-xs mb-4 rounded-lg px-3 py-2" style={{ background: "oklch(0.97 0.02 80)", color: "oklch(0.40 0.02 50)" }}>
         This count is <strong>unique emails saved in our database</strong>. Meta Ads Lead events can be higher
         (duplicate submits, pixel + CAPI double-counting, test events, or a pixel fire before the DB write).

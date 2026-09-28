@@ -299,6 +299,16 @@ export const userChallengeLogs = mysqlTable("user_challenge_logs", {
   dateStr: date("dateStr", { mode: "string" }).notNull(),
 });
 
+export const challengeDayVideos = mysqlTable("challenge_day_videos", {
+  id: int("id").primaryKey().autoincrement(),
+  challengeId: int("challengeId").notNull(),
+  dateStr: varchar("dateStr", { length: 10 }).notNull(),
+  videoId: varchar("videoId", { length: 32 }).notNull(),
+  title: varchar("title", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
 export const userChallengeJournals = mysqlTable("user_challenge_journals", {
   id: int("id").primaryKey().autoincrement(),
   userChallengeId: int("userChallengeId").references(() => userChallenges.id).notNull(),

@@ -359,6 +359,14 @@ struct HabitsView: View {
                         .font(.subheadline)
                         .foregroundStyle(HTTheme.muted)
                 }
+                if let vid = YouTubeID.parse(today.videoUrl) {
+                    YouTubePlayer(videoId: vid)
+                    if let watch = today.videoUrl, let url = URL(string: watch) {
+                        Button("Watch in the browser") { openURL(url) }
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(HTTheme.forest)
+                    }
+                }
                 if let day = today.today {
                     Text("Day \(day.n) · \(day.weekday)")
                         .font(.caption.weight(.bold))
@@ -379,9 +387,6 @@ struct HabitsView: View {
                                 .font(.caption)
                                 .foregroundStyle(HTTheme.muted)
                         }
-                    }
-                    if let vid = YouTubeID.parse(today.videoUrl) {
-                        YouTubePlayer(videoId: vid)
                     }
                     if let meet = today.meetUrl, let url = URL(string: meet) {
                         Button {

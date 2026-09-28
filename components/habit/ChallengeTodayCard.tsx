@@ -70,6 +70,29 @@ export default function ChallengeTodayCard() {
         </h3>
       </div>
 
+      {(data.replayVideoId || (day && day.videoId)) && (
+        <div className="rounded-xl overflow-hidden" style={{ aspectRatio: "16 / 9", background: "#000" }}>
+          <iframe
+            title="Today's challenge video"
+            src={`https://www.youtube.com/embed/${data.replayVideoId || day?.videoId}?rel=0`}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            className="w-full h-full border-0"
+          />
+        </div>
+      )}
+      {data.videoUrl && (
+        <a
+          href={data.videoUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="block text-sm font-bold"
+          style={{ color: "#3a5a3a" }}
+        >
+          Watch in the browser →
+        </a>
+      )}
+
       {data.beforeStart && (
         <div className="space-y-3">
           <p className="text-sm" style={{ color: "#6a7a6a" }}>
@@ -88,7 +111,7 @@ export default function ChallengeTodayCard() {
                 <p className="text-xs mt-1" style={{ color: "#555" }}>
                   {d.assignmentTitle}
                 </p>
-                {d.videoId ? (
+                {d.videoId && d.videoId !== (data.replayVideoId || day?.videoId) ? (
                   <div className="mt-2 rounded-lg overflow-hidden" style={{ aspectRatio: "16 / 9", background: "#000" }}>
                     <iframe
                       title={`${d.title} lesson`}
@@ -174,18 +197,7 @@ export default function ChallengeTodayCard() {
             </a>
           )}
 
-          {day.format === "video" && data.videoUrl && day.videoId && (
-            <div className="rounded-xl overflow-hidden" style={{ aspectRatio: "16 / 9", background: "#000" }}>
-              <iframe
-                title={`${day.title} lesson`}
-                src={`https://www.youtube.com/embed/${day.videoId}?rel=0`}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="w-full h-full border-0"
-              />
-            </div>
-          )}
-          {day.format === "video" && !day.videoId && (
+          {day.format === "video" && !day.videoId && !data.replayVideoId && (
             <p className="text-sm rounded-xl p-3" style={{ background: "#f9f5f0", color: "#5a4a40" }}>
               No live call today. Watch the lesson when Lee Anne posts it here, log your food, and write a few lines below.
             </p>
