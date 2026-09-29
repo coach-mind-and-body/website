@@ -303,7 +303,7 @@ export const challengeDayVideos = mysqlTable("challenge_day_videos", {
   id: int("id").primaryKey().autoincrement(),
   challengeId: int("challengeId").notNull(),
   dateStr: varchar("dateStr", { length: 10 }).notNull(),
-  videoId: varchar("videoId", { length: 32 }).notNull(),
+  videoId: varchar("videoId", { length: 255 }).notNull(),
   title: varchar("title", { length: 255 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

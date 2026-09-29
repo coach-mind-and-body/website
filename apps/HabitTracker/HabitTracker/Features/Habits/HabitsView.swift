@@ -366,6 +366,19 @@ struct HabitsView: View {
                             .font(.subheadline.weight(.bold))
                             .foregroundStyle(HTTheme.forest)
                     }
+                } else if let embed = today.replayEmbedUrl, let embedUrl = URL(string: embed) {
+                    ReplayWebView(url: embedUrl)
+                        .frame(height: 210)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    if let watch = today.videoUrl, let url = URL(string: watch) {
+                        Button("Watch in the browser") { openURL(url) }
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(HTTheme.forest)
+                    }
+                } else if let watch = today.videoUrl, let url = URL(string: watch) {
+                    Button("Watch today's replay") { openURL(url) }
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(HTTheme.forest)
                 }
                 if let day = today.today {
                     Text("Day \(day.n) · \(day.weekday)")

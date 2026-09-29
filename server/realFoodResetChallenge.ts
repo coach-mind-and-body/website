@@ -20,9 +20,12 @@ import {
 } from "@shared/realFoodReset";
 import { getDb } from "./db";
 import { todayMountainDateStr } from "../lib/mountainTime";
-import { youtubeWatchUrl } from "@shared/youtube";
+import { parseReplayToken, replayEmbedUrl, replayWatchUrl } from "@shared/replayVideo";
+
+let dayVideosReady = false;
 
 async function ensureDayVideosTable() {
+  if (dayVideosReady) return;
   const db = await getDb();
   if (!db) return;
   await db.execute(sql`
@@ -30,13 +33,21 @@ async function ensureDayVideosTable() {
       id INT AUTO_INCREMENT PRIMARY KEY,
       challengeId INT NOT NULL,
       dateStr VARCHAR(10) NOT NULL,
-      videoId VARCHAR(32) NOT NULL,
+      videoId VARCHAR(255) NOT NULL,
       title VARCHAR(255) NULL,
       createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
       updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
       UNIQUE KEY uniq_challenge_day (challengeId, dateStr)
     )
   `);
+  try {
+    await db.execute(sql`
+      ALTER TABLE challenge_day_videos MODIFY COLUMN videoId VARCHAR(255) NOT NULL
+    `);
+  } catch {
+    // already widened, or the table was just created at 255
+  }
+  dayVideosReady = true;
 }
 
 export async function getChallengeDayVideo(challengeId: number, dateStr: string) {
@@ -252,6 +263,7 @@ export type ChallengeTodayPayload = {
   meetUrl: string | null;
   videoUrl: string | null;
   replayVideoId: string | null;
+  replayEmbedUrl: string | null;
   liveTime: string;
   journal: { noticed: string; glad: string; hard: string } | null;
   guides: typeof REAL_FOOD_RESET_GUIDES | null;
@@ -279,6 +291,7 @@ export async function getChallengeToday(opts: {
     meetUrl: null,
     videoUrl: null,
     replayVideoId: null,
+    replayEmbedUrl: null,
     liveTime: REAL_FOOD_RESET.liveTime,
     journal: null,
     guides: null,
@@ -330,7 +343,17 @@ export async function getChallengeToday(opts: {
 
   const showMeet = !!(enrollment && day?.format === "live" && challenge?.meetUrl);
   const replay = await getChallengeDayVideo(challengeId, todayStr);
-  const videoId = replay?.videoId || day?.videoId || null;
+  const postedReplay = parseReplayToken(replay?.videoId);
+  const replaySource = postedReplay || (day?.videoId ? parseReplayToken(day.videoId) : null);
+  const documents = [...realFoodResetDocuments()];
+  // Current TestFlight only embeds YouTube. A Drive row in documents opens
+  // the recording in the in-app browser until the next archive ships ReplayWebView.
+  if (postedReplay?.kind === "drive") {
+    documents.unshift({
+      title: "Watch today's live replay",
+      url: replayWatchUrl(postedReplay),
+    });
+  }
 
   return {
     enrolled: true,
@@ -341,10 +364,11 @@ export async function getChallengeToday(opts: {
     endsOn: REAL_FOOD_RESET.endDate,
     beforeStart,
     afterEnd,
-    today: day ? { ...day, done, videoId: videoId || day.videoId } : null,
+    today: day ? { ...day, done } : null,
     meetUrl: showMeet ? challenge!.meetUrl! : null,
-    videoUrl: videoId ? youtubeWatchUrl(videoId) : null,
+    videoUrl: replaySource ? replayWatchUrl(replaySource) : null,
     replayVideoId: replay?.videoId ?? null,
+    replayEmbedUrl: replaySource ? replayEmbedUrl(replaySource) : null,
     liveTime: REAL_FOOD_RESET.liveTime,
     journal: journalRow
       ? {
@@ -355,7 +379,7 @@ export async function getChallengeToday(opts: {
       : { noticed: "", glad: "", hard: "" },
     guides: REAL_FOOD_RESET_GUIDES,
     guideImages: realFoodResetGuideImages(),
-    documents: realFoodResetDocuments(),
+    documents,
     previewDays: [...REAL_FOOD_RESET.days],
   };
 }

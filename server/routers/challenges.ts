@@ -21,7 +21,13 @@ import {
   upsertChallengeDayVideo,
 } from "../realFoodResetChallenge";
 import { realFoodResetDayForDate } from "@shared/realFoodReset";
-import { youtubeIdFromUrl, youtubeWatchUrl } from "@shared/youtube";
+import {
+  parseReplayToken,
+  parseReplayUrl,
+  replayParseErrorMessage,
+  replayToken,
+  replayWatchUrl,
+} from "@shared/replayVideo";
 
 export const challengesRouter = router({
   getActiveChallenges: publicProcedure.query(async () => {
@@ -364,10 +370,13 @@ export const challengesRouter = router({
   adminListDayVideos: adminProcedure.query(async () => {
     const challengeId = await ensureRealFoodResetChallenge();
     const rows = await listChallengeDayVideos(challengeId);
-    return rows.map((r) => ({
-      ...r,
-      watchUrl: youtubeWatchUrl(r.videoId),
-    }));
+    return rows.map((r) => {
+      const source = parseReplayToken(r.videoId);
+      return {
+        ...r,
+        watchUrl: source ? replayWatchUrl(source) : null,
+      };
+    });
   }),
 
   adminSetDayVideo: adminProcedure
@@ -379,13 +388,14 @@ export const challengesRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      const videoId = youtubeIdFromUrl(input.url);
-      if (!videoId) {
+      const parsed = parseReplayUrl(input.url);
+      if (!parsed.ok) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Paste a YouTube link (youtu.be or youtube.com/watch?v=…).",
+          message: replayParseErrorMessage(parsed.error),
         });
       }
+      const videoId = replayToken(parsed.source);
       const challengeId = await ensureRealFoodResetChallenge();
       const row = await upsertChallengeDayVideo({
         challengeId,
@@ -393,7 +403,7 @@ export const challengesRouter = router({
         videoId,
         title: input.title?.trim() || `Live replay · ${input.dateStr}`,
       });
-      return { ...row, watchUrl: youtubeWatchUrl(videoId) };
+      return { ...row, watchUrl: replayWatchUrl(parsed.source) };
     }),
 
   adminDraftDayVideoEmail: adminProcedure
@@ -410,10 +420,17 @@ export const challengesRouter = router({
       if (!row) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Save the YouTube link first.",
+          message: "Save the Drive or YouTube link first.",
         });
       }
-      const watchUrl = youtubeWatchUrl(row.videoId);
+      const source = parseReplayToken(row.videoId);
+      if (!source) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Saved replay link is unreadable — paste it again and Save to Challenge.",
+        });
+      }
+      const watchUrl = replayWatchUrl(source);
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       const { emailNewsletters } = await import("../../drizzle/schema");

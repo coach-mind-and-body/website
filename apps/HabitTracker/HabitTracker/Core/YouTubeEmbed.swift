@@ -77,3 +77,32 @@ struct YouTubePlayer: View {
         }
     }
 }
+
+/// Drive (Meet recording) preview. File must be shared "Anyone with the link".
+struct ReplayWebView: UIViewRepresentable {
+    let url: URL
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    func makeUIView(context: Context) -> WKWebView {
+        let config = WKWebViewConfiguration()
+        config.allowsInlineMediaPlayback = true
+        config.mediaTypesRequiringUserActionForPlayback = []
+        let web = WKWebView(frame: .zero, configuration: config)
+        web.scrollView.isScrollEnabled = false
+        web.backgroundColor = .black
+        web.isOpaque = false
+        web.navigationDelegate = context.coordinator
+        return web
+    }
+
+    func updateUIView(_ webView: WKWebView, context: Context) {
+        guard context.coordinator.loaded != url.absoluteString else { return }
+        context.coordinator.loaded = url.absoluteString
+        webView.load(URLRequest(url: url))
+    }
+
+    final class Coordinator: NSObject, WKNavigationDelegate {
+        var loaded: String?
+    }
+}

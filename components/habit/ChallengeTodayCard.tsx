@@ -70,11 +70,11 @@ export default function ChallengeTodayCard() {
         </h3>
       </div>
 
-      {(data.replayVideoId || (day && day.videoId)) && (
+      {data.replayEmbedUrl && (
         <div className="rounded-xl overflow-hidden" style={{ aspectRatio: "16 / 9", background: "#000" }}>
           <iframe
             title="Today's challenge video"
-            src={`https://www.youtube.com/embed/${data.replayVideoId || day?.videoId}?rel=0`}
+            src={data.replayEmbedUrl}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
             className="w-full h-full border-0"

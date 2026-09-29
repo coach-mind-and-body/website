@@ -80,8 +80,9 @@ export function AdminRealFoodResetTab() {
           Today’s live replay
         </h3>
         <p className="text-sm" style={{ color: "oklch(0.52 0.015 50)" }}>
-          Paste the YouTube link after you upload the recording. It shows in Habit Tracker (web + app) for that day.
-          Then create an email draft — the button is a link people open in the browser. Send it from Newsletters.
+          Meet recordings land in Drive. Open the file → Share → Anyone with the link (Viewer) → copy the link and
+          paste it here. It embeds in Habit Tracker for that day. YouTube unlisted still works too. Then create an
+          email draft — the button opens the recording in the browser. Send it from Newsletters.
         </p>
         <div className="grid gap-3 md:grid-cols-2">
           <label className="text-xs font-bold uppercase tracking-wide" style={{ color: "oklch(0.52 0.015 50)" }}>
@@ -104,11 +105,11 @@ export function AdminRealFoodResetTab() {
           </label>
         </div>
         <label className="text-xs font-bold uppercase tracking-wide block" style={{ color: "oklch(0.52 0.015 50)" }}>
-          YouTube link
+          Drive or YouTube link
           <input
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://youtu.be/…"
+            placeholder="https://drive.google.com/file/d/…"
             className="mt-1 w-full rounded-lg border px-3 py-2 text-sm font-normal"
           />
         </label>
@@ -150,10 +151,15 @@ export function AdminRealFoodResetTab() {
               .map((v) => (
                 <li key={v.id}>
                   {v.dateStr}
-                  {v.title ? ` · ${v.title}` : ""} —{" "}
-                  <a href={v.watchUrl} className="underline" target="_blank" rel="noreferrer">
-                    watch
-                  </a>
+                  {v.title ? ` · ${v.title}` : ""}
+                  {v.watchUrl ? (
+                    <>
+                      {" — "}
+                      <a href={v.watchUrl} className="underline" target="_blank" rel="noreferrer">
+                        watch
+                      </a>
+                    </>
+                  ) : null}
                 </li>
               ))}
           </ul>

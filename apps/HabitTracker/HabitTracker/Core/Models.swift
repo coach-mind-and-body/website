@@ -496,6 +496,7 @@ struct ChallengeTodayPayload: Codable, Hashable {
     var today: ChallengeTodayDay?
     var meetUrl: String?
     var videoUrl: String?
+    var replayEmbedUrl: String?
     var liveTime: String?
     var journal: ChallengeJournalEntry?
     var guideImages: [ChallengeGuideImage]?
