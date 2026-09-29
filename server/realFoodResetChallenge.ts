@@ -13,13 +13,14 @@ import {
   REAL_FOOD_RESET,
   REAL_FOOD_RESET_GUIDES,
   REAL_FOOD_RESET_THEME,
+  challengeLiveMeetOpen,
   realFoodResetDayForDate,
   realFoodResetDocuments,
   realFoodResetGuideImages,
   type RealFoodResetDay,
 } from "@shared/realFoodReset";
 import { getDb } from "./db";
-import { todayMountainDateStr } from "../lib/mountainTime";
+import { nowMountain, todayMountainDateStr } from "../lib/mountainTime";
 import { parseReplayToken, replayEmbedUrl, replayWatchUrl } from "@shared/replayVideo";
 
 let dayVideosReady = false;
@@ -341,9 +342,10 @@ export async function getChallengeToday(opts: {
         .limit(1)
     : [undefined];
 
-  const showMeet = !!(enrollment && day?.format === "live" && challenge?.meetUrl);
   const replay = await getChallengeDayVideo(challengeId, todayStr);
   const postedReplay = parseReplayToken(replay?.videoId);
+  const liveStillOpen = challengeLiveMeetOpen(nowMountain().slice(11, 16), !!postedReplay);
+  const showMeet = !!(enrollment && day?.format === "live" && challenge?.meetUrl && liveStillOpen);
   const replaySource = postedReplay || (day?.videoId ? parseReplayToken(day.videoId) : null);
   const documents = [...realFoodResetDocuments()];
   // Current TestFlight only embeds YouTube. A Drive row in documents opens

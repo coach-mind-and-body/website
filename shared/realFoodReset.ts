@@ -21,6 +21,12 @@ export type RealFoodResetDay = {
   videoId?: string;
 };
 
+/** Join live stays up through the 1:00 hour, then drops. Replay posted that day drops it immediately. */
+export function challengeLiveMeetOpen(nowHm: string, replayPosted: boolean): boolean {
+  if (replayPosted) return false;
+  return nowHm < REAL_FOOD_RESET.liveEndHm;
+}
+
 /** FREE 5-Day No Processed Food Challenge — Sept 28–Oct 2, 2026 */
 export const REAL_FOOD_RESET = {
   name: "The 5-Day No Processed Food Challenge",
@@ -38,6 +44,9 @@ export const REAL_FOOD_RESET = {
   liveTimeShort: "1:00 pm",
   liveDays: "Monday, Wednesday, and Friday",
   liveDuration: "1 hour",
+  /** Mountain 24h clock. Join live hides at liveEndHm, or sooner if a replay is posted. */
+  liveStartHm: "13:00",
+  liveEndHm: "14:00",
   meetUrl: "https://meet.google.com/ppv-kose-wyj",
   meetPhone: "+1 424-360-0732",
   meetPin: "203 858 286",
