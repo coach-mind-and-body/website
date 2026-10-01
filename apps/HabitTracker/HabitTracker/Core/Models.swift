@@ -484,6 +484,80 @@ struct ChallengeGuideImage: Codable, Hashable, Identifiable {
     var id: String { url }
 }
 
+struct ChallengeFoodLevel: Codable, Hashable, Identifiable {
+    var type: String
+    var description: String?
+    var examples: String?
+    var id: String { type }
+}
+
+struct ChallengeMealPlanRow: Codable, Hashable, Identifiable {
+    var weekday: String
+    var breakfast: String?
+    var snack: String?
+    var lunch: String?
+    var dinner: String?
+    var id: String { weekday }
+}
+
+struct ChallengeFlipIt: Codable, Hashable {
+    var headline: String?
+    var mantra: String?
+    var checks: [String]?
+    var compareRows: [String]?
+}
+
+struct ChallengePlateCombos: Codable, Hashable {
+    var breakfast: [String]?
+    var lunch: [String]?
+    var dinner: [String]?
+    var snacks: [String]?
+}
+
+struct ChallengePlate: Codable, Hashable {
+    var protein: String?
+    var fat: String?
+    var fiber: String?
+    var carbsNote: String?
+    var unicityNote: String?
+    var combos: ChallengePlateCombos?
+}
+
+struct ChallengeGuides: Codable, Hashable {
+    var levels: [ChallengeFoodLevel]?
+    var mealPlan: [ChallengeMealPlanRow]?
+    var flipIt: ChallengeFlipIt?
+    var plate: ChallengePlate?
+}
+
+struct ChallengeWeekDay: Codable, Hashable, Identifiable {
+    var n: Int
+    var dateStr: String
+    var weekday: String
+    var weekdayShort: String?
+    var title: String
+    var win: String
+    var format: String
+    var formatLabel: String
+    var assignmentTitle: String?
+    var assignmentSteps: [String]?
+    var done: Bool?
+    var isToday: Bool?
+    var isFuture: Bool?
+    var liveOpen: Bool?
+    var meetUrl: String?
+    var videoUrl: String?
+    var replayEmbedUrl: String?
+    var prompts: ChallengeJournalPrompts?
+    var journal: ChallengeJournalEntry?
+    var id: String { dateStr }
+
+    var shortLabel: String {
+        if let s = weekdayShort, !s.isEmpty { return s }
+        return String(weekday.prefix(1)).uppercased()
+    }
+}
+
 struct ChallengeTodayPayload: Codable, Hashable {
     var enrolled: Bool
     var challengeId: Int?
@@ -499,9 +573,11 @@ struct ChallengeTodayPayload: Codable, Hashable {
     var replayEmbedUrl: String?
     var liveTime: String?
     var journal: ChallengeJournalEntry?
+    var guides: ChallengeGuides?
     var guideImages: [ChallengeGuideImage]?
     var documents: [ChallengeGuideImage]?
     var previewDays: [ChallengeTodayDay]?
+    var week: [ChallengeWeekDay]?
 }
 
 struct ClaimEnrollmentInput: Encodable {

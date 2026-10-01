@@ -736,8 +736,8 @@ export default function HabitTrackerClient() {
 
         {mainTab === "daily" && <ChallengeTodayCard />}
 
-        {/* Featured / joined challenge chips (always visible) */}
-        {activeChallengesData && activeChallengesData.length > 0 && (() => {
+        {/* Featured chips on Progress only — Challenge card already is the 5-day home. */}
+        {mainTab !== "daily" && activeChallengesData && activeChallengesData.length > 0 && (() => {
           const featured = activeChallengesData.filter(
             (c: any) => c.isFeatured || userChallengesData?.challenges?.some((u) => u.challengeId === c.id)
           );

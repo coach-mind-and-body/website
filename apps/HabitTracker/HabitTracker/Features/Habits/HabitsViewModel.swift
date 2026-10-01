@@ -28,6 +28,7 @@ final class HabitsViewModel {
     var journalGlad = ""
     var journalHard = ""
     var journalSaving = false
+    var selectedChallengeDate = MountainDate.today()
     var showChallengeGuides = false
     var shareHabitsWithCoach = false
 
@@ -347,9 +348,13 @@ final class HabitsViewModel {
             input: DeviceIdInput(deviceId: AppConfig.deviceId)
         ) {
             todayChallenge = today
-            journalNoticed = today.journal?.noticed ?? ""
-            journalGlad = today.journal?.glad ?? ""
-            journalHard = today.journal?.hard ?? ""
+            let keep = selectedChallengeDate
+            if today.week?.contains(where: { $0.dateStr == keep }) == true {
+                applyChallengeJournal(for: keep)
+            } else {
+                selectedChallengeDate = today.today?.dateStr ?? MountainDate.today()
+                applyChallengeJournal(for: selectedChallengeDate)
+            }
             await NotificationService.scheduleChallengeNudges(enrolled: today.enrolled)
         } else {
             todayChallenge = nil
@@ -645,8 +650,37 @@ final class HabitsViewModel {
         showChallenges = true
     }
 
+    var selectedChallengeDay: ChallengeWeekDay? {
+        todayChallenge?.week?.first { $0.dateStr == selectedChallengeDate }
+    }
+
+    var challengeJournalHasText: Bool {
+        !journalNoticed.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !journalGlad.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !journalHard.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    func selectChallengeDay(_ dateStr: String) {
+        selectedChallengeDate = dateStr
+        applyChallengeJournal(for: dateStr)
+    }
+
+    func applyChallengeJournal(for dateStr: String) {
+        if let day = todayChallenge?.week?.first(where: { $0.dateStr == dateStr }) {
+            journalNoticed = day.journal?.noticed ?? ""
+            journalGlad = day.journal?.glad ?? ""
+            journalHard = day.journal?.hard ?? ""
+            return
+        }
+        journalNoticed = todayChallenge?.journal?.noticed ?? ""
+        journalGlad = todayChallenge?.journal?.glad ?? ""
+        journalHard = todayChallenge?.journal?.hard ?? ""
+    }
+
     func saveTodayJournal() async {
-        guard let today = todayChallenge, let ucid = today.userChallengeId, let day = today.today else { return }
+        guard let today = todayChallenge, let ucid = today.userChallengeId else { return }
+        let dateStr = selectedChallengeDay?.dateStr ?? today.today?.dateStr
+        guard let dateStr else { return }
         journalSaving = true
         defer { journalSaving = false }
         do {
@@ -654,27 +688,31 @@ final class HabitsViewModel {
                 "challenges.saveJournal",
                 input: SaveChallengeJournalInput(
                     userChallengeId: ucid,
-                    dateStr: day.dateStr,
+                    dateStr: dateStr,
                     noticed: journalNoticed,
                     glad: journalGlad,
                     hard: journalHard,
                     deviceId: AppConfig.deviceId
                 )
             )
+            await loadDashboard()
         } catch {
             errorMessage = error.localizedDescription
         }
     }
 
     func toggleTodayChallenge() async {
-        guard let today = todayChallenge, let ucid = today.userChallengeId, let day = today.today else { return }
-        let next = !(day.done ?? false)
+        guard let today = todayChallenge, let ucid = today.userChallengeId else { return }
+        let dayDate = selectedChallengeDay?.dateStr ?? today.today?.dateStr
+        guard let dayDate else { return }
+        if selectedChallengeDay?.isFuture == true { return }
+        let next = !(selectedChallengeDay?.done ?? today.today?.done ?? false)
         do {
             let _: SuccessFlag = try await auth.client.mutate(
                 "challenges.toggleChallengeLog",
                 input: ToggleChallengeLogInput(
                     userChallengeId: ucid,
-                    dateStr: day.dateStr,
+                    dateStr: dayDate,
                     completed: next,
                     deviceId: AppConfig.deviceId
                 )

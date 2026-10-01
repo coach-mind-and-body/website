@@ -21,6 +21,7 @@ import {
   upsertChallengeDayVideo,
 } from "../realFoodResetChallenge";
 import { realFoodResetDayForDate } from "@shared/realFoodReset";
+import { todayMountainDateStr } from "../../lib/mountainTime";
 import {
   parseReplayToken,
   parseReplayUrl,
@@ -230,6 +231,13 @@ export const challengesRouter = router({
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "Check-off is only for challenge days (Sept 28–Oct 2).",
+        });
+      }
+
+      if (input.completed && input.dateStr > todayMountainDateStr()) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "That day isn’t open yet.",
         });
       }
 

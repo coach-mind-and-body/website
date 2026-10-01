@@ -251,6 +251,19 @@ export async function mergeRealFoodResetToUser(userId: number, email: string | n
     .where(and(eq(userChallenges.challengeId, challengeId), or(...clauses)));
 }
 
+export type ChallengeWeekDay = Omit<RealFoodResetDay, "journal"> & {
+  weekdayShort: string;
+  done: boolean;
+  isToday: boolean;
+  isFuture: boolean;
+  liveOpen: boolean;
+  meetUrl: string | null;
+  videoUrl: string | null;
+  replayEmbedUrl: string | null;
+  prompts: RealFoodResetDay["journal"];
+  journal: { noticed: string; glad: string; hard: string };
+};
+
 export type ChallengeTodayPayload = {
   enrolled: boolean;
   challengeId: number | null;
@@ -271,7 +284,10 @@ export type ChallengeTodayPayload = {
   guideImages: { title: string; alt: string; url: string }[];
   documents: { title: string; url: string }[];
   previewDays: RealFoodResetDay[];
+  week: ChallengeWeekDay[];
 };
+
+const WEEKDAY_SHORT = ["M", "T", "W", "T", "F"] as const;
 
 export async function getChallengeToday(opts: {
   userId?: number | null;
@@ -299,6 +315,7 @@ export async function getChallengeToday(opts: {
     guideImages: [],
     documents: [],
     previewDays: [...REAL_FOOD_RESET.days],
+    week: [],
   };
   if (!db) return empty;
 
@@ -348,14 +365,58 @@ export async function getChallengeToday(opts: {
   const showMeet = !!(enrollment && day?.format === "live" && challenge?.meetUrl && liveStillOpen);
   const replaySource = postedReplay || (day?.videoId ? parseReplayToken(day.videoId) : null);
   const documents = [...realFoodResetDocuments()];
-  // Current TestFlight only embeds YouTube. A Drive row in documents opens
-  // the recording in the in-app browser until the next archive ships ReplayWebView.
+  // Old App Store binary only finds Drive replays in this list. New UI hides the duplicate.
   if (postedReplay?.kind === "drive") {
     documents.unshift({
       title: "Watch today's live replay",
       url: replayWatchUrl(postedReplay),
     });
   }
+
+  const [allLogs, allJournals, allVideos] = await Promise.all([
+    db
+      .select()
+      .from(userChallengeLogs)
+      .where(eq(userChallengeLogs.userChallengeId, enrollment.id)),
+    db
+      .select()
+      .from(userChallengeJournals)
+      .where(eq(userChallengeJournals.userChallengeId, enrollment.id)),
+    listChallengeDayVideos(challengeId),
+  ]);
+  const doneDates = new Set(allLogs.map((r) => r.dateStr));
+  const journalByDate = new Map(allJournals.map((r) => [r.dateStr, r]));
+  const videoByDate = new Map(allVideos.map((r) => [r.dateStr, r]));
+
+  const week = REAL_FOOD_RESET.days.map((d) => {
+    const posted = parseReplayToken(videoByDate.get(d.dateStr)?.videoId);
+    const source = posted || (d.videoId ? parseReplayToken(d.videoId) : null);
+    const isToday = d.dateStr === todayStr;
+    const liveOpen = !!(
+      isToday &&
+      d.format === "live" &&
+      challenge?.meetUrl &&
+      challengeLiveMeetOpen(nowMountain().slice(11, 16), !!posted)
+    );
+    const j = journalByDate.get(d.dateStr);
+    return {
+      ...d,
+      weekdayShort: WEEKDAY_SHORT[d.n - 1] ?? d.weekday.slice(0, 1),
+      done: doneDates.has(d.dateStr),
+      isToday,
+      isFuture: d.dateStr > todayStr,
+      liveOpen,
+      meetUrl: liveOpen ? challenge!.meetUrl! : null,
+      videoUrl: source ? replayWatchUrl(source) : null,
+      replayEmbedUrl: source ? replayEmbedUrl(source) : null,
+      prompts: d.journal,
+      journal: {
+        noticed: j?.noticed || "",
+        glad: j?.glad || "",
+        hard: j?.hard || "",
+      },
+    };
+  });
 
   return {
     enrolled: true,
@@ -383,6 +444,7 @@ export async function getChallengeToday(opts: {
     guideImages: realFoodResetGuideImages(),
     documents,
     previewDays: [...REAL_FOOD_RESET.days],
+    week,
   };
 }
 

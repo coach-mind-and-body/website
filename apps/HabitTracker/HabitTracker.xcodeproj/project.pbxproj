@@ -27,6 +27,7 @@
 		49471E52AB2A9DD5BAD683EF /* HabitTracker/Features/Auth/LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DC783F0C743585BA746B931 /* HabitTracker/Features/Auth/LoginView.swift */; };
 		E3A1D03E73697A822364C7AD /* HabitTracker/Features/Root/MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA24F16423DB42DC68B2391C /* HabitTracker/Features/Root/MainTabView.swift */; };
 		86A1B2EB344A94F7512CAD0E /* HabitTracker/Features/Habits/HabitsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27C9EB3726F0495EB6398493 /* HabitTracker/Features/Habits/HabitsView.swift */; };
+		B8D4F2E05C3A7B1F9D2E6C88 /* HabitTracker/Features/Habits/ChallengeExperience.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C3E1D94B2F6A0E8C1D5B77 /* HabitTracker/Features/Habits/ChallengeExperience.swift */; };
 		043FBE9A48903159207FB2E1 /* HabitTracker/Features/Habits/HabitsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67CAD130BF1BA4357403A266 /* HabitTracker/Features/Habits/HabitsViewModel.swift */; };
 		DF8CB7F6EC4B9C1CC9FDC72C /* HabitTracker/Features/Habits/HabitProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FEA14B0B5232D01123EA2E8 /* HabitTracker/Features/Habits/HabitProgressView.swift */; };
 		78BB551D6BC4F944A0422C5D /* HabitTracker/Features/Food/FoodViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C44DB4212892B4258AC38D8B /* HabitTracker/Features/Food/FoodViewModel.swift */; };
@@ -99,6 +100,7 @@
 		4DC783F0C743585BA746B931 /* HabitTracker/Features/Auth/LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Features/Auth/LoginView.swift; sourceTree = "<group>"; };
 		FA24F16423DB42DC68B2391C /* HabitTracker/Features/Root/MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Features/Root/MainTabView.swift; sourceTree = "<group>"; };
 		27C9EB3726F0495EB6398493 /* HabitTracker/Features/Habits/HabitsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Features/Habits/HabitsView.swift; sourceTree = "<group>"; };
+		A7C3E1D94B2F6A0E8C1D5B77 /* HabitTracker/Features/Habits/ChallengeExperience.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Features/Habits/ChallengeExperience.swift; sourceTree = "<group>"; };
 		67CAD130BF1BA4357403A266 /* HabitTracker/Features/Habits/HabitsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Features/Habits/HabitsViewModel.swift; sourceTree = "<group>"; };
 		5FEA14B0B5232D01123EA2E8 /* HabitTracker/Features/Habits/HabitProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Features/Habits/HabitProgressView.swift; sourceTree = "<group>"; };
 		C44DB4212892B4258AC38D8B /* HabitTracker/Features/Food/FoodViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Features/Food/FoodViewModel.swift; sourceTree = "<group>"; };
@@ -170,6 +172,7 @@
 				4DC783F0C743585BA746B931 /* HabitTracker/Features/Auth/LoginView.swift */,
 				FA24F16423DB42DC68B2391C /* HabitTracker/Features/Root/MainTabView.swift */,
 				27C9EB3726F0495EB6398493 /* HabitTracker/Features/Habits/HabitsView.swift */,
+				A7C3E1D94B2F6A0E8C1D5B77 /* HabitTracker/Features/Habits/ChallengeExperience.swift */,
 				67CAD130BF1BA4357403A266 /* HabitTracker/Features/Habits/HabitsViewModel.swift */,
 				5FEA14B0B5232D01123EA2E8 /* HabitTracker/Features/Habits/HabitProgressView.swift */,
 				C44DB4212892B4258AC38D8B /* HabitTracker/Features/Food/FoodViewModel.swift */,
@@ -327,6 +330,7 @@
 				49471E52AB2A9DD5BAD683EF /* HabitTracker/Features/Auth/LoginView.swift in Sources */,
 				E3A1D03E73697A822364C7AD /* HabitTracker/Features/Root/MainTabView.swift in Sources */,
 				86A1B2EB344A94F7512CAD0E /* HabitTracker/Features/Habits/HabitsView.swift in Sources */,
+				B8D4F2E05C3A7B1F9D2E6C88 /* HabitTracker/Features/Habits/ChallengeExperience.swift in Sources */,
 				043FBE9A48903159207FB2E1 /* HabitTracker/Features/Habits/HabitsViewModel.swift in Sources */,
 				DF8CB7F6EC4B9C1CC9FDC72C /* HabitTracker/Features/Habits/HabitProgressView.swift in Sources */,
 				78BB551D6BC4F944A0422C5D /* HabitTracker/Features/Food/FoodViewModel.swift in Sources */,
@@ -442,7 +446,7 @@
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 20;
+				CURRENT_PROJECT_VERSION = 21;
 				DEVELOPMENT_TEAM = 8D3TJ8W8XK;
 				PROVISIONING_PROFILE_SPECIFIER = "HabitTracker App Store";
 
@@ -476,7 +480,7 @@
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 20;
+				CURRENT_PROJECT_VERSION = 21;
 				DEVELOPMENT_TEAM = 8D3TJ8W8XK;
 				PROVISIONING_PROFILE_SPECIFIER = "HabitTracker App Store";
 
@@ -511,7 +515,7 @@
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 20;
+				CURRENT_PROJECT_VERSION = 21;
 				DEVELOPMENT_TEAM = 8D3TJ8W8XK;
 				PROVISIONING_PROFILE_SPECIFIER = "HabitTracker Widget App Store";
 				GENERATE_INFOPLIST_FILE = YES;
@@ -536,7 +540,7 @@
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 20;
+				CURRENT_PROJECT_VERSION = 21;
 				DEVELOPMENT_TEAM = 8D3TJ8W8XK;
 				PROVISIONING_PROFILE_SPECIFIER = "HabitTracker Widget App Store";
 				GENERATE_INFOPLIST_FILE = YES;

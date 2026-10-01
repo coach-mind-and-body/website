@@ -87,8 +87,10 @@ struct ReplayWebView: UIViewRepresentable {
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
         config.allowsInlineMediaPlayback = true
+        config.allowsPictureInPicturePlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
         let web = WKWebView(frame: .zero, configuration: config)
+        web.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"
         web.scrollView.isScrollEnabled = false
         web.backgroundColor = .black
         web.isOpaque = false
@@ -99,7 +101,9 @@ struct ReplayWebView: UIViewRepresentable {
     func updateUIView(_ webView: WKWebView, context: Context) {
         guard context.coordinator.loaded != url.absoluteString else { return }
         context.coordinator.loaded = url.absoluteString
-        webView.load(URLRequest(url: url))
+        var request = URLRequest(url: url)
+        request.setValue("https://mindandbodyresetcoach.com/", forHTTPHeaderField: "Referer")
+        webView.load(request)
     }
 
     final class Coordinator: NSObject, WKNavigationDelegate {
