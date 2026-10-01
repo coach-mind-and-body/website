@@ -3,12 +3,12 @@ import HabitTrackerInviteClient from "./HabitTrackerInviteClient";
 
 /**
  * Paid / organic landing for the free habit tracker app.
- * Point Meta ads here; primary CTA opens /habit-tracker.
+ * Point Meta ads and the App Store marketing URL here. Primary CTA is the App Store.
  */
 export const metadata: Metadata = {
   title: { absolute: "Free Midlife Habit Tracker | Habits, Macros & Recipes" },
   description:
-    "Free habit tracker for women 40+: daily habits, meal & macro logging, Lee Anne's high-protein recipe vault and weekly meal plan, and fitness — start free, sync when you're ready.",
+    "The Mind & Body Reset iPhone app is free on the App Store. Daily habits, meal logging, Lee Anne's recipes, and fitness for women 40+.",
   keywords: [
     "free habit tracker women over 40",
     "midlife habit tracker",

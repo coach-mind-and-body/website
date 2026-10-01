@@ -84,19 +84,33 @@ export default function SiteFooter() {
                 { href: "/life-after-glp-1", label: "Life After GLP-1" },
                 { href: "/real-food-reset", label: "5-Day No Processed Food Challenge" },
                 { href: "/habit-tracker", label: "Free Habit Tracker" },
+                { href: BRAND.appStoreUrl, label: "Get the iPhone app", external: true },
                 { href: "/book", label: "Book a Free Call" },
                 { href: "/financial-peace", label: "Financial Peace University" },
                 { href: "/midlife-health-podcast", label: "Podcast" },
-              ].map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="text-sm transition-colors hover:opacity-60"
-                  style={{ color: "#5a5050" }}
-                >
-                  {link.label}
-                </Link>
-              ))}
+              ].map((link) =>
+                "external" in link && link.external ? (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm transition-colors hover:opacity-60"
+                    style={{ color: "#5a5050" }}
+                  >
+                    {link.label}
+                  </a>
+                ) : (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="text-sm transition-colors hover:opacity-60"
+                    style={{ color: "#5a5050" }}
+                  >
+                    {link.label}
+                  </Link>
+                )
+              )}
             </div>
           </div>
 

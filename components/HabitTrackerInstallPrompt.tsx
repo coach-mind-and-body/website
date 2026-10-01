@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Download, Share, X } from "lucide-react";
+import { BRAND } from "@shared/brand";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -23,15 +24,8 @@ function isStandalone(): boolean {
 }
 
 /**
- * Optional “put on home screen” helper.
- *
- * Honest limits:
- * - Safari/iPhone never shows a one-tap Install button (Apple doesn’t allow it).
- * - We only show a simple how-to, or a real Install button when Chrome/Android allows it.
- *
- * variant:
- * - "button" — inline control (landing page / settings). Recommended.
- * - "auto" — small floating tip once on Android when browser fires install event. Not used on iOS.
+ * Install helper.
+ * iPhone: App Store. Android: browser install when Chrome allows it.
  */
 export default function HabitTrackerInstallPrompt({
   variant = "button",
@@ -44,10 +38,21 @@ export default function HabitTrackerInstallPrompt({
   const [ios, setIos] = useState(false);
   const [standalone, setStandalone] = useState(false);
   const [showAutoAndroid, setShowAutoAndroid] = useState(false);
+  const [showIosStore, setShowIosStore] = useState(false);
 
   useEffect(() => {
     setIos(isIos());
     setStandalone(isStandalone());
+
+    if (variant === "auto" && isIos() && !isStandalone()) {
+      try {
+        if (!localStorage.getItem("mbr_appstore_prompt_dismissed")) {
+          setShowIosStore(true);
+        }
+      } catch {
+        setShowIosStore(true);
+      }
+    }
 
     const onBip = (e: Event) => {
       e.preventDefault();
@@ -80,9 +85,33 @@ export default function HabitTrackerInstallPrompt({
     return null;
   }
 
+  const appStoreButton = (
+    <a
+      href={BRAND.appStoreUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="w-full flex items-center justify-center gap-2 min-h-[48px] rounded-full font-bold text-sm text-white bg-[#c9a96e] hover:bg-[#b09055]"
+    >
+      <Download size={18} />
+      Get the iPhone app — free
+    </a>
+  );
+
   const guide = (
     <div className="space-y-4">
-      {deferred ? (
+      {ios ? (
+        <>
+          <p className="text-sm text-gray-600 leading-relaxed">
+            The real iPhone app is live on the App Store — habits, food log, recipes, and this week’s
+            challenge on your home screen.
+          </p>
+          {appStoreButton}
+          <p className="text-xs text-gray-400 leading-relaxed">
+            Already using this in the browser? You can keep it, or install the app and sign in with the
+            same email.
+          </p>
+        </>
+      ) : deferred ? (
         <>
           <p className="text-sm text-gray-600 leading-relaxed">
             Your browser can install this as an app icon in one tap.
@@ -144,16 +173,58 @@ export default function HabitTrackerInstallPrompt({
     </div>
   );
 
+  const dismissIosStore = () => {
+    setShowIosStore(false);
+    try {
+      localStorage.setItem("mbr_appstore_prompt_dismissed", "1");
+    } catch {
+      /* ignore */
+    }
+  };
+
   return (
     <>
       {variant === "button" && (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="w-full flex items-center justify-center gap-2 min-h-[44px] text-sm font-semibold text-[#3a5a3a] underline underline-offset-2 hover:text-[#c9a96e]"
+        <a
+          href={BRAND.appStoreUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full flex items-center justify-center gap-2 min-h-[44px] rounded-full font-bold text-sm text-white bg-[#c9a96e] hover:bg-[#b09055]"
         >
-          Optional: add icon to home screen
-        </button>
+          <Download size={16} />
+          Get the iPhone app — free
+        </a>
+      )}
+
+      {variant === "auto" && showIosStore && (
+        <div
+          className="fixed z-[60] left-3 right-3 sm:left-auto sm:right-4 sm:max-w-sm"
+          style={{
+            bottom: "max(5.5rem, calc(4.5rem + env(safe-area-inset-bottom)))",
+          }}
+        >
+          <div className="rounded-2xl bg-white border border-[#f0e8e4] shadow-xl p-4 relative">
+            <button
+              type="button"
+              onClick={dismissIosStore}
+              className="absolute top-2 right-2 p-1.5 rounded-full text-gray-400 hover:bg-gray-100"
+              aria-label="Dismiss"
+            >
+              <X size={16} />
+            </button>
+            <p className="font-bold text-sm text-[#3a5a3a] pr-6">The iPhone app is live</p>
+            <p className="text-xs text-gray-500 mt-1 mb-3">Free on the App Store — same tracker, on your home screen.</p>
+            <a
+              href={BRAND.appStoreUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center justify-center gap-2 min-h-[44px] rounded-full font-bold text-sm text-white bg-[#c9a96e]"
+            >
+              <Download size={16} />
+              Get the app
+            </a>
+          </div>
+        </div>
       )}
 
       {variant === "auto" && showAutoAndroid && deferred && (
@@ -205,9 +276,13 @@ export default function HabitTrackerInstallPrompt({
                   id="pwa-install-title"
                   className="font-playfair text-xl font-bold text-[#3a5a3a]"
                 >
-                  Home screen icon
+                  {ios ? "Get the iPhone app" : "Home screen icon"}
                 </h2>
-                <p className="text-xs text-gray-500 mt-1">Optional — the tracker works in the browser too.</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {ios
+                    ? "Free on the App Store. The tracker still works in the browser too."
+                    : "Optional — the tracker works in the browser too."}
+                </p>
               </div>
               <button
                 type="button"

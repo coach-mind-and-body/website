@@ -2,10 +2,10 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { BRAND } from "@shared/brand";
 import { useMetaPixel } from "@/hooks/useMetaPixel";
 import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
-import HabitTrackerInstallPrompt from "@/components/HabitTrackerInstallPrompt";
+import { GetAppStoreButton } from "@/components/GetAppStoreButton";
+import { BRAND } from "@shared/brand";
 
 const TRACKER_HREF =
   "/habit-tracker?utm_source=meta&utm_medium=paid&utm_campaign=ht_invite&utm_content=open_app";
@@ -90,22 +90,20 @@ function CtaCard() {
         </span>
       </div>
       <h2 className="text-center font-playfair text-2xl sm:text-3xl font-bold text-[#3a5a3a] mb-2">
-        Open your free tracker
+        Get the free iPhone app
       </h2>
       <p className="text-center text-sm text-gray-600 mb-6 leading-relaxed">
-        Habits, meals, and movement in one place. Tap below and start — no signup wall.
+        Habits, meals, and movement in one place. Free on the App Store.
       </p>
+      <GetAppStoreButton className="flex w-full min-h-[52px] sm:min-h-[56px] items-center justify-center px-4 text-center text-base sm:text-lg font-bold bg-[#c9a96e] hover:bg-[#b09055] text-white rounded-full transition-colors shadow-md mb-3" />
       <Link
         href={TRACKER_HREF}
-        className="flex w-full min-h-[52px] sm:min-h-[56px] items-center justify-center px-4 text-center text-base sm:text-lg font-bold bg-[#c9a96e] hover:bg-[#b09055] text-white rounded-full transition-colors shadow-md mb-4"
+        className="flex w-full min-h-[44px] items-center justify-center px-4 text-center text-sm font-semibold text-[#3a5a3a] underline underline-offset-2"
       >
-        Start Free Tracker →
+        Or open in the browser →
       </Link>
-      {/* Home-screen icon is optional & hard on iPhone — never the main CTA */}
-      <HabitTrackerInstallPrompt variant="button" />
       <p className="text-center text-[11px] text-gray-400 mt-4 leading-relaxed">
-        Works in the browser. Home-screen icon is optional (and on iPhone takes a few Safari taps —
-        Apple doesn&apos;t allow a one-button install).
+        iPhone: App Store. Android or desktop: use the tracker in the browser.
       </p>
     </div>
   );
@@ -132,12 +130,14 @@ export default function HabitTrackerInviteClient() {
     <div className="min-h-screen flex flex-col bg-[#FDFBF7]">
       {/* Mobile sticky CTA — open app only (no install / sign-in) */}
       <div className="fixed bottom-0 inset-x-0 z-50 md:hidden border-t border-gray-200 bg-white/95 backdrop-blur-sm px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
-        <Link
-          href={TRACKER_HREF}
+        <a
+          href={BRAND.appStoreUrl}
+          target="_blank"
+          rel="noopener noreferrer"
           className="flex w-full min-h-[48px] items-center justify-center text-base font-bold bg-[#c9a96e] hover:bg-[#b09055] text-white rounded-full shadow-md"
         >
-          Start Free Tracker →
-        </Link>
+          Get the iPhone app — free
+        </a>
       </div>
 
       <main className="flex-1 pt-6 sm:pt-10 md:pt-14 pb-28 md:pb-16 px-4 sm:px-6 md:px-12 relative overflow-hidden">
@@ -156,7 +156,7 @@ export default function HabitTrackerInviteClient() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-10 lg:gap-14 items-start">
             <div className="max-w-lg mx-auto md:mx-0 text-center md:text-left order-2 md:order-1">
               <div className="inline-block px-3 sm:px-4 py-1.5 rounded-full bg-[#f4f8f4] border border-[#c8dcc8] text-[#3a5a3a] text-xs sm:text-sm font-semibold tracking-wide uppercase mb-4 sm:mb-5 shadow-sm">
-                Free wellness tracker · Women 40+
+                Free on the App Store · Women 40+
               </div>
               <h1 className="text-[1.75rem] leading-tight sm:text-4xl md:text-5xl font-playfair font-bold text-[#3a5a3a] mb-4 sm:mb-5">
                 One free app for{" "}
@@ -292,8 +292,8 @@ export default function HabitTrackerInviteClient() {
                   a: "No. Open the tracker and start. An account is optional later if you want the same data on more than one device.",
                 },
                 {
-                  q: "Why isn't there an Install button on iPhone?",
-                  a: "Apple doesn't let websites add a one-tap install. In Safari: Share → Add to Home Screen → Add. Or just use the tracker in the browser — install is optional.",
+                  q: "Where do I get the app?",
+                  a: "On iPhone, it's free on the App Store — search Mind & Body Reset, or tap Get the iPhone app on this page. On Android or a computer, use the tracker in the browser.",
                 },
                 {
                   q: "Is this only calorie counting?",

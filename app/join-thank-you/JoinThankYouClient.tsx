@@ -69,7 +69,11 @@ export default function JoinThankYou() {
             className="text-lg leading-relaxed mb-10"
             style={{ color: "#555", maxWidth: "340px" }}
           >
-            Check your inbox for your first update. While you're here, watch the video and book your free{" "}
+            Check your inbox for your first update. The iPhone app is free on the{" "}
+            <a href={BRAND.appStoreUrl} target="_blank" rel="noopener noreferrer" className="font-bold underline">
+              App Store
+            </a>
+            . While you're here, watch the video and book your free{" "}
             <strong>30-minute Clarity Call</strong> below.
           </p>
 

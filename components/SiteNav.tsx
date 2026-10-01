@@ -9,7 +9,7 @@ import { getLoginUrl } from "@/lib/const";
 
 const LOGO = BRAND.logoUrl;
 
-const NAV_LINKS = [
+const NAV_LINKS: { href: string; label: string; external?: boolean }[] = [
   { href: "/reclaim", label: "6 Habits" },
   { href: "/financial-peace", label: "FPU" },
   { href: "/unicity", label: "Unicity" },
@@ -17,6 +17,7 @@ const NAV_LINKS = [
   { href: "/health-wellness-blog", label: "Blog" },
   { href: "/food-quiz", label: "Free Quiz" },
   { href: "/about", label: "About Us" },
+  { href: BRAND.appStoreUrl, label: "Get the app", external: true },
 ];
 
 declare global {
@@ -120,16 +121,28 @@ export default function SiteNav() {
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-5">
-            {NAV_LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="nav-link-gold"
-                style={pathname === link.href ? { textDecoration: "underline", textUnderlineOffset: "4px" } : {}}
-              >
-                {link.label}
-              </Link>
-            ))}
+            {NAV_LINKS.map((link) =>
+              link.external ? (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="nav-link-gold"
+                >
+                  {link.label}
+                </a>
+              ) : (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="nav-link-gold"
+                  style={pathname === link.href ? { textDecoration: "underline", textUnderlineOffset: "4px" } : {}}
+                >
+                  {link.label}
+                </Link>
+              )
+            )}
             {/* Google Calendar popup button — desktop */}
             <span ref={gcalDesktopRef} />
 
@@ -205,16 +218,29 @@ export default function SiteNav() {
             style={{ borderColor: "oklch(1 0 0 / 0.25)" }}
           >
             <div className="flex flex-col gap-3">
-              {NAV_LINKS.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="nav-link-gold py-1"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  {link.label}
-                </Link>
-              ))}
+              {NAV_LINKS.map((link) =>
+                link.external ? (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="nav-link-gold py-1"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    {link.label}
+                  </a>
+                ) : (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="nav-link-gold py-1"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    {link.label}
+                  </Link>
+                )
+              )}
               <span ref={gcalMobileRef} className="mt-1" />
               {/* Account link in mobile menu */}
               {isAuthenticated ? (

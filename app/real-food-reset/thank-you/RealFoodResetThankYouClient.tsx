@@ -8,7 +8,7 @@ import { trpc } from "@/lib/trpc";
 import { getDeviceId } from "@/lib/deviceId";
 import { useMetaPixel } from "@/hooks/useMetaPixel";
 import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
-import HabitTrackerInstallPrompt from "@/components/HabitTrackerInstallPrompt";
+
 
 export default function RealFoodResetThankYouClient() {
   const { trackLead } = useMetaPixel();
@@ -86,18 +86,26 @@ export default function RealFoodResetThankYouClient() {
           <li>✓ Tue/Thu: video + recipes in the app</li>
           <li>✓ Progress, not perfection</li>
         </ul>
-        <Link
-          href="/habit-tracker?enroll=real_food_reset"
-          className="inline-block font-bold rounded-xl px-8 py-4 mb-4"
+        <a
+          href={BRAND.appStoreUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block font-bold rounded-xl px-8 py-4 mb-3"
           style={{ background: "oklch(0.38 0.10 148)", color: "#fff" }}
         >
-          Open the habit tracker
-        </Link>
-        <div className="mt-4 flex justify-center">
-          <HabitTrackerInstallPrompt variant="button" />
+          Get the iPhone app — free
+        </a>
+        <div>
+          <Link
+            href="/habit-tracker?enroll=real_food_reset"
+            className="inline-block font-semibold text-sm underline underline-offset-2"
+            style={{ color: "#3a5a3a" }}
+          >
+            Or open the tracker in your browser →
+          </Link>
         </div>
         <p className="mt-6 text-xs" style={{ color: "#8a9a8a" }}>
-          Google Meet is in the app on live days — after you’re enrolled. On iPhone, sign in with this same email.
+          Sign in with this same email so your challenge stays with you. Google Meet is in the app on live days.
         </p>
       </div>
     </div>

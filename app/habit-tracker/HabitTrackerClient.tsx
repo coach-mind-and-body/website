@@ -584,7 +584,7 @@ export default function HabitTrackerClient() {
               First win logged 🎉
             </h2>
             <p className="text-sm text-gray-600 mb-4">
-              Want this to stick? Add the app icon and enable gentle reminders — so future you shows up tomorrow.
+              Want this to stick? Get the iPhone app and enable gentle reminders — so future you shows up tomorrow.
             </p>
             <div className="space-y-3 mb-4">
               <HabitTrackerInstallPrompt variant="button" />

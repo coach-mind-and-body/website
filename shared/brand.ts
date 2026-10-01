@@ -24,6 +24,9 @@ export const BRAND = {
   facebookUrl: "https://www.facebook.com/MindandBodyReset",
   youtubeUrl: "https://www.youtube.com/@MindandBodyResetCoach",
   tiktokUrl: "https://www.tiktok.com/@resetgals8",
+  appStoreId: "6809038480",
+  appStoreUrl: "https://apps.apple.com/app/mind-body-reset/id6809038480",
+  appStoreName: "Mind & Body Reset",
 } as const;
 
 export const GOOGLE_CALENDAR = {

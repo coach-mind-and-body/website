@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { ArrowRight, Star, CheckCircle2, ChevronRight } from "lucide-react";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
+import { AppStorePromoBar } from "@/components/GetAppStoreButton";
 import { BRAND, PROGRAM } from "@shared/brand";
 import { trpc } from "@/lib/trpc";
 
@@ -98,6 +99,7 @@ export default function Home() {
       >
         Free 5-Day No Processed Food Challenge · starts September 28 · Save your spot →
       </Link>
+      <AppStorePromoBar />
 
       {/* ── HERO ── */}
       <section className="relative overflow-hidden" style={{ background: "oklch(0.985 0.008 80)", minHeight: "560px" }}>

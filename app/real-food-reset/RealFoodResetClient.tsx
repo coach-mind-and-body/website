@@ -172,6 +172,15 @@ export default function RealFoodResetClient() {
               <li>✓ Tuesday &amp; Thursday: video + recipes in the app</li>
               <li>✓ Daily check-ins, food log, and chat — app is home base</li>
             </ul>
+            <a
+              href={BRAND.appStoreUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center font-bold rounded-full px-6 py-3 mb-8 text-sm"
+              style={{ background: "#c9a96e", color: "#fff" }}
+            >
+              Get the iPhone app — free
+            </a>
             <img
               src="/photos/lee-anne-sara.jpg"
               alt="Sara and Lee Anne — The 5-Day No Processed Food Challenge"
@@ -183,7 +192,7 @@ export default function RealFoodResetClient() {
                 Save your free spot
               </h2>
               <p className="text-sm mb-5" style={{ color: "#6a5a50" }}>
-                We start {REAL_FOOD_RESET.startLabel}. You’ll get the app link and live times as soon as you register.
+                We start {REAL_FOOD_RESET.startLabel}. The iPhone app is free on the App Store — you’ll get the link and live times as soon as you register.
               </p>
               <SignupForm id="join" />
             </div>
