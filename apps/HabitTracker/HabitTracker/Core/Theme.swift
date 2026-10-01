@@ -106,18 +106,21 @@ struct ProfileAvatarButton: View {
 }
 
 struct HTCard<Content: View>: View {
+    var spacing: CGFloat = 10
     @ViewBuilder var content: () -> Content
 
     var body: some View {
-        content()
-            .padding(16)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .stroke(HTTheme.roseBorder, lineWidth: 1)
-            )
+        VStack(alignment: .leading, spacing: spacing) {
+            content()
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(HTTheme.roseBorder, lineWidth: 1)
+        )
     }
 }
 

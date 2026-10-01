@@ -60,7 +60,7 @@ export default function ChallengeTodayCard() {
   const day = data.today;
 
   return (
-    <div className="p-5 rounded-3xl border bg-white space-y-4" style={{ borderColor: "#f0e8e4" }}>
+    <div className="p-5 rounded-3xl border bg-white space-y-3" style={{ borderColor: "#f0e8e4" }}>
       <div>
         <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: "#c9a96e" }}>
           {REAL_FOOD_RESET.shortName}
@@ -68,8 +68,25 @@ export default function ChallengeTodayCard() {
         <h3 className="font-bold text-xl" style={{ color: "#2d3b2d", fontFamily: "'Cormorant Garamond', serif" }}>
           {data.title}
         </h3>
+        {day && (
+          <p className="text-sm mt-1" style={{ color: "#555" }}>
+            Day {day.n} · {day.weekday} · {day.title}
+          </p>
+        )}
       </div>
 
+      {data.videoUrl && (
+        <a
+          href={data.videoUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="flex items-center justify-center gap-2 w-full font-bold rounded-xl py-3"
+          style={{ background: "oklch(0.38 0.10 148)", color: "#fff" }}
+        >
+          <Video size={18} />
+          Watch today’s live replay
+        </a>
+      )}
       {data.replayEmbedUrl && (
         <div className="rounded-xl overflow-hidden" style={{ aspectRatio: "16 / 9", background: "#000" }}>
           <iframe
@@ -80,17 +97,6 @@ export default function ChallengeTodayCard() {
             className="w-full h-full border-0"
           />
         </div>
-      )}
-      {data.videoUrl && (
-        <a
-          href={data.videoUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="block text-sm font-bold"
-          style={{ color: "#3a5a3a" }}
-        >
-          Watch in the browser →
-        </a>
       )}
 
       {data.beforeStart && (
@@ -155,23 +161,14 @@ export default function ChallengeTodayCard() {
 
       {day && (
         <>
-          <div>
-            <p className="text-xs font-bold" style={{ color: "#8a9a8a" }}>
-              Day {day.n} · {day.weekday} · {day.formatLabel}
-            </p>
-            <p className="font-bold mt-1" style={{ color: "#2d3b2d" }}>
-              {day.title}
-            </p>
-            <p className="text-sm mt-1" style={{ color: "#555" }}>
+          <div className="space-y-1">
+            <p className="text-sm" style={{ color: "#555" }}>
               {day.win}
             </p>
           </div>
 
-          <div className="rounded-xl p-3 space-y-2" style={{ background: "#f9f5f0" }}>
-            <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "#c9a96e" }}>
-              Today’s assignment
-            </p>
-            <p className="text-sm font-bold" style={{ color: "#2d3b2d" }}>
+          <div className="space-y-1">
+            <p className="text-sm font-bold" style={{ color: "#c9a96e" }}>
               {day.assignmentTitle}
             </p>
             <ol className="list-decimal pl-4 text-sm space-y-1" style={{ color: "#555" }}>
@@ -179,9 +176,6 @@ export default function ChallengeTodayCard() {
                 <li key={step}>{step}</li>
               ))}
             </ol>
-            <p className="text-xs italic" style={{ color: "#8a9a8a" }}>
-              {REAL_FOOD_RESET.philosophy}
-            </p>
           </div>
 
           {data.meetUrl && (
@@ -324,19 +318,21 @@ export default function ChallengeTodayCard() {
         </>
       )}
 
-      {data.documents && data.documents.length > 0 && (
+      {data.documents && data.documents.filter((doc) => !/replay/i.test(doc.title)).length > 0 && (
         <div className="space-y-2">
           <p className="text-sm font-bold" style={{ color: "#2d3b2d" }}>
             Meal plan, shopping list &amp; recipes
           </p>
-          {data.documents.map((doc) => (
+          {data.documents
+            .filter((doc) => !/replay/i.test(doc.title))
+            .map((doc) => (
             <a
               key={doc.url}
               href={doc.url}
               target="_blank"
               rel="noreferrer"
-              className="block rounded-xl px-4 py-3 text-sm font-bold"
-              style={{ background: "#f9f5f0", color: "#2d3b2d", border: "1px solid #f0e8e4" }}
+              className="block text-sm font-bold"
+              style={{ color: "#2d3b2d" }}
             >
               {doc.title} →
             </a>

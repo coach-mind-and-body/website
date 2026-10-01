@@ -232,12 +232,8 @@ struct HabitsView: View {
 
     private var challengeScroll: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                todayChallengeCard
-                challengeChips
-                challengesSection
-            }
-            .padding(16)
+            todayChallengeCard
+                .padding(16)
         }
         .dockScrollClearance()
     }
@@ -327,10 +323,11 @@ struct HabitsView: View {
     @ViewBuilder
     private var todayChallengeCard: some View {
         if let today = model.todayChallenge, today.enrolled {
-            HTCard {
+            HTCard(spacing: 12) {
                 Text(today.title ?? "The 5-Day No Processed Food Challenge")
                     .font(.headline)
                     .foregroundStyle(HTTheme.forest)
+
                 if today.beforeStart == true {
                     Text("You’re in. We start September 28. Lives Mon/Wed/Fri at \(today.liveTime ?? "1:00 pm Mountain"). Check-off opens Monday — here’s the week.")
                         .font(.subheadline)
@@ -350,79 +347,71 @@ struct HabitsView: View {
                                         .foregroundStyle(HTTheme.muted)
                                 }
                             }
-                            .padding(.top, 4)
                         }
                     }
                 }
+
                 if today.afterEnd == true {
                     Text("The five days are complete. Your journal is still here.")
                         .font(.subheadline)
                         .foregroundStyle(HTTheme.muted)
                 }
-                if let vid = YouTubeID.parse(today.videoUrl) {
-                    YouTubePlayer(videoId: vid)
-                    if let watch = today.videoUrl, let url = URL(string: watch) {
-                        Button("Watch in the browser") { openURL(url) }
-                            .font(.subheadline.weight(.bold))
-                            .foregroundStyle(HTTheme.forest)
-                    }
-                } else if let embed = today.replayEmbedUrl, let embedUrl = URL(string: embed) {
-                    ReplayWebView(url: embedUrl)
-                        .frame(height: 210)
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    if let watch = today.videoUrl, let url = URL(string: watch) {
-                        Button("Watch in the browser") { openURL(url) }
-                            .font(.subheadline.weight(.bold))
-                            .foregroundStyle(HTTheme.forest)
-                    }
-                } else if let watch = today.videoUrl, let url = URL(string: watch) {
-                    Button("Watch today's replay") { openURL(url) }
-                        .font(.subheadline.weight(.bold))
-                        .foregroundStyle(HTTheme.forest)
-                }
+
                 if let day = today.today {
-                    Text("Day \(day.n) · \(day.weekday)")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(HTTheme.muted)
-                    Text(day.title)
-                        .font(.subheadline.weight(.bold))
-                        .foregroundStyle(HTTheme.forest)
-                    Text(day.win)
-                        .font(.caption)
-                        .foregroundStyle(HTTheme.muted)
-                    if let assignmentTitle = day.assignmentTitle, let steps = day.assignmentSteps, !steps.isEmpty {
-                        Text(assignmentTitle)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Day \(day.n) · \(day.weekday)")
                             .font(.caption.weight(.bold))
-                            .foregroundStyle(HTTheme.gold)
-                            .padding(.top, 4)
-                        ForEach(Array(steps.enumerated()), id: \.offset) { _, step in
-                            Text("• \(step)")
-                                .font(.caption)
-                                .foregroundStyle(HTTheme.muted)
-                        }
+                            .foregroundStyle(HTTheme.muted)
+                        Text(day.title)
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(HTTheme.forest)
+                        Text(day.win)
+                            .font(.caption)
+                            .foregroundStyle(HTTheme.muted)
                     }
-                    if let meet = today.meetUrl, let url = URL(string: meet) {
-                        Button {
-                            openURL(url)
-                        } label: {
-                            Label("Join live (Google Meet)", systemImage: "video.fill")
+                }
+
+                replayBlock(today)
+
+                if let meet = today.meetUrl, let url = URL(string: meet) {
+                    Button {
+                        openURL(url)
+                    } label: {
+                        Label("Join live (Google Meet)", systemImage: "video.fill")
+                            .font(.subheadline.weight(.bold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(HTTheme.forest)
+                            .foregroundStyle(.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                if let day = today.today {
+                    if let assignmentTitle = day.assignmentTitle, let steps = day.assignmentSteps, !steps.isEmpty {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(assignmentTitle)
                                 .font(.subheadline.weight(.bold))
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 10)
-                                .background(HTTheme.forest)
-                                .foregroundStyle(.white)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .foregroundStyle(HTTheme.gold)
+                            ForEach(Array(steps.enumerated()), id: \.offset) { _, step in
+                                Text("• \(step)")
+                                    .font(.caption)
+                                    .foregroundStyle(HTTheme.muted)
+                            }
                         }
-                        .buttonStyle(.plain)
                     }
-                    if day.format == "video" {
+
+                    if day.format == "video", today.videoUrl == nil, today.replayEmbedUrl == nil {
                         Text("No live call today. Log your food and jot a few lines below.")
                             .font(.caption)
                             .foregroundStyle(HTTheme.muted)
                     }
+
                     Text("Logging a meal in Macros or saving your journal counts as today’s check-in.")
                         .font(.caption2)
                         .foregroundStyle(HTTheme.muted)
+
                     Button {
                         Task { await model.toggleTodayChallenge() }
                     } label: {
@@ -436,84 +425,112 @@ struct HabitsView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                     .buttonStyle(.plain)
-                    Text("What did I notice?")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(HTTheme.forest)
-                        .padding(.top, 4)
-                    Text(day.journal?.noticed ?? "What did you notice today?")
-                        .font(.caption2)
-                        .foregroundStyle(HTTheme.muted)
-                    TextField("", text: $model.journalNoticed, axis: .vertical)
-                        .lineLimit(2...4)
-                        .textFieldStyle(.roundedBorder)
-                    Text(day.journal?.glad ?? "One choice you’re glad you made")
-                        .font(.caption2)
-                        .foregroundStyle(HTTheme.muted)
-                    TextField("", text: $model.journalGlad, axis: .vertical)
-                        .lineLimit(2...4)
-                        .textFieldStyle(.roundedBorder)
-                    Text(day.journal?.hard ?? "One thing that was hard")
-                        .font(.caption2)
-                        .foregroundStyle(HTTheme.muted)
-                    TextField("", text: $model.journalHard, axis: .vertical)
-                        .lineLimit(2...4)
-                        .textFieldStyle(.roundedBorder)
-                    Button {
-                        Task { await model.saveTodayJournal() }
-                    } label: {
-                        Text(model.journalSaving ? "Saving…" : "Save journal")
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("What did I notice?")
                             .font(.caption.weight(.bold))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 8)
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(model.journalSaving)
-                }
-                if let docs = today.documents, !docs.isEmpty {
-                    Text("Meal plan, shopping list & recipes")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(HTTheme.forest)
-                        .padding(.top, 8)
-                    ForEach(docs) { doc in
-                        if let url = URL(string: doc.url) {
-                            Button {
-                                inAppURL = IdentifiedURL(url: url)
-                            } label: {
-                                Text(doc.title)
-                                    .font(.subheadline.weight(.bold))
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(.vertical, 10)
-                                    .padding(.horizontal, 12)
-                                    .background(Color.white)
-                                    .foregroundStyle(HTTheme.forest)
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(HTTheme.roseBorder))
-                            }
-                            .buttonStyle(.plain)
+                            .foregroundStyle(HTTheme.forest)
+                        Text(day.journal?.noticed ?? "What did you notice today?")
+                            .font(.caption2)
+                            .foregroundStyle(HTTheme.muted)
+                        TextField("", text: $model.journalNoticed, axis: .vertical)
+                            .lineLimit(2...4)
+                            .textFieldStyle(.roundedBorder)
+                        Text(day.journal?.glad ?? "One choice you’re glad you made")
+                            .font(.caption2)
+                            .foregroundStyle(HTTheme.muted)
+                        TextField("", text: $model.journalGlad, axis: .vertical)
+                            .lineLimit(2...4)
+                            .textFieldStyle(.roundedBorder)
+                        Text(day.journal?.hard ?? "One thing that was hard")
+                            .font(.caption2)
+                            .foregroundStyle(HTTheme.muted)
+                        TextField("", text: $model.journalHard, axis: .vertical)
+                            .lineLimit(2...4)
+                            .textFieldStyle(.roundedBorder)
+                        Button {
+                            Task { await model.saveTodayJournal() }
+                        } label: {
+                            Text(model.journalSaving ? "Saving…" : "Save journal")
+                                .font(.caption.weight(.bold))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 8)
                         }
+                        .buttonStyle(.plain)
+                        .disabled(model.journalSaving)
                     }
                 }
-                if let images = today.guideImages, !images.isEmpty {
-                    Text("What to eat")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(HTTheme.forest)
-                        .padding(.top, 8)
-                    ForEach(images) { img in
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(img.title)
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(HTTheme.muted)
-                            AsyncImage(url: URL(string: img.url)) { phase in
-                                if case .success(let image) = phase {
-                                    image.resizable().scaledToFit()
-                                } else {
-                                    HTTheme.roseBorder.frame(height: 160)
+
+                let docs = (today.documents ?? []).filter { !$0.title.localizedCaseInsensitiveContains("replay") }
+                if !docs.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Meal plan, shopping list & recipes")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(HTTheme.forest)
+                        ForEach(docs) { doc in
+                            if let url = URL(string: doc.url) {
+                                Button {
+                                    inAppURL = IdentifiedURL(url: url)
+                                } label: {
+                                    Text(doc.title)
+                                        .font(.subheadline.weight(.bold))
+                                        .frame(maxWidth: .infinity, alignment: .leading)
                                 }
+                                .buttonStyle(.plain)
+                                .foregroundStyle(HTTheme.forest)
                             }
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
                     }
                 }
+
+                if let images = today.guideImages, !images.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("What to eat")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(HTTheme.forest)
+                        ForEach(images) { img in
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text(img.title)
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(HTTheme.muted)
+                                AsyncImage(url: URL(string: img.url)) { phase in
+                                    if case .success(let image) = phase {
+                                        image.resizable().scaledToFit()
+                                    } else {
+                                        HTTheme.roseBorder.frame(height: 160)
+                                    }
+                                }
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func replayBlock(_ today: ChallengeTodayPayload) -> some View {
+        if let watch = today.videoUrl, let url = URL(string: watch) {
+            Button {
+                inAppURL = IdentifiedURL(url: url)
+            } label: {
+                Label("Watch today’s live replay", systemImage: "play.circle.fill")
+                    .font(.subheadline.weight(.bold))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(HTTheme.forest)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            .buttonStyle(.plain)
+
+            if let vid = YouTubeID.parse(watch) {
+                YouTubePlayer(videoId: vid)
+            } else if let embed = today.replayEmbedUrl, let embedUrl = URL(string: embed) {
+                ReplayWebView(url: embedUrl)
+                    .frame(height: 210)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
         }
     }
