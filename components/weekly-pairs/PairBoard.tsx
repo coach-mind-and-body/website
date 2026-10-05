@@ -6,10 +6,12 @@ export function PairBoard({
   groups,
   roster,
   youId,
+  youLabel = "You this week",
 }: {
   groups: PairGroup[];
   roster: Member[];
   youId?: number | null;
+  youLabel?: string;
 }) {
   const byId = new Map(roster.map((m) => [m.id, m]));
   if (groups.length === 0) {
@@ -41,7 +43,7 @@ export function PairBoard({
             {mine ? (
               <>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#fcfaf9]/70">
-                  You this week
+                  {youLabel}
                 </p>
                 <p className="mt-1 font-display text-2xl leading-tight">
                   {andList(["You", ...partners])}

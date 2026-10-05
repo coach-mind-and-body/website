@@ -3,7 +3,7 @@ import "./this-week.css";
 
 export const metadata: Metadata = {
   title: "This Week — coaching pairs",
-  description: "Who's in this week, and who you're paired with.",
+  description: "Who's in, and who you're paired with.",
   robots: { index: false, follow: false },
 };
 

@@ -33,15 +33,19 @@ export function WeekRoster({
   inThisWeek,
   outThisWeek,
   pending,
+  inLabel = "In this week",
+  outLabel = "Out this week",
 }: {
   inThisWeek: MemberRsvp[];
   outThisWeek: MemberRsvp[];
   pending: MemberRsvp[];
+  inLabel?: string;
+  outLabel?: string;
 }) {
   return (
     <div className="mt-8 space-y-6">
-      <Column label="In this week" people={inThisWeek} empty="Nobody has checked in yet." />
-      <Column label="Out this week" people={outThisWeek} empty="Nobody has marked out." />
+      <Column label={inLabel} people={inThisWeek} empty="Nobody has checked in yet." />
+      <Column label={outLabel} people={outThisWeek} empty="Nobody has marked out." />
       <Column label="Still to check in" people={pending} empty="Everyone has answered." />
     </div>
   );

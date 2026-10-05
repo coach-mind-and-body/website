@@ -3,6 +3,7 @@ import { APP_NAME } from "./config";
 import type { Member } from "./schema";
 import { andList, toE164 } from "./format";
 import { appUrl } from "./url";
+import { checkInPhrases, currentPeriodStart, isBiweekly, weekRangeLabel } from "./week";
 
 type SendResult = { to: string; via: "email" | "sms"; ok: boolean; error?: string };
 
@@ -103,45 +104,65 @@ export async function notifyMember(
   return results;
 }
 
-export async function rsvpReminderCopy(member: Member, link: string) {
+export async function rsvpReminderCopy(member: Member, link: string, periodStart: string) {
   const first = member.name.split(" ")[0];
+  const { span } = checkInPhrases(periodStart);
+  const when = isBiweekly(periodStart) ? `${span} (${weekRangeLabel(periodStart)})` : span;
   return {
     subject: `${APP_NAME} — are you in?`,
-    preview: `Hi ${first}, tap this link to say if you're coaching this week: ${link}`,
+    preview: `Hi ${first}, tap this link to say if you're coaching ${when}: ${link}`,
     htmlBody: `<p>Hi ${escapeHtml(first)},</p>
-      <p>Are you in for coaching this week?</p>
+      <p>Are you in for coaching ${escapeHtml(when)}?</p>
       <p><a href="${link}" style="display:inline-block;background:#1f5c57;color:#fffaf3;text-decoration:none;padding:12px 18px;border-radius:999px;font-weight:700;">Tap in or out</a></p>
       <p style="color:#6b645b;font-size:14px;">If the button doesn't work: ${escapeHtml(link)}</p>`,
-    sms: `Hi ${first} — are you in for coaching this week? ${link}`,
+    sms: `Hi ${first} — are you in for coaching ${when}? ${link}`,
   };
 }
 
-export async function matchNoticeCopy(member: Member, partnerNames: string[], link: string) {
+export async function matchNoticeCopy(
+  member: Member,
+  partnerNames: string[],
+  link: string,
+  periodStart: string
+) {
   const first = member.name.split(" ")[0];
   const withWho = andList(partnerNames);
-  const trio = partnerNames.length > 1;
+  const { span } = checkInPhrases(periodStart);
+  const when = isBiweekly(periodStart) ? `${span} (${weekRangeLabel(periodStart)})` : span;
   return {
-    subject: trio ? `You're with ${withWho} this week` : `You're with ${withWho} this week`,
-    preview: `This week's pair: ${member.name} with ${withWho}. Text them to pick a time. ${link}`,
+    subject: `You're with ${withWho} ${span}`,
+    preview: `You're with ${withWho} ${when}. Text them to pick a time. ${link}`,
     htmlBody: `<p>Hi ${escapeHtml(first)},</p>
-      <p>You're with <strong>${escapeHtml(withWho)}</strong> this week.</p>
+      <p>You're with <strong>${escapeHtml(withWho)}</strong> ${escapeHtml(when)}.</p>
       <p>Text each other to pick a time — this tool doesn't schedule the meeting.</p>
-      <p><a href="${link}" style="display:inline-block;background:#1f5c57;color:#fffaf3;text-decoration:none;padding:12px 18px;border-radius:999px;font-weight:700;">See this week's pairs</a></p>`,
-    sms: `You're with ${withWho} this week. Text them to pick a time. ${link}`,
+      <p><a href="${link}" style="display:inline-block;background:#1f5c57;color:#fffaf3;text-decoration:none;padding:12px 18px;border-radius:999px;font-weight:700;">See the pairs</a></p>`,
+    sms: `You're with ${withWho} ${when}. Text them to pick a time. ${link}`,
   };
 }
 
-export async function checkInGroupText() {
+export async function checkInGroupText(periodStart = currentPeriodStart()) {
   const url = await appUrl();
-  return `This week's check-in is open.
+  if (!isBiweekly(periodStart)) {
+    return `This week's check-in is open.
+
+Tap your name and say if you're in or out:
+${url}`;
+  }
+  return `Check-in for these two weeks (${weekRangeLabel(periodStart)}) is open.
 
 Tap your name and say if you're in or out:
 ${url}`;
 }
 
-export async function matchedGroupText() {
+export async function matchedGroupText(periodStart = currentPeriodStart()) {
   const url = await appUrl();
-  return `This week's pairs are up:
+  if (!isBiweekly(periodStart)) {
+    return `This week's pairs are up:
+${url}
+
+Text your person to pick a time.`;
+  }
+  return `Pairs for these two weeks (${weekRangeLabel(periodStart)}) are up:
 ${url}
 
 Text your person to pick a time.`;

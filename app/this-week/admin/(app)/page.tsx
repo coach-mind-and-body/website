@@ -18,7 +18,7 @@ import { andList } from "@/lib/weekly-pairs/format";
 import { checkInGroupText, emailConfigured, matchedGroupText, smsConfigured } from "@/lib/weekly-pairs/reminders";
 import type { Member } from "@/lib/weekly-pairs/schema";
 import { appUrl, memberUrl } from "@/lib/weekly-pairs/url";
-import { weekRangeLabel } from "@/lib/weekly-pairs/week";
+import { checkInPhrases, weekRangeLabel } from "@/lib/weekly-pairs/week";
 
 export const dynamic = "force-dynamic";
 
@@ -33,8 +33,8 @@ export default async function AdminPage({
   const active = roster.filter((m) => m.active);
   const board = await weekBoard(week, active);
   const history = await recentWeeks(8);
-  const checkInText = await checkInGroupText();
-  const matchedText = await matchedGroupText();
+  const checkInText = await checkInGroupText(week.weekStart);
+  const matchedText = await matchedGroupText(week.weekStart);
   const site = await appUrl();
   const stale =
     week.status === "matched" &&
@@ -45,6 +45,7 @@ export default async function AdminPage({
     active.map(async (m) => ({ name: m.name, url: await memberUrl(m.token) }))
   );
   const linkDump = links.map((l) => `${l.name}\t${l.url}`).join("\n");
+  const phrases = checkInPhrases(week.weekStart);
 
   return (
     <div className="mx-auto min-h-dvh max-w-2xl px-5 pb-20 pt-8">
@@ -53,7 +54,7 @@ export default async function AdminPage({
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-teal-800">
             {APP_NAME} · admin
           </p>
-          <h1 className="mt-2 font-display text-4xl leading-tight">This week</h1>
+          <h1 className="mt-2 font-display text-4xl leading-tight">{phrases.adminTitle}</h1>
           <p className="mt-1 text-stone-600">{weekRangeLabel(week.weekStart)}</p>
         </div>
         <form action={adminLogout}>
@@ -85,9 +86,9 @@ export default async function AdminPage({
           People check themselves in. When you hit match, everyone marked in is shuffled
           into random pairs — not first-come. Odd count gets one trio.
         </p>
-        <MatchButtons matched={week.status === "matched"} />
+        <MatchButtons matched={week.status === "matched"} label={phrases.matchButton} />
         <WeekCheckIn people={board.people} />
-        <MatchButtons matched={week.status === "matched"} />
+        <MatchButtons matched={week.status === "matched"} label={phrases.matchButton} />
         {week.status === "matched" ? (
           <PairBoard groups={board.groups} roster={active} />
         ) : null}
@@ -115,13 +116,14 @@ export default async function AdminPage({
           </form>
           <form action={sendMatchNotices}>
             <button className="btn-secondary" type="submit">
-              Email/text this week&apos;s pairs
+              {phrases.emailPairs}
             </button>
           </form>
         </div>
         <p className="text-xs text-stone-500">
-          Sunday evening and Tuesday morning reminders also run if you point a hourly cron at{" "}
-          <code className="rounded bg-stone-100 px-1">/api/cron/remind</code>.
+          One Tuesday-morning nudge, and one reminder on the last Sunday evening, run when an
+          hourly cron hits{" "}
+          <code className="rounded bg-stone-100 px-1">/api/this-week/cron/remind</code>.
         </p>
         <p className="text-xs text-stone-500">
           Share URL: <span className="break-all font-medium text-ink">{site}</span>
@@ -193,12 +195,12 @@ export default async function AdminPage({
   );
 }
 
-function MatchButtons({ matched }: { matched: boolean }) {
+function MatchButtons({ matched, label }: { matched: boolean; label: string }) {
   return (
     <div className="flex flex-wrap gap-2">
       <form action={matchThisWeek}>
         <button className="btn-primary" type="submit">
-          {matched ? "Rematch" : "Match this week"}
+          {matched ? "Rematch" : label}
         </button>
       </form>
       {matched ? (

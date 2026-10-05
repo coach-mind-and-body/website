@@ -3,7 +3,7 @@ import { SEED_NAMES } from "./config";
 import type { PairGroup } from "./match";
 import type { Member, Rsvp, Week } from "./schema";
 import { loadStore, mutateStore, readStore } from "./store";
-import { currentMonday, isoNow } from "./week";
+import { currentPeriodStart, isoNow } from "./week";
 
 let seeded = false;
 
@@ -39,7 +39,7 @@ export function parseGroups(raw: string | null | undefined): PairGroup[] {
   }
 }
 
-export async function getOrCreateWeek(weekStart = currentMonday()): Promise<Week> {
+export async function getOrCreateWeek(weekStart = currentPeriodStart()): Promise<Week> {
   await dbReady();
   return mutateStore((data) => {
     const found = data.weeks.find((w) => w.weekStart === weekStart);

@@ -178,7 +178,7 @@ export async function sendCheckInReminders() {
   const results = [];
   for (const member of targets) {
     const link = await memberUrl(member.token);
-    const copy = await rsvpReminderCopy(member, link);
+    const copy = await rsvpReminderCopy(member, link, week.weekStart);
     results.push(...(await notifyMember(member, copy)));
   }
   await patchWeek(week.id, { reminderSentAt: isoNow() });
@@ -210,7 +210,7 @@ export async function sendMatchNotices() {
       if (!member) continue;
       const partners = people.filter((p) => p && p.id !== member.id).map((p) => p!.name);
       const link = await memberUrl(member.token);
-      const copy = await matchNoticeCopy(member, partners, link);
+      const copy = await matchNoticeCopy(member, partners, link, week.weekStart);
       results.push(...(await notifyMember(member, copy)));
     }
   }

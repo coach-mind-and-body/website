@@ -6,7 +6,7 @@ import { WeekRoster } from "@/components/weekly-pairs/WeekRoster";
 import { getMemberToken } from "@/lib/weekly-pairs/auth";
 import { APP_NAME } from "@/lib/weekly-pairs/config";
 import { activeMembers, getOrCreateWeek, memberByToken, weekBoard } from "@/lib/weekly-pairs/db";
-import { weekRangeLabel } from "@/lib/weekly-pairs/week";
+import { checkInPhrases, weekRangeLabel } from "@/lib/weekly-pairs/week";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +21,7 @@ export default async function HomePage() {
   const matched = week.status === "matched" && board.groups.length > 0;
   const mine = signedIn ? board.people.find((p) => p.id === you!.id) : null;
   const current = mine?.rsvp?.status ?? null;
+  const phrases = checkInPhrases(week.weekStart);
 
   return (
     <div className="mx-auto min-h-dvh max-w-xl px-5 pb-16 pt-8">
@@ -28,7 +29,7 @@ export default async function HomePage() {
         {APP_NAME}
       </p>
       <h1 className="mt-2 font-display text-4xl leading-[1.05] tracking-tight">
-        {matched ? "This week's pairs" : "Who's in this week?"}
+        {matched ? phrases.titleMatched : phrases.titleOpen}
       </h1>
       <p className="mt-2 text-stone-600">{weekRangeLabel(week.weekStart)}</p>
 
@@ -38,11 +39,7 @@ export default async function HomePage() {
             Hi, {you!.name}
           </p>
           <p className="mt-2 font-display text-3xl leading-tight">
-            {current === "in"
-              ? "You're in this week."
-              : current === "out"
-                ? "You're out this week."
-                : "Are you in this week?"}
+            {current === "in" ? phrases.in : current === "out" ? phrases.out : phrases.ask}
           </p>
           <p className="mt-2 text-sm text-stone-600">
             {matched
@@ -64,7 +61,12 @@ export default async function HomePage() {
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-[0.16em] text-stone-500">
             Everyone
           </h2>
-          <PairBoard groups={board.groups} roster={roster} youId={you?.id ?? null} />
+          <PairBoard
+            groups={board.groups}
+            roster={roster}
+            youId={you?.id ?? null}
+            youLabel={phrases.youLabel}
+          />
           <p className="mt-5 text-sm text-stone-500">
             Text your person to pick a time. That part stays in the group thread.
           </p>
@@ -75,6 +77,8 @@ export default async function HomePage() {
         inThisWeek={board.inThisWeek}
         outThisWeek={board.outThisWeek}
         pending={board.pending}
+        inLabel={phrases.inLabel}
+        outLabel={phrases.outLabel}
       />
 
       {signedIn ? (
