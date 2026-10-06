@@ -6,12 +6,19 @@ import { emailNewsletters, emailNewsletterSends } from "../drizzle/schema";
 import { getDb } from "./db";
 import { sendMarketingEmail } from "./emailMarketing";
 import {
+  buildBroadcastHtml,
   buildNewsletterHtml,
   personalizeNewsletterText,
 } from "./emails/newsletterShell";
 import {
+  prepareNewsletterSegment,
+  sendNewsletterBroadcast,
+  usesMarketingBroadcast,
+} from "./resendAudienceSync";
+import {
   resolveNewsletterAudience,
   type NewsletterAudienceGroup,
+  type NewsletterRecipient,
 } from "./newsletterAudience";
 
 let processing = false;
@@ -48,24 +55,12 @@ function reasonForAudience(group: string): string {
   return "You're receiving this because you joined our email list at mindandbodyresetcoach.com.";
 }
 
-async function processOneNewsletter(
+/** Finance and Challenge. Small enough for the daily transactional cap. */
+async function sendOneByOne(
   db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
-  row: typeof emailNewsletters.$inferSelect
+  row: typeof emailNewsletters.$inferSelect,
+  recipients: NewsletterRecipient[]
 ) {
-  const recipients = await resolveNewsletterAudience(db, {
-    audienceGroup: row.audienceGroup as NewsletterAudienceGroup,
-    excludeEnrolled: row.excludeEnrolled,
-    excludeEmails: parseExcludeEmails(row.excludeEmails),
-  });
-
-  await db
-    .update(emailNewsletters)
-    .set({
-      recipientCount: recipients.length,
-      status: "sending",
-    })
-    .where(eq(emailNewsletters.id, row.id));
-
   let sentCount = 0;
   let failedCount = 0;
   let skippedCount = 0;
@@ -186,14 +181,7 @@ async function processOneNewsletter(
     return;
   }
 
-  const finalStatus =
-    sentCount > 0
-      ? "sent"
-      : recipients.length === 0
-        ? "failed"
-        : failedCount === recipients.length
-          ? "failed"
-          : "sent";
+  const finalStatus = sentCount > 0 ? "sent" : "failed";
 
   await db
     .update(emailNewsletters)
@@ -209,6 +197,127 @@ async function processOneNewsletter(
 
   console.log(
     `[Newsletter] #${row.id} "${row.subject}" finished: ${sentCount} sent, ${failedCount} failed, ${skippedCount} skipped of ${recipients.length}`
+  );
+}
+
+async function processOneNewsletter(
+  db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
+  row: typeof emailNewsletters.$inferSelect
+) {
+  const recipients = await resolveNewsletterAudience(db, {
+    audienceGroup: row.audienceGroup as NewsletterAudienceGroup,
+    excludeEnrolled: row.excludeEnrolled,
+    excludeEmails: parseExcludeEmails(row.excludeEmails),
+  });
+
+  await db
+    .update(emailNewsletters)
+    .set({
+      recipientCount: recipients.length,
+      status: "sending",
+    })
+    .where(eq(emailNewsletters.id, row.id));
+
+  if (recipients.length === 0) {
+    await db
+      .update(emailNewsletters)
+      .set({ status: "failed", recipientCount: 0, sentAt: new Date() })
+      .where(eq(emailNewsletters.id, row.id));
+    console.log(`[Newsletter] #${row.id} has no recipients`);
+    return;
+  }
+
+  if (!usesMarketingBroadcast(row.audienceGroup)) {
+    await sendOneByOne(db, row, recipients);
+    return;
+  }
+
+  const prepared = await prepareNewsletterSegment({
+    newsletterId: row.id,
+    audienceGroup: row.audienceGroup as NewsletterAudienceGroup,
+    recipients,
+  });
+
+  const [current] = await db
+    .select({ status: emailNewsletters.status })
+    .from(emailNewsletters)
+    .where(eq(emailNewsletters.id, row.id))
+    .limit(1);
+  if (current?.status === "cancelled") {
+    console.log(`[Newsletter] ${row.id} cancelled before broadcast`);
+    return;
+  }
+
+  const html = buildBroadcastHtml({
+    previewText: row.previewText,
+    headline: row.headline,
+    subheadline: row.subheadline,
+    greetingTemplate: row.greetingTemplate,
+    signOffClosing: row.signOffClosing,
+    signOffName: row.signOffName,
+    signOffTitle: row.signOffTitle,
+    bodyHtml: row.bodyHtml,
+    ctaLabel: row.ctaLabel,
+    ctaUrl: row.ctaUrl,
+    reasonLine: reasonForAudience(row.audienceGroup),
+  });
+  const broadcast = await sendNewsletterBroadcast({
+    newsletterId: row.id,
+    segmentId: prepared.segmentId,
+    subject: row.subject,
+    previewText: row.previewText,
+    html,
+  });
+
+  if (!broadcast.ok) {
+    await db
+      .update(emailNewsletters)
+      .set({
+        status: "failed",
+        recipientCount: recipients.length,
+        failedCount: recipients.length,
+        sentAt: new Date(),
+      })
+      .where(eq(emailNewsletters.id, row.id));
+    console.error(`[Newsletter] #${row.id} broadcast failed: ${broadcast.error}`);
+    return;
+  }
+
+  let sentCount = 0;
+  let failedCount = 0;
+  for (const recipient of recipients) {
+    const syncError = prepared.failed.find((item) => item.email === recipient.email);
+    const outcome = syncError ? "failed" : "sent";
+    if (syncError) failedCount++;
+    else sentCount++;
+    try {
+      await db.insert(emailNewsletterSends).values({
+        newsletterId: row.id,
+        email: recipient.email,
+        firstName: recipient.firstName,
+        status: outcome,
+        deliveryStatus: syncError ? "failed" : "sent",
+        errorMessage: syncError ? syncError.error.slice(0, 480) : null,
+      });
+    } catch (logErr) {
+      console.warn("[Newsletter] Failed to log send:", logErr);
+    }
+  }
+
+  await db
+    .update(emailNewsletters)
+    .set({
+      sentCount,
+      failedCount,
+      skippedCount: 0,
+      recipientCount: recipients.length,
+      status: sentCount > 0 ? "sent" : "failed",
+      sentAt: new Date(),
+    })
+    .where(eq(emailNewsletters.id, row.id));
+
+  console.log(
+    `[Newsletter] #${row.id} "${row.subject}" broadcast ${broadcast.id} to segment ${prepared.segmentId}: ${sentCount} sent, ${failedCount} failed of ${recipients.length}`
   );
 }
 

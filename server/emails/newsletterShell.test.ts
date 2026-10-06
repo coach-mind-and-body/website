@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildBroadcastHtml,
   buildNewsletterHtml,
   prepareBodyHtmlForEmail,
+  RESEND_FIRST_NAME_TAG,
+  RESEND_UNSUBSCRIBE_TAG,
 } from "./newsletterShell";
 
 describe("newsletterShell", () => {
@@ -43,6 +46,19 @@ describe("newsletterShell", () => {
       bodyHtml: "<p>Keep going, {{firstName}}!</p>",
     });
     expect(html).toContain("Keep going, Mia!");
+  });
+
+  it("leaves Resend merge tags in a broadcast", () => {
+    const html = buildBroadcastHtml({
+      headline: "{{firstName}}, a note",
+      bodyHtml: "<p>Keep going, {{firstName}}.</p>",
+      reasonLine: "You're receiving this because you joined our list.",
+    });
+    expect(html).toContain(`Hi ${RESEND_FIRST_NAME_TAG},`);
+    expect(html).toContain(`Keep going, ${RESEND_FIRST_NAME_TAG}.`);
+    expect(html).toContain(`${RESEND_FIRST_NAME_TAG}, a note`);
+    expect(html).toContain(RESEND_UNSUBSCRIBE_TAG);
+    expect(html).not.toContain("<!--UNSUB_FOOTER-->");
   });
 
   it("personalizes plain-text subjects", async () => {

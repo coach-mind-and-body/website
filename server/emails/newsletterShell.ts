@@ -6,6 +6,7 @@
 import { ENV } from "../_core/env";
 import { BRAND, SITE_URL } from "@shared/brand";
 import { escapeHtml } from "../../lib/htmlEscape";
+import { marketingEmailFooter } from "../emailMarketing";
 
 const base = (ENV.appPublicUrl || SITE_URL).replace(/\/$/, "");
 const LOGO = `${base}${BRAND.logoWideUrl}`;
@@ -165,6 +166,34 @@ export function personalizeNewsletterText(text: string, firstName: string): stri
   return text
     .replace(/\{\{\s*firstName\s*\}\}/gi, name)
     .replace(/\{\{\s*name\s*\}\}/gi, name);
+}
+
+/** Resend broadcast merge tags. One send fills these per contact. */
+export const RESEND_FIRST_NAME_TAG = "{{{contact.first_name|friend}}}";
+export const RESEND_UNSUBSCRIBE_TAG = "{{{RESEND_UNSUBSCRIBE_URL}}}";
+
+export function applyBroadcastName(text: string): string {
+  return text
+    .replace(/\{\{\s*firstName\s*\}\}/gi, RESEND_FIRST_NAME_TAG)
+    .replace(/\{\{\s*name\s*\}\}/gi, RESEND_FIRST_NAME_TAG);
+}
+
+/** Newsletter HTML for a Resend broadcast, with per-contact name and unsubscribe. */
+export function buildBroadcastHtml(
+  input: Omit<NewsletterShellInput, "firstName"> & { reasonLine: string }
+): string {
+  const html = buildNewsletterHtml({
+    ...input,
+    firstName: RESEND_FIRST_NAME_TAG,
+    previewText: input.previewText ? applyBroadcastName(input.previewText) : input.previewText,
+    headline: input.headline ? applyBroadcastName(input.headline) : input.headline,
+    subheadline: input.subheadline ? applyBroadcastName(input.subheadline) : input.subheadline,
+    ctaLabel: input.ctaLabel ? applyBroadcastName(input.ctaLabel) : input.ctaLabel,
+  });
+  return html.replace(
+    "<!--UNSUB_FOOTER-->",
+    marketingEmailFooter(RESEND_UNSUBSCRIBE_TAG, input.reasonLine)
+  );
 }
 
 /**
