@@ -87,7 +87,6 @@ struct ReplayWebView: UIViewRepresentable {
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
         config.allowsInlineMediaPlayback = true
-        config.allowsPictureInPicturePlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
         let web = WKWebView(frame: .zero, configuration: config)
         web.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"
