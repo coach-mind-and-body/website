@@ -40,6 +40,9 @@ const shell = {
     .nl-content th, .nl-content td { border:1px solid #e8ddd0; padding:8px 10px; text-align:left; font-size:14px; }
     .nl-content th { background:#f9f5f0; color:#5a3e28; }
     .nl-content iframe, .nl-content video { max-width:100%; }
+    .nl-letter table { width:auto; margin:0 auto; border-collapse:collapse; }
+    .nl-letter td, .nl-letter th { border:none; padding:0; background:transparent; text-align:center; }
+    .nl-letter img { margin:6px auto 14px; border-radius:8px; }
   `,
 };
 
@@ -48,6 +51,8 @@ export type NewsletterShellInput = {
   previewText?: string | null;
   headline?: string | null;
   subheadline?: string | null;
+  /** Personal letter. Skips the large logo image. */
+  variant?: "default" | "letter" | null;
   /** e.g. "Hi {{firstName}}," or "Hello friend," — empty string hides greeting */
   greetingTemplate?: string | null;
   signOffClosing?: string | null;
@@ -130,6 +135,13 @@ function logoHeader(): string {
   return `
     <div style="${shell.logoBar}">
       <img src="${LOGO}" alt="${escapeHtml(BRAND.name)}" style="max-width:280px;height:auto;" />
+    </div>`;
+}
+
+function letterMark(): string {
+  return `
+    <div style="padding:22px 32px 0;text-align:center;">
+      <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:11px;letter-spacing:0.18em;color:#c4a04a;">MIND &amp; BODY RESET</p>
     </div>`;
 }
 
@@ -237,12 +249,18 @@ export function buildNewsletterHtml(input: NewsletterShellInput): string {
     ? `<div style="display:none;font-size:1px;color:#fff;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">${escapeHtml(input.previewText.trim())}</div>`
     : "";
 
+  const letter =
+    input.variant === "letter" || input.bodyHtml.includes("<!--letter-->");
+  const header = letter ? letterMark() : `${logoHeader()}${hero}`;
+  const bodyStyle = letter
+    ? `padding:14px 36px 4px;color:#4a4a4a;font-size:16px;line-height:1.65;`
+    : shell.body;
+
   return `${preheader}
     <div style="${shell.wrap}">
       <style>${shell.contentStyles}</style>
-      ${logoHeader()}
-      ${hero}
-      <div style="${shell.body}" class="nl-content">
+      ${header}
+      <div style="${bodyStyle}" class="nl-content${letter ? " nl-letter" : ""}">
         ${greetingHtml}
         ${body}
         ${cta}
