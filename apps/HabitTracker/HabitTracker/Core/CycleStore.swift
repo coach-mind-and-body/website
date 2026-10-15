@@ -89,29 +89,66 @@ final class CycleStore {
     func entry(on dateStr: String) -> CycleDay? { days[dateStr] }
 
     func upsert(_ day: CycleDay) {
+        var next = days
         if day.isEmpty {
-            days.removeValue(forKey: day.dateStr)
+            next.removeValue(forKey: day.dateStr)
         } else {
             var stored = day
             stored.fromHealth = false
-            days[day.dateStr] = stored
+            next[day.dateStr] = stored
         }
+        days = next
         save()
     }
 
     func mergeHealth(_ bleedingByDate: [String: CycleBleeding]) {
+        var next = days
+        var changed = false
         for (dateStr, bleeding) in bleedingByDate {
-            if days[dateStr] != nil { continue }
+            if next[dateStr] != nil { continue }
             if bleeding == .none { continue }
-            days[dateStr] = CycleDay(
+            next[dateStr] = CycleDay(
                 dateStr: dateStr,
                 bleeding: bleeding,
                 symptoms: [],
                 note: "",
                 fromHealth: true
             )
+            changed = true
         }
-        save()
+        if changed {
+            days = next
+            save()
+        }
+    }
+
+    /// Most recent run of bleeding days on or before `today`. A gap of one empty day starts a new run.
+    func latestBleedSpan(onOrBefore today: String = MountainDate.today()) -> (start: String, end: String)? {
+        let bleed = Set(
+            days.values
+                .filter { $0.bleeding != .none && $0.dateStr <= today }
+                .map(\.dateStr)
+        )
+        guard var start = bleed.max() else { return nil }
+        let end = start
+        var steps = 0
+        while steps < 40 {
+            let prev = MountainDate.shift(start, days: -1)
+            if prev == start || !bleed.contains(prev) { break }
+            start = prev
+            steps += 1
+        }
+        return (start, end)
+    }
+
+    func bleedStatus(on today: String = MountainDate.today()) -> String? {
+        guard let span = latestBleedSpan(onOrBefore: today) else { return nil }
+        let startLabel = MountainDate.shortMonthDay(span.start)
+        if span.end == today {
+            return span.start == today ? "Bleeding started today" : "Bleeding since \(startLabel)"
+        }
+        if span.start == span.end { return "Last bleeding \(startLabel)" }
+        return "Last bleeding \(startLabel)–\(MountainDate.shortMonthDay(span.end))"
     }
 
     func historyDates(months: Int = 6) -> [String] {
@@ -124,7 +161,7 @@ final class CycleStore {
             let next = MountainDate.shift(cursor, days: 1)
             if next == cursor { break }
             cursor = next
-            if out.count > 200 { break }
+            if out.count > 400 { break }
         }
         return out
     }

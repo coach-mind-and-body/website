@@ -41,17 +41,13 @@ struct HabitsView: View {
                 await model.load()
                 await health.refreshToday()
                 await model.syncFromHealth()
-                cycle.load()
-                let dates = cycle.historyDates(months: 3)
-                if let first = dates.first, let last = dates.last {
-                    let fromHealth = await health.menstrualBleeding(from: first, to: last)
-                    cycle.mergeHealth(fromHealth)
-                }
+                await loadRecentCycleHealth()
             }
             .refreshable {
                 await model.load()
                 await health.refreshToday()
                 await model.syncFromHealth()
+                await loadRecentCycleHealth()
             }
             .onChange(of: health.moveMinutesToday) {
                 Task { await model.syncFromHealth() }
@@ -196,10 +192,27 @@ struct HabitsView: View {
 
     private var cycleScroll: some View {
         ScrollView {
-            CycleCard(store: cycle, logDate: $cycleDate, showLog: $showCycle)
-                .padding(16)
+            CycleCard(store: cycle, logDate: $cycleDate, showLog: $showCycle) { month in
+                Task { await mergeCycleHealth(around: month) }
+            }
+            .padding(16)
         }
         .dockScrollClearance()
+    }
+
+    private func loadRecentCycleHealth() async {
+        cycle.load()
+        let dates = cycle.historyDates(months: 12)
+        guard let first = dates.first, let last = dates.last else { return }
+        let fromHealth = await health.menstrualBleeding(from: first, to: last)
+        cycle.mergeHealth(fromHealth)
+    }
+
+    private func mergeCycleHealth(around month: String) async {
+        let days = MountainDate.monthDays(month)
+        guard let first = days.first, let last = days.last else { return }
+        let fromHealth = await health.menstrualBleeding(from: first, to: last)
+        cycle.mergeHealth(fromHealth)
     }
 
     private var dailyScroll: some View {
