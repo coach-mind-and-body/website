@@ -1,4 +1,5 @@
 import { nanoid } from "nanoid";
+import { applyRosterAddition } from "./additions";
 import { SEED_NAMES } from "./config";
 import type { PairGroup } from "./match";
 import type { Member, Rsvp, Week } from "./schema";
@@ -11,19 +12,22 @@ export async function dbReady() {
   if (seeded) return;
   await loadStore();
   await mutateStore((data) => {
-    if (data.members.length > 0) return;
     const now = isoNow();
-    for (const name of SEED_NAMES) {
-      data.members.push({
-        id: data.nextId.members++,
-        name,
-        email: name === "Lee Anne" ? "leeanne@connectbsg.com" : null,
-        phone: null,
-        token: nanoid(12),
-        active: true,
-        createdAt: now,
-      });
+    if (data.members.length === 0) {
+      for (const name of SEED_NAMES) {
+        data.members.push({
+          id: data.nextId.members++,
+          name,
+          email: name === "Lee Anne" ? "leeanne@connectbsg.com" : null,
+          phone: null,
+          token: nanoid(12),
+          active: true,
+          createdAt: now,
+        });
+      }
     }
+    // The live roster was seeded once and is not empty, so Kacy has to be added here.
+    applyRosterAddition(data, "Kacy", now);
   });
   seeded = true;
 }

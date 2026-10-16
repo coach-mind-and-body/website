@@ -6,6 +6,8 @@ export type DbData = {
   weeks: Week[];
   rsvps: Rsvp[];
   nextId: { members: number; weeks: number; rsvps: number };
+  /** Names already considered for a one-time roster add. A later removal stays removed. */
+  appliedAdditions?: string[];
 };
 
 function empty(): DbData {

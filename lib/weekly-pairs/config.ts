@@ -26,6 +26,7 @@ export const SEED_NAMES = [
   "Catherine",
   "Jeanette",
   "Amy",
+  "Kacy",
 ] as const;
 
 export function groupName() {
