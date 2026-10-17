@@ -1,5 +1,5 @@
 import { nanoid } from "nanoid";
-import { applyRosterAddition } from "./additions";
+import { applyRosterAddition, applyRosterEmails } from "./additions";
 import { SEED_NAMES } from "./config";
 import type { PairGroup } from "./match";
 import type { Member, Rsvp, Week } from "./schema";
@@ -18,7 +18,7 @@ export async function dbReady() {
         data.members.push({
           id: data.nextId.members++,
           name,
-          email: name === "Lee Anne" ? "leeanne@connectbsg.com" : null,
+          email: name === "Lee Anne" ? "connect.chapman@gmail.com" : null,
           phone: null,
           token: nanoid(12),
           active: true,
@@ -28,6 +28,7 @@ export async function dbReady() {
     }
     // The live roster was seeded once and is not empty, so Kacy has to be added here.
     applyRosterAddition(data, "Kacy", now);
+    applyRosterEmails(data);
   });
   seeded = true;
 }

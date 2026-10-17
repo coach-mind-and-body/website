@@ -8,7 +8,11 @@ import { checkInPhrases, currentPeriodStart, isBiweekly, weekRangeLabel } from "
 type SendResult = { to: string; via: "email" | "sms"; ok: boolean; error?: string };
 
 function fromAddress() {
-  return process.env.RESEND_FROM?.trim() || "";
+  return (
+    process.env.RESEND_FROM?.trim() ||
+    process.env.RESEND_FROM_EMAIL?.trim() ||
+    "coach@mindandbodyresetcoach.com"
+  );
 }
 
 function resend() {
@@ -109,13 +113,13 @@ export async function rsvpReminderCopy(member: Member, link: string, periodStart
   const { span } = checkInPhrases(periodStart);
   const when = isBiweekly(periodStart) ? `${span} (${weekRangeLabel(periodStart)})` : span;
   return {
-    subject: `${APP_NAME} — are you in?`,
-    preview: `Hi ${first}, tap this link to say if you're coaching ${when}: ${link}`,
+    subject: "One tap before Sunday's pairs",
+    preview: `Hi ${first}, Lee Anne pairs the group Sunday evening. Are you coaching ${when}? ${link}`,
     htmlBody: `<p>Hi ${escapeHtml(first)},</p>
-      <p>Are you in for coaching ${escapeHtml(when)}?</p>
-      <p><a href="${link}" style="display:inline-block;background:#1f5c57;color:#fffaf3;text-decoration:none;padding:12px 18px;border-radius:999px;font-weight:700;">Tap in or out</a></p>
+      <p>Lee Anne pairs the group Sunday evening. One tap tells her if you're coaching ${escapeHtml(when)}.</p>
+      <p><a href="${link}" style="display:inline-block;background:#1f5c57;color:#fffaf3;text-decoration:none;padding:12px 18px;border-radius:999px;font-weight:700;">I'm in or out</a></p>
       <p style="color:#6b645b;font-size:14px;">If the button doesn't work: ${escapeHtml(link)}</p>`,
-    sms: `Hi ${first} — are you in for coaching ${when}? ${link}`,
+    sms: `Hi ${first} — Lee Anne pairs the group Sunday evening. Are you coaching ${when}? ${link}`,
   };
 }
 

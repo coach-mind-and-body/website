@@ -8,6 +8,9 @@ export async function register() {
     const { startHabitReminderPoller } = await import("./server/habitReminderPoller");
     startHabitReminderPoller();
 
+    const { startPairsReminderPoller } = await import("./server/pairsReminderPoller");
+    startPairsReminderPoller();
+
     // Lightweight calendar sync so discovery bookings land in CRM even if the
     // separate worker process isn't running (webhook + this poll both call the same path).
     const { syncRecentCalendarEvents } = await import("./server/googleCalendar");

@@ -121,9 +121,8 @@ export default async function AdminPage({
           </form>
         </div>
         <p className="text-xs text-stone-500">
-          One Tuesday-morning nudge, and one reminder on the last Sunday evening, run when an
-          hourly cron hits{" "}
-          <code className="rounded bg-stone-100 px-1">/api/this-week/cron/remind</code>.
+          One note goes out Sunday at 5pm Denver, on the last day of the round, and only to
+          people who haven't answered. The button above sends that same note now.
         </p>
         <p className="text-xs text-stone-500">
           Share URL: <span className="break-all font-medium text-ink">{site}</span>
