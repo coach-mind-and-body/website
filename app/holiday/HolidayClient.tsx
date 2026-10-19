@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { ZodError } from "zod";
@@ -14,6 +14,7 @@ import {
   type YesNo,
 } from "@shared/holidayCoaching";
 import { trpc } from "@/lib/trpc";
+import { BRAND } from "@shared/brand";
 import { useMetaPixel } from "@/hooks/useMetaPixel";
 import { generateMetaEventId, getMetaParams } from "@/hooks/useMetaParams";
 import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
@@ -408,6 +409,24 @@ export default function HolidayClient() {
   );
 }
 
+function linkAppMentions(text: string): ReactNode[] {
+  const nodes: ReactNode[] = [];
+  const pattern = /our app|Mind & Body Reset app/g;
+  let last = 0;
+  for (const match of text.matchAll(pattern)) {
+    const index = match.index ?? 0;
+    if (index > last) nodes.push(text.slice(last, index));
+    nodes.push(
+      <a key={index} href={BRAND.appStoreUrl} target="_blank" rel="noopener noreferrer">
+        {match[0]}
+      </a>,
+    );
+    last = index + match[0].length;
+  }
+  if (last < text.length) nodes.push(text.slice(last));
+  return nodes;
+}
+
 function QuestionGroup({
   title,
   intro,
@@ -432,8 +451,8 @@ function QuestionGroup({
         const hint = "hint" in question ? question.hint : undefined;
         return (
           <fieldset key={key} className="hol-q" id={`field-${key}`}>
-            <legend>{question.label}</legend>
-            {hint ? <p className="hol-hint">{hint}</p> : null}
+            <legend>{linkAppMentions(question.label)}</legend>
+            {hint ? <p className="hol-hint">{linkAppMentions(hint)}</p> : null}
             <div className="hol-choices">
               <button
                 type="button"
