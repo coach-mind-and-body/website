@@ -22,6 +22,17 @@ import {
 } from "../emails/foodQuizResults";
 import { fireMetaPixelLead } from "../metaCapi";
 import { metaTrackingInputSchema } from "@shared/metaTracking";
+import { getClientIp, rateLimit } from "../../lib/rateLimit";
+import { TRPCError } from "@trpc/server";
+import {
+  HOLIDAY_COACH_EMAIL,
+  HOLIDAY_EVENT_SOURCE,
+  HOLIDAY_LEAD_NAME,
+  holidayApplicationSchema,
+  isHolidayHoneypot,
+} from "@shared/holidayCoaching";
+import { saveHolidayApplication } from "../holidayApplication";
+import { buildHolidayApplicantEmail, buildHolidayCoachEmail } from "../emails/holidayApplication";
 
 const leadInputSchema = z.object({
   email: z.string().email(),
@@ -377,5 +388,73 @@ export const leadgenRouter = router({
       }
 
       return { success: true };
+    }),
+
+  submitHolidayApplication: publicProcedure
+    .input(holidayApplicationSchema)
+    .mutation(async ({ input, ctx }) => {
+      const ip = getClientIp(ctx.req);
+      const limit = rateLimit(`holiday-app:${ip}`, 8, 60 * 60 * 1000);
+      if (!limit.allowed) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: "Too many applications from this connection. Please wait an hour and try again.",
+        });
+      }
+
+      if (isHolidayHoneypot(input.companyWebsite)) {
+        return { success: true as const, stored: false };
+      }
+
+      await saveHolidayApplication(input);
+
+      const coach = buildHolidayCoachEmail(input);
+      const applicant = buildHolidayApplicantEmail(input.fullName);
+      const firstName = input.fullName;
+
+      try {
+        const coachSent = await sendTransactionalEmail({
+          to: HOLIDAY_COACH_EMAIL,
+          toName: "Lee Anne",
+          subject: coach.subject,
+          htmlBody: coach.html,
+          textBody: coach.text,
+          replyTo: input.email,
+        });
+        if (!coachSent) {
+          console.error("[Holiday] Coach email was not sent for", input.email);
+        }
+      } catch (err) {
+        console.error("[Holiday] Coach email failed for", input.email, err);
+      }
+
+      try {
+        const applicantSent = await sendTransactionalEmail({
+          to: input.email,
+          toName: firstName,
+          subject: applicant.subject,
+          htmlBody: applicant.html,
+          textBody: applicant.text,
+        });
+        if (!applicantSent) {
+          console.error("[Holiday] Applicant email was not sent for", input.email);
+        }
+      } catch (err) {
+        console.error("[Holiday] Applicant email failed for", input.email, err);
+      }
+
+      await fireMetaPixelLead({
+        customerEmail: input.email,
+        customerName: input.fullName,
+        customerPhone: input.phone,
+        contentName: HOLIDAY_LEAD_NAME,
+        eventSourceUrl: input.eventSourceUrl ?? HOLIDAY_EVENT_SOURCE,
+        eventId: input.eventId,
+        req: ctx.req,
+        fbc: input.fbc,
+        fbp: input.fbp,
+      });
+
+      return { success: true as const, stored: true };
     }),
 });

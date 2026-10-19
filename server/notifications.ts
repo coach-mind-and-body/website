@@ -103,6 +103,7 @@ export async function sendTransactionalEmail(params: {
   subject: string;
   htmlBody: string;
   textBody?: string;
+  replyTo?: string;
 }): Promise<boolean> {
   const client = getResendClient();
   if (!client) {
@@ -116,6 +117,7 @@ export async function sendTransactionalEmail(params: {
       subject: params.subject,
       html: params.htmlBody,
       text: params.textBody,
+      ...(params.replyTo ? { replyTo: params.replyTo } : {}),
     });
     if (error) {
       console.error(`[Email] Resend error for ${params.to}:`, error);

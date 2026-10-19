@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink, TRPCClientError } from "@trpc/client";
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import superjson from "superjson";
 import { trpc } from "@/lib/trpc";
@@ -10,7 +11,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ChatProvider } from "@/contexts/ChatContext";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
-import ChatWidget from "@/components/ChatWidget";
+const ChatWidget = dynamic(() => import("@/components/ChatWidget"), { ssr: false });
 import { UNAUTHED_ERR_MSG } from "@shared/const";
 import { getLoginUrl } from "@/lib/const";
 
@@ -44,8 +45,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   const pathname = usePathname();
   const isAdminRoute = pathname?.startsWith("/admin");
-  // Habit tracker PWA: no site chatbot (FAB / nav conflict)
+  // Habit tracker PWA: no site chatbot (FAB / nav conflict).
+  // /holiday is a paid-ad page — skip the chat bundle so the form paints first.
   const isHabitTrackerRoute = pathname?.startsWith("/habit-tracker");
+  const isHolidayRoute = pathname === "/holiday" || pathname?.startsWith("/holiday/");
 
   const [trpcClient] = useState(() =>
     trpc.createClient({
@@ -72,7 +75,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             <TooltipProvider>
               {children}
               <Toaster />
-              {!isAdminRoute && !isHabitTrackerRoute && <ChatWidget />}
+              {!isAdminRoute && !isHabitTrackerRoute && !isHolidayRoute && <ChatWidget />}
             </TooltipProvider>
           </ChatProvider>
         </ThemeProvider>

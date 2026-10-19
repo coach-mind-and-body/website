@@ -1070,6 +1070,46 @@ export const shoppingListItems = mysqlTable("shopping_list_items", {
 export type ShoppingListItem = typeof shoppingListItems.$inferSelect;
 export type InsertShoppingListItem = typeof shoppingListItems.$inferInsert;
 
+// ── Holiday coaching applications (/holiday) ─────────────────────────────────
+const yesNo = ["yes", "no"] as const;
+
+export const holidayApplications = mysqlTable("holiday_applications", {
+  id: int("id").autoincrement().primaryKey(),
+  fullName: varchar("fullName", { length: 200 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  phone: varchar("phone", { length: 40 }).notNull(),
+  age18: mysqlEnum("age18", yesNo).notNull(),
+  newToFasting: mysqlEnum("newToFasting", yesNo).notNull(),
+  pregnantOrBreastfeeding: mysqlEnum("pregnantOrBreastfeeding", yesNo).notNull(),
+  eatingDisorder: mysqlEnum("eatingDisorder", yesNo).notNull(),
+  addiction: mysqlEnum("addiction", yesNo).notNull(),
+  twelveStep: mysqlEnum("twelveStep", yesNo).notNull(),
+  moodMedication: mysqlEnum("moodMedication", yesNo).notNull(),
+  takeResponsibility: mysqlEnum("takeResponsibility", yesNo).notNull(),
+  whyCoaching: text("whyCoaching").notNull(),
+  hopes: text("hopes").notNull(),
+  buyKetoMojo: mysqlEnum("buyKetoMojo", yesNo).notNull(),
+  logFood: mysqlEnum("logFood", yesNo).notNull(),
+  commitFiveWeeks: mysqlEnum("commitFiveWeeks", yesNo).notNull(),
+  weeklyZoom: mysqlEnum("weeklyZoom", yesNo).notNull(),
+  actionSteps: mysqlEnum("actionSteps", yesNo).notNull(),
+  availableNov3to8: mysqlEnum("availableNov3to8", yesNo).notNull(),
+  utmSource: varchar("utmSource", { length: 255 }),
+  utmMedium: varchar("utmMedium", { length: 255 }),
+  utmCampaign: varchar("utmCampaign", { length: 255 }),
+  utmContent: varchar("utmContent", { length: 255 }),
+  utmTerm: varchar("utmTerm", { length: 255 }),
+  fbclid: varchar("fbclid", { length: 255 }),
+  fbp: varchar("fbp", { length: 255 }),
+  fbc: varchar("fbc", { length: 512 }),
+  landingUrl: varchar("landingUrl", { length: 1000 }),
+  eventId: varchar("eventId", { length: 80 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type HolidayApplication = typeof holidayApplications.$inferSelect;
+export type InsertHolidayApplication = typeof holidayApplications.$inferInsert;
+
 // --- DUMMY EXPORTS TO BYPASS STATIC WEBPACK ERRORS FOR LEGACY CRM CODE ---
 export const vacationQuotes = mysqlTable("dummy_vq", { id: int("id") });
 export const flightDeals = mysqlTable("dummy_fd", { id: int("id") });

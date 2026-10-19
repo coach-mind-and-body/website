@@ -1,0 +1,425 @@
+.hol {
+  min-height: 100vh;
+  background: oklch(0.985 0.008 80);
+  color: oklch(0.22 0.015 50);
+  font-family: var(--font-holiday-body), "Segoe UI", sans-serif;
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.hol button,
+.hol input,
+.hol textarea {
+  font-family: inherit;
+}
+
+.hol h1,
+.hol h2,
+.hol h3,
+.hol-sign {
+  font-family: var(--font-holiday-display), Georgia, "Times New Roman", serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: oklch(0.2 0.015 50);
+}
+
+.hol-wrap {
+  width: min(40rem, 100%);
+  margin: 0 auto;
+  padding: 0 1.25rem;
+}
+
+.hol-header {
+  padding: calc(0.85rem + env(safe-area-inset-top)) 0 0.5rem;
+}
+
+.hol-brand {
+  color: oklch(0.38 0.04 70);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.hol-hero {
+  padding: 1.25rem 0 0.5rem;
+}
+
+.hol-kicker {
+  display: inline-block;
+  margin: 0 0 0.85rem;
+  padding: 0.28rem 0.7rem;
+  border-radius: 999px;
+  background: oklch(0.94 0.03 150);
+  color: oklch(0.32 0.07 150);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hol h1 {
+  margin: 0;
+  font-size: clamp(2.2rem, 9vw, 3.6rem);
+  line-height: 1.02;
+}
+
+.hol-sub {
+  margin: 1rem 0 0;
+  font-size: 1.125rem;
+  line-height: 1.45;
+  color: oklch(0.38 0.02 50);
+}
+
+.hol-offer {
+  margin: 0.9rem 0 0;
+  font-weight: 600;
+  color: oklch(0.32 0.06 150);
+}
+
+.hol-apply {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 3.25rem;
+  margin-top: 1.25rem;
+  border-radius: 999px;
+  background: oklch(0.34 0.07 150);
+  color: white;
+  font-size: 1rem;
+  font-weight: 700;
+  text-decoration: none;
+  text-align: center;
+}
+
+.hol-apply:hover {
+  background: oklch(0.3 0.07 150);
+}
+
+.hol-bio {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 2rem 0 0.5rem;
+}
+
+.hol-photo {
+  width: 11.5rem;
+  height: auto;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  object-position: center 18%;
+  border-radius: 1.1rem;
+}
+
+.hol-bio p {
+  margin: 0;
+}
+
+.hol-section {
+  margin-top: 2.25rem;
+}
+
+.hol h2 {
+  margin: 0 0 0.4rem;
+  font-size: clamp(1.7rem, 5vw, 2.15rem);
+  line-height: 1.1;
+}
+
+.hol-intro {
+  margin: 0 0 0.9rem;
+  color: oklch(0.4 0.02 50);
+}
+
+.hol-learn {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hol-learn li {
+  padding: 0.72rem 0;
+  border-top: 1px solid oklch(0.9 0.012 80);
+  font-weight: 600;
+}
+
+.hol-learn li:last-child {
+  border-bottom: 1px solid oklch(0.9 0.012 80);
+}
+
+.hol-commit {
+  margin-top: 1.75rem;
+  padding: 1.15rem 1.15rem 0.4rem;
+  border-radius: 1rem;
+  background: oklch(0.96 0.02 50);
+}
+
+.hol-commit li {
+  margin: 0 0 0.7rem;
+}
+
+.hol-keto {
+  margin-top: 1rem;
+  padding: 1rem 1rem 1rem 0.95rem;
+  border-left: 3px solid oklch(0.72 0.11 78);
+  background: white;
+  border-radius: 0 0.9rem 0.9rem 0;
+}
+
+.hol-keto strong {
+  display: block;
+  margin-bottom: 0.35rem;
+}
+
+.hol-keto p {
+  margin: 0;
+}
+
+.hol-thanks h1 {
+  font-size: clamp(1.85rem, 6vw, 2.7rem);
+  line-height: 1.15;
+}
+
+.hol-form-card {
+  margin-top: 1.5rem;
+  padding: 1.15rem 1rem 1.25rem;
+  background: white;
+  border: 1px solid oklch(0.91 0.012 80);
+  border-radius: 1rem;
+}
+
+.hol-label {
+  display: block;
+  margin: 0.95rem 0 0.35rem;
+  font-weight: 700;
+  font-size: 0.98rem;
+}
+
+.hol-input,
+.hol-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 3rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid oklch(0.84 0.015 80);
+  border-radius: 0.7rem;
+  background: white;
+  color: inherit;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.hol-textarea {
+  min-height: 7.5rem;
+  resize: vertical;
+}
+
+.hol-input.is-bad,
+.hol-textarea.is-bad {
+  border-color: oklch(0.5 0.14 25);
+}
+
+.hol-q {
+  margin: 1.15rem 0 0;
+  padding: 0;
+  border: 0;
+  min-inline-size: 0;
+}
+
+.hol-q legend {
+  padding: 0;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.hol-hint {
+  margin: 0.35rem 0 0;
+  color: oklch(0.4 0.03 70);
+  font-size: 0.92rem;
+}
+
+.hol-choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-top: 0.55rem;
+}
+
+.hol-choice {
+  min-height: 3rem;
+  border-radius: 999px;
+  border: 1px solid oklch(0.84 0.015 80);
+  background: white;
+  color: oklch(0.28 0.02 50);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.hol-choice.is-on {
+  background: oklch(0.34 0.07 150);
+  border-color: oklch(0.34 0.07 150);
+  color: white;
+}
+
+.hol-choice.is-no {
+  background: oklch(0.28 0.02 50);
+  border-color: oklch(0.28 0.02 50);
+  color: white;
+}
+
+.hol-error {
+  margin: 0.35rem 0 0;
+  color: oklch(0.45 0.14 25);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.hol-group {
+  margin-top: 1.6rem;
+  padding-top: 0.2rem;
+}
+
+.hol-group h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1.45rem;
+}
+
+.hol-privacy {
+  margin: 1.1rem 0 0;
+  color: oklch(0.42 0.02 50);
+  font-size: 0.92rem;
+}
+
+.hol-privacy a,
+.hol-footer a {
+  color: oklch(0.32 0.06 150);
+}
+
+.hol-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 3.25rem;
+  margin-top: 1rem;
+  border: 0;
+  border-radius: 999px;
+  background: oklch(0.34 0.07 150);
+  color: white;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.hol-submit:disabled {
+  opacity: 0.7;
+}
+
+.hol-submit.hol-submit-late {
+  width: fit-content;
+  max-width: 100%;
+  margin: 1.25rem auto 0.5rem;
+  padding: 0 1.5rem;
+}
+
+.hol-faq {
+  margin: 2rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hol-faq li {
+  padding: 0.9rem 0;
+  border-top: 1px solid oklch(0.9 0.012 80);
+}
+
+.hol-faq h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1.25rem;
+}
+
+.hol-faq p {
+  margin: 0;
+}
+
+.hol-fine {
+  margin: 1.5rem 0 0;
+  color: oklch(0.48 0.02 50);
+  font-size: 0.88rem;
+}
+
+.hol-footer {
+  padding: 1.5rem 0 2rem;
+  color: oklch(0.5 0.02 50);
+  font-size: 0.85rem;
+}
+
+.hol-footer p {
+  margin: 0.2rem 0;
+}
+
+.hol-thanks {
+  padding: 2.5rem 0 3rem;
+}
+
+.hol-thanks p {
+  margin: 1rem 0 0;
+  font-size: 1.2rem;
+}
+
+.hol-sign {
+  margin-top: 1.25rem;
+  font-size: 1.5rem;
+}
+
+.hol-hp {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.hol a:focus-visible,
+.hol button:focus-visible,
+.hol input:focus-visible,
+.hol textarea:focus-visible {
+  outline: 2px solid oklch(0.34 0.07 150);
+  outline-offset: 3px;
+}
+
+@media (min-width: 720px) {
+  .hol-wrap {
+    padding: 0 1.5rem;
+  }
+
+  .hol-bio {
+    flex-direction: row;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .hol-photo {
+    width: 13.5rem;
+    flex: none;
+  }
+
+  .hol-form-card {
+    padding: 1.5rem 1.4rem 1.5rem;
+  }
+
+  .hol-apply,
+  .hol-submit {
+    width: auto;
+    min-width: 16rem;
+    padding: 0 1.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hol {
+    scroll-behavior: auto;
+  }
+}
