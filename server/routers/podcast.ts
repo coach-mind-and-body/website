@@ -5,6 +5,7 @@ import { resendSubscribe } from "../resendSubscribe";
 import { getDb } from "../db";
 import { podcastEpisodes } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
+import { attachPlatformUrls } from "../podcastPlatforms";
 
 const PLAYLIST_ID = "PL7rk7dm4oyzKumv4UU53xInS8sNof9q7H";
 
@@ -17,6 +18,8 @@ export interface Episode {
   videoId: string;
   slug?: string | null;
   hasShowNotes?: boolean;
+  spotifyUrl?: string | null;
+  appleUrl?: string | null;
 }
 
 export function parseYouTubeRSS(xml: string): Episode[] {
@@ -243,6 +246,7 @@ export const podcastRouter = router({
           (ep as any).habitActionsJson = fallbackActions;
         }
       }
+      await attachPlatformUrls(yt);
       return { episodes: yt };
     }
 
@@ -258,7 +262,7 @@ export const podcastRouter = router({
           .from(podcastEpisodes)
           .orderBy(desc(podcastEpisodes.publishedAt), desc(podcastEpisodes.id));
       }
-      return { episodes: rows.map(episodeFromRow) };
+      return { episodes: await attachPlatformUrls(rows.map(episodeFromRow)) };
     }
 
     return { episodes: [] as Episode[] };

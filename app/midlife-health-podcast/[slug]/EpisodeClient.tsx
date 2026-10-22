@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Youtube } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
+import PodcastPlatformLinks from "@/components/PodcastPlatformLinks";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
+import { youtubeEpisodeUrl } from "@shared/podcastLinks";
 
 type Props = {
   title: string;
@@ -13,6 +15,8 @@ type Props = {
   publishedAt: string | null;
   showNotesHtml: string | null;
   transcript: string | null;
+  spotifyUrl?: string | null;
+  appleUrl?: string | null;
 };
 
 export default function EpisodeClient({
@@ -21,6 +25,8 @@ export default function EpisodeClient({
   publishedAt,
   showNotesHtml,
   transcript,
+  spotifyUrl,
+  appleUrl,
 }: Props) {
   const dateLabel = publishedAt
     ? new Date(publishedAt).toLocaleDateString("en-US", {
@@ -80,15 +86,23 @@ export default function EpisodeClient({
               />
             </div>
 
-            <a
-              href={`https://www.youtube.com/watch?v=${videoId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-sm font-bold mb-10 transition-opacity hover:opacity-70"
-              style={{ color: "oklch(0.38 0.10 148)" }}
-            >
-              <Youtube size={18} /> Watch on YouTube
-            </a>
+            <div className="mb-10">
+              <p
+                className="text-xs font-bold uppercase tracking-widest mb-2"
+                style={{ color: "oklch(0.38 0.10 148)" }}
+              >
+                Listen to this episode
+              </p>
+              <div style={{ color: "oklch(0.38 0.10 148)" }}>
+                <PodcastPlatformLinks
+                  youtubeUrl={youtubeEpisodeUrl(videoId)}
+                  spotifyUrl={spotifyUrl}
+                  appleUrl={appleUrl}
+                  episodeTitle={title}
+                  size={22}
+                />
+              </div>
+            </div>
 
             <article
               className="prose prose-neutral max-w-none mb-12"

@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "@/server/db";
 import { podcastEpisodes } from "@/drizzle/schema";
 import { absoluteUrl, SITE_URL } from "@shared/brand";
+import { platformUrlsForTitle } from "@/server/podcastPlatforms";
 import EpisodeClient from "./EpisodeClient";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -63,6 +64,10 @@ export default async function Page({ params }: Props) {
 
   const pageUrl = absoluteUrl(`/midlife-health-podcast/${ep.slug}`);
   const videoUrl = `https://www.youtube.com/watch?v=${ep.videoId}`;
+  const platforms = await platformUrlsForTitle(ep.title);
+  const sameAs = [videoUrl, platforms.spotifyUrl, platforms.appleUrl].filter(
+    (url): url is string => Boolean(url)
+  );
 
   const jsonLd = [
     {
@@ -85,6 +90,7 @@ export default async function Page({ params }: Props) {
           ? new Date(ep.publishedAt).toISOString()
           : undefined,
       },
+      sameAs,
       partOfSeries: {
         "@type": "PodcastSeries",
         name: "Mind and Body Reset Podcast",
@@ -128,6 +134,8 @@ export default async function Page({ params }: Props) {
         publishedAt={ep.publishedAt ? new Date(ep.publishedAt).toISOString() : null}
         showNotesHtml={ep.showNotesHtml}
         transcript={ep.transcript}
+        spotifyUrl={platforms.spotifyUrl}
+        appleUrl={platforms.appleUrl}
       />
     </>
   );

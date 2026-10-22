@@ -8,6 +8,7 @@ import { ArrowRight, Star, CheckCircle2, ChevronRight } from "lucide-react";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import { BRAND, PROGRAM } from "@shared/brand";
+import { PodcastShowLinks } from "@/components/PodcastPlatformLinks";
 import { trpc } from "@/lib/trpc";
 
 
@@ -307,9 +308,12 @@ export default function Home() {
               </h3>
               <ul className="space-y-4 mb-6">
                 <li>
-                  <a href="https://www.youtube.com/playlist?list=PL7rk7dm4oyzKumv4UU53xInS8sNof9q7H" target="_blank" rel="noopener noreferrer" className="font-bold text-lg transition-opacity hover:opacity-70" style={{ color: "oklch(0.42 0.09 140)" }}>
+                  <Link href="/midlife-health-podcast" className="font-bold text-lg transition-opacity hover:opacity-70" style={{ color: "oklch(0.42 0.09 140)" }}>
                     Mind &amp; Body Podcast →
-                  </a>
+                  </Link>
+                  <div className="mt-2" style={{ color: "oklch(0.42 0.09 140)" }}>
+                    <PodcastShowLinks size={18} />
+                  </div>
                 </li>
                 <li>
                   <a href={BRAND.youtubeUrl} target="_blank" rel="noopener noreferrer" className="font-bold text-lg transition-opacity hover:opacity-70" style={{ color: "oklch(0.42 0.09 140)" }}>
@@ -360,7 +364,7 @@ export default function Home() {
               </h3>
               <p className="text-xs mb-1" style={{ color: "oklch(0.52 0.015 50)" }}>30 mins · 1st appointment only</p>
               <p className="text-sm leading-relaxed mb-5" style={{ color: "oklch(0.45 0.015 50)" }}>
-                In this free call you will learn a new revolutionary way that women just like you are losing the weight and keeping it off forever.
+                A free 30-minute call with Lee Anne to see if 6 Habits in 6 Weeks is the right next step. No pressure pitch.
               </p>
               <Link
                 href="/book"

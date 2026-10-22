@@ -5,6 +5,7 @@ import { blogPosts } from "@/drizzle/schema";
 import { and, eq } from "drizzle-orm";
 import BlogPostClient from "./BlogPostClient";
 import { absoluteUrl } from "@shared/brand";
+import { listenTargetForBlogPost } from "@/server/podcastPlatforms";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -280,7 +281,10 @@ export default async function Page({ params }: Props) {
         title + article body. Without this, Google only saw a loading shell
         ("Discovered - currently not indexed" / thin content risk).
       */}
-      <BlogPostClient initialPost={post} />
+      <BlogPostClient
+        initialPost={post}
+        listen={await listenTargetForBlogPost(post.slug, post.content, post.schemaVideoUrl)}
+      />
     </>
   );
 }

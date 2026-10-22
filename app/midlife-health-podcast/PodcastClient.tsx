@@ -9,13 +9,14 @@ import { trpc } from "@/lib/trpc";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import { Youtube, Play, Mail, ArrowRight, Headphones } from "lucide-react";
+import PodcastPlatformLinks, { PodcastShowLinks } from "@/components/PodcastPlatformLinks";
+import { PODCAST_SHOW, youtubeEpisodeUrl } from "@shared/podcastLinks";
 
 
 const PODCAST_THUMBNAIL =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/podcast-thumbnail_d50f52f9.png";
 
-const YOUTUBE_CHANNEL = "https://www.youtube.com/@MindandBodyResetCoach";
-const YOUTUBE_PLAYLIST = `https://www.youtube.com/playlist?list=PL7rk7dm4oyzKumv4UU53xInS8sNof9q7H`;
+
 
 interface Episode {
   id: string;
@@ -26,6 +27,8 @@ interface Episode {
   videoId: string;
   slug?: string | null;
   hasShowNotes?: boolean;
+  spotifyUrl?: string | null;
+  appleUrl?: string | null;
 }
 
 function formatDate(iso: string) {
@@ -63,6 +66,7 @@ export default function Podcast() {
 
   const totalPages = Math.max(1, Math.ceil(episodes.length / limit));
   const paginatedEpisodes = episodes.slice((page - 1) * limit, page * limit);
+  const activeEpisode = episodes.find((ep) => ep.id === activeVideo || ep.videoId === activeVideo);
 
   const subscribeMutation = trpc.podcast.subscribe.useMutation({
     onSuccess: () => {
@@ -140,7 +144,7 @@ export default function Podcast() {
               </p>
               <div className="flex flex-wrap gap-3">
                 <a
-                  href={YOUTUBE_PLAYLIST}
+                  href={PODCAST_SHOW.youtube}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all hover:opacity-90"
@@ -157,6 +161,9 @@ export default function Podcast() {
                   <Mail size={15} />
                   Get Episodes by Email
                 </a>
+              </div>
+              <div className="mt-5" style={{ color: "oklch(0.95 0.02 80)" }}>
+                <PodcastShowLinks size={22} />
               </div>
             </div>
 
@@ -248,7 +255,7 @@ export default function Podcast() {
               </h2>
             </div>
             <a
-              href={YOUTUBE_CHANNEL}
+              href={PODCAST_SHOW.youtube}
               target="_blank"
               rel="noopener noreferrer"
               className="hidden sm:inline-flex items-center gap-2 text-sm font-semibold transition-opacity hover:opacity-70"
@@ -273,7 +280,7 @@ export default function Podcast() {
               <Youtube size={40} className="mx-auto mb-4 opacity-30" style={{ color: "oklch(0.45 0.09 10)" }} />
               <p className="text-sm" style={{ color: "oklch(0.52 0.035 55)" }}>
                 Episodes are loading. Check back shortly or{" "}
-                <a href={YOUTUBE_CHANNEL} target="_blank" rel="noopener noreferrer" className="underline">
+                <a href={PODCAST_SHOW.youtube} target="_blank" rel="noopener noreferrer" className="underline">
                   watch on YouTube
                 </a>
                 .
@@ -297,25 +304,48 @@ export default function Podcast() {
                       allowFullScreen
                     />
                   </div>
+                  {activeEpisode && (
+                    <div
+                      className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
+                      style={{ background: "oklch(1 0 0)" }}
+                    >
+                      <p className="text-sm font-bold" style={{ color: "oklch(0.22 0.02 160)" }}>
+                        {activeEpisode.title}
+                      </p>
+                      <div style={{ color: "oklch(0.38 0.10 148)" }}>
+                        <PodcastPlatformLinks
+                          youtubeUrl={youtubeEpisodeUrl(activeEpisode.videoId)}
+                          spotifyUrl={activeEpisode.spotifyUrl}
+                          appleUrl={activeEpisode.appleUrl}
+                          episodeTitle={activeEpisode.title}
+                          size={18}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* Episode grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 {paginatedEpisodes.map((ep) => (
-                  <button
+                  <div
                     key={ep.id}
-                    onClick={() => {
-                      setActiveVideo(ep.id);
-                      // Scroll to the featured player, not the top of the page
-                      playerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-                    }}
                     className="text-left rounded-2xl overflow-hidden transition-all hover:shadow-lg group"
                     style={{
                       background: "oklch(1 0 0)",
                       border: `2px solid ${activeVideo === ep.id ? "oklch(0.38 0.10 148)" : "oklch(0.90 0.02 75)"}`,
                       boxShadow: activeVideo === ep.id ? "0 4px 20px oklch(0.38 0.10 148 / 0.20)" : "none",
                     }}
+                  >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveVideo(ep.id);
+                      // Scroll to the featured player, not the top of the page
+                      playerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }}
+                    className="text-left w-full"
                   >
                     <div className="relative">
                       <img
@@ -349,16 +379,6 @@ export default function Podcast() {
                       <p className="text-xs mb-1.5" style={{ color: "oklch(0.60 0.03 55)" }}>
                         {formatDate(ep.publishedAt)}
                       </p>
-                      {ep.hasShowNotes && ep.slug && (
-                        <Link
-                          href={`/midlife-health-podcast/${ep.slug}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="inline-block text-xs font-bold mb-2 transition-opacity hover:opacity-70"
-                          style={{ color: "oklch(0.38 0.10 148)" }}
-                        >
-                          Full show notes →
-                        </Link>
-                      )}
                       <h3
                         className="font-bold text-sm leading-snug mb-2 line-clamp-2"
                         style={{ color: "oklch(0.18 0.025 50)" }}
@@ -370,6 +390,27 @@ export default function Podcast() {
                       </p>
                     </div>
                   </button>
+                    <div className="px-4 pb-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+                      {ep.hasShowNotes && ep.slug && (
+                        <Link
+                          href={`/midlife-health-podcast/${ep.slug}`}
+                          className="text-xs font-bold transition-opacity hover:opacity-70"
+                          style={{ color: "oklch(0.38 0.10 148)" }}
+                        >
+                          Full show notes →
+                        </Link>
+                      )}
+                      <div style={{ color: "oklch(0.38 0.10 148)" }}>
+                        <PodcastPlatformLinks
+                          youtubeUrl={youtubeEpisodeUrl(ep.videoId)}
+                          spotifyUrl={ep.spotifyUrl}
+                          appleUrl={ep.appleUrl}
+                          episodeTitle={ep.title}
+                          size={16}
+                        />
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
 
@@ -400,7 +441,7 @@ export default function Podcast() {
 
               <div className="text-center pt-2 mt-8">
                 <a
-                  href={YOUTUBE_CHANNEL}
+                  href={PODCAST_SHOW.youtube}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 text-sm font-semibold transition-opacity hover:opacity-70"

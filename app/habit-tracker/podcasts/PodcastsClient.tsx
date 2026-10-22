@@ -17,10 +17,10 @@ import { useHabitPodcastPlayer } from "@/contexts/HabitPodcastPlayerContext";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import PodcastPlatformLinks, { PodcastShowLinks } from "@/components/PodcastPlatformLinks";
+import { PODCAST_SHOW, youtubeEpisodeUrl } from "@shared/podcastLinks";
 
-const YOUTUBE_CHANNEL = "https://www.youtube.com/@MindandBodyResetCoach";
-const YOUTUBE_PLAYLIST =
-  "https://www.youtube.com/playlist?list=PL7rk7dm4oyzKumv4UU53xInS8sNof9q7H";
+
 
 interface Episode {
   id: string;
@@ -31,6 +31,8 @@ interface Episode {
   videoId: string;
   slug?: string | null;
   hasShowNotes?: boolean;
+  spotifyUrl?: string | null;
+  appleUrl?: string | null;
   habitActionsJson?: string | null;
   linkedBlogSlug?: string | null;
 }
@@ -159,6 +161,9 @@ export default function PodcastsClient() {
         <p className="text-gray-600 text-sm max-w-md mx-auto">
           Player stays docked at the bottom while you browse — pick an episode to play.
         </p>
+        <div className="mt-3 flex justify-center" style={{ color: "#2d3b2d" }}>
+          <PodcastShowLinks size={20} />
+        </div>
       </motion.div>
 
       {/* Status card — actual iframe lives in fixed mini player at bottom */}
@@ -193,15 +198,16 @@ export default function PodcastsClient() {
                   Read show notes <ExternalLink size={14} />
                 </Link>
               )}
-              {(activeVideo || nowPlaying?.videoId) && (
-                <a
-                  href={`https://www.youtube.com/watch?v=${nowPlaying?.videoId || activeVideo}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#8a9a8a] hover:text-[#2d3b2d] transition-colors"
-                >
-                  <Youtube size={14} /> Open in YouTube
-                </a>
+              {(activeEpisode || nowPlaying?.videoId) && (
+                <div style={{ color: "#2d3b2d" }}>
+                  <PodcastPlatformLinks
+                    youtubeUrl={youtubeEpisodeUrl(nowPlaying?.videoId || activeEpisode?.videoId || activeVideo || "")}
+                    spotifyUrl={activeEpisode?.spotifyUrl}
+                    appleUrl={activeEpisode?.appleUrl}
+                    episodeTitle={nowPlaying?.title || activeEpisode?.title}
+                    size={16}
+                  />
+                </div>
               )}
             </div>
             {!nowPlaying && activeEpisode && (
@@ -227,7 +233,7 @@ export default function PodcastsClient() {
             <p className="text-sm text-gray-500">
               Episodes loading… or{" "}
               <a
-                href={YOUTUBE_CHANNEL}
+                href={PODCAST_SHOW.youtube}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="underline font-semibold"
@@ -299,7 +305,7 @@ export default function PodcastsClient() {
           All episodes
         </h3>
         <a
-          href={YOUTUBE_PLAYLIST}
+          href={PODCAST_SHOW.youtube}
           target="_blank"
           rel="noopener noreferrer"
           className="text-xs font-bold flex items-center gap-1 hover:opacity-70"
@@ -325,15 +331,18 @@ export default function PodcastsClient() {
             const videoId = ep.videoId || ep.id;
             const isActive = activeVideo === videoId || activeVideo === ep.id;
             return (
-              <button
+              <div
                 key={ep.id}
-                type="button"
-                onClick={() => selectEpisode(ep)}
-                className="w-full text-left flex gap-3 p-3 rounded-2xl transition-all bg-white hover:shadow-md"
+                className="w-full text-left p-3 rounded-2xl transition-all bg-white hover:shadow-md"
                 style={{
                   border: `2px solid ${isActive ? "#c9a96e" : "#f0e8e4"}`,
                   boxShadow: isActive ? "0 4px 16px rgba(201, 169, 110, 0.2)" : undefined,
                 }}
+              >
+              <button
+                type="button"
+                onClick={() => selectEpisode(ep)}
+                className="flex gap-3 text-left w-full min-w-0"
               >
                 <div className="relative w-24 h-16 shrink-0 rounded-xl overflow-hidden bg-[#f0e8e4]">
                   <img
@@ -373,6 +382,16 @@ export default function PodcastsClient() {
                   )}
                 </div>
               </button>
+                <div className="mt-2 flex justify-end" style={{ color: "#2d3b2d" }}>
+                  <PodcastPlatformLinks
+                    youtubeUrl={youtubeEpisodeUrl(videoId)}
+                    spotifyUrl={ep.spotifyUrl}
+                    appleUrl={ep.appleUrl}
+                    episodeTitle={ep.title}
+                    size={15}
+                  />
+                </div>
+              </div>
             );
           })}
         </div>

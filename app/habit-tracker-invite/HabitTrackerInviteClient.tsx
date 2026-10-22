@@ -6,6 +6,7 @@ import { useMetaPixel } from "@/hooks/useMetaPixel";
 import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
 import { GetAppStoreButton } from "@/components/GetAppStoreButton";
 import { BRAND } from "@shared/brand";
+import { PodcastShowLinks } from "@/components/PodcastPlatformLinks";
 
 const TRACKER_HREF =
   "/habit-tracker?utm_source=meta&utm_medium=paid&utm_campaign=ht_invite&utm_content=open_app";
@@ -239,6 +240,11 @@ export default function HabitTrackerInviteClient() {
                       </li>
                     ))}
                   </ul>
+                  {p.name === "Podcast" && (
+                    <div className="mb-4" style={{ color: "#3a5a3a" }}>
+                      <PodcastShowLinks size={18} />
+                    </div>
+                  )}
                   <Link
                     href={`${p.href}?utm_source=meta&utm_medium=paid&utm_campaign=ht_invite&utm_content=${p.name.toLowerCase()}`}
                     className="text-sm font-bold text-[#3a5a3a] underline underline-offset-2 hover:text-[#c9a96e]"

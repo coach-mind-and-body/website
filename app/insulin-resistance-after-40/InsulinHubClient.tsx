@@ -6,6 +6,7 @@ import { ArrowRight, ChevronDown, Activity, Brain, Utensils, Dumbbell } from "lu
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
+import { PodcastShowLinks } from "@/components/PodcastPlatformLinks";
 
 const CDN = "https://cdn.mindandbodyresetcoach.com/blog-images";
 
@@ -480,6 +481,9 @@ export default function InsulinHubClient() {
                   Listen to the podcast
                 </Button>
               </Link>
+            </div>
+            <div className="mt-5 flex justify-center" style={{ color: "oklch(0.38 0.10 148)" }}>
+              <PodcastShowLinks size={22} />
             </div>
           </div>
         </section>

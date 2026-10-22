@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BRAND } from "@shared/brand";
 import { Instagram, Facebook, Youtube } from "lucide-react";
+import { PodcastShowLinks } from "@/components/PodcastPlatformLinks";
 
 const LOGO = BRAND.logoWideUrl;
 
@@ -100,6 +101,19 @@ export default function SiteFooter() {
                   >
                     {link.label}
                   </a>
+                ) : link.href === "/midlife-health-podcast" ? (
+                  <div key={link.href}>
+                    <Link
+                      href={link.href}
+                      className="text-sm transition-colors hover:opacity-60"
+                      style={{ color: "#5a5050" }}
+                    >
+                      {link.label}
+                    </Link>
+                    <div className="mt-1.5" style={{ color: "oklch(0.38 0.10 148)" }}>
+                      <PodcastShowLinks size={16} />
+                    </div>
+                  </div>
                 ) : (
                   <Link
                     key={link.href}

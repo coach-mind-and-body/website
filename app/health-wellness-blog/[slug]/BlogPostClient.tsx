@@ -10,6 +10,8 @@ import remarkGfm from "remark-gfm";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import { BRAND, SITE_URL } from "@shared/brand";
+import type { ListenTarget } from "@shared/podcastLinks";
+import PodcastPlatformLinks from "@/components/PodcastPlatformLinks";
 import { trpc } from "@/lib/trpc";
 import { NewsletterInline, NewsletterPopup } from "@/components/NewsletterSignup";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
@@ -293,7 +295,13 @@ type InitialPost = {
   updatedAt: string | Date;
 };
 
-export default function BlogPost({ initialPost = null }: { initialPost?: InitialPost | null }) {
+export default function BlogPost({
+  initialPost = null,
+  listen = null,
+}: {
+  initialPost?: InitialPost | null;
+  listen?: ListenTarget | null;
+}) {
   const params = useParams<{ slug: string }>();
   const slug = params.slug ?? initialPost?.slug;
   // Client refetch for freshness; initialPost from the server already has full body for SSR/SEO
@@ -542,6 +550,22 @@ export default function BlogPost({ initialPost = null }: { initialPost?: Initial
               {Math.max(1, Math.ceil(post.content.replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length / 200))} min read
             </span>
           </div>
+          {listen && (listen.youtubeUrl || listen.spotifyUrl || listen.appleUrl) && (
+            <div className="mt-5">
+              <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "oklch(0.38 0.10 148)" }}>
+                {listen.episodeTitle ? "Listen to this episode" : "Listen to the podcast"}
+              </p>
+              <div style={{ color: "oklch(0.38 0.10 148)" }}>
+                <PodcastPlatformLinks
+                  youtubeUrl={listen.youtubeUrl}
+                  spotifyUrl={listen.spotifyUrl}
+                  appleUrl={listen.appleUrl}
+                  episodeTitle={listen.episodeTitle}
+                  size={22}
+                />
+              </div>
+            </div>
+          )}
           {post.coverImage && (
             <figure className="mt-8 mb-0">
               <img
