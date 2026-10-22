@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { eq, desc, and, lte, isNull } from "drizzle-orm";
+import { eq, desc, and, isNull } from "drizzle-orm";
 import { sql } from "drizzle-orm";
 import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
@@ -8,6 +8,7 @@ import { storagePut } from "../storage";
 import { TRPCError } from "@trpc/server";
 import { resendSubscribe } from "../resendSubscribe";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
+import { publishDueScheduledContent } from "../publishScheduled";
 
 function adminOnly(role: string | undefined) {
   if (role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Admins only" });
@@ -21,18 +22,7 @@ export const blogRouter = router({
       const db = await getDb();
       if (!db) return { posts: [], totalCount: 0 };
 
-      // Auto-publish any scheduled posts whose time has arrived
-      const now = new Date();
-      await db
-        .update(blogPosts)
-        .set({ published: true, publishedAt: now, scheduledAt: null })
-        .where(
-          and(
-            eq(blogPosts.published, false),
-            lte(blogPosts.scheduledAt, now),
-            sql`${blogPosts.scheduledAt} IS NOT NULL`
-          )
-        );
+      await publishDueScheduledContent();
 
       const conditions = [eq(blogPosts.published, true)];
       if (input.category) conditions.push(eq(blogPosts.category, input.category));

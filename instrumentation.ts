@@ -30,5 +30,15 @@ export async function register() {
       );
     runNewsletters();
     setInterval(runNewsletters, 30_000);
+
+    // Scheduled blog posts and the episode pages tied to them.
+    // Production only runs `next start`, so this has to live here.
+    const { publishDueScheduledContent } = await import("./server/publishScheduled");
+    const runScheduled = () =>
+      publishDueScheduledContent().catch((err) =>
+        console.error("[Instrumentation] Scheduled publish error:", err)
+      );
+    runScheduled();
+    setInterval(runScheduled, 60_000);
   }
 }
