@@ -14,7 +14,7 @@ import { PODCAST_SHOW, youtubeEpisodeUrl } from "@shared/podcastLinks";
 
 
 const PODCAST_THUMBNAIL =
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/podcast-thumbnail_d50f52f9.png";
+  "https://cdn.mindandbodyresetcoach.com/podcast/podcast-thumbnail.png";
 
 
 
