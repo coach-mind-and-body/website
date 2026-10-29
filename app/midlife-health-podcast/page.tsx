@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import PodcastClient from "./PodcastClient";
 
 export const metadata: Metadata = {
-  title: "Midlife Health Podcast | Mind and Body Reset",
+  // Segment title only. Root layout template appends " | Mind and Body Reset".
+  title: "Midlife Health Podcast for Women Over 40",
   description:
     "Listen to the Mind and Body Reset podcast — real strategy for midlife health, hormones, insulin resistance, weight loss mindset, and food freedom for women 40+.",
   keywords: [
