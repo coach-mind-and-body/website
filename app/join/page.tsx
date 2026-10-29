@@ -1,7 +1,7 @@
 import JoinLandingClient from './JoinLandingClient';
 
 export const metadata = {
-  title: "Join the Community | Mind and Body Reset",
+  title: "Join the Community",
   description:
     "Join the Mind and Body Reset Coaching community for free wellness tips, recipes, and support for women 40+ navigating midlife health and food freedom.",
   alternates: { canonical: "/join" },

@@ -92,7 +92,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const db = await getDb();
   if (!db) {
     return {
-      title: "Blog | Mind and Body Reset",
+      title: "Blog",
       alternates: { canonical: absoluteUrl(`/health-wellness-blog/${slug}`) },
     };
   }
@@ -105,7 +105,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!post) {
     return {
-      title: "Post Not Found | Mind and Body Reset",
+      title: "Post Not Found",
       robots: { index: false, follow: false },
     };
   }

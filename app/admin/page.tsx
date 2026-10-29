@@ -5,7 +5,7 @@ import InboxModals from '@/components/admin/messaging/InboxModals';
 import SlideOutChat from '@/components/admin/SlideOutChat';
 
 export const metadata = {
-  title: "Admin Dashboard | Mind and Body Reset",
+  title: "Admin Dashboard",
   description: "Mind & Body Reset Coaches administration dashboard for managing content, users, and site settings.",
   robots: { index: false, follow: false },
 };
