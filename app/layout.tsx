@@ -98,22 +98,27 @@ const jsonLd = {
   "@context": "https://schema.org",
   "@graph": [
     {
-      "@type": "HealthAndBeautyBusiness",
+      "@type": ["LocalBusiness", "ProfessionalService"],
       "@id": `${SITE_URL}/#business`,
       name: BRAND.name,
+      telephone: BRAND.telephone,
       image: absoluteUrl("/logo-new.jpg"),
       url: SITE_URL,
       priceRange: "$$",
       address: {
         "@type": "PostalAddress",
-        addressLocality: "Wasatch Front",
-        addressRegion: "UT",
-        addressCountry: "US",
+        addressLocality: BRAND.addressLocality,
+        addressRegion: BRAND.addressRegion,
+        addressCountry: BRAND.addressCountry,
+      },
+      areaServed: {
+        "@type": "Place",
+        name: BRAND.areaServed,
       },
       geo: {
         "@type": "GeoCoordinates",
-        latitude: 40.7608,
-        longitude: -111.891,
+        latitude: 40.564978,
+        longitude: -111.838973,
       },
       sameAs: [
         BRAND.instagramUrl,
@@ -124,10 +129,6 @@ const jsonLd = {
       description:
         "Mind and Body Reset is a mind body coaching practice for women over 40 — hormones, insulin resistance, food noise, and lasting habits with Lee Anne Chapman.",
       founder: { "@id": `${SITE_URL}/#person` },
-      areaServed: {
-        "@type": "Country",
-        name: "United States",
-      },
     },
     {
       "@type": "Person",
@@ -148,11 +149,12 @@ const jsonLd = {
         "food freedom",
         "habit coaching",
       ],
+      telephone: BRAND.telephone,
       address: {
         "@type": "PostalAddress",
-        addressLocality: "Wasatch Front",
-        addressRegion: "UT",
-        addressCountry: "US",
+        addressLocality: BRAND.addressLocality,
+        addressRegion: BRAND.addressRegion,
+        addressCountry: BRAND.addressCountry,
       },
     },
     {
