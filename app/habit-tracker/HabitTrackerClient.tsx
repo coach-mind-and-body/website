@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import { Check, Info, Sparkles, Flame, Target, Plus, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format, subDays } from "date-fns";
-import { usePageTitle } from "@/hooks/usePageTitle";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { getDeviceId } from "@/lib/deviceId";
@@ -38,12 +37,6 @@ type LocalNote = {
 };
 
 export default function HabitTrackerClient() {
-  usePageTitle({
-    title: "Habit Tracker | Mind & Body Reset Coaches",
-    description: "Track your daily habits and reclaim your wellness journey. Access anywhere with an account, or track locally on your device.",
-    keywords: "habit tracker, daily habits, wellness tracker, mind body reset"
-  });
-
   const { isAuthenticated } = useAuth();
   const searchParams = useSearchParams();
   const focusVictories = searchParams?.get("focus") === "victories";
@@ -546,9 +539,9 @@ export default function HabitTrackerClient() {
             <p className="text-[10px] font-bold uppercase tracking-widest text-[#8a9a8a]">
               Today · {format(parseCalendarDate(todayMountainDateStr()), "MMM d")}
             </p>
-            <h1 className="text-2xl font-bold" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
+            <h2 className="text-2xl font-bold" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
               My Daily Reset
-            </h1>
+            </h2>
           </div>
           <div
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-bold shrink-0"
