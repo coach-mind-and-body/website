@@ -6,6 +6,7 @@ import { and, eq } from "drizzle-orm";
 import BlogPostClient from "./BlogPostClient";
 import { absoluteUrl } from "@shared/brand";
 import { listenTargetForBlogPost } from "@/server/podcastPlatforms";
+import { applyBlogSeoOverride } from "@/lib/blogSeoOverrides";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -110,13 +111,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   }
 
-  const title = (post.seoTitle?.trim() || post.title).replace(
+  const seoPost = applyBlogSeoOverride(post);
+  const title = (seoPost.seoTitle?.trim() || seoPost.title).replace(
     /\s*\|\s*Mind and Body Reset\s*$/i,
     ""
   );
   const description =
-    post.seoDescription?.trim() ||
-    post.excerpt ||
+    seoPost.seoDescription?.trim() ||
+    seoPost.excerpt ||
     "Read this article on Mind and Body Reset.";
   const canonicalPath = `/health-wellness-blog/${post.slug}`;
   const image = toAbsoluteImage(post.coverImage);
@@ -166,7 +168,7 @@ export default async function Page({ params }: Props) {
     notFound();
   }
 
-  const post = serializePost(row);
+  const post = serializePost(applyBlogSeoOverride(row));
   const headline = post.seoTitle?.trim() || post.title;
   const description = post.seoDescription?.trim() || post.excerpt || "";
   const image = toAbsoluteImage(post.coverImage);
