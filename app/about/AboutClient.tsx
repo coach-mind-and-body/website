@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
+import { BRAND } from "@shared/brand";
 import Link from 'next/link';
 ;
 
@@ -74,11 +75,13 @@ export default function About() {
       <section className="py-20 text-center" style={{ background: "linear-gradient(135deg, oklch(0.93 0.06 75) 0%, oklch(0.97 0.008 10) 60%)" }}>
         <div className="container max-w-3xl mx-auto">
           <span className="badge-forest mb-4 inline-block">About Us</span>
-          <h1 className="font-bold mb-2" style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(2rem, 4vw, 3rem)", color: "oklch(0.22 0.02 160)" }}>
-            Reclaim Your Body.
-          </h1>
-          <h1 className="font-bold mb-4" style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(2rem, 4vw, 3rem)", color: "oklch(0.38 0.10 148)" }}>
-            Rewire Your Mind. Reset Your Life.
+          <h1 className="font-bold mb-4" style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(2rem, 4vw, 3rem)", lineHeight: 1.15 }}>
+            <span className="block mb-2" style={{ color: "oklch(0.22 0.02 160)" }}>
+              Reclaim Your Body.
+            </span>
+            <span className="block" style={{ color: "oklch(0.38 0.10 148)" }}>
+              Rewire Your Mind. Reset Your Life.
+            </span>
           </h1>
           <p className="text-lg leading-relaxed" style={{ color: "oklch(0.45 0.02 160)", maxWidth: "560px", margin: "0 auto" }}>
             We're a team of certified Mind & Body Coaches who've been exactly where you are — and found a better way.
@@ -123,6 +126,31 @@ export default function About() {
         </div>
       </section>
 
+
+      <section className="py-16 text-center" aria-labelledby="contact-heading">
+        <div className="container max-w-2xl mx-auto">
+          <h2
+            id="contact-heading"
+            className="font-bold mb-4"
+            style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(1.8rem, 3.5vw, 2.6rem)", color: "oklch(0.22 0.02 160)" }}
+          >
+            Contact
+          </h2>
+          <p className="text-base font-semibold mb-1" style={{ color: "oklch(0.22 0.02 160)" }}>
+            {BRAND.name}
+          </p>
+          <p className="text-base mb-2" style={{ color: "oklch(0.45 0.02 160)" }}>
+            {BRAND.locationLine}
+          </p>
+          <a
+            href={BRAND.phoneHref}
+            className="text-base font-bold"
+            style={{ color: "oklch(0.38 0.10 148)" }}
+          >
+            {BRAND.phoneDisplay}
+          </a>
+        </div>
+      </section>
 
       {/* ── CTA ── */}
       <section className="py-20 text-center" style={{ background: "oklch(0.97 0.008 10)" }}>

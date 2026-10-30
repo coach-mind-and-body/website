@@ -30,9 +30,21 @@ export default function SiteFooter() {
                 </p>
               </div>
             </div>
-            <p className="text-sm leading-relaxed mb-4" style={{ color: "#5a5050" }}>
+            <p className="text-sm leading-relaxed mb-3" style={{ color: "#5a5050" }}>
               Helping women 40+ reclaim their body, rewire their mind, and reset their life — with tools that actually work.
             </p>
+            <address className="not-italic text-sm leading-relaxed mb-4" style={{ color: "#5a5050" }}>
+              <p>{BRAND.locationLine}</p>
+              <p>
+                <a
+                  href={BRAND.phoneHref}
+                  className="font-semibold transition-opacity hover:opacity-70"
+                  style={{ color: "oklch(0.38 0.10 148)" }}
+                >
+                  {BRAND.phoneDisplay}
+                </a>
+              </p>
+            </address>
             <div className="flex gap-4">
               <a
                 href={BRAND.instagramUrl}
@@ -162,7 +174,7 @@ export default function SiteFooter() {
           style={{ borderColor: "#e0d5d0" }}
         >
           <p className="text-xs" style={{ color: "#8a7e7e" }}>
-            Copyright © {new Date().getFullYear()} Mind and Body Reset — All Rights Reserved.
+            Copyright © {new Date().getFullYear()} {BRAND.name} — All Rights Reserved.
           </p>
           <p className="text-xs text-center" style={{ color: "#9a8e8e" }}>
             Coaching is not a substitute for professional medical or financial advice. We provide tools for mindset and wellness education.

@@ -27,6 +27,15 @@ export const BRAND = {
   appStoreId: "6809038480",
   appStoreUrl: "https://apps.apple.com/app/mind-body-reset/id6809038480",
   appStoreName: "Mind & Body Reset",
+  /** Public phone. No street address is published. */
+  phoneDisplay: "(801) 331-5319",
+  phoneHref: "tel:+18013315319",
+  telephone: "+1-801-331-5319",
+  locationLine: "Sandy, Utah, serving the Wasatch Front",
+  addressLocality: "Sandy",
+  addressRegion: "UT",
+  addressCountry: "US",
+  areaServed: "Wasatch Front",
 } as const;
 
 export const GOOGLE_CALENDAR = {

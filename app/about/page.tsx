@@ -5,7 +5,7 @@ import { absoluteUrl, BRAND, SITE_URL } from "@shared/brand";
 export const metadata: Metadata = {
   title: { absolute: "About Lee Anne Chapman | Midlife Health Coach" },
   description:
-    "Meet certified life & health coach Lee Anne Chapman on the Wasatch Front, UT — helping women 40+ with hormones, midlife health, insulin resistance, and food freedom.",
+    "Meet certified life and health coach Lee Anne Chapman of Mind and Body Reset Coaching in Sandy, Utah, serving the Wasatch Front — coaching for women 40+.",
   openGraph: {
     title: "About Lee Anne Chapman | Midlife Health Coach",
     description:
@@ -36,11 +36,12 @@ const personJsonLd = {
     name: BRAND.name,
     url: SITE_URL,
   },
+  telephone: BRAND.telephone,
   address: {
     "@type": "PostalAddress",
-    addressLocality: "Wasatch Front",
-    addressRegion: "UT",
-    addressCountry: "US",
+    addressLocality: BRAND.addressLocality,
+    addressRegion: BRAND.addressRegion,
+    addressCountry: BRAND.addressCountry,
   },
   knowsAbout: [
     "Midlife health coaching",
