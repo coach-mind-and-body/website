@@ -1,39 +1,35 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { Suspense, useEffect, useMemo, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle2, Calendar } from "lucide-react";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import { GOOGLE_CALENDAR, PROGRAM } from "@shared/brand";
+import { BOOK_INTRO } from "@/lib/thinPageCopy";
 import { useMetaPixel } from "@/hooks/useMetaPixel";
 import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
 import { generateMetaEventId, captureFbclidFromUrl } from "@/hooks/useMetaParams";
 
-/**
- * Discovery call booking is calendar-only.
- * Google Appointment Schedule collects name + email (required for Meet).
- * Actual Schedule conversion fires server-side via GCal sync (CAPI).
- * Browser pixel: ViewContent + Schedule intent when user engages the calendar.
- */
-export default function Book() {
-  const searchParams = useSearchParams();
-  const { trackViewContent, trackSchedule, trackLead } = useMetaPixel();
-  const ga = useGoogleAnalytics();
-  const engagedRef = useRef(false);
+function isReclaimTraffic(searchParams: { get: (key: string) => string | null } | null) {
+  const c = (searchParams?.get("utm_campaign") || "").toLowerCase();
+  const content = (searchParams?.get("utm_content") || "").toLowerCase();
+  const source = (searchParams?.get("utm_source") || "").toLowerCase();
+  return (
+    c.includes("reclaim") ||
+    c.includes("rt_reclaim") ||
+    content.includes("invite") ||
+    content.includes("book") ||
+    source === "meta"
+  );
+}
 
-  const fromReclaim = useMemo(() => {
-    const c = (searchParams?.get("utm_campaign") || "").toLowerCase();
-    const content = (searchParams?.get("utm_content") || "").toLowerCase();
-    const source = (searchParams?.get("utm_source") || "").toLowerCase();
-    return (
-      c.includes("reclaim") ||
-      c.includes("rt_reclaim") ||
-      content.includes("invite") ||
-      content.includes("book") ||
-      source === "meta"
-    );
-  }, [searchParams]);
+/** Search-param UI and view tracking. Kept behind Suspense so the H1 stays in the static HTML. */
+function ReclaimBookingExtras() {
+  const searchParams = useSearchParams();
+  const fromReclaim = useMemo(() => isReclaimTraffic(searchParams), [searchParams]);
+  const { trackViewContent } = useMetaPixel();
+  const ga = useGoogleAnalytics();
 
   useEffect(() => {
     captureFbclidFromUrl();
@@ -60,6 +56,25 @@ export default function Book() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  if (!fromReclaim) return null;
+  return (
+    <p className="mt-3 text-sm font-semibold" style={{ color: "oklch(0.38 0.10 148)" }}>
+      Intro rate still available for the first 10 enrollments · ${PROGRAM.fullPrice}
+    </p>
+  );
+}
+
+/**
+ * Discovery call booking is calendar-only.
+ * Google Appointment Schedule collects name + email (required for Meet).
+ * Actual Schedule conversion fires server-side via GCal sync (CAPI).
+ * Browser pixel: ViewContent + Schedule intent when user engages the calendar.
+ */
+export default function Book() {
+  const { trackSchedule, trackLead } = useMetaPixel();
+  const ga = useGoogleAnalytics();
+  const engagedRef = useRef(false);
 
   /** Fire Schedule when user actually interacts with the booking widget (best browser signal). */
   const markCalendarEngaged = () => {
@@ -104,7 +119,7 @@ export default function Book() {
           background: "linear-gradient(135deg, oklch(0.93 0.06 75) 0%, oklch(0.97 0.008 10) 60%)",
         }}
       >
-        <div className="container max-w-2xl mx-auto px-4">
+        <div className="container max-w-3xl mx-auto px-4">
           <span className="badge-gold mb-4 inline-block">Free · 30 Minutes · No Commitment</span>
           <h1
             className="font-bold mb-4"
@@ -114,23 +129,19 @@ export default function Book() {
               color: "oklch(0.22 0.02 160)",
             }}
           >
-            {fromReclaim
-              ? "Book your free 6 Habits fit call"
-              : "Book Your Free Discovery Call"}
+            Book Your Free Discovery Call
           </h1>
-          <p
-            className="text-base leading-relaxed"
-            style={{ color: "oklch(0.45 0.02 160)", maxWidth: "480px", margin: "0 auto" }}
+          <div
+            className="space-y-3 text-left text-base leading-relaxed mx-auto"
+            style={{ color: "oklch(0.45 0.02 160)", maxWidth: "40rem" }}
           >
-            {fromReclaim
-              ? "Pick a time below. In this free 30-minute call, Lee Anne will help you see if private 6-week coaching is the right next step — no pressure pitch."
-              : "Pick a time that works for you. Google will ask for your name and email so we can send the Meet link. In this free 30-minute call, you'll learn a new way women just like you are losing the weight and keeping it off — and whether 6 Habits in 6 Weeks is right for you."}
-          </p>
-          {fromReclaim && (
-            <p className="mt-3 text-sm font-semibold" style={{ color: "oklch(0.38 0.10 148)" }}>
-              Intro rate still available for the first 10 enrollments · ${PROGRAM.fullPrice}
-            </p>
-          )}
+            {BOOK_INTRO.map((paragraph) => (
+              <p key={paragraph}>{paragraph}</p>
+            ))}
+          </div>
+          <Suspense fallback={null}>
+            <ReclaimBookingExtras />
+          </Suspense>
         </div>
       </section>
 

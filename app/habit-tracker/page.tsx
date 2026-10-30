@@ -1,15 +1,15 @@
 import { Suspense } from "react";
 import HabitTrackerClient from "./HabitTrackerClient";
+import HabitTrackerIntro from "./HabitTrackerIntro";
+import { HABIT_TRACKER_PAGE_SEO } from "@/lib/thinPageCopy";
 
 export const metadata = {
-  title: "Free Habit Tracker for Midlife Wellness",
-  description:
-    "Track your daily habits and reclaim your wellness journey. Free habit tracker for women building sustainable midlife health — use with an account or locally on your device.",
+  title: HABIT_TRACKER_PAGE_SEO.title,
+  description: HABIT_TRACKER_PAGE_SEO.description,
   alternates: { canonical: "/habit-tracker" },
   openGraph: {
-    title: "Free Habit Tracker for Midlife Wellness",
-    description:
-      "Build momentum with the Mind and Body Reset Coaching Habit Tracker. Track daily wins and stay accountable.",
+    title: HABIT_TRACKER_PAGE_SEO.title,
+    description: HABIT_TRACKER_PAGE_SEO.description,
     url: "/habit-tracker",
     images: [
       {
@@ -23,17 +23,19 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Free Habit Tracker for Midlife Wellness",
-    description:
-      "Build momentum with the Mind and Body Reset Coaching Habit Tracker. Track daily wins and stay accountable.",
+    title: HABIT_TRACKER_PAGE_SEO.title,
+    description: HABIT_TRACKER_PAGE_SEO.description,
     images: ["/og-habit-tracker.jpg"],
   },
 };
 
 export default function Page() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#faf5f5]" />}>
-      <HabitTrackerClient />
-    </Suspense>
+    <>
+      <HabitTrackerIntro />
+      <Suspense fallback={null}>
+        <HabitTrackerClient />
+      </Suspense>
+    </>
   );
 }

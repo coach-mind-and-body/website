@@ -1,31 +1,24 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import BookClient from "./BookClient";
+import { BOOK_PAGE_SEO } from "@/lib/thinPageCopy";
 
 export const metadata: Metadata = {
-  title: "Book a Free Discovery Call | Midlife Health Coach",
-  description:
-    "Schedule a free 30-minute discovery call with Lee Anne Chapman to explore coaching for midlife health, food freedom, hormones, and lasting habits — women 40+ welcome.",
+  title: BOOK_PAGE_SEO.title,
+  description: BOOK_PAGE_SEO.description,
   alternates: { canonical: "/book" },
   openGraph: {
-    title: "Book a Free Discovery Call | Midlife Health Coach",
-    description:
-      "Free 30-minute call to explore R.E.C.L.A.I.M. coaching and whether it's the right fit for you.",
+    title: BOOK_PAGE_SEO.title,
+    description: BOOK_PAGE_SEO.description,
     url: "/book",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Book a Free Discovery Call | Midlife Health Coach",
-    description:
-      "Talk with Lee Anne about midlife health, food freedom, and next steps — free 30 minutes.",
+    title: BOOK_PAGE_SEO.title,
+    description: BOOK_PAGE_SEO.description,
   },
 };
 
 export default function Page() {
-  return (
-    <Suspense fallback={<div className="min-h-screen" style={{ background: "oklch(0.97 0.008 10)" }} />}>
-      <BookClient />
-    </Suspense>
-  );
+  return <BookClient />;
 }
