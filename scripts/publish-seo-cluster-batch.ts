@@ -3,6 +3,7 @@
  * Brand voice + accurate coaching education. Cross-linked hub: /midlife-weight-loss-after-40
  */
 import "dotenv/config";
+import { FOOD_NOISE_GLP1_SEO } from "../lib/blogSeoOverrides";
 import { eq } from "drizzle-orm";
 import { getDb } from "../server/db";
 import { blogPosts } from "../drizzle/schema";
@@ -176,9 +177,8 @@ const posts: Post[] = [
   {
     slug: "food-noise-after-stopping-ozempic-or-wegovy",
     title: "Food Noise After Stopping Ozempic or Wegovy: What Comes Next",
-    seoTitle: "Food Noise After Stopping Ozempic or Wegovy",
-    seoDescription:
-      "Food noise after stopping Ozempic, Wegovy, or other GLP-1s is common. Learn why the quiet often ends, what is not your fault, and skills that help — without medical advice to start or stop meds.",
+    seoTitle: FOOD_NOISE_GLP1_SEO.seoTitle,
+    seoDescription: FOOD_NOISE_GLP1_SEO.seoDescription,
     excerpt:
       "The quiet was real. Then the mental food chatter came back. Food noise after stopping a GLP-1 is common — here is what comes next without shame.",
     category: "Mindful Eating & Nutrition",

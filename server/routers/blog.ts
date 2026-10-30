@@ -9,6 +9,7 @@ import { TRPCError } from "@trpc/server";
 import { resendSubscribe } from "../resendSubscribe";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import { publishDueScheduledContent } from "../publishScheduled";
+import { applyBlogSeoOverride } from "@/lib/blogSeoOverrides";
 
 function adminOnly(role: string | undefined) {
   if (role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Admins only" });
@@ -56,7 +57,7 @@ export const blogRouter = router({
         .from(blogPosts)
         .where(and(eq(blogPosts.slug, input.slug), eq(blogPosts.published, true)))
         .limit(1);
-      return result[0] ?? null;
+      return result[0] ? applyBlogSeoOverride(result[0]) : null;
     }),
 
   // Admin: list all posts (including drafts)

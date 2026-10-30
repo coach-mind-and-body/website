@@ -15,6 +15,7 @@ import PodcastPlatformLinks from "@/components/PodcastPlatformLinks";
 import { trpc } from "@/lib/trpc";
 import { NewsletterInline, NewsletterPopup } from "@/components/NewsletterSignup";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
+import { applyBlogSeoOverride } from "@/lib/blogSeoOverrides";
 
 
 // ── Share Buttons component ──────────────────────────────────────────────────
@@ -312,7 +313,7 @@ export default function BlogPost({
 
   const staticPost = slug ? STATIC_POSTS[slug] : undefined;
   const staticCover = slug ? (STATIC_POST_COVERS[slug] ?? null) : null;
-  const post =
+  const rawPost =
     dbPost ??
     initialPost ??
     (staticPost
@@ -330,6 +331,7 @@ export default function BlogPost({
           updatedAt: new Date(),
         }
       : null);
+  const post = rawPost ? applyBlogSeoOverride(rawPost) : null;
 
   // Only show spinner when we have nothing to render yet (SSR path never hits this)
   const waitingForData = isLoading && !initialPost && !staticPost;
