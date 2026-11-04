@@ -130,11 +130,12 @@ export default function Admin() {
                 type="button"
                 onClick={() => void subscribeToPush()}
                 disabled={isSubscribing}
-                className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full"
+                aria-busy={isSubscribing}
+                className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full disabled:opacity-70"
                 style={{ background: "oklch(0.96 0.025 50)", color: "oklch(0.35 0.04 50)", border: "1px solid oklch(0.90 0.015 80)" }}
               >
                 <Bell size={13} />
-                {isSubscribing ? "Enabling…" : "Notify me"}
+                {isSubscribing ? "Turning on…" : "Notify me"}
               </button>
             )}
             <div className="flex items-center gap-2">

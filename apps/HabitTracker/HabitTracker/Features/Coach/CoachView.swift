@@ -53,9 +53,10 @@ final class CoachViewModel {
         }
     }
 
-    func send(content: String? = nil, mediaUrl: String? = nil) async {
+    @discardableResult
+    func send(content: String? = nil, mediaUrl: String? = nil) async -> Bool {
         let text = (content ?? draft).trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty || mediaUrl != nil else { return }
+        guard !text.isEmpty || mediaUrl != nil else { return false }
         optimisticSeq += 1
         let optimisticId = -(Int(Date().timeIntervalSince1970 * 1000) + optimisticSeq)
         let reply = replyingTo
@@ -71,8 +72,9 @@ final class CoachViewModel {
             replyToId: reply?.id,
             replyTo: reply.map { ReplyPreview(id: $0.id, content: $0.content, senderName: $0.senderName) }
         )
-        if thread != nil {
-            thread?.messages.append(bubble)
+        if var current = thread {
+            current.messages.append(bubble)
+            thread = current
         }
         draft = ""
         replyingTo = nil
@@ -84,11 +86,16 @@ final class CoachViewModel {
                 input: SendCoachInput(content: text.isEmpty ? nil : text, mediaUrl: mediaUrl, replyToId: reply?.id)
             )
             await load(announce: false)
+            return true
         } catch {
-            thread?.messages.removeAll { $0.id == optimisticId }
+            if var current = thread {
+                current.messages.removeAll { $0.id == optimisticId }
+                thread = current
+            }
             draft = text
             replyingTo = reply
             errorMessage = error.localizedDescription
+            return false
         }
     }
 
@@ -149,9 +156,11 @@ final class CoachViewModel {
         unread = (try? await auth.client.query("coach.unreadCount") as UnreadCount)?.count ?? 0
     }
 
-    func enableNotifications() async {
+    @discardableResult
+    func enableNotifications() async -> Bool {
         notifyEnabled = await NotificationService.requestAuthorization()
         UserDefaults.standard.set(notifyEnabled, forKey: "coach.notifyEnabled")
+        return notifyEnabled
     }
 
     func sendPhoto(_ image: UIImage) async {
@@ -174,13 +183,27 @@ struct CoachView: View {
     @Bindable var model: CoachViewModel
     @Bindable var auth: AuthStore
     @State private var photoItem: PhotosPickerItem?
+    @State private var notifyNote: String?
+    @State private var sendNote: String?
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                if !model.notifyEnabled {
+                if model.notifyEnabled {
+                    Text("Notifications are on. You will see them when Lee Anne replies.")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(HTTheme.forest)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(10)
+                        .background(Color.white)
+                } else {
                     Button {
-                        Task { await model.enableNotifications() }
+                        Task {
+                            let on = await model.enableNotifications()
+                            notifyNote = on
+                                ? "Notifications are on. You will see them when Lee Anne replies."
+                                : "Notifications stayed off. Turn them on in iPhone Settings, then try again."
+                        }
                     } label: {
                         Label("Notify me when Lee Anne replies", systemImage: "bell")
                             .font(.caption.weight(.bold))
@@ -189,6 +212,15 @@ struct CoachView: View {
                     }
                     .foregroundStyle(HTTheme.forest)
                     .background(Color.white)
+                    if let notifyNote {
+                        Text(notifyNote)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(HTTheme.forest)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 12)
+                            .padding(.bottom, 8)
+                            .background(Color.white)
+                    }
                 }
 
                 ScrollViewReader { proxy in
@@ -330,20 +362,40 @@ struct CoachView: View {
                 }
             }
 
+            if model.isSending || sendNote != nil {
+                Text(model.isSending ? "Sending…" : (sendNote ?? ""))
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(HTTheme.forest)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
             HStack(alignment: .bottom) {
                 TextField("Write to Lee Anne…", text: $model.draft, axis: .vertical)
                     .lineLimit(1...4)
                     .padding(10)
                     .background(Color.white)
                     .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .onChange(of: model.draft) { _, next in
+                        if !next.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            sendNote = nil
+                        }
+                    }
                 Button {
-                    Task { await model.send() }
+                    Task {
+                        let ok = await model.send()
+                        sendNote = ok ? "Sent. Lee Anne has it." : nil
+                    }
                 } label: {
-                    Image(systemName: "arrow.up.circle.fill")
-                        .font(.system(size: 32))
-                        .foregroundStyle(HTTheme.forest)
+                    if model.isSending {
+                        ProgressView()
+                            .frame(width: 32, height: 32)
+                    } else {
+                        Image(systemName: "arrow.up.circle.fill")
+                            .font(.system(size: 32))
+                            .foregroundStyle(HTTheme.forest)
+                    }
                 }
-                .disabled(model.draft.trimmingCharacters(in: .whitespaces).isEmpty)
+                .disabled(model.draft.trimmingCharacters(in: .whitespaces).isEmpty || model.isSending)
             }
         }
         .padding(.horizontal, 12)

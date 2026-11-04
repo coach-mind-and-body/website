@@ -300,7 +300,7 @@ export default function AdminClientHabits({ userId }: { userId: number }) {
                     <div className="flex justify-between items-end">
                       <p className="text-[10px] text-gray-500 uppercase">{cl.dateStr} • {cl.mealType}</p>
                       <p className="text-[10px] text-gray-500">
-                        <span className="text-blue-500">{cl.protein}p</span> • <span className="text-orange-500">{cl.carbs}c</span> • <span className="text-yellow-600">{cl.fat}f</span>
+                        <span className="text-blue-500">{cl.protein}p</span> • <span className="text-orange-500">{cl.carbs}c</span> • <span className="text-green-700">{cl.fiber ?? 0}fb</span> • <span className="text-yellow-600">{cl.fat}f</span>
                       </p>
                     </div>
                   </div>

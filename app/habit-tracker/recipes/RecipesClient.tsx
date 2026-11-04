@@ -290,9 +290,9 @@ export default function RecipesClient() {
                             {mins}
                           </span>
                         ) : null}
-                        {recipe.protein > 0 ? (
+                        {recipe.protein > 0 || recipe.carbs > 0 || recipe.fiber > 0 ? (
                           <span className="font-bold" style={{ color: FOREST }}>
-                            {recipe.protein}g protein
+                            {recipe.protein}g protein · {recipe.carbs}g carbs · {recipe.fiber}g fiber
                           </span>
                         ) : null}
                       </div>

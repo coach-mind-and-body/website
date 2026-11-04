@@ -566,7 +566,7 @@ export default function CalorieTrackerClient() {
               }}
             />
           </div>
-          <div className="grid grid-cols-4 gap-2 text-center">
+          <div className="grid grid-cols-5 gap-2 text-center">
             <div className="bg-[#faf5f5] p-2 rounded-xl">
               <div className="text-sm font-bold" style={{ color: "#2d3b2d" }}>
                 {totals.calories}
@@ -580,6 +580,10 @@ export default function CalorieTrackerClient() {
             <div className="bg-orange-50 p-2 rounded-xl">
               <div className="text-sm font-bold text-orange-700">{totals.carbs}g</div>
               <div className="text-[9px] font-bold text-orange-400 uppercase">Carb</div>
+            </div>
+            <div className="bg-green-50 p-2 rounded-xl">
+              <div className="text-sm font-bold text-green-700">{totals.fiber}g</div>
+              <div className="text-[9px] font-bold text-green-600 uppercase">Fiber</div>
             </div>
             <div className="bg-yellow-50 p-2 rounded-xl">
               <div className="text-sm font-bold text-yellow-700">{totals.fat}g</div>
@@ -713,7 +717,7 @@ export default function CalorieTrackerClient() {
                         >
                           <div className="font-bold text-sm text-[#2d3b2d] truncate">{r.title}</div>
                           <div className="text-[10px] text-gray-400">
-                            {r.protein}p · {r.calories} kcal · {r.servings} serving
+                            {r.protein}p · {r.carbs}c · {r.fiber}fb · {r.calories} kcal · {r.servings} serving
                             {r.servings === 1 ? "" : "s"}
                           </div>
                         </button>
@@ -890,7 +894,7 @@ export default function CalorieTrackerClient() {
                               {f.brand ? ` · ${f.brand}` : ""}
                             </div>
                             <div className="text-[10px] text-gray-400 truncate">
-                              {f.protein}p · {f.calories} kcal
+                              {f.protein}p · {f.carbs}c · {f.fiber}fb · {f.calories} kcal
                               {f.description ? ` · ${f.description}` : ""}
                             </div>
                           </button>
@@ -1020,8 +1024,9 @@ export default function CalorieTrackerClient() {
                   <h4 className="font-bold text-sm text-[#2d3b2d] truncate">{log.foodName}</h4>
                   <div className="text-xs text-gray-500 mt-0.5 flex flex-wrap gap-2">
                     <span className="text-blue-600 font-semibold">{log.protein}p</span>
+                    <span className="text-orange-500">{log.carbs}c</span>
+                    <span className="text-green-700">{log.fiber}fb</span>
                     {log.calories > 0 && <span>{log.calories} kcal</span>}
-                    {log.carbs > 0 && <span className="text-orange-500">{log.carbs}c</span>}
                     {log.fat > 0 && <span className="text-yellow-600">{log.fat}f</span>}
                   </div>
                 </div>

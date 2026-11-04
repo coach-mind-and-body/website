@@ -142,10 +142,11 @@ final class CoachInboxViewModel {
         }
     }
 
-    func send(content: String? = nil, mediaUrl: String? = nil) async {
-        guard let id = selected?.id else { return }
+    @discardableResult
+    func send(content: String? = nil, mediaUrl: String? = nil) async -> Bool {
+        guard let id = selected?.id else { return false }
         let text = (content ?? draft).trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty || mediaUrl != nil else { return }
+        guard !text.isEmpty || mediaUrl != nil else { return false }
         optimisticSeq += 1
         let optId = -(Int(Date().timeIntervalSince1970 * 1000) + optimisticSeq)
         let reply = replyingTo
@@ -178,11 +179,13 @@ final class CoachInboxViewModel {
             )
             await loadThread()
             await loadList()
+            return true
         } catch {
             messages.removeAll { $0.id == optId }
             if mediaUrl == nil { draft = text }
             replyingTo = reply
             errorMessage = error.localizedDescription
+            return false
         }
     }
 
@@ -253,6 +256,7 @@ struct CoachInboxView: View {
     var showsModePicker = true
     @State private var model: CoachInboxViewModel
     @State private var photoItem: PhotosPickerItem?
+    @State private var sendNote: String?
 
     init(coach: CoachViewModel, auth: AuthStore, showsModePicker: Bool = true) {
         self.coach = coach
@@ -482,20 +486,40 @@ struct CoachInboxView: View {
                 }
             }
 
+            if model.isSending || sendNote != nil {
+                Text(model.isSending ? "Sending…" : (sendNote ?? ""))
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(HTTheme.forest)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
             HStack(alignment: .bottom) {
                 TextField("Message…", text: $model.draft, axis: .vertical)
                     .lineLimit(1...4)
                     .padding(10)
                     .background(Color.white)
                     .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .onChange(of: model.draft) { _, next in
+                        if !next.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            sendNote = nil
+                        }
+                    }
                 Button {
-                    Task { await model.send() }
+                    Task {
+                        let ok = await model.send()
+                        sendNote = ok ? "Sent." : nil
+                    }
                 } label: {
-                    Image(systemName: "arrow.up.circle.fill")
-                        .font(.system(size: 32))
-                        .foregroundStyle(channelColor(model.selected?.platform))
+                    if model.isSending {
+                        ProgressView()
+                            .frame(width: 32, height: 32)
+                    } else {
+                        Image(systemName: "arrow.up.circle.fill")
+                            .font(.system(size: 32))
+                            .foregroundStyle(channelColor(model.selected?.platform))
+                    }
                 }
-                .disabled(model.draft.trimmingCharacters(in: .whitespaces).isEmpty || model.uploading)
+                .disabled(model.draft.trimmingCharacters(in: .whitespaces).isEmpty || model.uploading || model.isSending)
             }
         }
         .padding(.horizontal, 12)

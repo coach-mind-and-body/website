@@ -63,8 +63,15 @@ struct RecipesView: View {
                 recipeThumb(recipe.imageUrl)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(recipe.title).font(.headline).foregroundStyle(HTTheme.forest).multilineTextAlignment(.leading)
-                    if let p = recipe.protein {
-                        Text("\(p)g protein").font(.caption.weight(.semibold)).foregroundStyle(HTTheme.gold)
+                    let macros = [
+                        recipe.protein.map { "\($0)g protein" },
+                        recipe.carbs.map { "\($0)g carbs" },
+                        recipe.fiber.map { "\($0)g fiber" },
+                    ].compactMap { $0 }
+                    if !macros.isEmpty {
+                        Text(macros.joined(separator: " · "))
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(HTTheme.gold)
                     }
                     let mins = (recipe.prepMinutes ?? 0) + (recipe.cookMinutes ?? 0)
                     if mins > 0 {
@@ -115,9 +122,10 @@ struct RecipeDetailView: View {
                     if let d = recipe.description { Text(d).foregroundStyle(HTTheme.muted) }
 
                     if recipe.showNutrition != false {
-                        HStack {
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 5), spacing: 6) {
                             macro("P", recipe.protein)
                             macro("C", recipe.carbs)
+                            macro("Fib", recipe.fiber)
                             macro("F", recipe.fat)
                             macro("kcal", recipe.calories)
                         }

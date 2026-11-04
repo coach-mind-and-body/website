@@ -15,8 +15,10 @@ struct CaloriesView: View {
             VStack(alignment: .leading, spacing: 18) {
                 dateRow
 
-                HStack(spacing: 12) {
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     macroChip("Protein", "\(food.proteinTotal)g")
+                    macroChip("Carbs", "\(food.carbsTotal)g")
+                    macroChip("Fiber", "\(food.fiberTotal)g")
                     macroChip("Calories", "\(food.calorieTotal)")
                 }
 
@@ -121,7 +123,7 @@ struct CaloriesView: View {
                     Text(log.foodName)
                         .font(.headline)
                         .foregroundStyle(HTTheme.forest)
-                    Text("\(log.protein)g protein · \(log.calories) cal")
+                    Text("\(log.protein)g protein · \(log.carbs)g carbs · \(log.fiber)g fiber · \(log.calories) cal")
                         .font(.subheadline)
                         .foregroundStyle(HTTheme.muted)
                 }

@@ -384,9 +384,9 @@ export default function MealPlanClient() {
                                     >
                                       {rec.title}
                                     </p>
-                                    {rec.protein > 0 ? (
+                                    {rec.protein > 0 || rec.carbs > 0 || rec.fiber > 0 ? (
                                       <p className="text-[11px] font-bold" style={{ color: FOREST }}>
-                                        {rec.protein}g protein
+                                        {rec.protein}g protein · {rec.carbs}g carbs · {rec.fiber}g fiber
                                       </p>
                                     ) : null}
                                   </div>

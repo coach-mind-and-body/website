@@ -27,6 +27,8 @@ final class FoodViewModel {
     init(auth: AuthStore) { self.auth = auth }
 
     var proteinTotal: Int { logs.reduce(0) { $0 + $1.protein } }
+    var carbsTotal: Int { logs.reduce(0) { $0 + $1.carbs } }
+    var fiberTotal: Int { logs.reduce(0) { $0 + $1.fiber } }
     var calorieTotal: Int { logs.reduce(0) { $0 + $1.calories } }
 
     func loadRecipes() async {

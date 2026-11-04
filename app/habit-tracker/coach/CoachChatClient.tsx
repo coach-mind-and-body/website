@@ -33,6 +33,8 @@ export default function CoachChatClient() {
   const { isSupported, isSubscribed, isSubscribing, subscribeToPush } = useWebPush();
   const utils = trpc.useUtils();
   const [draft, setDraft] = useState("");
+  const [sentNote, setSentNote] = useState<string | null>(null);
+  const [notifyNote, setNotifyNote] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<ReplyTo | null>(null);
   const [optimistic, setOptimistic] = useState<
     { id: number; content?: string; mediaUrl?: string; createdAt: Date; replyTo?: ReplyTo | null }[]
@@ -70,10 +72,12 @@ export default function CoachChatClient() {
       { content, mediaUrl: payload.mediaUrl, replyToId: reply?.id },
       {
         onSuccess: () => {
+          setSentNote("Sent. Lee Anne has it.");
           void refetch().then(() => setOptimistic((prev) => prev.filter((o) => o.id !== id)));
           void utils.coach.unreadCount.invalidate();
         },
         onError: (e) => {
+          setSentNote(null);
           setOptimistic((prev) => prev.filter((o) => o.id !== id));
           if (content) setDraft(content);
           toast.error(e.message);
@@ -198,17 +202,45 @@ export default function CoachChatClient() {
           She sees this in her inbox. Replies show up here.
         </p>
 
-        {isSupported && !isSubscribed && (
-          <button
-            type="button"
-            onClick={() => void subscribeToPush()}
-            disabled={isSubscribing}
-            className="mb-4 w-full flex items-center justify-center gap-2 rounded-2xl border px-3 py-2.5 text-xs font-bold"
-            style={{ borderColor: BORDER, background: "white", color: FOREST }}
-          >
-            <Bell size={14} style={{ color: GOLD }} />
-            {isSubscribing ? "Enabling…" : "Notify me when Lee Anne replies"}
-          </button>
+        {isSupported && (
+          <div className="mb-4">
+            {isSubscribed ? (
+              <p
+                className="rounded-2xl border px-3 py-2.5 text-xs font-bold"
+                style={{ borderColor: BORDER, background: "white", color: FOREST }}
+                role="status"
+              >
+                Notifications are on. You will see them when Lee Anne replies.
+              </p>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  void subscribeToPush().then((result) => {
+                    setNotifyNote(
+                      result.ok
+                        ? result.message
+                        : result.message === "Notification permission denied"
+                          ? "Notifications stayed off. Allow them for this site, then tap again."
+                          : result.message
+                    );
+                  });
+                }}
+                disabled={isSubscribing}
+                aria-busy={isSubscribing}
+                className="w-full flex items-center justify-center gap-2 rounded-2xl border px-3 py-2.5 text-xs font-bold disabled:opacity-70"
+                style={{ borderColor: BORDER, background: "white", color: FOREST }}
+              >
+                <Bell size={14} style={{ color: GOLD }} />
+                {isSubscribing ? "Turning notifications on…" : "Notify me when Lee Anne replies"}
+              </button>
+            )}
+            {notifyNote && !isSubscribed ? (
+              <p className="mt-2 text-xs font-bold text-red-700" role="status">
+                {notifyNote}
+              </p>
+            ) : null}
+          </div>
         )}
 
         <div
@@ -340,10 +372,18 @@ export default function CoachChatClient() {
               </div>
             )}
             <ChatShareToolbar onShare={share} />
+            {(send.isPending || sentNote) && (
+              <p className="text-xs font-bold" style={{ color: FOREST }} role="status">
+                {send.isPending ? "Sending…" : sentNote}
+              </p>
+            )}
             <div className="flex gap-2 items-end">
             <textarea
               value={draft}
-              onChange={(e) => setDraft(e.target.value)}
+              onChange={(e) => {
+                setDraft(e.target.value);
+                if (e.target.value) setSentNote(null);
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
@@ -358,7 +398,7 @@ export default function CoachChatClient() {
             <button
               type="button"
               onClick={onSend}
-              disabled={!draft.trim()}
+              disabled={!draft.trim() || send.isPending}
               className="w-11 h-11 rounded-full flex items-center justify-center text-white shrink-0 disabled:opacity-40"
               style={{ background: FOREST }}
               aria-label="Send"

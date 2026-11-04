@@ -53,10 +53,11 @@ export function useWebPush() {
     }
   }, []);
 
-  const subscribeToPush = async () => {
+  const subscribeToPush = async (): Promise<{ ok: boolean; message: string }> => {
     if (!isSupported) {
-      toast.error("Push notifications are not supported in this browser.");
-      return;
+      const message = "Push notifications are not supported in this browser.";
+      toast.error(message);
+      return { ok: false, message };
     }
     
     setIsSubscribing(true);
@@ -94,11 +95,14 @@ export function useWebPush() {
       });
 
       setIsSubscribed(true);
-      toast.success("Notifications enabled! \uD83D\uDD25");
+      const message = "Notifications are on.";
+      toast.success(message);
+      return { ok: true, message };
     } catch (e: unknown) {
       console.error(e);
       const message = e instanceof Error ? e.message : "Failed to enable notifications";
       toast.error(message);
+      return { ok: false, message };
     } finally {
       setIsSubscribing(false);
     }

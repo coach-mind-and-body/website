@@ -9,6 +9,7 @@ import {
   updateMember,
 } from "@/app/this-week/actions";
 import { ConfirmSubmit } from "@/components/weekly-pairs/ConfirmSubmit";
+import { PendingButton } from "@/components/weekly-pairs/PendingButton";
 import { CopyButton } from "@/components/weekly-pairs/CopyButton";
 import { PairBoard } from "@/components/weekly-pairs/PairBoard";
 import { WeekCheckIn } from "@/components/weekly-pairs/WeekCheckIn";
@@ -110,14 +111,18 @@ export default async function AdminPage({
         </div>
         <div className="flex flex-wrap gap-2">
           <form action={sendCheckInReminders}>
-            <button className="btn-primary" type="submit">
-              Remind people still waiting
-            </button>
+            <PendingButton
+              className="btn-primary"
+              label="Remind people still waiting"
+              pendingLabel="Sending…"
+            />
           </form>
           <form action={sendMatchNotices}>
-            <button className="btn-secondary" type="submit">
-              {phrases.emailPairs}
-            </button>
+            <PendingButton
+              className="btn-secondary"
+              label={phrases.emailPairs}
+              pendingLabel="Sending…"
+            />
           </form>
         </div>
         <p className="text-xs text-stone-500">
@@ -198,9 +203,11 @@ function MatchButtons({ matched, label }: { matched: boolean; label: string }) {
   return (
     <div className="flex flex-wrap gap-2">
       <form action={matchThisWeek}>
-        <button className="btn-primary" type="submit">
-          {matched ? "Rematch" : label}
-        </button>
+        <PendingButton
+          className="btn-primary"
+          label={matched ? "Rematch" : label}
+          pendingLabel="Matching…"
+        />
       </form>
       {matched ? (
         <form action={reopenWeek}>

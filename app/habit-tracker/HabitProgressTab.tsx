@@ -456,13 +456,9 @@ export function HabitProgressTab({
                             {" · "}
                             <span className="text-orange-500">{food.carbs}c</span>
                             {" · "}
+                            <span className="text-green-600">{food.fiber ?? 0}fb</span>
+                            {" · "}
                             <span className="text-yellow-600">{food.fat}f</span>
-                            {food.fiber != null && food.fiber > 0 && (
-                              <>
-                                {" · "}
-                                <span className="text-green-600">{food.fiber}fb</span>
-                              </>
-                            )}
                           </p>
                         </li>
                       ))}
