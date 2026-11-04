@@ -5,6 +5,7 @@ import { getDb } from "@/server/db";
 import { podcastEpisodes } from "@/drizzle/schema";
 import { absoluteUrl, SITE_URL } from "@shared/brand";
 import { platformUrlsForTitle } from "@/server/podcastPlatforms";
+import { showNotesForEpisode } from "@/lib/podcastEpisodeSupplements";
 import {
   articlePathForPodcast,
   canonicalBlogPathForPodcast,
@@ -147,7 +148,7 @@ export default async function Page({ params }: Props) {
         videoId={ep.videoId}
         thumbnail={ep.thumbnail}
         publishedAt={ep.publishedAt ? new Date(ep.publishedAt).toISOString() : null}
-        showNotesHtml={ep.showNotesHtml}
+        showNotesHtml={showNotesForEpisode(ep.slug, ep.showNotesHtml)}
         transcript={ep.transcript}
         spotifyUrl={platforms.spotifyUrl}
         appleUrl={platforms.appleUrl}
