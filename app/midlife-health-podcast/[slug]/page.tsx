@@ -5,6 +5,11 @@ import { getDb } from "@/server/db";
 import { podcastEpisodes } from "@/drizzle/schema";
 import { absoluteUrl, SITE_URL } from "@shared/brand";
 import { platformUrlsForTitle } from "@/server/podcastPlatforms";
+import {
+  articlePathForPodcast,
+  canonicalBlogPathForPodcast,
+  pairForPodcast,
+} from "@/lib/topicPairs";
 import EpisodeClient from "./EpisodeClient";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -24,15 +29,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return { title: "Episode Not Found", robots: { index: false, follow: false } };
   }
 
-  const title = ep.seoTitle || ep.title;
+  const pair = pairForPodcast(ep.slug);
+  const duplicateCanonical = canonicalBlogPathForPodcast(ep.slug);
+  const pairedTitle = pair && !pair.mostlyDuplicate ? pair.podcastTitle : null;
+  const title = pairedTitle || ep.seoTitle || ep.title;
   const description =
     ep.seoDescription ||
     `Show notes for ${ep.title} — Mind and Body Reset midlife health podcast.`;
 
   return {
-    title: { absolute: title.includes("Mind and Body") ? title : `${title} | Mind and Body Reset` },
+    title: pairedTitle
+      ? pairedTitle
+      : { absolute: title.includes("Mind and Body") ? title : `${title} | Mind and Body Reset` },
     description,
-    alternates: { canonical: `/midlife-health-podcast/${ep.slug}` },
+    alternates: {
+      canonical: duplicateCanonical ?? `/midlife-health-podcast/${ep.slug}`,
+    },
     openGraph: {
       title,
       description,
@@ -62,6 +74,7 @@ export default async function Page({ params }: Props) {
 
   if (!ep || ep.status !== "published") notFound();
 
+  const pair = pairForPodcast(ep.slug);
   const pageUrl = absoluteUrl(`/midlife-health-podcast/${ep.slug}`);
   const videoUrl = `https://www.youtube.com/watch?v=${ep.videoId}`;
   const platforms = await platformUrlsForTitle(ep.title);
@@ -129,6 +142,8 @@ export default async function Page({ params }: Props) {
       ))}
       <EpisodeClient
         title={ep.title}
+        heading={pair && !pair.mostlyDuplicate ? pair.podcastTitle : ep.title}
+        articleHref={articlePathForPodcast(ep.slug)}
         videoId={ep.videoId}
         thumbnail={ep.thumbnail}
         publishedAt={ep.publishedAt ? new Date(ep.publishedAt).toISOString() : null}
