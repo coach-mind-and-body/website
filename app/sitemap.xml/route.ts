@@ -26,6 +26,7 @@ const STATIC_PAGES: Array<{
 }> = [
   { path: "/", changefreq: "weekly", priority: "1.0", lastmod: "2026-08-27" },
   { path: "/about", changefreq: "monthly", priority: "0.9", lastmod: "2026-08-27" },
+  { path: "/utah-health-coach", changefreq: "monthly", priority: "0.85", lastmod: "2026-11-04" },
   { path: "/reclaim", changefreq: "monthly", priority: "0.9", lastmod: "2026-08-10" },
   { path: "/book", changefreq: "monthly", priority: "0.85", lastmod: "2026-07-01" },
   { path: "/midlife-health-podcast", changefreq: "weekly", priority: "0.85", lastmod: "2026-08-07" },

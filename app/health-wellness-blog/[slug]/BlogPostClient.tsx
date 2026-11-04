@@ -16,6 +16,7 @@ import { trpc } from "@/lib/trpc";
 import { NewsletterInline, NewsletterPopup } from "@/components/NewsletterSignup";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import { applyBlogSeoOverride } from "@/lib/blogSeoOverrides";
+import { podcastPathForBlog } from "@/lib/topicPairs";
 
 
 // ── Share Buttons component ──────────────────────────────────────────────────
@@ -552,6 +553,17 @@ export default function BlogPost({
               {Math.max(1, Math.ceil(post.content.replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length / 200))} min read
             </span>
           </div>
+          {podcastPathForBlog(post.slug) && (
+            <p className="mt-5 text-sm font-semibold">
+              <Link
+                href={podcastPathForBlog(post.slug) as string}
+                className="underline underline-offset-4"
+                style={{ color: "oklch(0.38 0.10 148)" }}
+              >
+                Listen to the episode
+              </Link>
+            </p>
+          )}
           {listen && (listen.youtubeUrl || listen.spotifyUrl || listen.appleUrl) && (
             <div className="mt-5">
               <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "oklch(0.38 0.10 148)" }}>
