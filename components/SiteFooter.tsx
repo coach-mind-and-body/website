@@ -91,6 +91,7 @@ export default function SiteFooter() {
               {[
                 { href: "/", label: "Home" },
                 { href: "/about", label: "About Mind & Body" },
+                { href: "/utah-health-coach", label: "Health Coach in Utah" },
                 { href: "/reclaim", label: "6 Habits in 6 Weeks" },
                 { href: "/health-wellness-blog", label: "Blog" },
                 { href: "/insulin-resistance-after-40", label: "Insulin Resistance After 40" },
