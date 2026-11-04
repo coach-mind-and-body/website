@@ -10,6 +10,9 @@ import { youtubeEpisodeUrl } from "@shared/podcastLinks";
 
 type Props = {
   title: string;
+  /** Visible H1. Differs from `title` when the episode needs an episode-focused heading. */
+  heading?: string;
+  articleHref?: string | null;
   videoId: string;
   thumbnail: string | null;
   publishedAt: string | null;
@@ -21,6 +24,8 @@ type Props = {
 
 export default function EpisodeClient({
   title,
+  heading,
+  articleHref,
   videoId,
   publishedAt,
   showNotesHtml,
@@ -28,6 +33,7 @@ export default function EpisodeClient({
   spotifyUrl,
   appleUrl,
 }: Props) {
+  const h1 = heading || title;
   const dateLabel = publishedAt
     ? new Date(publishedAt).toLocaleDateString("en-US", {
         year: "numeric",
@@ -63,11 +69,18 @@ export default function EpisodeClient({
                 color: "oklch(0.98 0.01 80)",
               }}
             >
-              {title}
+              {h1}
             </h1>
-            <p className="text-sm mb-6" style={{ color: "oklch(0.90 0.02 148)" }}>
+            <p className="text-sm mb-4" style={{ color: "oklch(0.90 0.02 148)" }}>
               Mind and Body Reset Podcast · Show notes
             </p>
+            {articleHref && (
+              <p className="text-sm font-semibold">
+                <Link href={articleHref} className="underline underline-offset-4" style={{ color: "oklch(0.92 0.04 148)" }}>
+                  Read the full article
+                </Link>
+              </p>
+            )}
           </div>
         </section>
 
