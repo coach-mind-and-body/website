@@ -7,6 +7,11 @@ import { absoluteUrl, SITE_URL } from "@shared/brand";
 import { platformUrlsForTitle } from "@/server/podcastPlatforms";
 import { showNotesForEpisode } from "@/lib/podcastEpisodeSupplements";
 import {
+  editorialEpisodeDescription,
+  editorialEpisodeTitle,
+} from "@/lib/episodeSeo";
+import { episodeShareImage } from "@/lib/episodeShareImage";
+import {
   articlePathForPodcast,
   canonicalBlogPathForPodcast,
   pairForPodcast,
@@ -32,15 +37,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const pair = pairForPodcast(ep.slug);
   const duplicateCanonical = canonicalBlogPathForPodcast(ep.slug);
-  const pairedTitle = pair && !pair.mostlyDuplicate ? pair.podcastTitle : null;
-  const title = pairedTitle || ep.seoTitle || ep.title;
+  const segmentTitle =
+    (pair && !pair.mostlyDuplicate ? pair.podcastTitle : null) ||
+    editorialEpisodeTitle(ep.slug);
+  const title = segmentTitle || ep.seoTitle || ep.title;
   const description =
+    editorialEpisodeDescription(ep.slug) ||
     ep.seoDescription ||
     `Show notes for ${ep.title} — Mind and Body Reset midlife health podcast.`;
+  const shareImage = episodeShareImage(ep.videoId, ep.thumbnail);
 
   return {
-    title: pairedTitle
-      ? pairedTitle
+    title: segmentTitle
+      ? segmentTitle
       : { absolute: title.includes("Mind and Body") ? title : `${title} | Mind and Body Reset` },
     description,
     alternates: {
@@ -51,13 +60,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
       url: `/midlife-health-podcast/${ep.slug}`,
       type: "article",
-      images: ep.thumbnail ? [{ url: ep.thumbnail }] : undefined,
+      images: shareImage
+        ? [
+            {
+              url: shareImage.url,
+              ...(shareImage.width && shareImage.height
+                ? { width: shareImage.width, height: shareImage.height }
+                : {}),
+            },
+          ]
+        : undefined,
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: ep.thumbnail ? [ep.thumbnail] : undefined,
+      images: shareImage ? [shareImage.url] : undefined,
     },
   };
 }
@@ -76,6 +94,10 @@ export default async function Page({ params }: Props) {
   if (!ep || ep.status !== "published") notFound();
 
   const pair = pairForPodcast(ep.slug);
+  const segmentTitle =
+    (pair && !pair.mostlyDuplicate ? pair.podcastTitle : null) ||
+    editorialEpisodeTitle(ep.slug);
+  const shareImage = episodeShareImage(ep.videoId, ep.thumbnail);
   const pageUrl = absoluteUrl(`/midlife-health-podcast/${ep.slug}`);
   const videoUrl = `https://www.youtube.com/watch?v=${ep.videoId}`;
   const platforms = await platformUrlsForTitle(ep.title);
@@ -88,18 +110,22 @@ export default async function Page({ params }: Props) {
       "@context": "https://schema.org",
       "@type": "PodcastEpisode",
       name: ep.title,
-      description: ep.seoDescription || ep.youtubeDescription || "",
+      description:
+        editorialEpisodeDescription(ep.slug) ||
+        ep.seoDescription ||
+        ep.youtubeDescription ||
+        "",
       url: pageUrl,
       datePublished: ep.publishedAt
         ? new Date(ep.publishedAt).toISOString()
         : undefined,
-      image: ep.thumbnail || undefined,
+      image: shareImage?.url,
       associatedMedia: {
         "@type": "VideoObject",
         name: ep.title,
         contentUrl: videoUrl,
         embedUrl: `https://www.youtube.com/embed/${ep.videoId}`,
-        thumbnailUrl: ep.thumbnail || undefined,
+        thumbnailUrl: shareImage?.url,
         uploadDate: ep.publishedAt
           ? new Date(ep.publishedAt).toISOString()
           : undefined,
@@ -143,7 +169,7 @@ export default async function Page({ params }: Props) {
       ))}
       <EpisodeClient
         title={ep.title}
-        heading={pair && !pair.mostlyDuplicate ? pair.podcastTitle : ep.title}
+        heading={segmentTitle || ep.title}
         articleHref={articlePathForPodcast(ep.slug)}
         videoId={ep.videoId}
         thumbnail={ep.thumbnail}

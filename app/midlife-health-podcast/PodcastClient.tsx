@@ -11,6 +11,7 @@ import SiteFooter from "@/components/SiteFooter";
 import { Youtube, Play, Mail, ArrowRight, Headphones } from "lucide-react";
 import PodcastPlatformLinks, { PodcastShowLinks } from "@/components/PodcastPlatformLinks";
 import { PODCAST_SHOW, youtubeEpisodeUrl } from "@shared/podcastLinks";
+import { formatEpisodePublicationDate } from "@/lib/episodePublicationDate";
 
 
 const PODCAST_THUMBNAIL =
@@ -33,11 +34,7 @@ interface Episode {
 
 function formatDate(iso: string) {
   if (!iso) return "";
-  return new Date(iso).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  return formatEpisodePublicationDate(iso);
 }
 
 export default function Podcast() {

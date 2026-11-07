@@ -7,6 +7,7 @@ import SiteFooter from "@/components/SiteFooter";
 import PodcastPlatformLinks from "@/components/PodcastPlatformLinks";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import { youtubeEpisodeUrl } from "@shared/podcastLinks";
+import { formatEpisodePublicationDate } from "@/lib/episodePublicationDate";
 
 type Props = {
   title: string;
@@ -35,11 +36,7 @@ export default function EpisodeClient({
 }: Props) {
   const h1 = heading || title;
   const dateLabel = publishedAt
-    ? new Date(publishedAt).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
+    ? formatEpisodePublicationDate(publishedAt)
     : null;
 
   return (
