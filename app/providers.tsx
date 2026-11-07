@@ -49,6 +49,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   // /holiday is a paid-ad page — skip the chat bundle so the form paints first.
   const isHabitTrackerRoute = pathname?.startsWith("/habit-tracker");
   const isHolidayRoute = pathname === "/holiday" || pathname?.startsWith("/holiday/");
+  const isClientIntakeRoute = pathname === "/client-intake" || pathname?.startsWith("/client-intake/");
 
   const [trpcClient] = useState(() =>
     trpc.createClient({
@@ -75,7 +76,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             <TooltipProvider>
               {children}
               <Toaster />
-              {!isAdminRoute && !isHabitTrackerRoute && !isHolidayRoute && <ChatWidget />}
+              {!isAdminRoute && !isHabitTrackerRoute && !isHolidayRoute && !isClientIntakeRoute && <ChatWidget />}
             </TooltipProvider>
           </ChatProvider>
         </ThemeProvider>

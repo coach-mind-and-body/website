@@ -1110,6 +1110,32 @@ export const holidayApplications = mysqlTable("holiday_applications", {
 export type HolidayApplication = typeof holidayApplications.$inferSelect;
 export type InsertHolidayApplication = typeof holidayApplications.$inferInsert;
 
+// ── Client intake (paper form, digital) ──────────────────────────────────────
+const menopauseStatus = ["premenopausal", "perimenopausal", "postmenopausal"] as const;
+const intakeSource = ["link", "portal"] as const;
+
+export const clientIntakes = mysqlTable("client_intakes", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 200 }).notNull(),
+  phone: varchar("phone", { length: 40 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  goals: text("goals").notNull(),
+  health1: varchar("health1", { length: 500 }).notNull(),
+  health2: varchar("health2", { length: 500 }).notNull(),
+  health3: varchar("health3", { length: 500 }).notNull(),
+  habitsWorse: text("habitsWorse").notNull(),
+  habitsBetter: text("habitsBetter").notNull(),
+  activity: text("activity").notNull(),
+  menopause: mysqlEnum("menopause", menopauseStatus).notNull(),
+  lastCycle: varchar("lastCycle", { length: 40 }),
+  allergies: text("allergies").notNull(),
+  source: mysqlEnum("source", intakeSource).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ClientIntake = typeof clientIntakes.$inferSelect;
+export type InsertClientIntake = typeof clientIntakes.$inferInsert;
+
 // --- DUMMY EXPORTS TO BYPASS STATIC WEBPACK ERRORS FOR LEGACY CRM CODE ---
 export const vacationQuotes = mysqlTable("dummy_vq", { id: int("id") });
 export const flightDeals = mysqlTable("dummy_fd", { id: int("id") });

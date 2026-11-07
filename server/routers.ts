@@ -32,6 +32,7 @@ import { newsletterRouter } from "./routers/newsletter";
 import { foodRouter } from "./routers/food";
 import { coachRouter } from "./routers/coach";
 import { sprintRouter } from "./routers/sprint";
+import { clientIntakeRouter } from "./routers/clientIntake";
 
 export const appRouter = router({
   system: systemRouter,
@@ -118,6 +119,7 @@ export const appRouter = router({
   food: foodRouter,
   coach: coachRouter,
   sprint: sprintRouter,
+  clientIntake: clientIntakeRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -50,6 +50,7 @@ const STATIC_PAGES: Array<{
   // Top GSC impressions page — keep lastmod fresh when we strengthen SEO copy
   { path: "/unicity", changefreq: "weekly", priority: "0.9", lastmod: "2026-08-27" },
   // Still omitted: /enroll, /join (thin conversion), /terms, /privacy, /disclaimer (legal + noindex)
+  // /client-intake is a private form Lee Anne texts to clients. Keep it out of the sitemap.
   // Note: /feel-great-system redirects to /unicity — not listed
   // Note: /fpu-may-12 is a dated event landing — omit from sitemap after event
 ];

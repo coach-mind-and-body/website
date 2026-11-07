@@ -9,6 +9,7 @@ import {
   Cookie,
   CreditCard,
   Salad,
+  FileText,
   FolderOpen,
   Layers,
   Link2,
@@ -24,6 +25,7 @@ export type AdminTab =
   | "overview"
   | "sprint"
   | "contacts"
+  | "intakes"
   | "crm-automations"
   | "newsletters"
   | "snackhack"
@@ -43,6 +45,7 @@ export const ADMIN_TAB_IDS: AdminTab[] = [
   "overview",
   "sprint",
   "contacts",
+  "intakes",
   "crm-automations",
   "newsletters",
   "snackhack",
@@ -63,6 +66,7 @@ export const TABS: { id: AdminTab; label: string; icon: LucideIcon }[] = [
   { id: "overview", label: "Overview", icon: BarChart3 },
   { id: "sprint", label: "This month", icon: ClipboardList },
   { id: "contacts", label: "Contacts", icon: Users },
+  { id: "intakes", label: "Client intakes", icon: FileText },
   { id: "crm-automations", label: "CRM & AI", icon: Megaphone },
   { id: "newsletters", label: "Newsletters", icon: Mail },
   { id: "snackhack", label: "Snack Hack Leads", icon: Cookie },

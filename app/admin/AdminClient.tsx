@@ -18,6 +18,7 @@ import { AdminFpuCoachingTab } from "@/components/admin/tabs/AdminFpuCoachingTab
 import { AdminFpuGroupTab } from "@/components/admin/tabs/AdminFpuGroupTab";
 import { AdminBlogTab } from "@/components/admin/tabs/AdminBlogTab";
 import { AdminCommonFilesTab } from "@/components/admin/tabs/AdminCommonFilesTab";
+import { AdminClientIntakeTab } from "@/components/admin/tabs/AdminClientIntakeTab";
 import { AdminManualEnrollModal } from "@/components/admin/tabs/AdminManualEnrollModal";
 import { AdminNewsletterTab } from "@/components/admin/AdminNewsletterTab";
 import { AdminSprintTab } from "@/components/admin/AdminSprintTab";
@@ -197,6 +198,7 @@ export default function Admin() {
           </div>
         )}
 
+        {tab === "intakes" && <AdminClientIntakeTab />}
         {tab === "snackhack" && <AdminSnackHackTab />}
         {tab === "challenge" && <AdminRealFoodResetTab />}
         {tab === "fpu" && <AdminFpuCoachingTab />}
