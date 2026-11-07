@@ -1,3 +1,5 @@
+"use client";
+
 import SiteFooter from "@/components/SiteFooter";
 import SiteNav from "@/components/SiteNav";
 import { ClientIntakeForm } from "@/components/client-intake/ClientIntakeForm";
