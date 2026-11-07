@@ -3,6 +3,10 @@ import { getDb } from "@/server/db";
 import { blogPosts, podcastEpisodes } from "@/drizzle/schema";
 import { eq, desc } from "drizzle-orm";
 import { SITE_URL } from "@shared/brand";
+import { podcastSitemapUrl } from "@/lib/podcastSitemap";
+
+// Published rows are inserted between deploys. Do not freeze this response at build time.
+export const dynamic = "force-dynamic";
 
 function escapeXml(str: string): string {
   return str
@@ -111,20 +115,7 @@ export async function GET() {
         .where(eq(podcastEpisodes.status, "published"));
 
       episodeUrls = episodes
-        .map((ep) => {
-          const lastmod = ep.updatedAt
-            ? new Date(ep.updatedAt).toISOString().split("T")[0]
-            : ep.publishedAt
-              ? new Date(ep.publishedAt).toISOString().split("T")[0]
-              : fallbackDay;
-          return `
-  <url>
-    <loc>${SITE_URL}/midlife-health-podcast/${escapeXml(ep.slug)}</loc>
-    <lastmod>${lastmod}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.65</priority>
-  </url>`;
-        })
+        .map((ep) => podcastSitemapUrl(SITE_URL, ep, fallbackDay))
         .join("");
     }
 
