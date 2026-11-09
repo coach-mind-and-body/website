@@ -16,6 +16,8 @@ import {
   canonicalBlogPathForPodcast,
   pairForPodcast,
 } from "@/lib/topicPairs";
+import { blogPostPath } from "@/lib/crawlArchive";
+import { relatedCardsForSource } from "@/server/relatedBlogPosts";
 import EpisodeClient from "./EpisodeClient";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -32,7 +34,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .limit(1);
 
   if (!ep || ep.status !== "published") {
-    return { title: "Episode Not Found", robots: { index: false, follow: false } };
+    return {
+      title: "Episode Not Found",
+      robots: { index: false, follow: false },
+    };
   }
 
   const pair = pairForPodcast(ep.slug);
@@ -50,7 +55,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: segmentTitle
       ? segmentTitle
-      : { absolute: title.includes("Mind and Body") ? title : `${title} | Mind and Body Reset` },
+      : {
+          absolute: title.includes("Mind and Body")
+            ? title
+            : `${title} | Mind and Body Reset`,
+        },
     description,
     alternates: {
       canonical: duplicateCanonical ?? `/midlife-health-podcast/${ep.slug}`,
@@ -158,6 +167,8 @@ export default async function Page({ params }: Props) {
     },
   ];
 
+  const related = await relatedCardsForSource("episode", ep.slug);
+
   return (
     <>
       {jsonLd.map((block, i) => (
@@ -173,11 +184,17 @@ export default async function Page({ params }: Props) {
         articleHref={articlePathForPodcast(ep.slug)}
         videoId={ep.videoId}
         thumbnail={ep.thumbnail}
-        publishedAt={ep.publishedAt ? new Date(ep.publishedAt).toISOString() : null}
+        publishedAt={
+          ep.publishedAt ? new Date(ep.publishedAt).toISOString() : null
+        }
         showNotesHtml={showNotesForEpisode(ep.slug, ep.showNotesHtml)}
         transcript={ep.transcript}
         spotifyUrl={platforms.spotifyUrl}
         appleUrl={platforms.appleUrl}
+        relatedReading={related.map(post => ({
+          href: blogPostPath(post.slug),
+          title: post.title,
+        }))}
       />
     </>
   );

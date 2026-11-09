@@ -8,10 +8,12 @@ import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
+import { CrawlArchiveList } from "@/components/CrawlArchiveList";
 import { Youtube, Play, Mail, ArrowRight, Headphones } from "lucide-react";
 import PodcastPlatformLinks, { PodcastShowLinks } from "@/components/PodcastPlatformLinks";
 import { PODCAST_SHOW, youtubeEpisodeUrl } from "@shared/podcastLinks";
 import { formatEpisodePublicationDate } from "@/lib/episodePublicationDate";
+import { episodePath, formatArchiveDate } from "@/lib/crawlArchive";
 
 
 const PODCAST_THUMBNAIL =
@@ -37,7 +39,11 @@ function formatDate(iso: string) {
   return formatEpisodePublicationDate(iso);
 }
 
-export default function Podcast() {
+export default function Podcast({
+  initialEpisodes = [],
+}: {
+  initialEpisodes?: Episode[];
+}) {
   
   const [activeVideo, setActiveVideo] = useState<string | null>(null);
   const playerRef = useRef<HTMLDivElement>(null);
@@ -48,11 +54,13 @@ export default function Podcast() {
   const [page, setPage] = useState(1);
   const limit = 6;
 
-  // Fetch episodes server-side to avoid CORS issues with YouTube RSS
-  const { data: podcastData, isLoading: loading } = trpc.podcast.getEpisodes.useQuery(undefined, {
+  // Published rows are rendered on the server. The YouTube query still refreshes the grid.
+  const { data: podcastData, isLoading } = trpc.podcast.getEpisodes.useQuery(undefined, {
     staleTime: 5 * 60 * 1000, // cache for 5 minutes
   });
-  const episodes: Episode[] = (podcastData?.episodes ?? []) as Episode[];
+  const queried = (podcastData?.episodes ?? []) as Episode[];
+  const episodes: Episode[] = queried.length > 0 ? queried : initialEpisodes;
+  const loading = isLoading && episodes.length === 0;
 
   // Set first episode as active once loaded
   useEffect(() => {
@@ -450,6 +458,20 @@ export default function Podcast() {
               </div>
             </div>
           )}
+
+          <CrawlArchiveList
+            heading="Every episode"
+            label="All episodes"
+            items={initialEpisodes.flatMap((ep) =>
+              ep.slug
+                ? [{
+                    href: episodePath(ep.slug),
+                    title: ep.title,
+                    date: formatArchiveDate(ep.publishedAt),
+                  }]
+                : []
+            )}
+          />
         </div>
       </section>
 

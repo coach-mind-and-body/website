@@ -123,12 +123,19 @@ const STATIC_RELATED_COVERS: Record<string, string> = {
   "calming-food-noise-drop-the-food-courtroom": "https://d2xsxph8kpxj0f.cloudfront.net/310519663371864914/AofowMqj2LY3ZXRJFmskfG/food-noise_ce014448.jpg",
 };
 
-function RelatedPosts({ slug, category }: { slug: string; category?: string }) {
-  const { data: related } = trpc.blog.related.useQuery(
-    { slug, category, limit: 3 },
-    { enabled: !!slug }
-  );
-  if (!related || related.length === 0) return null;
+function RelatedPosts({
+  initialRelated = [],
+}: {
+  initialRelated?: Array<{
+    slug: string;
+    title: string;
+    excerpt: string | null;
+    category: string | null;
+    coverImage: string | null;
+    publishedAt: string | null;
+  }>;
+}) {
+  if (initialRelated.length === 0) return null;
   return (
     <section className="py-16" style={{ background: "oklch(0.985 0.008 80)" }}>
       <div className="container max-w-5xl mx-auto">
@@ -139,7 +146,7 @@ function RelatedPosts({ slug, category }: { slug: string; category?: string }) {
           You Might Also Enjoy
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {related.map((p) => {
+          {initialRelated.map((p) => {
             const cover = p.coverImage ?? STATIC_RELATED_COVERS[p.slug] ?? null;
             return (
               <Link
@@ -300,9 +307,18 @@ type InitialPost = {
 export default function BlogPost({
   initialPost = null,
   listen = null,
+  initialRelated = [],
 }: {
   initialPost?: InitialPost | null;
   listen?: ListenTarget | null;
+  initialRelated?: Array<{
+    slug: string;
+    title: string;
+    excerpt: string | null;
+    category: string | null;
+    coverImage: string | null;
+    publishedAt: string | null;
+  }>;
 }) {
   const params = useParams<{ slug: string }>();
   const slug = params.slug ?? initialPost?.slug;
@@ -617,7 +633,7 @@ export default function BlogPost({
       <NewsletterPopup />
 
       {/* Related Posts */}
-      <RelatedPosts slug={post.slug} category={post.category ?? undefined} />
+      <RelatedPosts initialRelated={initialRelated} />
 
       {/* CTA */}
       <section className="py-16 text-center" style={{ background: "oklch(0.93 0.06 75)" }}>

@@ -4,6 +4,10 @@ import { getDb } from "@/server/db";
 import { blogPosts } from "@/drizzle/schema";
 import { desc, eq } from "drizzle-orm";
 import { SITE_URL } from "@shared/brand";
+import type { ArchiveEntry } from "@/lib/crawlArchive";
+
+// Published rows change between deploys. The full link list has to be fresh.
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: {
@@ -45,6 +49,34 @@ export type InitialBlogListPost = {
   publishedAt: string | null;
 };
 
+async function getPublishedArchive(): Promise<ArchiveEntry[]> {
+  try {
+    const db = await getDb();
+    if (!db) return [];
+    const posts = await db
+      .select({
+        slug: blogPosts.slug,
+        title: blogPosts.title,
+        publishedAt: blogPosts.publishedAt,
+      })
+      .from(blogPosts)
+      .where(eq(blogPosts.published, true))
+      .orderBy(desc(blogPosts.publishedAt));
+
+    return posts
+      .filter(post => post.slug.trim())
+      .map(post => ({
+        slug: post.slug,
+        title: post.title,
+        publishedAt: post.publishedAt
+          ? new Date(post.publishedAt).toISOString()
+          : null,
+      }));
+  } catch {
+    return [];
+  }
+}
+
 async function getInitialPosts(): Promise<InitialBlogListPost[]> {
   try {
     const db = await getDb();
@@ -64,16 +96,14 @@ async function getInitialPosts(): Promise<InitialBlogListPost[]> {
       .orderBy(desc(blogPosts.publishedAt))
       .limit(9);
 
-    return posts.map((p) => ({
+    return posts.map(p => ({
       slug: p.slug,
       title: p.title,
       excerpt: p.excerpt,
       category: p.category,
       coverImage: p.coverImage,
       content: p.content,
-      publishedAt: p.publishedAt
-        ? new Date(p.publishedAt).toISOString()
-        : null,
+      publishedAt: p.publishedAt ? new Date(p.publishedAt).toISOString() : null,
     }));
   } catch {
     return [];
@@ -81,14 +111,18 @@ async function getInitialPosts(): Promise<InitialBlogListPost[]> {
 }
 
 export default async function Page() {
-  const initialPosts = await getInitialPosts();
+  const [initialPosts, archiveLinks] = await Promise.all([
+    getInitialPosts(),
+    getPublishedArchive(),
+  ]);
 
+  const listed = archiveLinks.length > 0 ? archiveLinks : initialPosts;
   const itemList =
-    initialPosts.length > 0
+    listed.length > 0
       ? {
           "@context": "https://schema.org",
           "@type": "ItemList",
-          itemListElement: initialPosts.map((post, index) => ({
+          itemListElement: listed.map((post, index) => ({
             "@type": "ListItem",
             position: index + 1,
             url: `${SITE_URL}/health-wellness-blog/${post.slug}`,
@@ -105,8 +139,8 @@ export default async function Page() {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }}
         />
       )}
-      {/* SSR post cards so crawlers see real internal links without JS */}
-      <BlogClient initialPosts={initialPosts} />
+      {/* Cards stay at one page. archiveLinks is every published post as an <a>. */}
+      <BlogClient initialPosts={initialPosts} archiveLinks={archiveLinks} />
     </>
   );
 }
