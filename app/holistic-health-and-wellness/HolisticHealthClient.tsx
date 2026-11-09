@@ -82,14 +82,14 @@ export default function HolisticHealth() {
                   icon: Activity,
                   title: "Metabolic Healing",
                   desc: "Insulin resistance is the root of modern disease. By optimizing your blood sugar naturally, you can silence food noise and restore energy.",
-                  link: "/feel-great-system",
+                  link: "/unicity",
                   linkText: "Explore the Feel Great Protocol"
                 },
                 {
                   icon: Heart,
                   title: "Financial & Emotional Peace",
                   desc: "You cannot separate financial stress from physical health. True wellness requires peace in your mind, your body, and your bank account.",
-                  link: "/financial-peace-university",
+                  link: "/financial-peace",
                   linkText: "Join Financial Peace University"
                 }
               ].map((card, idx) => (
@@ -135,7 +135,7 @@ export default function HolisticHealth() {
                     <h4 className="font-bold text-[oklch(0.22_0.02_160)] mb-1">Take the Free Quiz</h4>
                     <p className="text-sm text-[oklch(0.45_0.02_160)]">Find out if insulin resistance is holding you back.</p>
                   </Link>
-                  <Link href="/feel-great-system" className="block p-4 rounded-xl border border-[oklch(0.90_0.01_160)] hover:border-[oklch(0.45_0.08_160)] bg-[oklch(0.98_0.005_160)] hover:bg-white transition-all">
+                  <Link href="/unicity" className="block p-4 rounded-xl border border-[oklch(0.90_0.01_160)] hover:border-[oklch(0.45_0.08_160)] bg-[oklch(0.98_0.005_160)] hover:bg-white transition-all">
                     <Zap className="w-6 h-6 text-[oklch(0.45_0.08_160)] mb-3" />
                     <h4 className="font-bold text-[oklch(0.22_0.02_160)] mb-1">The Feel Great System</h4>
                     <p className="text-sm text-[oklch(0.45_0.02_160)]">Our clinically-proven protocol to heal your metabolism.</p>
