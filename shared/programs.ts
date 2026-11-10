@@ -1,5 +1,10 @@
 import { REAL_FOOD_RESET_SEQUENCE_ID, REAL_FOOD_RESET_THEME } from "./realFoodReset";
 
+/** Started when Lee Anne enrolls someone in Metabolic Coaching. */
+export const METABOLIC_ONBOARDING_SEQUENCE_ID = "metabolic_onboarding";
+/** Started when Lee Anne enrolls someone in the Holiday program. */
+export const HOLIDAY_ONBOARDING_SEQUENCE_ID = "holiday_onboarding";
+
 /** Programs Lee Anne can enroll someone in from the admin portal. */
 export const PROGRAM_IDS = ["reclaim", "fpu", "challenge", "holiday", "metabolic"] as const;
 
@@ -47,16 +52,16 @@ export const PROGRAMS: Record<ProgramId, ProgramDefinition> = {
   holiday: {
     id: "holiday",
     label: "Holiday program",
-    blurb: "A holiday program. There isn't an email series for this yet.",
-    sequenceId: null,
+    blurb: "A holiday program. Starts a short welcome series.",
+    sequenceId: HOLIDAY_ONBOARDING_SEQUENCE_ID,
     sessionCount: 0,
     collectsPayment: false,
   },
   metabolic: {
     id: "metabolic",
     label: "Metabolic Coaching",
-    blurb: "The 5-week practicum from the holiday page. There isn't an email series for this yet.",
-    sequenceId: null,
+    blurb: "The 5-week practicum from the holiday page. Starts the onboarding emails.",
+    sequenceId: METABOLIC_ONBOARDING_SEQUENCE_ID,
     sessionCount: 0,
     collectsPayment: false,
   },

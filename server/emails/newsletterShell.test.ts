@@ -40,6 +40,20 @@ describe("newsletterShell", () => {
     expect(html).toContain("Your coach");
   });
 
+  it("uses a custom header logo when one is passed", () => {
+    const html = buildNewsletterHtml({
+      firstName: "Ada",
+      bodyHtml: "<p>Hello</p>",
+      logoUrl: "https://mindandbodyresetcoach.com/logo-holiday.jpg",
+      logoWidth: 200,
+      logoBarColor: "#fccdbd",
+    });
+    expect(html).toContain("https://mindandbodyresetcoach.com/logo-holiday.jpg");
+    expect(html).toContain('width="200"');
+    expect(html).toContain("background:#fccdbd");
+    expect(html).not.toContain("logo-horizontal");
+  });
+
   it("personalizes {{firstName}} placeholders", () => {
     const html = buildNewsletterHtml({
       firstName: "Mia",

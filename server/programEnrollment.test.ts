@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type { ProgramId } from "@shared/programs";
+import {
+  HOLIDAY_ONBOARDING_SEQUENCE_ID,
+  METABOLIC_ONBOARDING_SEQUENCE_ID,
+  type ProgramId,
+} from "@shared/programs";
 import {
   acceptHolidayApplication,
+  EnrollmentConflictError,
   enrollInPrograms,
   enrollPerson,
   type EnrollmentStore,
@@ -138,10 +143,36 @@ describe("enrollPerson", () => {
     expect(mem.enrollments).toHaveLength(1);
     expect(mem.enrollments[0].program).toBe("metabolic");
     expect(mem.sessions).toHaveLength(0);
-    expect(mem.sequences).toHaveLength(0);
+    expect(mem.sequences).toEqual([
+      { email: "new@gmail.com", sequenceId: METABOLIC_ONBOARDING_SEQUENCE_ID },
+    ]);
+    expect(result.sequenceStarted).toBe(true);
     expect(mem.welcome).toEqual([
       { email: "new@gmail.com", program: "metabolic", programs: ["metabolic"] },
     ]);
+  });
+
+  it("starts the holiday series once and does not start it again", async () => {
+    const mem = memoryStore();
+    const first = await enrollPerson(
+      mem.store,
+      { email: "holly@example.com", name: "Holly Day", program: "holiday" },
+      mem.deps
+    );
+    expect(first.sequenceStarted).toBe(true);
+    expect(mem.sequences).toEqual([
+      { email: "holly@example.com", sequenceId: HOLIDAY_ONBOARDING_SEQUENCE_ID },
+    ]);
+
+    await expect(
+      enrollPerson(
+        mem.store,
+        { email: "holly@example.com", program: "holiday" },
+        mem.deps
+      )
+    ).rejects.toBeInstanceOf(EnrollmentConflictError);
+    expect(mem.sequences).toHaveLength(1);
+    expect(mem.enrollments).toHaveLength(1);
   });
 
   it("opens six Reclaim sessions only for Reclaim", async () => {
@@ -167,9 +198,41 @@ describe("enrollInPrograms", () => {
     expect(mem.sessions).toHaveLength(6);
     expect(mem.welcome).toHaveLength(1);
     expect(mem.welcome[0].programs).toEqual(["reclaim", "metabolic"]);
-    expect(mem.sequences.map((row) => row.sequenceId)).toEqual(["reclaim_6_week"]);
+    expect(mem.sequences.map((row) => row.sequenceId)).toEqual([
+      "reclaim_6_week",
+      METABOLIC_ONBOARDING_SEQUENCE_ID,
+    ]);
     expect(result.message).toContain("R.E.C.L.A.I.M.");
     expect(result.message).toContain("Metabolic Coaching");
+  });
+
+  it("starts holiday and metabolic sequences once when both are chosen again", async () => {
+    const mem = memoryStore();
+    const first = await enrollInPrograms(
+      mem.store,
+      {
+        email: "both@example.com",
+        name: "Both Programs",
+        programs: ["holiday", "metabolic"],
+      },
+      mem.deps
+    );
+    expect(first.sequencesStarted).toEqual([
+      HOLIDAY_ONBOARDING_SEQUENCE_ID,
+      METABOLIC_ONBOARDING_SEQUENCE_ID,
+    ]);
+
+    await expect(
+      enrollInPrograms(
+        mem.store,
+        {
+          email: "both@example.com",
+          programs: ["holiday", "metabolic"],
+        },
+        mem.deps
+      )
+    ).rejects.toBeInstanceOf(EnrollmentConflictError);
+    expect(mem.sequences).toHaveLength(2);
   });
 });
 
@@ -191,11 +254,17 @@ describe("acceptHolidayApplication", () => {
     expect(mem.applications[0].status).toBe("accepted");
     expect(mem.applications[0].enrollmentId).toBe(first.enrollmentId);
     expect(mem.welcome).toHaveLength(1);
+    expect(first.sequenceStarted).toBe(true);
+    expect(mem.sequences).toEqual([
+      { email: "pat@example.com", sequenceId: METABOLIC_ONBOARDING_SEQUENCE_ID },
+    ]);
 
     const second = await acceptHolidayApplication(mem.store, 3, mem.deps);
     expect(second.alreadyAccepted).toBe(true);
+    expect(second.sequenceStarted).toBe(false);
     expect(mem.users).toHaveLength(1);
     expect(mem.enrollments).toHaveLength(1);
     expect(mem.welcome).toHaveLength(1);
+    expect(mem.sequences).toHaveLength(1);
   });
 });

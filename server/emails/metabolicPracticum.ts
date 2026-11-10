@@ -1,8 +1,13 @@
 /**
- * Six emails for the free Mindy Pelz practicum spots.
+ * Six recruitment emails for the free Mindy Pelz practicum spots.
  * Three on Thursday Oct 15, three on Friday Oct 16. Each one stands alone
  * and gets shorter and more direct as 10 PM Friday gets closer.
- * Wrapped by the newsletter shell. Do not schedule until Carter approves.
+ * Wrapped by the newsletter shell.
+ *
+ * These are pre-enrollment notes for an application window that closed
+ * October 16, 2026. Do not attach them to holiday_applications: applicants
+ * already get "I have your application", the close date is past, and these
+ * were not approved to send. Enrolled clients get metabolicOnboarding.ts.
  */
 import { SITE_URL } from "@shared/brand";
 
