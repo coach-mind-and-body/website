@@ -11,6 +11,14 @@ import { useGoogleAnalytics } from "@/hooks/useGoogleAnalytics";
 
 const DAYS = REAL_FOOD_RESET.days;
 
+const PUBLIC_WEEKDAYS: Record<number, string> = {
+  1: "Monday",
+  2: "Tuesday",
+  3: "Wednesday",
+  4: "Thursday",
+  5: "Friday",
+};
+
 function SignupForm({ id, compact }: { id?: string; compact?: boolean }) {
   const router = useRouter();
   const [firstName, setFirstName] = useState("");
@@ -113,7 +121,7 @@ function SignupForm({ id, compact }: { id?: string; compact?: boolean }) {
           {loading ? "Saving your spot…" : "Yes — save my free spot"}
         </button>
         <p className="text-xs text-center leading-relaxed" style={{ color: "#8a9a8a" }}>
-          Free. Progress, not perfection. We start {REAL_FOOD_RESET.startLabel}.
+          Free. Progress, not perfection.
         </p>
       </div>
     </div>
@@ -147,7 +155,7 @@ export default function RealFoodResetClient() {
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-stretch">
           <div className="flex flex-col">
             <p className="text-xs font-bold uppercase tracking-[0.2em] mb-4" style={{ color: "#c9a96e" }}>
-              Free · 5 days · Starts {REAL_FOOD_RESET.startLabel}
+              Free · 5 days
             </p>
             <h1
               className="font-bold leading-[1.1] mb-4"
@@ -192,7 +200,7 @@ export default function RealFoodResetClient() {
                 Save your free spot
               </h2>
               <p className="text-sm mb-5" style={{ color: "#6a5a50" }}>
-                We start {REAL_FOOD_RESET.startLabel}. The iPhone app is free on the App Store — you’ll get the link and live times as soon as you register.
+                The iPhone app is free on the App Store — you’ll get the link and live times as soon as you register.
               </p>
               <SignupForm id="join" />
             </div>
@@ -240,7 +248,7 @@ export default function RealFoodResetClient() {
               >
                 <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-2">
                   <span className="text-xs font-bold uppercase tracking-widest" style={{ color: "#c9a96e" }}>
-                    Day {d.n} · {d.weekday}
+                    Day {d.n} · {PUBLIC_WEEKDAYS[d.n]}
                   </span>
                   <span className="text-xs" style={{ color: "#8a9a8a" }}>
                     {d.formatLabel}
@@ -362,7 +370,7 @@ export default function RealFoodResetClient() {
             <div>
               <dt className="font-bold mb-1">When does it start?</dt>
               <dd style={{ color: "#555" }}>
-                {REAL_FOOD_RESET.startLabel} through {REAL_FOOD_RESET.endLabel}. Lives {REAL_FOOD_RESET.liveDays} at {REAL_FOOD_RESET.liveTime} ({REAL_FOOD_RESET.liveDuration}).
+                You can enroll anytime. Lives are {REAL_FOOD_RESET.liveDays} at {REAL_FOOD_RESET.liveTime} ({REAL_FOOD_RESET.liveDuration}).
               </dd>
             </div>
             <div>
