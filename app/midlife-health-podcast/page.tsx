@@ -1,5 +1,63 @@
 import type { Metadata } from "next";
+import { desc, eq } from "drizzle-orm";
 import PodcastClient from "./PodcastClient";
+import { getDb } from "@/server/db";
+import { podcastEpisodes } from "@/drizzle/schema";
+
+// Published rows change between deploys. The full link list has to be fresh.
+export const dynamic = "force-dynamic";
+
+export type InitialEpisode = {
+  id: string;
+  title: string;
+  description: string;
+  thumbnail: string;
+  publishedAt: string;
+  videoId: string;
+  slug: string;
+  hasShowNotes: true;
+};
+
+async function getPublishedEpisodes(): Promise<InitialEpisode[]> {
+  try {
+    const db = await getDb();
+    if (!db) return [];
+    const rows = await db
+      .select({
+        videoId: podcastEpisodes.videoId,
+        slug: podcastEpisodes.slug,
+        title: podcastEpisodes.title,
+        thumbnail: podcastEpisodes.thumbnail,
+        publishedAt: podcastEpisodes.publishedAt,
+        youtubeDescription: podcastEpisodes.youtubeDescription,
+      })
+      .from(podcastEpisodes)
+      .where(eq(podcastEpisodes.status, "published"))
+      .orderBy(desc(podcastEpisodes.publishedAt), desc(podcastEpisodes.id));
+
+    return rows
+      .filter(row => row.slug.trim())
+      .map(row => ({
+        id: row.videoId,
+        videoId: row.videoId,
+        slug: row.slug,
+        title: row.title,
+        description: (row.youtubeDescription || "")
+          .replace(/\s+/g, " ")
+          .trim()
+          .slice(0, 280),
+        thumbnail:
+          row.thumbnail ||
+          `https://i.ytimg.com/vi/${row.videoId}/hqdefault.jpg`,
+        publishedAt: row.publishedAt
+          ? new Date(row.publishedAt).toISOString()
+          : "",
+        hasShowNotes: true as const,
+      }));
+  } catch {
+    return [];
+  }
+}
 
 export const metadata: Metadata = {
   // Segment title only. Root layout template appends " | Mind and Body Reset".
@@ -28,6 +86,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Page() {
-  return <PodcastClient />;
+export default async function Page() {
+  const initialEpisodes = await getPublishedEpisodes();
+  return <PodcastClient initialEpisodes={initialEpisodes} />;
 }

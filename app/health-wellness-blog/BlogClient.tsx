@@ -5,8 +5,10 @@ import Link from 'next/link';
 import { ChevronRight, Search, X } from "lucide-react";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
+import { CrawlArchiveList } from "@/components/CrawlArchiveList";
 import { trpc } from "@/lib/trpc";
 import { SITE_URL } from "@shared/brand";
+import { blogPostPath, formatArchiveDate, type ArchiveEntry } from "@/lib/crawlArchive";
 
 
 const CDN = "https://cdn.mindandbodyresetcoach.com/blog-images";
@@ -29,7 +31,13 @@ type InitialListPost = {
   publishedAt: string | null;
 };
 
-export default function Blog({ initialPosts = [] }: { initialPosts?: InitialListPost[] }) {
+export default function Blog({
+  initialPosts = [],
+  archiveLinks = [],
+}: {
+  initialPosts?: InitialListPost[];
+  archiveLinks?: ArchiveEntry[];
+}) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -252,6 +260,16 @@ export default function Blog({ initialPosts = [] }: { initialPosts?: InitialList
               </button>
             </div>
           )}
+
+          <CrawlArchiveList
+            heading="Every article"
+            label="All articles"
+            items={archiveLinks.map((post) => ({
+              href: blogPostPath(post.slug),
+              title: post.title,
+              date: formatArchiveDate(post.publishedAt),
+            }))}
+          />
         </div>
       </section>
 

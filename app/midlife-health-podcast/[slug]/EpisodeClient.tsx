@@ -21,6 +21,7 @@ type Props = {
   transcript: string | null;
   spotifyUrl?: string | null;
   appleUrl?: string | null;
+  relatedReading?: { href: string; title: string }[];
 };
 
 export default function EpisodeClient({
@@ -33,6 +34,7 @@ export default function EpisodeClient({
   transcript,
   spotifyUrl,
   appleUrl,
+  relatedReading = [],
 }: Props) {
   const h1 = heading || title;
   const dateLabel = publishedAt
@@ -124,6 +126,30 @@ export default function EpisodeClient({
                 ),
               }}
             />
+
+            {relatedReading.length > 0 && (
+              <nav className="mb-12" aria-label="Related reading">
+                <p
+                  className="text-xs font-bold uppercase tracking-widest mb-3"
+                  style={{ color: "oklch(0.38 0.10 148)" }}
+                >
+                  Related reading
+                </p>
+                <ul className="space-y-2">
+                  {relatedReading.map((item) => (
+                    <li key={item.href}>
+                      <Link
+                        href={item.href}
+                        className="text-sm font-semibold underline underline-offset-4"
+                        style={{ color: "oklch(0.38 0.10 148)" }}
+                      >
+                        {item.title}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            )}
 
             {transcript && (
               <details className="mb-12 rounded-xl border p-4" style={{ borderColor: "oklch(0.90 0.01 160)" }}>

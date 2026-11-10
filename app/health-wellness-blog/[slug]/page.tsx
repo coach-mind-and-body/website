@@ -7,6 +7,7 @@ import BlogPostClient from "./BlogPostClient";
 import { absoluteUrl } from "@shared/brand";
 import { listenTargetForBlogPost } from "@/server/podcastPlatforms";
 import { applyBlogSeoOverride } from "@/lib/blogSeoOverrides";
+import { relatedCardsForBlogPost } from "@/server/relatedBlogPosts";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -201,7 +202,11 @@ export default async function Page({ params }: Props) {
         "@id": pageUrl,
       },
       // Full article body in JSON-LD helps when crawlers under-render JS
-      articleBody: post.content.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 5000),
+      articleBody: post.content
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 5000),
       url: pageUrl,
       inLanguage: "en-US",
     },
@@ -217,7 +222,7 @@ export default async function Page({ params }: Props) {
         jsonLdBlocks.push({
           "@context": "https://schema.org",
           "@type": "FAQPage",
-          mainEntity: faqs.map((f) => ({
+          mainEntity: faqs.map(f => ({
             "@type": "Question",
             name: f.question,
             acceptedAnswer: {
@@ -285,7 +290,12 @@ export default async function Page({ params }: Props) {
       */}
       <BlogPostClient
         initialPost={post}
-        listen={await listenTargetForBlogPost(post.slug, post.content, post.schemaVideoUrl)}
+        initialRelated={await relatedCardsForBlogPost(post.slug, post.category)}
+        listen={await listenTargetForBlogPost(
+          post.slug,
+          post.content,
+          post.schemaVideoUrl
+        )}
       />
     </>
   );
