@@ -32,4 +32,9 @@ export const ENV = {
   r2Endpoint: process.env.R2_ENDPOINT ?? "",
   r2BucketName: process.env.R2_BUCKET_NAME ?? "mindbodyreset-assets",
   r2PublicUrl: process.env.R2_PUBLIC_URL ?? "https://pub-c6f7a165acb046c283b129a93cb2c8ec.r2.dev",
+  /** Private bucket used for client photos. Falls back to the food-log R2 credentials when unset. */
+  r2PrivateAccessKeyId: process.env.R2_PRIVATE_ACCESS_KEY_ID ?? "",
+  r2PrivateSecretAccessKey: process.env.R2_PRIVATE_SECRET_ACCESS_KEY ?? "",
+  r2PrivateEndpoint: process.env.R2_PRIVATE_ENDPOINT ?? "",
+  r2PrivateBucketName: process.env.R2_PRIVATE_BUCKET_NAME ?? "",
 };

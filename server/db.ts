@@ -20,6 +20,8 @@ export async function getDb() {
     const db = _db;
     schemaReady = import("./ensureProgramSchema")
       .then((mod) => mod.ensureProgramEnrollmentSchema(db))
+      .then(() => import("./ensureFormSchema"))
+      .then((mod) => mod.ensureFormSchema(db))
       .catch((error) => {
         schemaReady = null;
         console.error("[Database] Schema ensure failed:", error);

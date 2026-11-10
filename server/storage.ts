@@ -96,3 +96,76 @@ export async function storageRead(
     throw error;
   }
 }
+
+function privateBucket() {
+  const hasPrivate = Boolean(
+    ENV.r2PrivateAccessKeyId &&
+      ENV.r2PrivateSecretAccessKey &&
+      ENV.r2PrivateEndpoint &&
+      ENV.r2PrivateBucketName
+  );
+  return {
+    accessKeyId: hasPrivate ? ENV.r2PrivateAccessKeyId : ENV.r2AccessKeyId,
+    secretAccessKey: hasPrivate ? ENV.r2PrivateSecretAccessKey : ENV.r2SecretAccessKey,
+    endpoint: hasPrivate ? ENV.r2PrivateEndpoint : ENV.r2Endpoint,
+    bucket: hasPrivate ? ENV.r2PrivateBucketName : ENV.r2BucketName,
+  };
+}
+
+function privateClient() {
+  const cfg = privateBucket();
+  if (!cfg.accessKeyId || !cfg.secretAccessKey || !cfg.endpoint || !cfg.bucket) {
+    throw new Error("Missing R2 credentials in environment variables.");
+  }
+  return {
+    bucket: cfg.bucket,
+    client: new S3Client({
+      region: "auto",
+      endpoint: cfg.endpoint,
+      credentials: {
+        accessKeyId: cfg.accessKeyId,
+        secretAccessKey: cfg.secretAccessKey,
+      },
+    }),
+  };
+}
+
+/** Store an object in the private bucket. Returns the key only — never a public URL. */
+export async function privateStoragePut(
+  relKey: string,
+  data: Buffer | Uint8Array | string,
+  contentType = "application/octet-stream"
+): Promise<{ key: string }> {
+  const { client, bucket } = privateClient();
+  const key = normalizeKey(relKey);
+  await client.send(
+    new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      Body: typeof data === "string" ? Buffer.from(data, "utf-8") : data,
+      ContentType: contentType,
+    })
+  );
+  return { key };
+}
+
+/** Read an object from the private bucket. */
+export async function privateStorageRead(
+  relKey: string
+): Promise<{ body: Buffer; contentType: string } | null> {
+  const { client, bucket } = privateClient();
+  const key = normalizeKey(relKey);
+  try {
+    const result = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+    if (!result.Body) return null;
+    const bytes = await result.Body.transformToByteArray();
+    return {
+      body: Buffer.from(bytes),
+      contentType: result.ContentType || "application/octet-stream",
+    };
+  } catch (error) {
+    const name = error && typeof error === "object" && "name" in error ? String(error.name) : "";
+    if (name === "NoSuchKey" || name === "NotFound") return null;
+    throw error;
+  }
+}

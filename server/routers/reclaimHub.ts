@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { eq, desc, and, asc } from "drizzle-orm";
+import { eq, desc, and, asc, isNotNull } from "drizzle-orm";
 import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { 
@@ -82,6 +82,7 @@ export const reclaimHubRouter = router({
     const allAssignments = await db
       .select()
       .from(assignments)
+      .where(isNotNull(assignments.moduleId))
       .orderBy(asc(assignments.order));
 
     // Fetch user's submissions
@@ -122,7 +123,7 @@ export const reclaimHubRouter = router({
     const visibleModuleIds = new Set(visibleModules.map((m) => m.id));
     const visibleAssignments = isAdmin
       ? allAssignments
-      : allAssignments.filter((a) => visibleModuleIds.has(a.moduleId));
+      : allAssignments.filter((a) => a.moduleId != null && visibleModuleIds.has(a.moduleId));
 
     return {
       enrollment: effectiveEnrollment,
@@ -436,7 +437,12 @@ export const reclaimHubRouter = router({
 
       await db
         .update(assignmentSubmissions)
-        .set({ feedback: input.feedback })
+        .set({
+          feedback: input.feedback,
+          ...(input.feedback.trim()
+            ? { status: "reviewed" as const, reviewedAt: new Date(), reviewedByUserId: ctx.user!.id }
+            : {}),
+        })
         .where(eq(assignmentSubmissions.id, input.submissionId));
 
       // TODO: Trigger email notification to Client

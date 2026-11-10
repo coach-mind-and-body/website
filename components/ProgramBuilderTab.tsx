@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Link from "next/link";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Plus, Edit2, Trash2, CheckCircle, Video, FileText, LayoutList } from "lucide-react";
@@ -401,6 +402,9 @@ function ModuleAssignmentsEditor({ moduleId }: { moduleId: number }) {
                   <p className="text-sm" style={{ color: "oklch(0.20 0.015 50)" }}>{assignment.question}</p>
                 </div>
                 <div className="flex items-center gap-1">
+                  <Link href={`/admin/forms/${assignment.id}`} className="text-xs font-bold px-2" style={{ color: "oklch(0.45 0.10 148)" }}>
+                    Form
+                  </Link>
                   <Button variant="ghost" size="icon" onClick={() => { setEditingId(assignment.id); setEditQuestion(assignment.question); }} style={{ color: "oklch(0.72 0.12 75)" }}>
                     <Edit2 size={14} />
                   </Button>

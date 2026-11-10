@@ -490,6 +490,26 @@ export default function Portal() {
           })}
         </div>
 
+        <div className="rounded-2xl p-6 mb-6" style={{ background: "white", border: "1px solid #f0e8e4" }}>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-bold" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
+                Worksheets
+              </h2>
+              <p className="text-sm mt-1" style={{ color: "#8a9a8a" }}>
+                Fillable forms and grouped pages for your programs.
+              </p>
+            </div>
+            <Link
+              href="/portal/forms"
+              className="min-h-12 inline-flex items-center rounded-full px-4 text-sm font-bold text-white"
+              style={{ background: "#2d3b2d" }}
+            >
+              Open
+            </Link>
+          </div>
+        </div>
+
         {/* Files section */}
         <div className="rounded-2xl p-6" style={{ background: "white", border: "1px solid #f0e8e4" }}>
           <div className="flex items-center justify-between mb-5">

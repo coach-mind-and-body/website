@@ -265,6 +265,15 @@ struct CoachView: View {
             .navigationTitle(model.thread?.coachName ?? "Coach")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    NavigationLink {
+                        FormsListView(auth: auth)
+                    } label: {
+                        Image(systemName: "list.clipboard")
+                            .foregroundStyle(HTTheme.forest)
+                    }
+                    .accessibilityLabel("Worksheets")
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     ProfileAvatarButton(auth: auth)
                 }
