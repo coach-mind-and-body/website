@@ -4,6 +4,7 @@ import { InsertUser, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
+let schemaReady: Promise<void> | null = null;
 
 // Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
@@ -15,6 +16,16 @@ export async function getDb() {
       _db = null;
     }
   }
+  if (_db && !schemaReady) {
+    const db = _db;
+    schemaReady = import("./ensureProgramSchema")
+      .then((mod) => mod.ensureProgramEnrollmentSchema(db))
+      .catch((error) => {
+        schemaReady = null;
+        console.error("[Database] Schema ensure failed:", error);
+      });
+  }
+  if (schemaReady) await schemaReady;
   return _db;
 }
 

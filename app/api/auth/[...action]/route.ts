@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { getDb } from "../../../../server/db";
-import { users } from "../../../../drizzle/schema";
-import { eq } from "drizzle-orm";
+import { enrollments, users } from "../../../../drizzle/schema";
+import { eq, inArray, sql } from "drizzle-orm";
 import { sdk } from "../../../../server/_core/sdk";
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { ENV } from "../../../../server/_core/env";
@@ -11,6 +11,7 @@ import { sendTransactionalEmail } from "../../../../server/notifications";
 import { cookies } from "next/headers";
 
 import { isAdminEmail } from "@shared/adminEmails";
+import { findAccountForSignIn, isGeneratedApplePlaceholder, type AuthAccountRow } from "../../../../server/authAccount";
 
 function generateToken(bytes = 32): string {
   return crypto.randomBytes(bytes).toString("hex");
@@ -45,40 +46,91 @@ async function upsertLocalUser(data: {
   loginMethod: string;
   passwordHash?: string;
   googleId?: string;
+  appleId?: string;
   emailVerified?: boolean;
   emailVerifyToken?: string | null;
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const existing = await db.select().from(users).where(eq(users.openId, data.openId)).limit(1);
-  const isAdmin = isAdminEmail(data.email);
+  const email = data.email.trim().toLowerCase();
+  const isAdmin = isAdminEmail(email);
+  const candidates = new Map<number, AuthAccountRow>();
 
-  if (existing.length === 0) {
+  const remember = async (rows: Array<typeof users.$inferSelect>) => {
+    if (rows.length === 0) return;
+    const ids = rows.map((row) => row.id);
+    const enrolled = await db
+      .select({ userId: enrollments.userId })
+      .from(enrollments)
+      .where(inArray(enrollments.userId, ids));
+    const counts = new Map<number, number>();
+    for (const row of enrolled) counts.set(row.userId, (counts.get(row.userId) ?? 0) + 1);
+    for (const row of rows) {
+      candidates.set(row.id, {
+        id: row.id,
+        openId: row.openId,
+        email: row.email,
+        name: row.name,
+        googleId: row.googleId,
+        appleId: row.appleId,
+        enrollmentCount: counts.get(row.id) ?? 0,
+      });
+    }
+  };
+
+  await remember(await db.select().from(users).where(eq(users.openId, data.openId)).limit(1));
+  if (data.googleId) {
+    await remember(await db.select().from(users).where(eq(users.googleId, data.googleId)).limit(5));
+  }
+  if (data.appleId) {
+    await remember(await db.select().from(users).where(eq(users.appleId, data.appleId)).limit(5));
+  }
+  if (email && !isGeneratedApplePlaceholder(email)) {
+    await remember(
+      await db.select().from(users).where(sql`lower(${users.email}) = ${email}`).limit(20)
+    );
+  }
+
+  const match = findAccountForSignIn([...candidates.values()], {
+    openId: data.openId,
+    email,
+    googleId: data.googleId,
+    appleId: data.appleId,
+  });
+
+  if (!match) {
     await db.insert(users).values({
       openId: data.openId,
       name: data.name,
-      email: data.email,
+      email,
       loginMethod: data.loginMethod,
       passwordHash: data.passwordHash,
       googleId: data.googleId,
+      appleId: data.appleId,
       emailVerified: data.emailVerified ?? false,
       emailVerifyToken: data.emailVerifyToken ?? null,
       role: isAdmin ? "admin" : "user",
       lastSignedIn: new Date(),
     });
-  } else {
-    const updateData: Record<string, unknown> = { lastSignedIn: new Date() };
-    if (data.name) updateData.name = data.name;
-    if (data.passwordHash) updateData.passwordHash = data.passwordHash;
-    if (data.googleId) updateData.googleId = data.googleId;
-    if (data.emailVerified !== undefined) updateData.emailVerified = data.emailVerified;
-    if (data.emailVerifyToken !== undefined) updateData.emailVerifyToken = data.emailVerifyToken;
-    if (isAdmin) updateData.role = "admin";
-    await db.update(users).set(updateData).where(eq(users.openId, data.openId));
+    const [created] = await db.select().from(users).where(eq(users.openId, data.openId)).limit(1);
+    return created;
   }
 
-  const [user] = await db.select().from(users).where(eq(users.openId, data.openId)).limit(1);
+  const updateData: Record<string, unknown> = { lastSignedIn: new Date() };
+  const sameAccount = match.openId === data.openId;
+  const placeholderName = !match.name || match.name.trim().toLowerCase() === email.split("@")[0];
+  if (data.name && (sameAccount || placeholderName)) updateData.name = data.name;
+  if (data.passwordHash) updateData.passwordHash = data.passwordHash;
+  if (data.googleId) updateData.googleId = data.googleId;
+  if (data.appleId) updateData.appleId = data.appleId;
+  if (data.emailVerified) updateData.emailVerified = true;
+  else if (sameAccount && data.emailVerified !== undefined) updateData.emailVerified = data.emailVerified;
+  if (data.emailVerifyToken !== undefined && sameAccount) updateData.emailVerifyToken = data.emailVerifyToken;
+  if (isAdmin) updateData.role = "admin";
+  await db.update(users).set(updateData).where(eq(users.id, match.id));
+
+  const [user] = await db.select().from(users).where(eq(users.id, match.id)).limit(1);
   return user;
 }
 
@@ -241,8 +293,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ action:
       const user = await upsertLocalUser({
         openId,
         name: displayName,
-        email: email || `apple-${sub.slice(0, 12)}@privaterelay.appleid.com`,
+        email: (email || `apple-${sub.slice(0, 12)}@privaterelay.appleid.com`).toLowerCase().trim(),
         loginMethod: "apple",
+        appleId: sub,
         emailVerified: true,
       });
       const sessionToken = await issueSession(user.openId, user.name || displayName);

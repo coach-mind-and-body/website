@@ -29,7 +29,11 @@ const KIND_STYLES: Record<string, { label: string; bg: string; color: string }> 
   },
 };
 
-export function AdminOverviewTab() {
+type AdminOverviewTabProps = {
+  onEnrollLead?: (lead: { name: string; email: string; phone?: string | null }) => void;
+};
+
+export function AdminOverviewTab({ onEnrollLead }: AdminOverviewTabProps) {
   const { setActiveChatMeta, setIsNewChatOpen } = useInbox();
 
   const { data: enrollments } = trpc.enrollment.adminListAllUsers.useQuery();
@@ -314,10 +318,10 @@ export function AdminOverviewTab() {
             {(leadsData ?? []).slice(0, 8).map((lead) => (
               <div
                 key={lead.id}
-                className="flex items-center justify-between p-4 rounded-xl shadow-sm"
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl shadow-sm"
                 style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.015 80)" }}
               >
-                <div>
+                <div className="min-w-0">
                   <p className="font-semibold text-sm" style={{ color: "oklch(0.20 0.015 50)" }}>
                     {lead.name}
                   </p>
@@ -326,15 +330,25 @@ export function AdminOverviewTab() {
                     {lead.phone ? ` · ${lead.phone}` : ""}
                   </p>
                 </div>
-                <span
-                  className="text-xs px-2 py-1 rounded-full font-bold"
-                  style={{
-                    background: lead.status === "new" ? "oklch(0.92 0.04 148)" : "oklch(0.93 0.06 75)",
-                    color: lead.status === "new" ? "oklch(0.38 0.10 148)" : "oklch(0.45 0.12 65)",
-                  }}
-                >
-                  {lead.status}
-                </span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => onEnrollLead?.({ name: lead.name, email: lead.email, phone: lead.phone })}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-lg"
+                    style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}
+                  >
+                    Enroll in program
+                  </button>
+                  <span
+                    className="text-xs px-2 py-1 rounded-full font-bold"
+                    style={{
+                      background: lead.status === "new" ? "oklch(0.92 0.04 148)" : "oklch(0.93 0.06 75)",
+                      color: lead.status === "new" ? "oklch(0.38 0.10 148)" : "oklch(0.45 0.12 65)",
+                    }}
+                  >
+                    {lead.status}
+                  </span>
+                </div>
               </div>
             ))}
             {!leadsData?.length && (

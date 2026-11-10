@@ -631,7 +631,7 @@ export async function syncRecentCalendarEvents() {
       const [enrollment] = await db
         .select()
         .from(enrollments)
-        .where(eq(enrollments.userId, matchedUser.id))
+        .where(and(eq(enrollments.userId, matchedUser.id), eq(enrollments.program, "reclaim")))
         .limit(1);
       if (!enrollment) continue;
 

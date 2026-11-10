@@ -227,6 +227,7 @@ export async function pollForCompletedSessions(): Promise<void> {
       .where(
         and(
           eq(enrollments.userId, clientUser.id),
+          eq(enrollments.program, "reclaim"),
           eq(enrollments.status, "active")
         )
       )

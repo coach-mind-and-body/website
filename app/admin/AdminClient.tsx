@@ -19,7 +19,8 @@ import { AdminFpuGroupTab } from "@/components/admin/tabs/AdminFpuGroupTab";
 import { AdminBlogTab } from "@/components/admin/tabs/AdminBlogTab";
 import { AdminCommonFilesTab } from "@/components/admin/tabs/AdminCommonFilesTab";
 import { AdminClientIntakeTab } from "@/components/admin/tabs/AdminClientIntakeTab";
-import { AdminManualEnrollModal } from "@/components/admin/tabs/AdminManualEnrollModal";
+import { AdminManualEnrollModal, type EnrollModalSeed } from "@/components/admin/tabs/AdminManualEnrollModal";
+import { AdminApplicantsTab } from "@/components/admin/tabs/AdminApplicantsTab";
 import { AdminNewsletterTab } from "@/components/admin/AdminNewsletterTab";
 import { AdminSprintTab } from "@/components/admin/AdminSprintTab";
 import { ADMIN_TAB_IDS, TABS, type AdminTab } from "@/components/admin/tabs/adminTypes";
@@ -47,6 +48,11 @@ export default function Admin() {
   };
 
   const [showEnrollModal, setShowEnrollModal] = useState(false);
+  const [enrollSeed, setEnrollSeed] = useState<EnrollModalSeed | null>(null);
+  const openEnroll = (seed: EnrollModalSeed | null = null) => {
+    setEnrollSeed(seed);
+    setShowEnrollModal(true);
+  };
   const isAdmin = isAuthenticated && user?.role === "admin";
   const { isSupported: pushSupported, isSubscribed: pushOn, isSubscribing, subscribeToPush } = useWebPush();
 
@@ -179,23 +185,51 @@ export default function Admin() {
           })}
         </div>
 
-        {tab === "overview" && <AdminOverviewTab />}
+        {tab === "overview" && (
+          <AdminOverviewTab
+            onEnrollLead={(lead) =>
+              openEnroll({
+                name: lead.name,
+                email: lead.email,
+                phone: lead.phone,
+              })
+            }
+          />
+        )}
         {tab === "sprint" && <AdminSprintTab />}
 
         {tab === "contacts" && (
           <div>
             <div className="flex justify-end mb-4">
               <button
-                onClick={() => setShowEnrollModal(true)}
+                onClick={() => openEnroll(null)}
                 className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg transition-opacity hover:opacity-80"
                 style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}
               >
                 <UserPlus size={16} />
-                Enroll Reclaim Client Manually
+                Enroll someone
               </button>
             </div>
             <AdminContactsTab gcalConnected={!!gcalStatus?.connected} />
           </div>
+        )}
+
+        {tab === "applicants" && (
+          <AdminApplicantsTab
+            onEnroll={(person) =>
+              openEnroll(
+                person
+                  ? {
+                      name: person.name,
+                      email: person.email,
+                      phone: person.phone,
+                      programs: ["metabolic"],
+                      applicationId: person.applicationId,
+                    }
+                  : null
+              )
+            }
+          />
         )}
 
         {tab === "intakes" && <AdminClientIntakeTab />}
@@ -217,7 +251,14 @@ export default function Admin() {
         {tab === "filelibrary" && <AdminCommonFilesTab />}
       </div>
 
-      <AdminManualEnrollModal open={showEnrollModal} onOpenChange={setShowEnrollModal} />
+      <AdminManualEnrollModal
+        open={showEnrollModal}
+        seed={enrollSeed}
+        onOpenChange={(next) => {
+          setShowEnrollModal(next);
+          if (!next) setEnrollSeed(null);
+        }}
+      />
     </div>
   );
 }
