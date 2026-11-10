@@ -16,11 +16,15 @@ import {
   userChallenges,
   userChallengeLogs,
   challenges,
+  calorieLogs,
+  enrollments,
+  fitnessLogs,
 } from "../../drizzle/schema";
 import { eq, and, gte, desc, sql } from "drizzle-orm";
 import { calculateUserHabitStats } from "../habitHelpers";
 import { computeWeeklyInsight } from "../habitInsights";
 import { todayMountainDateStr } from "../../lib/mountainTime";
+import { coachMaySeeFoodLogs } from "../programAccess";
 
 export const habitRouter = router({
   // --- Public: Get default templates for unauthenticated tracking ---
@@ -413,16 +417,42 @@ export const habitRouter = router({
       if (!db) throw new Error("DB Error");
 
       const userRecord = await db.select().from(users).where(eq(users.id, input.userId)).limit(1);
-      if (userRecord.length === 0 || !userRecord[0].shareHabitsWithCoach) {
+      if (userRecord.length === 0) {
         throw new Error("User has not shared habit progress with coaches.");
+      }
+
+      const enrollmentRows = await db
+        .select({ status: enrollments.status })
+        .from(enrollments)
+        .where(eq(enrollments.userId, input.userId));
+      const foodLogAccess = coachMaySeeFoodLogs({
+        shareHabitsWithCoach: userRecord[0].shareHabitsWithCoach,
+        enrollmentStatuses: enrollmentRows.map((row) => row.status),
+      });
+      const shared = userRecord[0].shareHabitsWithCoach;
+      if (!shared && !foodLogAccess.allowed) {
+        throw new Error("User has not shared habit progress with coaches.");
+      }
+
+      const cLogs = await db.select().from(calorieLogs).where(eq(calorieLogs.userId, input.userId));
+      if (!shared) {
+        return {
+          habits: [],
+          logs: [],
+          notes: [],
+          calorieLogs: cLogs,
+          fitnessLogs: [],
+          stats: null,
+          victories: [],
+          insight: null,
+          challengeProgress: [],
+          foodLogAccess,
+        };
       }
 
       const habits = await db.select().from(userHabits).where(eq(userHabits.userId, input.userId)).orderBy(userHabits.order);
       const logs = await db.select().from(userHabitLogs).where(eq(userHabitLogs.userId, input.userId));
       const notes = await db.select().from(userDailyNotes).where(eq(userDailyNotes.userId, input.userId));
-      const cLogs = await db.select().from(require("../../drizzle/schema").calorieLogs).where(eq(require("../../drizzle/schema").calorieLogs.userId, input.userId));
-      const fLogs = await db.select().from(require("../../drizzle/schema").fitnessLogs).where(eq(require("../../drizzle/schema").fitnessLogs.userId, input.userId));
-      
       const stats = await calculateUserHabitStats(db, input.userId);
 
       const victories = await db
@@ -461,6 +491,8 @@ export const habitRouter = router({
         });
       }
 
+      const fLogs = await db.select().from(fitnessLogs).where(eq(fitnessLogs.userId, input.userId));
+
       return {
         habits,
         logs,
@@ -471,6 +503,7 @@ export const habitRouter = router({
         victories,
         insight,
         challengeProgress,
+        foodLogAccess,
       };
     }),
 

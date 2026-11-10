@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum AppTab: Hashable {
-    case habits, macros, recipes, fitness, profile, coach, podcast
+    case habits, macros, recipes, fitness, profile, coach, podcast, programs
 }
 
 struct MainTabView: View {
@@ -54,6 +54,8 @@ struct MainTabView: View {
                     }
                 case .podcast:
                     PodcastView(model: podcast, auth: auth)
+                case .programs:
+                    ProgramsView(auth: auth)
                 }
             }
             tabBar
@@ -175,6 +177,7 @@ struct MainTabView: View {
                 HStack(spacing: 10) {
                     HStack(spacing: 0) {
                         tabButton(.habits, "square.grid.2x2")
+                        tabButton(.programs, "book.closed")
                         tabButton(.recipes, "frying.pan")
                         tabButton(.fitness, "figure.strengthtraining.traditional")
                         tabButton(.podcast, "headphones")
@@ -249,6 +252,7 @@ struct MainTabView: View {
         case .profile: "Profile"
         case .coach: "Coach"
         case .podcast: "Podcast"
+        case .programs: "My Programs"
         }
     }
 }
