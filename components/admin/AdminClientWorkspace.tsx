@@ -4,6 +4,7 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { PROGRAMS, type ProgramId } from "@shared/programs";
+import { coachFoodLogPhotoSrc } from "@/lib/foodLogPhoto";
 
 const ink = "oklch(0.20 0.015 50)";
 const muted = "oklch(0.52 0.015 50)";
@@ -246,11 +247,13 @@ export function AdminClientWorkspace({ userId, email }: { userId?: number; email
               <p className="text-sm" style={{ color: muted }}>No food logged yet.</p>
             ) : (
               <div className="space-y-2">
-                {data.foodLogs.map((log) => (
+                {data.foodLogs.map((log) => {
+                  const photoSrc = coachFoodLogPhotoSrc(log.imageUrl);
+                  return (
                   <div key={log.id} className="flex items-center gap-3 rounded-lg p-2" style={{ background: "oklch(0.985 0.008 80)" }}>
-                    {log.imageUrl ? (
-                      <a href={log.imageUrl} target="_blank" rel="noopener noreferrer">
-                        <img src={log.imageUrl} alt="" className="w-14 h-14 rounded-md object-cover" />
+                    {photoSrc ? (
+                      <a href={photoSrc} target="_blank" rel="noopener noreferrer">
+                        <img src={photoSrc} alt="" className="w-14 h-14 rounded-md object-cover" />
                       </a>
                     ) : (
                       <span className="w-14 h-14 rounded-md" style={{ background: "white" }} />
@@ -259,10 +262,12 @@ export function AdminClientWorkspace({ userId, email }: { userId?: number; email
                       <p className="text-sm font-semibold" style={{ color: ink }}>{log.foodName}</p>
                       <p className="text-xs" style={{ color: muted }}>
                         {log.dateStr} · {log.mealType} · {log.calories} cal
+                        {photoSrc ? " · scanned page or meal photo" : ""}
                       </p>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </>
