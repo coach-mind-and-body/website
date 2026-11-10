@@ -1,5 +1,5 @@
 import { sdk } from "./_core/sdk";
-import { storageRead } from "./storage";
+import { privateStorageRead } from "./storage";
 
 /** Private object key saved on a meal. Not a public URL. */
 export const FOOD_LOG_PHOTO_KEY = /^food-logs\/(\d+)\/[A-Za-z0-9][A-Za-z0-9._-]{0,180}$/;
@@ -49,7 +49,7 @@ export async function handleFoodLogPhotoRequest(req: Request): Promise<Response>
 
   let object: { body: Buffer; contentType: string } | null;
   try {
-    object = await storageRead(safeKey);
+    object = await privateStorageRead(safeKey);
   } catch (error) {
     console.error("[food-log-photo]", error);
     return new Response("Could not load that photo.", { status: 500 });
