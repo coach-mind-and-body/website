@@ -8,7 +8,7 @@ import { eq, and, desc, like } from "drizzle-orm";
 import { generateObject } from "ai";
 import { google } from "@ai-sdk/google";
 import { TRPCError } from "@trpc/server";
-import { storagePut } from "../storage";
+import { privateFoodLogStorageReady, privateStoragePut } from "../storage";
 import {
   WrittenLogError,
   analyzeWrittenFoodLogInput,
@@ -352,20 +352,31 @@ export const caloriesRouter = router({
         return { entries, images: [] as { index: number; key: string }[] };
       }
 
+      if (!privateFoodLogStorageReady()) {
+        console.warn(
+          "[written-food-log] Private photo storage is not configured. The foods will be returned without a saved photo."
+        );
+        return { entries, images: [] };
+      }
+
       const images: { index: number; key: string }[] = [];
       try {
         for (const image of prepared) {
           const suffix = crypto.randomBytes(8).toString("hex");
           const key = `food-logs/${ctx.user.id}/${Date.now()}-${image.index}-${suffix}.${extensionForMime(image.mimeType)}`;
-          const stored = await storagePut(key, image.buffer, image.mimeType);
+          const stored = await privateStoragePut(key, image.buffer, image.mimeType);
+          if (!stored) {
+            console.warn("[written-food-log] Page photo was not stored. Returning the foods without it.");
+            return { entries, images: [] };
+          }
           images.push({ index: image.index, key: stored.key });
         }
       } catch (err) {
-        console.error("[written-food-log] store", err);
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Could not store that photo. Try again in a moment.",
-        });
+        console.warn(
+          "[written-food-log] Could not store the page photo in the private bucket. Returning the foods without it.",
+          err
+        );
+        return { entries, images: [] };
       }
 
       return { entries, images };
