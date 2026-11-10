@@ -315,15 +315,31 @@ export function AdminOverviewTab({ onEnrollLead }: AdminOverviewTabProps) {
             Recent Leads (CRM)
           </h3>
           <div className="space-y-2">
-            {(leadsData ?? []).slice(0, 8).map((lead) => (
+            {[...(leadsData ?? [])]
+              .sort((a, b) => {
+                const rank = (lead: { needsProgram?: boolean }) => (lead.needsProgram ? 1 : 0);
+                const byFlag = rank(b) - rank(a);
+                if (byFlag !== 0) return byFlag;
+                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+              })
+              .slice(0, 8)
+              .map((lead) => (
               <div
                 key={lead.id}
                 className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl shadow-sm"
                 style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.015 80)" }}
               >
                 <div className="min-w-0">
-                  <p className="font-semibold text-sm" style={{ color: "oklch(0.20 0.015 50)" }}>
+                  <p className="font-semibold text-sm flex flex-wrap items-center gap-2" style={{ color: "oklch(0.20 0.015 50)" }}>
                     {lead.name}
+                    {lead.needsProgram && (
+                      <span
+                        className="text-[10px] uppercase tracking-wide font-bold px-2 py-0.5 rounded-full"
+                        style={{ background: "oklch(0.95 0.06 55)", color: "oklch(0.42 0.12 55)" }}
+                      >
+                        Needs program
+                      </span>
+                    )}
                   </p>
                   <p className="text-xs" style={{ color: "oklch(0.52 0.015 50)" }}>
                     {lead.email}
@@ -337,7 +353,7 @@ export function AdminOverviewTab({ onEnrollLead }: AdminOverviewTabProps) {
                     className="text-xs font-semibold px-3 py-1.5 rounded-lg"
                     style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}
                   >
-                    Enroll in program
+                    {lead.needsProgram ? "Enroll" : "Enroll in program"}
                   </button>
                   <span
                     className="text-xs px-2 py-1 rounded-full font-bold"

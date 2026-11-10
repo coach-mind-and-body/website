@@ -61,7 +61,10 @@ function toRow(input: ClientIntakeInput, source: "link" | "portal"): InsertClien
   };
 }
 
-export async function saveClientIntake(input: ClientIntakeInput, source: "link" | "portal"): Promise<void> {
+export async function saveClientIntake(
+  input: ClientIntakeInput,
+  source: "link" | "portal"
+): Promise<{ id: number; created: boolean }> {
   const db = await getDb();
   if (!db) {
     throw new Error("We couldn't save this intake. Please try again in a moment.");
@@ -69,7 +72,19 @@ export async function saveClientIntake(input: ClientIntakeInput, source: "link" 
 
   try {
     await ensureClientIntakesTable(db);
-    await db.insert(clientIntakes).values(toRow(input, source));
+    const [existing] = await db
+      .select({ id: clientIntakes.id })
+      .from(clientIntakes)
+      .where(eq(clientIntakes.email, input.email))
+      .orderBy(desc(clientIntakes.createdAt))
+      .limit(1);
+    const row = toRow(input, source);
+    if (existing) {
+      await db.update(clientIntakes).set(row).where(eq(clientIntakes.id, existing.id));
+      return { id: existing.id, created: false };
+    }
+    const inserted = await db.insert(clientIntakes).values(row).$returningId();
+    return { id: inserted[0]?.id ?? 0, created: true };
   } catch (err) {
     console.error("[Intake] Failed to save intake for", input.email, err);
     throw new Error("We couldn't save this intake. Please try again in a moment.");

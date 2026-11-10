@@ -13,6 +13,8 @@ import { ensureProgramEnrollmentSchema } from "../ensureProgramSchema";
 import { drizzleEnrollmentStore, searchClients } from "../enrollmentStore";
 import { acceptHolidayApplication, EnrollmentConflictError, enrollInPrograms } from "../programEnrollment";
 import { enrollUserInSequence } from "../sequences";
+import { drizzleIntakeLeadStore } from "../intakeEnrollment";
+import { loadProgramRoster } from "../programRoster";
 
 function getStripe() {
   return new Stripe(ENV.stripeSecretKey, { apiVersion: "2026-02-25.clover" });
@@ -65,6 +67,16 @@ export const enrollmentRouter = router({
         .from(coachingSessions)
         .where(eq(coachingSessions.enrollmentId, input.enrollmentId))
         .orderBy(coachingSessions.sessionNumber);
+    }),
+
+  /** Clients enrolled in one program, with the counts Lee Anne checks each week. */
+  adminProgramRoster: protectedProcedure
+    .input(z.object({ program: z.enum(PROGRAM_IDS) }))
+    .query(async ({ ctx, input }) => {
+      adminOnly(ctx.user?.role);
+      const db = await getDb();
+      if (!db) return [];
+      return loadProgramRoster(db, input.program);
     }),
 
   // Admin: list all enrollments with client info
@@ -227,6 +239,7 @@ export const enrollmentRouter = router({
         if (input.applicationId && metabolic) {
           await store.markHolidayAccepted(input.applicationId, metabolic.enrollmentId, new Date());
         }
+        await drizzleIntakeLeadStore(db).clearNeedsProgram(result.clientEmail);
         return {
           success: true as const,
           enrollmentId: result.enrolled[0]?.enrollmentId ?? metabolic?.enrollmentId ?? 0,
