@@ -2,10 +2,13 @@ import type { Metadata } from "next";
 import { REAL_FOOD_RESET } from "@shared/realFoodReset";
 import RealFoodResetClient from "./RealFoodResetClient";
 
+const title = REAL_FOOD_RESET.name;
+const description =
+  "Free 5-Day No Processed Food Challenge for women 40+. Learn labels, added sugar, and how to build satisfying meals — progress, not perfection. Lives Mon/Wed/Fri at 1:00 pm Mountain.";
+
 export const metadata: Metadata = {
-  title: { absolute: `${REAL_FOOD_RESET.name} | Free Challenge Starting Sept 28` },
-  description:
-    "Free 5-Day No Processed Food Challenge for women 40+. Learn labels, added sugar, and how to build satisfying meals — progress, not perfection. Lives Mon/Wed/Fri at 1:00 pm Mountain. Starts September 28.",
+  title,
+  description,
   keywords: [
     "5 day no processed food challenge",
     "no processed food challenge",
@@ -15,16 +18,15 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: REAL_FOOD_RESET.path },
   openGraph: {
-    title: `${REAL_FOOD_RESET.name} — starts September 28`,
-    description:
-      "Five days to get curious about what’s on your plate. App-based check-ins, three live Google Meets, recipes. Progress, not perfection.",
+    title,
+    description,
     url: REAL_FOOD_RESET.path,
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: `${REAL_FOOD_RESET.name} — starts September 28`,
-    description: "Free 5-day challenge for women 40+. Stop starting over.",
+    title,
+    description,
   },
 };
 
