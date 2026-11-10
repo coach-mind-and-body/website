@@ -8,6 +8,7 @@ import {
   boolean,
   bigint,
   date,
+  uniqueIndex,
 } from "drizzle-orm/mysql-core";
 
 // ── Users ─────────────────────────────────────────────────────────────────────
@@ -22,6 +23,8 @@ export const users = mysqlTable("users", {
   passwordHash: varchar("passwordHash", { length: 255 }),
   // google oauth (separate from Manus OAuth)
   googleId: varchar("googleId", { length: 128 }),
+  // Sign in with Apple subject, so a later sign-in finds this same account
+  appleId: varchar("appleId", { length: 128 }),
   // email verification for email/password accounts
   emailVerified: boolean("emailVerified").default(false).notNull(),
   emailVerifyToken: varchar("emailVerifyToken", { length: 128 }),
@@ -59,7 +62,7 @@ export const enrollments = mysqlTable("enrollments", {
   userId: int("userId").notNull(),
   stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 255 }),
   stripeCustomerId: varchar("stripeCustomerId", { length: 255 }),
-  program: mysqlEnum("program", ["fpu", "reclaim"]).default("reclaim").notNull(),
+  program: mysqlEnum("program", ["fpu", "reclaim", "challenge", "holiday", "metabolic"]).default("reclaim").notNull(),
   paymentType: mysqlEnum("paymentType", ["full", "deposit"]).notNull(),
   depositPaid: boolean("depositPaid").default(false).notNull(),
   balancePaid: boolean("balancePaid").default(false).notNull(),
@@ -68,7 +71,9 @@ export const enrollments = mysqlTable("enrollments", {
   completedAt: timestamp("completedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => [
+  uniqueIndex("enrollments_user_program").on(table.userId, table.program),
+]);
 
 export type Enrollment = typeof enrollments.$inferSelect;
 export type InsertEnrollment = typeof enrollments.$inferInsert;
@@ -1105,6 +1110,9 @@ export const holidayApplications = mysqlTable("holiday_applications", {
   landingUrl: varchar("landingUrl", { length: 1000 }),
   eventId: varchar("eventId", { length: 80 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
+  status: mysqlEnum("status", ["pending", "accepted"]).default("pending").notNull(),
+  enrollmentId: int("enrollmentId"),
+  acceptedAt: timestamp("acceptedAt"),
 });
 
 export type HolidayApplication = typeof holidayApplications.$inferSelect;

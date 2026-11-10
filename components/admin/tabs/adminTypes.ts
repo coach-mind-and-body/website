@@ -16,6 +16,7 @@ import {
   Mail,
   Megaphone,
   Target,
+  UserCheck,
   UserPlus,
   Users,
   Video,
@@ -25,6 +26,7 @@ export type AdminTab =
   | "overview"
   | "sprint"
   | "contacts"
+  | "applicants"
   | "intakes"
   | "crm-automations"
   | "newsletters"
@@ -45,6 +47,7 @@ export const ADMIN_TAB_IDS: AdminTab[] = [
   "overview",
   "sprint",
   "contacts",
+  "applicants",
   "intakes",
   "crm-automations",
   "newsletters",
@@ -66,6 +69,7 @@ export const TABS: { id: AdminTab; label: string; icon: LucideIcon }[] = [
   { id: "overview", label: "Overview", icon: BarChart3 },
   { id: "sprint", label: "This month", icon: ClipboardList },
   { id: "contacts", label: "Contacts", icon: Users },
+  { id: "applicants", label: "Applicants", icon: UserCheck },
   { id: "intakes", label: "Client intakes", icon: FileText },
   { id: "crm-automations", label: "CRM & AI", icon: Megaphone },
   { id: "newsletters", label: "Newsletters", icon: Mail },

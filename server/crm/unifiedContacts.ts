@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { leads, subscribers, enrollments, users, fpuLeads, userHabits, userHabitLogs } from "../../drizzle/schema";
+import { PROGRAMS, isProgramId } from "@shared/programs";
 import type { getDb } from "../db";
 
 type Db = NonNullable<Awaited<ReturnType<typeof getDb>>>;
@@ -71,6 +72,7 @@ export async function buildUnifiedContacts(db: Db): Promise<UnifiedContact[]> {
       .select({
         id: enrollments.id,
         userId: enrollments.userId,
+        program: enrollments.program,
         email: users.email,
         name: users.name,
         paymentType: enrollments.paymentType,
@@ -263,14 +265,23 @@ export async function buildUnifiedContacts(db: Db): Promise<UnifiedContact[]> {
   allEnrollments.forEach((enr) => {
     if (!enr.email) return;
     const contact = getContact(enr.email, enr.name || "Unknown");
-    contact.enrollmentId = enr.id;
-    contact.enrollmentStatus = enr.status;
-    contact.timeline.push({
-      date: enr.enrolledAt.toISOString(),
-      action: `Paid for RECLAIM (${enr.paymentType})`,
-      type: "purchase",
-    });
-    contact.highestStatus = "reclaim";
+    const programLabel = isProgramId(enr.program) ? PROGRAMS[enr.program].label : enr.program;
+    if (enr.program === "reclaim") {
+      contact.enrollmentId = enr.id;
+      contact.enrollmentStatus = enr.status;
+      contact.highestStatus = "reclaim";
+      contact.timeline.push({
+        date: enr.enrolledAt.toISOString(),
+        action: `Paid for RECLAIM (${enr.paymentType})`,
+        type: "purchase",
+      });
+    } else {
+      contact.timeline.push({
+        date: enr.enrolledAt.toISOString(),
+        action: `Enrolled in ${programLabel}`,
+        type: "purchase",
+      });
+    }
   });
 
   return Array.from(contactsMap.values())

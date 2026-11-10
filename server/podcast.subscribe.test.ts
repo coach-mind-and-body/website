@@ -1,70 +1,75 @@
-// @ts-nocheck
 /**
- * Tests for podcast.subscribe tRPC procedure
- * Verifies that the podcast subscribe mutation calls resendSubscribe
- * with the correct "podcast" tag.
+ * podcast.subscribe should hand the address to Resend.
+ * The old Mailchimp helper is gone; these tests follow resendSubscribe.
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { appRouter } from "../server/_core/routers";
-import { createCallerFactory } from "@trpc/server";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { TrpcContext } from "./_core/context";
+import { appRouter } from "./routers";
 
-// Mock the resendSubscribe module
-vi.mock("../server/resendSubscribe", () => ({
+vi.mock("./resendSubscribe", () => ({
   resendSubscribe: vi.fn(),
 }));
 
-import { resendSubscribe } from "../server/resendSubscribe";
+import { resendSubscribe } from "./resendSubscribe";
 
-describe("podcast router", () => {
+function publicContext(): TrpcContext {
+  return {
+    user: null,
+    req: new Request("https://mindandbodyresetcoach.com/midlife-health-podcast"),
+  };
+}
+
+describe("podcast.subscribe", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(resendSubscribe).mockResolvedValue({ success: true });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        text: async () => "<feed></feed>",
+      }))
+    );
   });
 
-  it("calls resendSubscribe with podcast tag", async () => {
-    const mockSubscribe = vi.mocked(resendSubscribe);
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
 
-    // Simulate returning error
-    const input = { email: "fail@example.com" };
-    await resendSubscribe({
-      email: input.email,
-      firstName: input.firstName,
+  it("calls resendSubscribe with the email and first name", async () => {
+    const caller = appRouter.createCaller(publicContext());
+    const result = await caller.podcast.subscribe({
+      email: "jane@example.com",
+      firstName: "Jane",
     });
 
-    expect(mockSubscribe).toHaveBeenCalledOnce();
-    expect(mockSubscribe).toHaveBeenCalledWith({
-      email: "test@example.com",
+    expect(result).toEqual({ success: true });
+    expect(resendSubscribe).toHaveBeenCalledTimes(1);
+    expect(resendSubscribe).toHaveBeenCalledWith({
+      email: "jane@example.com",
       firstName: "Jane",
     });
   });
 
-  it("uses podcast tag (not blog_sub)", async () => {
-    const mockSubscribe = vi.mocked(mailchimpSubscribe);
-    mockSubscribe.mockResolvedValue({ success: true });
-
-    await mailchimpSubscribe({
+  it("does not attach a blog subscriber tag", async () => {
+    const caller = appRouter.createCaller(publicContext());
+    await caller.podcast.subscribe({
       email: "user@example.com",
-      tags: ["podcast"],
+      firstName: "Pat",
     });
 
-    const call = mockSubscribe.mock.calls[0][0];
-    expect(call.tags).toContain("podcast");
-    expect(call.tags).not.toContain("blog_sub");
+    const call = vi.mocked(resendSubscribe).mock.calls[0][0];
+    expect(call.tags ?? []).not.toContain("blog_sub");
   });
 
-  it("works without firstName", async () => {
-    const mockSubscribe = vi.mocked(mailchimpSubscribe);
-    mockSubscribe.mockResolvedValue({ success: true });
+  it("works without a first name", async () => {
+    const caller = appRouter.createCaller(publicContext());
+    await caller.podcast.subscribe({ email: "noname@example.com" });
 
-    await mailchimpSubscribe({
+    expect(resendSubscribe).toHaveBeenCalledWith({
       email: "noname@example.com",
-      tags: ["podcast"],
-    });
-
-    expect(mockSubscribe).toHaveBeenCalledWith({
-      email: "noname@example.com",
-      tags: ["podcast"],
+      firstName: undefined,
     });
   });
 });

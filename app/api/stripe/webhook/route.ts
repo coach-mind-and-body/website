@@ -363,7 +363,7 @@ async function processStripeEvent(event: Stripe.Event) {
             const existingEnrollment = await db
               .select({ id: enrollments.id })
               .from(enrollments)
-              .where(eq(enrollments.userId, userId))
+              .where(and(eq(enrollments.userId, userId), eq(enrollments.program, "reclaim")))
               .limit(1);
 
             if (!existingEnrollment[0]) {
@@ -372,6 +372,7 @@ async function processStripeEvent(event: Stripe.Event) {
                 .insert(enrollments)
                 .values({
                   userId,
+                  program: "reclaim",
                   stripePaymentIntentId: paymentIntentId,
                   paymentType: isFullPayment ? "full" : "deposit",
                   depositPaid: true,
@@ -405,7 +406,7 @@ async function processStripeEvent(event: Stripe.Event) {
                   status: "active",
                   stripePaymentIntentId: paymentIntentId,
                 })
-                .where(eq(enrollments.userId, userId));
+                .where(and(eq(enrollments.userId, userId), eq(enrollments.program, "reclaim")));
               console.log(`[Stripe] Updated existing enrollment for user ${userId}`);
             }
           } else {

@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 import { z } from "zod";
-import { eq, desc } from "drizzle-orm";
+import { and, eq, desc } from "drizzle-orm";
 import { ENV } from "../_core/env";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
@@ -184,7 +184,7 @@ export const paymentRouter = router({
     const enrollmentRows = await db
       .select()
       .from(enrollments)
-      .where(eq(enrollments.userId, ctx.user!.id))
+      .where(and(eq(enrollments.userId, ctx.user!.id), eq(enrollments.program, "reclaim")))
       .limit(1);
 
     const enrollment = enrollmentRows[0];
@@ -239,7 +239,7 @@ export const paymentRouter = router({
     const enrollmentRows = await db
       .select()
       .from(enrollments)
-      .where(eq(enrollments.userId, ctx.user!.id))
+      .where(and(eq(enrollments.userId, ctx.user!.id), eq(enrollments.program, "reclaim")))
       .limit(1);
 
     const enrollment = enrollmentRows[0] ?? null;
@@ -297,7 +297,7 @@ export const paymentRouter = router({
     const existingEnrollment = await db
       .select({ id: enrollments.id })
       .from(enrollments)
-      .where(eq(enrollments.userId, ctx.user!.id))
+      .where(and(eq(enrollments.userId, ctx.user!.id), eq(enrollments.program, "reclaim")))
       .limit(1);
 
     if (existingEnrollment[0]) return { linked: true, alreadyExists: true };
@@ -318,6 +318,7 @@ export const paymentRouter = router({
       .insert(enrollments)
       .values({
         userId: ctx.user!.id,
+        program: "reclaim",
         stripePaymentIntentId: dep.stripePaymentIntentId ?? null,
         paymentType: "deposit",
         depositPaid: true,

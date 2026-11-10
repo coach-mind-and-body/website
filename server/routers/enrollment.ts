@@ -1,13 +1,18 @@
 import { z } from "zod";
-import { eq, desc, asc } from "drizzle-orm";
+import { and, eq, desc, asc } from "drizzle-orm";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { enrollments, coachingSessions, users, programModules, moduleProgress } from "../../drizzle/schema";
+import { challenges, enrollments, coachingSessions, holidayApplications, users, programModules, moduleProgress } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
-import crypto from "crypto";
 import { sendPostSessionEmail, sendPostSessionSMS, sendBalanceReminderEmail, sendModuleUnlockedEmail, sendWelcomeAndSetPasswordEmail } from "../notifications";
 import Stripe from "stripe";
 import { ENV } from "../_core/env";
+import { PROGRAM_IDS } from "@shared/programs";
+import { holidayFlags } from "@shared/holidayCoaching";
+import { ensureProgramEnrollmentSchema } from "../ensureProgramSchema";
+import { drizzleEnrollmentStore, searchClients } from "../enrollmentStore";
+import { acceptHolidayApplication, EnrollmentConflictError, enrollInPrograms } from "../programEnrollment";
+import { enrollUserInSequence } from "../sequences";
 
 function getStripe() {
   return new Stripe(ENV.stripeSecretKey, { apiVersion: "2026-02-25.clover" });
@@ -31,10 +36,12 @@ export const enrollmentRouter = router({
   myEnrollment: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
     if (!db) return null;
+    // Portal and module unlocks still follow the Reclaim enrollment.
+    // Another program on the same person must not hide it.
     const result = await db
       .select()
       .from(enrollments)
-      .where(eq(enrollments.userId, ctx.user!.id))
+      .where(and(eq(enrollments.userId, ctx.user!.id), eq(enrollments.program, "reclaim")))
       .limit(1);
     if (!result[0]) return null;
     const enrollment = result[0];
@@ -69,6 +76,7 @@ export const enrollmentRouter = router({
       .select({
         id: enrollments.id,
         userId: enrollments.userId,
+        program: enrollments.program,
         status: enrollments.status,
         paymentType: enrollments.paymentType,
         depositPaid: enrollments.depositPaid,
@@ -96,10 +104,16 @@ export const enrollmentRouter = router({
     const allEnrollments = await db.select().from(enrollments);
     
     return allUsers.map(user => {
-      const enrollment = allEnrollments.find(e => e.userId === user.id);
+      const mine = allEnrollments.filter(e => e.userId === user.id);
+      const enrollment =
+        mine.find(e => e.program === "reclaim" && e.status === "active") ??
+        mine.find(e => e.status === "active") ??
+        mine[0];
       return {
         id: enrollment?.id ?? -user.id, // Negative ID for users without enrollment
         userId: user.id,
+        program: enrollment?.program ?? null,
+        programs: mine.map(e => e.program),
         status: enrollment?.status ?? "habit-only",
         paymentType: enrollment?.paymentType ?? null,
         depositPaid: enrollment?.depositPaid ?? false,
@@ -142,127 +156,141 @@ export const enrollmentRouter = router({
   }),
 
   /**
-   * Admin: manually create an enrollment for a client by email.
-   * Used when a client paid outside Stripe or needs to be manually enrolled.
-   * If the user account exists, creates enrollment + 6 sessions immediately.
-   * If not, returns a message indicating the account doesn't exist yet.
+   * Admin: enroll a person in one or more programs.
+   * Creates the account when needed and sends one set-password welcome.
+   * The same program twice is skipped. Reclaim still opens six sessions.
    */
   adminCreate: protectedProcedure
     .input(z.object({
       clientEmail: z.string().email(),
-      paymentType: z.enum(["full", "deposit"]),
+      clientName: z.string().trim().min(1).max(200).optional(),
+      phone: z.string().trim().max(40).optional(),
+      program: z.enum(PROGRAM_IDS).optional(),
+      programs: z.array(z.enum(PROGRAM_IDS)).max(PROGRAM_IDS.length).optional(),
+      paymentType: z.enum(["full", "deposit"]).default("deposit"),
       depositPaid: z.boolean().default(true),
       balancePaid: z.boolean().default(false),
       notes: z.string().optional(),
+      challengeId: z.number().int().positive().optional(),
+      applicationId: z.number().int().positive().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       adminOnly(ctx.user?.role);
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+      await ensureProgramEnrollmentSchema(db);
 
-      const email = input.clientEmail.toLowerCase().trim();
+      const programs = [...new Set(input.programs?.length ? input.programs : [input.program ?? "reclaim"])];
+      if (programs.length === 0) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Pick at least one program." });
+      }
 
-      // Find user by email
-      let userRows = await db
-        .select({ id: users.id, name: users.name, email: users.email })
-        .from(users)
-        .where(eq(users.email, email))
-        .limit(1);
-
-      let user = userRows[0];
-      let isNewUser = false;
-      let resetToken = "";
-
-      if (!user) {
-        // Create user if they don't exist
-        resetToken = crypto.randomBytes(32).toString("hex");
-        const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-        const [newUser] = await db.insert(users).values({
-          openId: `email:${email}`,
-          name: email.split("@")[0], // Default name
-          email: email,
-          loginMethod: "email",
-          emailVerified: false,
-          role: "user",
-          passwordResetToken: resetToken,
-          passwordResetExpiry: expiry,
-          lastSignedIn: new Date(),
-        }).$returningId();
-
-        if (!newUser) {
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create user account" });
-        }
-        
-        userRows = await db
-          .select({ id: users.id, name: users.name, email: users.email })
-          .from(users)
-          .where(eq(users.id, newUser.id))
+      let challengeThemeTag: string | null = null;
+      if (programs.includes("challenge") && input.challengeId) {
+        const [challenge] = await db
+          .select({ id: challenges.id, themeTag: challenges.themeTag })
+          .from(challenges)
+          .where(eq(challenges.id, input.challengeId))
           .limit(1);
-        
-        user = userRows[0];
-        isNewUser = true;
+        if (!challenge) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "That challenge doesn't exist." });
+        }
+        challengeThemeTag = challenge.themeTag;
       }
 
-      // Check if enrollment already exists
-      const existing = await db
-        .select({ id: enrollments.id })
-        .from(enrollments)
-        .where(eq(enrollments.userId, user.id))
-        .limit(1);
+      const store = drizzleEnrollmentStore(db);
+      try {
+        const result = await enrollInPrograms(
+          store,
+          {
+            email: input.clientEmail,
+            name: input.clientName,
+            phone: input.phone,
+            programs,
+            payment: {
+              paymentType: input.paymentType,
+              depositPaid: input.depositPaid,
+              balancePaid: input.paymentType === "full" ? input.depositPaid || input.balancePaid : input.balancePaid,
+            },
+            notes: input.notes,
+            challengeId: programs.includes("challenge") ? input.challengeId : undefined,
+            challengeThemeTag,
+          },
+          {
+            sendWelcome: sendWelcomeAndSetPasswordEmail,
+            startSequence: enrollUserInSequence,
+          }
+        );
+        const metabolic =
+          result.enrolled.find((row) => row.program === "metabolic") ??
+          result.already.find((row) => row.program === "metabolic");
+        if (input.applicationId && metabolic) {
+          await store.markHolidayAccepted(input.applicationId, metabolic.enrollmentId, new Date());
+        }
+        return {
+          success: true as const,
+          enrollmentId: result.enrolled[0]?.enrollmentId ?? metabolic?.enrollmentId ?? 0,
+          clientName: result.clientName,
+          programs: result.enrolled.map((row) => row.program),
+          message: result.message,
+        };
+      } catch (err) {
+        if (err instanceof EnrollmentConflictError) {
+          throw new TRPCError({ code: "CONFLICT", message: err.message });
+        }
+        throw err;
+      }
+    }),
 
-      if (existing[0]) {
-        throw new TRPCError({
-          code: "CONFLICT",
-          message: `${email} already has an active enrollment (ID: ${existing[0].id}).`,
+  adminSearchClients: protectedProcedure
+    .input(z.object({ query: z.string().trim().min(2).max(200) }))
+    .query(async ({ ctx, input }) => {
+      adminOnly(ctx.user?.role);
+      const db = await getDb();
+      if (!db) return [];
+      const rows = await searchClients(db, input.query);
+      return rows.filter((row) => row.email);
+    }),
+
+  adminListHolidayApplications: protectedProcedure.query(async ({ ctx }) => {
+    adminOnly(ctx.user?.role);
+    const db = await getDb();
+    if (!db) return [];
+    await ensureProgramEnrollmentSchema(db);
+    const rows = await db
+      .select()
+      .from(holidayApplications)
+      .orderBy(desc(holidayApplications.createdAt));
+    return rows.map((row) => ({
+      ...row,
+      flags: holidayFlags(row),
+    }));
+  }),
+
+  adminAcceptHolidayApplication: protectedProcedure
+    .input(z.object({ applicationId: z.number().int().positive() }))
+    .mutation(async ({ ctx, input }) => {
+      adminOnly(ctx.user?.role);
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+      await ensureProgramEnrollmentSchema(db);
+      try {
+        const result = await acceptHolidayApplication(drizzleEnrollmentStore(db), input.applicationId, {
+          sendWelcome: sendWelcomeAndSetPasswordEmail,
+          startSequence: enrollUserInSequence,
         });
+        return {
+          success: true as const,
+          enrollmentId: result.enrollmentId,
+          alreadyAccepted: result.alreadyAccepted,
+          message: result.message,
+        };
+      } catch (err) {
+        if (err instanceof Error && err.message === "Application not found") {
+          throw new TRPCError({ code: "NOT_FOUND", message: "That application isn't here." });
+        }
+        throw err;
       }
-
-      // Create enrollment
-      const isFullyPaid = input.paymentType === "full" || (input.depositPaid && input.balancePaid);
-      const [newEnrollment] = await db
-        .insert(enrollments)
-        .values({
-          userId: user.id,
-          paymentType: input.paymentType,
-          depositPaid: input.depositPaid,
-          balancePaid: input.balancePaid,
-          status: "active",
-        })
-        .$returningId();
-
-      if (!newEnrollment) {
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create enrollment" });
-      }
-
-      // Create 6 coaching sessions
-      const sessionValues = SESSION_LABELS.map((_, idx) => ({
-        enrollmentId: newEnrollment.id,
-        userId: user.id,
-        sessionNumber: idx + 1,
-        status: "not_scheduled" as const,
-        adminNotes: input.notes ?? null,
-      }));
-      await db.insert(coachingSessions).values(sessionValues);
-
-      console.log(`[Admin] Created enrollment ${newEnrollment.id} + 6 sessions for ${email} (user ${user.id})`);
-
-      if (isNewUser && resetToken) {
-        sendWelcomeAndSetPasswordEmail({
-          clientEmail: user.email!,
-          clientName: user.name || "Client",
-          resetToken,
-        }).catch(err => console.error("[Admin] Failed to send welcome email:", err));
-      }
-
-      return {
-        success: true,
-        enrollmentId: newEnrollment.id,
-        clientName: user.name ?? email,
-        message: isNewUser 
-          ? `Account and enrollment created for ${user.name ?? email}. A welcome email was sent.`
-          : `Enrollment created for ${user.name ?? email}. 6 coaching sessions are ready in their portal.`,
-      };
     }),
 
   /**

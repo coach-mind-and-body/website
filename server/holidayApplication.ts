@@ -36,6 +36,9 @@ CREATE TABLE IF NOT EXISTS \`holiday_applications\` (
   \`landingUrl\` varchar(1000),
   \`eventId\` varchar(80),
   \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  \`status\` enum('pending','accepted') NOT NULL DEFAULT 'pending',
+  \`enrollmentId\` int NULL,
+  \`acceptedAt\` timestamp NULL,
   CONSTRAINT \`holiday_applications_id\` PRIMARY KEY(\`id\`),
   KEY \`holiday_applications_email\` (\`email\`),
   KEY \`holiday_applications_created\` (\`createdAt\`)
