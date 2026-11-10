@@ -62,6 +62,12 @@ export type NewsletterShellInput = {
   ctaLabel?: string | null;
   ctaUrl?: string | null;
   previewMode?: boolean;
+  /** Header image. Defaults to the wide wordmark. */
+  logoUrl?: string | null;
+  /** Display width for the header image. Defaults to 280. */
+  logoWidth?: number | null;
+  /** Header bar color. Defaults to the cream bar. */
+  logoBarColor?: string | null;
 };
 
 function youtubeIdFromUrl(url: string): string | null {
@@ -131,10 +137,17 @@ function youtubeThumbnailBlock(src: string): string {
     </div>`;
 }
 
-function logoHeader(): string {
+function logoHeader(input: NewsletterShellInput): string {
+  const src = input.logoUrl?.trim() || LOGO;
+  const width =
+    input.logoWidth && input.logoWidth > 0 ? Math.round(input.logoWidth) : 280;
+  const barColor = input.logoBarColor?.trim() ?? "";
+  const bar = /^#[0-9a-fA-F]{6}$/.test(barColor)
+    ? `background:${barColor};padding:24px;text-align:center;border-bottom:1px solid #f0e8e4;`
+    : shell.logoBar;
   return `
-    <div style="${shell.logoBar}">
-      <img src="${LOGO}" alt="${escapeHtml(BRAND.name)}" style="max-width:280px;height:auto;" />
+    <div style="${bar}">
+      <img src="${escapeHtml(src)}" alt="${escapeHtml(BRAND.name)}" width="${width}" style="width:${width}px;max-width:100%;height:auto;display:block;margin:0 auto;" />
     </div>`;
 }
 
@@ -166,14 +179,20 @@ function ctaBlock(label: string, href: string): string {
     </div>`;
 }
 
-export function personalizeNewsletterHtml(html: string, firstName: string): string {
+export function personalizeNewsletterHtml(
+  html: string,
+  firstName: string
+): string {
   const name = escapeHtml(firstName.trim() || "friend");
   return html
     .replace(/\{\{\s*firstName\s*\}\}/gi, name)
     .replace(/\{\{\s*name\s*\}\}/gi, name);
 }
 
-export function personalizeNewsletterText(text: string, firstName: string): string {
+export function personalizeNewsletterText(
+  text: string,
+  firstName: string
+): string {
   const name = (firstName.trim() || "friend").replace(/[\r\n]/g, "");
   return text
     .replace(/\{\{\s*firstName\s*\}\}/gi, name)
@@ -197,10 +216,18 @@ export function buildBroadcastHtml(
   const html = buildNewsletterHtml({
     ...input,
     firstName: RESEND_FIRST_NAME_TAG,
-    previewText: input.previewText ? applyBroadcastName(input.previewText) : input.previewText,
-    headline: input.headline ? applyBroadcastName(input.headline) : input.headline,
-    subheadline: input.subheadline ? applyBroadcastName(input.subheadline) : input.subheadline,
-    ctaLabel: input.ctaLabel ? applyBroadcastName(input.ctaLabel) : input.ctaLabel,
+    previewText: input.previewText
+      ? applyBroadcastName(input.previewText)
+      : input.previewText,
+    headline: input.headline
+      ? applyBroadcastName(input.headline)
+      : input.headline,
+    subheadline: input.subheadline
+      ? applyBroadcastName(input.subheadline)
+      : input.subheadline,
+    ctaLabel: input.ctaLabel
+      ? applyBroadcastName(input.ctaLabel)
+      : input.ctaLabel,
   });
   return html.replace(
     "<!--UNSUB_FOOTER-->",
@@ -251,7 +278,7 @@ export function buildNewsletterHtml(input: NewsletterShellInput): string {
 
   const letter =
     input.variant === "letter" || input.bodyHtml.includes("<!--letter-->");
-  const header = letter ? letterMark() : `${logoHeader()}${hero}`;
+  const header = letter ? letterMark() : `${logoHeader(input)}${hero}`;
   const bodyStyle = letter
     ? `padding:14px 36px 4px;color:#4a4a4a;font-size:16px;line-height:1.65;`
     : shell.body;
@@ -270,7 +297,9 @@ export function buildNewsletterHtml(input: NewsletterShellInput): string {
     </div>`;
 }
 
-export function buildNewsletterPreviewDocument(input: NewsletterShellInput): string {
+export function buildNewsletterPreviewDocument(
+  input: NewsletterShellInput
+): string {
   const inner = buildNewsletterHtml({ ...input, previewMode: true });
   const withFooter = inner.replace(
     "<!--UNSUB_FOOTER-->",
