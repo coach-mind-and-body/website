@@ -150,7 +150,8 @@ describe("calories written log endpoints", () => {
       confidence: "low",
     });
     expect(result.images).toHaveLength(1);
-    expect(result.images[0].url).toContain("https://cdn.example/food-logs/42/");
+    expect(result.images[0].key).toMatch(/^food-logs\/42\/[A-Za-z0-9._-]+$/);
+    expect(result.images[0].key.startsWith("http")).toBe(false);
     expect(storagePut).toHaveBeenCalledOnce();
   });
 
@@ -203,7 +204,7 @@ describe("calories written log endpoints", () => {
           carbs: 27,
           fat: 3,
           fiber: 4,
-          imageUrl: "https://cdn.example/food-logs/42/page.jpg",
+          imageUrl: "food-logs/42/page.jpg",
         },
         {
           dateStr: "2026-01-16",
@@ -213,7 +214,7 @@ describe("calories written log endpoints", () => {
           protein: 0,
           carbs: 0,
           fat: 0,
-          imageUrl: "https://cdn.example/food-logs/42/page.jpg",
+          imageUrl: "food-logs/42/page.jpg",
         },
       ],
     });
@@ -231,7 +232,7 @@ describe("calories written log endpoints", () => {
           carbs: 27,
           fat: 3,
           fiber: 4,
-          imageUrl: "https://cdn.example/food-logs/42/page.jpg",
+          imageUrl: "food-logs/42/page.jpg",
         },
         {
           userId: 42,
@@ -243,7 +244,7 @@ describe("calories written log endpoints", () => {
           carbs: 0,
           fat: 0,
           fiber: 0,
-          imageUrl: "https://cdn.example/food-logs/42/page.jpg",
+          imageUrl: "food-logs/42/page.jpg",
         },
       ],
     ]);
@@ -263,7 +264,7 @@ describe("calories written log endpoints", () => {
             protein: 0,
             carbs: 20,
             fat: 0,
-            imageUrl: "javascript:alert(1)",
+            imageUrl: "https://cdn.example/food-logs/42/page.jpg",
           },
         ],
       })

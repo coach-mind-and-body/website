@@ -138,7 +138,7 @@ export default function WrittenLogScan({
         setDrafts([]);
         return;
       }
-      const urls = new Map(result.images.map((image) => [image.index, image.url]));
+      const keys = new Map(result.images.map((image) => [image.index, image.key]));
       setSharedDate(dateStr);
       setDrafts(
         result.entries.map((entry) => ({
@@ -157,7 +157,7 @@ export default function WrittenLogScan({
           note: entry.note,
           imageIndex: entry.imageIndex,
           dateStr,
-          imageUrl: urls.get(entry.imageIndex) ?? null,
+          imageUrl: keys.get(entry.imageIndex) ?? null,
         }))
       );
     } catch (error) {

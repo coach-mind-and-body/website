@@ -349,16 +349,16 @@ export const caloriesRouter = router({
       }
 
       if (entries.length === 0) {
-        return { entries, images: [] as { index: number; url: string }[] };
+        return { entries, images: [] as { index: number; key: string }[] };
       }
 
-      const images: { index: number; url: string }[] = [];
+      const images: { index: number; key: string }[] = [];
       try {
         for (const image of prepared) {
           const suffix = crypto.randomBytes(8).toString("hex");
           const key = `food-logs/${ctx.user.id}/${Date.now()}-${image.index}-${suffix}.${extensionForMime(image.mimeType)}`;
-          const { url } = await storagePut(key, image.buffer, image.mimeType);
-          images.push({ index: image.index, url });
+          const stored = await storagePut(key, image.buffer, image.mimeType);
+          images.push({ index: image.index, key: stored.key });
         }
       } catch (err) {
         console.error("[written-food-log] store", err);

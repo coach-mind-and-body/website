@@ -725,7 +725,7 @@ struct ScannedFoodEntry: Decodable {
 
 struct WrittenLogStoredImage: Decodable {
     var index: Int
-    var url: String
+    var key: String
 }
 
 struct WrittenLogScanResult: Decodable {

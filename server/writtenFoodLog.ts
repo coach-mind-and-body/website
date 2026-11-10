@@ -1,6 +1,7 @@
 import { generateObject, type ImagePart, type TextPart } from "ai";
 import { google } from "@ai-sdk/google";
 import { z } from "zod";
+import { authorizeFoodLogPhoto, FoodLogPhotoError } from "./foodLogPhoto";
 
 export const MEAL_TYPES = ["breakfast", "lunch", "dinner", "snack", "drink"] as const;
 export type MealType = (typeof MEAL_TYPES)[number];
@@ -272,7 +273,7 @@ export function buildCalorieInsertRows(
       carbs: Math.round(log.carbs),
       fat: Math.round(log.fat),
       fiber: Math.round(log.fiber ?? 0),
-      imageUrl: sanitizeImageUrl(log.imageUrl),
+      imageUrl: sanitizeFoodLogPhotoKey(userId, log.imageUrl),
     };
   });
 }
@@ -302,14 +303,18 @@ export async function readWrittenFoodLog(images: PreparedFoodLogImage[]): Promis
   return result.object;
 }
 
-function sanitizeImageUrl(url: string | null | undefined): string | null {
-  if (url == null) return null;
-  const trimmed = url.trim();
+function sanitizeFoodLogPhotoKey(userId: number, key: string | null | undefined): string | null {
+  if (key == null) return null;
+  const trimmed = key.trim();
   if (!trimmed) return null;
-  if (trimmed.length > 1000 || !/^https?:\/\/[^\s]+$/i.test(trimmed)) {
-    throw new WrittenLogError("Photo link is invalid.");
+  try {
+    return authorizeFoodLogPhoto({ id: userId, role: "user" }, trimmed);
+  } catch (error) {
+    if (error instanceof FoodLogPhotoError) {
+      throw new WrittenLogError("Photo link is invalid.");
+    }
+    throw error;
   }
-  return trimmed;
 }
 
 function splitDataUrl(input: string): { declared: string | null; base64: string } {

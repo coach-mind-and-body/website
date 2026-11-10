@@ -206,7 +206,7 @@ describe("normalizeWrittenLogEntries", () => {
 });
 
 describe("batch calorie rows", () => {
-  it("folds time and portion into the saved name and keeps the photo url", () => {
+  it("folds time and portion into the saved name and keeps the private photo key", () => {
     const rows = buildCalorieInsertRows(7, [
       {
         dateStr: "2026-01-15",
@@ -218,7 +218,7 @@ describe("batch calorie rows", () => {
         protein: 12,
         carbs: 1,
         fat: 10,
-        imageUrl: " https://cdn.example/food-logs/7/page.jpg ",
+        imageUrl: " food-logs/7/page.jpg ",
       },
     ]);
     expect(rows[0]).toEqual({
@@ -231,7 +231,7 @@ describe("batch calorie rows", () => {
       carbs: 1,
       fat: 10,
       fiber: 0,
-      imageUrl: "https://cdn.example/food-logs/7/page.jpg",
+      imageUrl: "food-logs/7/page.jpg",
     });
   });
 
@@ -240,7 +240,7 @@ describe("batch calorie rows", () => {
     expect(composeFoodName("8am · oatmeal", null, "8am")).toBe("8am · oatmeal");
   });
 
-  it("rejects a photo link that is not a web address and ignores a blank one", () => {
+  it("rejects a public photo address and another person's key, and ignores a blank one", () => {
     expect(() =>
       buildCalorieInsertRows(1, [
         {
@@ -251,7 +251,22 @@ describe("batch calorie rows", () => {
           protein: 0,
           carbs: 20,
           fat: 0,
-          imageUrl: "javascript:alert(1)",
+          imageUrl: "https://cdn.example/food-logs/1/page.jpg",
+        },
+      ])
+    ).toThrow(/Photo link/);
+
+    expect(() =>
+      buildCalorieInsertRows(1, [
+        {
+          dateStr: "2026-01-15",
+          mealType: "snack",
+          foodName: "apple",
+          calories: 80,
+          protein: 0,
+          carbs: 20,
+          fat: 0,
+          imageUrl: "food-logs/7/page.jpg",
         },
       ])
     ).toThrow(/Photo link/);

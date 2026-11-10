@@ -137,16 +137,10 @@ struct CaloriesView: View {
     private func logRow(_ log: CalorieLog) -> some View {
         HTCard {
             HStack {
-                if let url = log.imageUrl.flatMap(URL.init(string:)) {
-                    AsyncImage(url: url) { phase in
-                        if case .success(let image) = phase {
-                            image.resizable().scaledToFill()
-                        } else {
-                            HTTheme.cream
-                        }
-                    }
-                    .frame(width: 44, height: 44)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                if let key = log.imageUrl, key.hasPrefix("food-logs/") {
+                    FoodLogPhoto(key: key, token: auth.token)
+                        .frame(width: 44, height: 44)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
                 }
                 VStack(alignment: .leading, spacing: 4) {
                     Text(log.foodName)
@@ -853,7 +847,7 @@ private struct WrittenLogScanSheet: View {
                 note: entry.note ?? "",
                 imageIndex: entry.imageIndex,
                 dateStr: food.dateStr,
-                imageUrl: result.images.first { $0.index == entry.imageIndex }?.url
+                imageUrl: result.images.first { $0.index == entry.imageIndex }?.key
             )
         }
         if drafts.isEmpty {
@@ -894,6 +888,41 @@ private struct WrittenLogScanSheet: View {
         } else {
             localError = food.errorMessage
         }
+    }
+}
+
+private struct FoodLogPhoto: View {
+    let key: String
+    let token: String?
+    @State private var image: UIImage?
+
+    var body: some View {
+        Group {
+            if let image {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                HTTheme.cream
+            }
+        }
+        .task(id: token ?? "") { await load() }
+    }
+
+    private func load() async {
+        guard let token, !token.isEmpty else { return }
+        guard var comps = URLComponents(
+            url: AppConfig.apiRoot.appending(path: "api/food-log-photo"),
+            resolvingAgainstBaseURL: false
+        ) else { return }
+        comps.queryItems = [URLQueryItem(name: "key", value: key)]
+        guard let url = comps.url else { return }
+        var request = URLRequest(url: url)
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        guard let (data, response) = try? await URLSession.shared.data(for: request),
+              (response as? HTTPURLResponse)?.statusCode == 200,
+              let loaded = UIImage(data: data) else { return }
+        image = loaded
     }
 }
 
