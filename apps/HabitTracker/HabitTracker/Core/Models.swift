@@ -128,6 +128,7 @@ struct CalorieLog: Codable, Identifiable, Hashable {
     var fat: Int
     var fiber: Int
     var recipeId: Int?
+    var imageUrl: String?
 }
 
 struct DateStrInput: Encodable {
@@ -696,6 +697,63 @@ struct AnalyzeImageInput: Encodable {
     let imageBase64: String
     var userHint: String?
     var deviceId: String?
+}
+
+struct WrittenLogImageInput: Encodable {
+    let imageBase64: String
+}
+
+struct AnalyzeWrittenLogInput: Encodable {
+    let images: [WrittenLogImageInput]
+}
+
+struct ScannedFoodEntry: Decodable {
+    var mealType: String
+    var time: String?
+    var foodName: String
+    var portion: String?
+    var calories: Int
+    var protein: Int
+    var carbs: Int
+    var fat: Int
+    var fiber: Int
+    var confidence: String
+    var unclear: Bool
+    var note: String?
+    var imageIndex: Int
+}
+
+struct WrittenLogStoredImage: Decodable {
+    var index: Int
+    var url: String
+}
+
+struct WrittenLogScanResult: Decodable {
+    var entries: [ScannedFoodEntry]
+    var images: [WrittenLogStoredImage]
+}
+
+struct BatchCalorieLogInput: Encodable {
+    let dateStr: String
+    let mealType: String
+    let foodName: String
+    var portion: String?
+    var time: String?
+    let calories: Int
+    let protein: Int
+    let carbs: Int
+    let fat: Int
+    let fiber: Int
+    var imageUrl: String?
+}
+
+struct AddLogsInput: Encodable {
+    let logs: [BatchCalorieLogInput]
+}
+
+struct AddLogsResult: Decodable {
+    var success: Bool?
+    var saved: Int?
 }
 
 struct FatSecretStatus: Codable {

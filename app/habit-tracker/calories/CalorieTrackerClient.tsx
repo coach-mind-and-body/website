@@ -27,6 +27,7 @@ import { getDeviceId } from "@/lib/deviceId";
 import FoodHubNav from "@/components/habit/FoodHubNav";
 import FatSecretAttribution from "@/components/habit/FatSecretAttribution";
 import { FOOD_LOG_HINTS } from "@shared/food";
+import WrittenLogScan from "./WrittenLogScan";
 
 type SelectedRecipe = {
   id: number;
@@ -628,6 +629,15 @@ export default function CalorieTrackerClient() {
             </Link>
           </div>
         </div>
+
+        <WrittenLogScan
+          dateStr={dateStr}
+          isAuthenticated={isAuthenticated}
+          onSaved={() => {
+            refetch();
+            utils.habit.getUserHabits.invalidate();
+          }}
+        />
 
         <AnimatePresence>
           {isAdding && (
