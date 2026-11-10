@@ -202,6 +202,19 @@ export const commonFiles = mysqlTable("common_files", {
 export type CommonFile = typeof commonFiles.$inferSelect;
 export type InsertCommonFile = typeof commonFiles.$inferInsert;
 
+/** Which programs automatically receive a library file. Empty means nobody gets it until checked. */
+export const commonFilePrograms = mysqlTable(
+  "common_file_programs",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    commonFileId: int("commonFileId").notNull(),
+    program: mysqlEnum("program", ["fpu", "reclaim", "challenge", "holiday", "metabolic"]).notNull(),
+  },
+  (table) => [uniqueIndex("common_file_program").on(table.commonFileId, table.program)]
+);
+
+export type CommonFileProgram = typeof commonFilePrograms.$inferSelect;
+
 // ── FPU Orders (Financial Peace University Stripe purchases) ────────────────
 export const fpuOrders = mysqlTable("fpu_orders", {
   id: int("id").autoincrement().primaryKey(),
@@ -406,6 +419,10 @@ export type InsertPageContent = typeof pageContent.$inferInsert;
 // ── Reclaim Program (LMS) ─────────────────────────────────────────────────────
 export const programModules = mysqlTable("program_modules", {
   id: int("id").autoincrement().primaryKey(),
+  /** Existing rows stay Reclaim. New modules are built per program. */
+  program: mysqlEnum("program", ["fpu", "reclaim", "challenge", "holiday", "metabolic"])
+    .default("reclaim")
+    .notNull(),
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
   videoUrl: varchar("videoUrl", { length: 1000 }),

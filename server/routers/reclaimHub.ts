@@ -1,17 +1,20 @@
 import { z } from "zod";
 import { eq, desc, and, asc } from "drizzle-orm";
-import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { 
   programModules, 
   assignments, 
   assignmentSubmissions, 
   moduleProgress,
-  enrollments,
-  coachingSessions
+  users,
 } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
 import { getUpcomingEventsForEmail } from "../googleCalendar";
+import { PROGRAM_IDS, PROGRAMS, isProgramId } from "@shared/programs";
+import { buildAssignmentFeedbackMessage } from "../assignmentFeedback";
+import { sendTransactionalEmail } from "../notifications";
+import { loadClientHub, loadCoachClientWorkspace } from "../programHubData";
 
 function adminOnly(role: string | undefined) {
   if (role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Admins only" });
@@ -26,109 +29,33 @@ export const reclaimHubRouter = router({
     return getUpcomingEventsForEmail(ctx.user.email);
   }),
   
-  // Get all published modules and the user's progress/submissions
+  /**
+   * Every program this person can open, with only that program's
+   * published and unlocked modules, tasks, and files.
+   */
+  myHub: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return { programs: [] };
+    return loadClientHub(db, { id: ctx.user!.id, role: ctx.user!.role });
+  }),
+
+  // Reclaim-only shape kept so older portal calls still resolve.
+  // Content is filtered to the Reclaim program.
   getModules: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-    
-    // Verify enrollment
-    const enrollmentRows = await db
-      .select()
-      .from(enrollments)
-      .where(
-        and(
-          eq(enrollments.userId, ctx.user!.id),
-          eq(enrollments.program, "reclaim")
-        )
-      )
-      .limit(1);
 
-    const enrollment = enrollmentRows[0];
-    if (ctx.user!.role !== "admin" && (!enrollment || enrollment.status !== "active")) {
+    const hub = await loadClientHub(db, { id: ctx.user!.id, role: ctx.user!.role }, { programs: ["reclaim"] });
+    const reclaim = hub.programs.find((program) => program.program === "reclaim");
+    if (!reclaim) {
       throw new TRPCError({ code: "FORBIDDEN", message: "Not actively enrolled in Reclaim." });
     }
 
-    const effectiveEnrollment = (ctx.user!.role === "admin" && !enrollment) 
-      ? {
-          id: 0,
-          userId: ctx.user!.id,
-          program: "reclaim",
-          status: "active",
-          enrolledAt: new Date(new Date().getTime() - 100 * 24 * 60 * 60 * 1000), // 100 days ago to unlock everything
-          paymentType: "full",
-          depositPaid: true,
-          balancePaid: true,
-          clientName: ctx.user!.name,
-          clientEmail: ctx.user!.email,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        } 
-      : enrollment;
-
-    // Fetch all published modules
-    const modules = await db
-      .select()
-      .from(programModules)
-      .where(eq(programModules.isPublished, true))
-      .orderBy(asc(programModules.order));
-
-    // Fetch user's progress
-    const progressRecords = await db
-      .select()
-      .from(moduleProgress)
-      .where(eq(moduleProgress.userId, ctx.user!.id));
-
-    // Fetch assignments for these modules
-    const allAssignments = await db
-      .select()
-      .from(assignments)
-      .orderBy(asc(assignments.order));
-
-    // Fetch user's submissions
-    const submissions = await db
-      .select()
-      .from(assignmentSubmissions)
-      .where(eq(assignmentSubmissions.userId, ctx.user!.id));
-
-    // Fetch user's coaching sessions
-    const sessions = await db
-      .select()
-      .from(coachingSessions)
-      .where(eq(coachingSessions.userId, ctx.user!.id));
-
-    // Only modules the coach has assigned (moduleProgress.unlockedAt set) are visible.
-    // Admins see all published modules for preview when browsing the hub.
-    const isAdmin = ctx.user!.role === "admin";
-
-    const enrichedModules = modules.map((mod) => {
-      const progress = progressRecords.find((p) => p.moduleId === mod.id);
-      const session = sessions.find((s) => s.sessionNumber === mod.order);
-      const isUnlocked =
-        isAdmin ||
-        (progress !== undefined && progress.unlockedAt !== null);
-
-      return {
-        ...mod,
-        isUnlocked,
-        progress: progress || null,
-        session: session || null,
-      };
-    });
-
-    const visibleModules = isAdmin
-      ? enrichedModules
-      : enrichedModules.filter((m) => m.isUnlocked);
-
-    const visibleModuleIds = new Set(visibleModules.map((m) => m.id));
-    const visibleAssignments = isAdmin
-      ? allAssignments
-      : allAssignments.filter((a) => visibleModuleIds.has(a.moduleId));
-
     return {
-      enrollment: effectiveEnrollment,
-      modules: visibleModules,
-      assignments: visibleAssignments,
-      submissions,
+      enrollment: reclaim.enrollment,
+      modules: reclaim.modules,
+      assignments: reclaim.assignments,
+      submissions: reclaim.submissions,
     };
   }),
 
@@ -144,6 +71,14 @@ export const reclaimHubRouter = router({
 
       if (!input.answer && !input.fileUrl) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "Provide either an answer or a file upload." });
+      }
+
+      const hub = await loadClientHub(db, { id: ctx.user!.id, role: ctx.user!.role });
+      const openToUser = hub.programs.some((program) =>
+        program.assignments.some((assignment) => assignment.id === input.assignmentId)
+      );
+      if (!openToUser) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "That assignment isn't open in your program." });
       }
 
       // Check if submission already exists
@@ -183,6 +118,14 @@ export const reclaimHubRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
+      const hub = await loadClientHub(db, { id: ctx.user!.id, role: ctx.user!.role });
+      const openToUser = hub.programs.some((program) =>
+        program.modules.some((mod) => mod.id === input.moduleId)
+      );
+      if (!openToUser) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "That module isn't open in your program." });
+      }
+
       const existing = await db
         .select()
         .from(moduleProgress)
@@ -214,12 +157,16 @@ export const reclaimHubRouter = router({
 
   // ── Admin Endpoints ─────────────────────────────────────────────────────────
 
-  adminListModules: protectedProcedure.query(async ({ ctx }) => {
-    adminOnly(ctx.user?.role);
-    const db = await getDb();
-    if (!db) return [];
-    return db.select().from(programModules).orderBy(asc(programModules.order));
-  }),
+  adminListModules: protectedProcedure
+    .input(z.object({ program: z.enum(PROGRAM_IDS).optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      adminOnly(ctx.user?.role);
+      const db = await getDb();
+      if (!db) return [];
+      const rows = await db.select().from(programModules).orderBy(asc(programModules.order));
+      if (!input?.program) return rows;
+      return rows.filter((row) => row.program === input.program);
+    }),
 
   adminGetClientProgress: protectedProcedure
     .input(z.object({ userId: z.number() }))
@@ -232,6 +179,7 @@ export const reclaimHubRouter = router({
 
   adminCreateModule: protectedProcedure
     .input(z.object({
+      program: z.enum(PROGRAM_IDS).default("reclaim"),
       title: z.string().min(1),
       description: z.string().nullish(),
       videoUrl: z.string().nullish(),
@@ -252,6 +200,7 @@ export const reclaimHubRouter = router({
   adminUpdateModule: protectedProcedure
     .input(z.object({
       id: z.number(),
+      program: z.enum(PROGRAM_IDS).optional(),
       title: z.string().optional(),
       description: z.string().nullish(),
       videoUrl: z.string().nullish(),
@@ -439,8 +388,57 @@ export const reclaimHubRouter = router({
         .set({ feedback: input.feedback })
         .where(eq(assignmentSubmissions.id, input.submissionId));
 
-      // TODO: Trigger email notification to Client
+      const [row] = await db
+        .select({
+          answer: assignmentSubmissions.answer,
+          userName: users.name,
+          userEmail: users.email,
+          question: assignments.question,
+          moduleTitle: programModules.title,
+          program: programModules.program,
+        })
+        .from(assignmentSubmissions)
+        .innerJoin(users, eq(assignmentSubmissions.userId, users.id))
+        .innerJoin(assignments, eq(assignmentSubmissions.assignmentId, assignments.id))
+        .innerJoin(programModules, eq(assignments.moduleId, programModules.id))
+        .where(eq(assignmentSubmissions.id, input.submissionId))
+        .limit(1);
 
-      return { success: true };
+      let emailSent = false;
+      const feedback = input.feedback.trim();
+      if (row?.userEmail && feedback && isProgramId(row.program)) {
+        const message = buildAssignmentFeedbackMessage({
+          clientName: row.userName?.trim() || "there",
+          programLabel: PROGRAMS[row.program].label,
+          moduleTitle: row.moduleTitle,
+          question: row.question,
+          feedback,
+        });
+        emailSent = await sendTransactionalEmail({
+          to: row.userEmail,
+          toName: row.userName?.trim() || row.userEmail,
+          subject: message.subject,
+          htmlBody: message.htmlBody,
+          textBody: message.textBody,
+        });
+      }
+
+      return { success: true, emailSent };
+    }),
+
+  /** One place for a client's programs, answers, files, and food logs. */
+  adminClientWorkspace: protectedProcedure
+    .input(z.object({
+      userId: z.number().optional(),
+      email: z.string().email().optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      adminOnly(ctx.user?.role);
+      if (!input.userId && !input.email) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Choose a client." });
+      }
+      const db = await getDb();
+      if (!db) return { found: false as const, foodLogAccess: { allowed: false as const, reason: "hidden" as const } };
+      return loadCoachClientWorkspace(db, input);
     }),
 });

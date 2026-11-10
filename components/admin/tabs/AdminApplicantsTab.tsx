@@ -1,6 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AdminClientWorkspace } from "../AdminClientWorkspace";
 
 type AdminApplicantsTabProps = {
   onEnroll: (person?: { name: string; email: string; phone?: string | null; applicationId: number }) => void;
@@ -8,6 +11,7 @@ type AdminApplicantsTabProps = {
 
 export function AdminApplicantsTab({ onEnroll }: AdminApplicantsTabProps) {
   const { data, isLoading } = trpc.enrollment.adminListHolidayApplications.useQuery();
+  const [openEmail, setOpenEmail] = useState<string | null>(null);
 
   return (
     <div>
@@ -91,7 +95,16 @@ export function AdminApplicantsTab({ onEnroll }: AdminApplicantsTabProps) {
                     Hopes: {application.hopes}
                   </p>
                 </div>
-                {!accepted && (
+                <div className="flex flex-col gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setOpenEmail(application.email)}
+                    className="text-sm font-semibold px-4 py-2 rounded-lg"
+                    style={{ background: "oklch(0.96 0.025 50)", color: "oklch(0.30 0.015 50)", border: "1px solid oklch(0.90 0.015 80)" }}
+                  >
+                    Their program
+                  </button>
+                  {!accepted && (
                   <button
                     type="button"
                     onClick={() =>
@@ -108,11 +121,25 @@ export function AdminApplicantsTab({ onEnroll }: AdminApplicantsTabProps) {
                     Accept
                   </button>
                 )}
+                </div>
               </div>
             </article>
           );
         })}
       </div>
+
+      <Dialog open={!!openEmail} onOpenChange={(open) => !open && setOpenEmail(null)}>
+        <DialogContent
+          aria-describedby={undefined}
+          className="w-[96vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto"
+          style={{ background: "oklch(0.96 0.025 50)" }}
+        >
+          <DialogHeader>
+            <DialogTitle style={{ fontFamily: "'Cormorant Garamond', serif" }}>Their program</DialogTitle>
+          </DialogHeader>
+          {openEmail && <AdminClientWorkspace email={openEmail} />}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

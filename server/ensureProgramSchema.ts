@@ -125,6 +125,21 @@ ALTER TABLE \`users\`
   ADD COLUMN \`appleId\` varchar(128) NULL
 `;
 
+const ADD_MODULE_PROGRAM = `
+ALTER TABLE \`program_modules\`
+  ADD COLUMN \`program\` ENUM('fpu','reclaim','challenge','holiday','metabolic') NOT NULL DEFAULT 'reclaim'
+`;
+
+const CREATE_COMMON_FILE_PROGRAMS = `
+CREATE TABLE IF NOT EXISTS \`common_file_programs\` (
+  \`id\` int AUTO_INCREMENT NOT NULL,
+  \`commonFileId\` int NOT NULL,
+  \`program\` ENUM('fpu','reclaim','challenge','holiday','metabolic') NOT NULL,
+  CONSTRAINT \`common_file_programs_id\` PRIMARY KEY(\`id\`),
+  UNIQUE KEY \`common_file_program\` (\`commonFileId\`, \`program\`)
+)
+`;
+
 function errorText(err: unknown): string {
   const row = err as { code?: string; message?: string; cause?: { code?: string; message?: string } };
   return `${row?.code ?? ""} ${row?.message ?? ""} ${row?.cause?.code ?? ""} ${row?.cause?.message ?? ""} ${String(err)}`;
@@ -195,4 +210,6 @@ export async function applyProgramEnrollmentSchema(db: Db): Promise<void> {
   await runIgnoring(db, ADD_HOLIDAY_STATUS, false);
   await runIgnoring(db, ADD_HOLIDAY_ENROLLMENT_ID, false);
   await runIgnoring(db, ADD_HOLIDAY_ACCEPTED_AT, false);
+  await runIgnoring(db, ADD_MODULE_PROGRAM, true);
+  await runIgnoring(db, CREATE_COMMON_FILE_PROGRAMS, true);
 }
