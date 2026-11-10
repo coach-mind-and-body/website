@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
@@ -7,6 +8,18 @@ import { eq, and, desc, like } from "drizzle-orm";
 import { generateObject } from "ai";
 import { google } from "@ai-sdk/google";
 import { TRPCError } from "@trpc/server";
+import { storagePut } from "../storage";
+import {
+  WrittenLogError,
+  analyzeWrittenFoodLogInput,
+  assertWrittenLogScanAllowance,
+  batchCalorieLogsSchema,
+  buildCalorieInsertRows,
+  extensionForMime,
+  normalizeWrittenLogEntries,
+  prepareWrittenLogImages,
+  readWrittenFoodLog,
+} from "../writtenFoodLog";
 
 /** Soft guest AI limits: deviceId → { day, count } (in-process; resets on deploy) */
 const guestAiUsage = new Map<string, { day: string; count: number }>();
@@ -301,4 +314,105 @@ export const caloriesRouter = router({
 
       return result.object;
     }),
+
+  /**
+   * Read one or more photos of a written food log into a review list.
+   * Signed-in only. The page photos are stored after a successful read.
+   */
+  analyzeWrittenFoodLog: protectedProcedure
+    .input(analyzeWrittenFoodLogInput)
+    .mutation(async ({ ctx, input }) => {
+      let prepared;
+      try {
+        prepared = prepareWrittenLogImages(input.images);
+        assertWrittenLogScanAllowance(ctx.user.id);
+      } catch (err) {
+        rethrowWritten(err);
+      }
+
+      let raw: unknown;
+      try {
+        raw = await readWrittenFoodLog(prepared);
+      } catch (err) {
+        console.error("[written-food-log] read", err);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Could not read that page. Try a clearer photo in good light.",
+        });
+      }
+
+      let entries;
+      try {
+        entries = normalizeWrittenLogEntries(raw, prepared.length);
+      } catch (err) {
+        rethrowWritten(err);
+      }
+
+      if (entries.length === 0) {
+        return { entries, images: [] as { index: number; key: string }[] };
+      }
+
+      const images: { index: number; key: string }[] = [];
+      try {
+        for (const image of prepared) {
+          const suffix = crypto.randomBytes(8).toString("hex");
+          const key = `food-logs/${ctx.user.id}/${Date.now()}-${image.index}-${suffix}.${extensionForMime(image.mimeType)}`;
+          const stored = await storagePut(key, image.buffer, image.mimeType);
+          images.push({ index: image.index, key: stored.key });
+        }
+      } catch (err) {
+        console.error("[written-food-log] store", err);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Could not store that photo. Try again in a moment.",
+        });
+      }
+
+      return { entries, images };
+    }),
+
+  /** Save a reviewed scan (or any short list) in one request. */
+  addLogs: protectedProcedure
+    .input(batchCalorieLogsSchema)
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      let rows;
+      try {
+        rows = buildCalorieInsertRows(ctx.user.id, input.logs);
+      } catch (err) {
+        rethrowWritten(err);
+      }
+
+      await db.insert(calorieLogs).values(rows);
+
+      const dates = [...new Set(rows.map((row) => row.dateStr))];
+      for (const dateStr of dates) {
+        await syncMacrosToHabits(db, ctx.user.id, dateStr);
+        await creditChallengeDayFromActivity({
+          userId: ctx.user.id,
+          email: ctx.user.email ?? null,
+          dateStr,
+        });
+      }
+
+      return { success: true, saved: rows.length };
+    }),
 });
+
+function rethrowWritten(err: unknown): never {
+  if (err instanceof TRPCError) throw err;
+  if (err instanceof WrittenLogError) {
+    throw new TRPCError({
+      code:
+        err.code === "PAYLOAD_TOO_LARGE"
+          ? "PAYLOAD_TOO_LARGE"
+          : err.code === "TOO_MANY_REQUESTS"
+            ? "TOO_MANY_REQUESTS"
+            : "BAD_REQUEST",
+      message: err.message,
+    });
+  }
+  throw err;
+}

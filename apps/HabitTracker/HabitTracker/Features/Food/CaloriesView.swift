@@ -6,6 +6,7 @@ struct CaloriesView: View {
     @Bindable var food: FoodViewModel
     @Bindable var auth: AuthStore
     @State private var showLog = false
+    @State private var showScan = false
     @State private var meal = "lunch"
 
     private let meals = ["breakfast", "lunch", "dinner", "snack", "drink"]
@@ -36,6 +37,20 @@ struct CaloriesView: View {
                 }
                 .buttonStyle(.plain)
 
+                Button {
+                    showScan = true
+                } label: {
+                    Text("Scan my written log")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(Color.white)
+                        .foregroundStyle(HTTheme.forest)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .overlay(RoundedRectangle(cornerRadius: 16).stroke(HTTheme.roseBorder))
+                }
+                .buttonStyle(.plain)
+
                 if let err = food.errorMessage {
                     Text(err).font(.subheadline).foregroundStyle(.red)
                 }
@@ -45,7 +60,7 @@ struct CaloriesView: View {
                         Text("Nothing logged yet")
                             .font(.headline)
                             .foregroundStyle(HTTheme.forest)
-                        Text("Tap Log food. Type what you ate, snap the plate, or search a packaged item. Protein matters most.")
+                        Text("Tap Log food, or scan a page you already wrote. You can still type a meal, snap the plate, or search a packaged item.")
                             .font(.subheadline)
                             .foregroundStyle(HTTheme.muted)
                             .fixedSize(horizontal: false, vertical: true)
@@ -81,6 +96,9 @@ struct CaloriesView: View {
         .refreshable { await food.loadLogs() }
         .sheet(isPresented: $showLog) {
             LogFoodSheet(food: food, meal: $meal)
+        }
+        .sheet(isPresented: $showScan) {
+            WrittenLogScanSheet(food: food)
         }
     }
 
@@ -119,6 +137,11 @@ struct CaloriesView: View {
     private func logRow(_ log: CalorieLog) -> some View {
         HTCard {
             HStack {
+                if let key = log.imageUrl, key.hasPrefix("food-logs/") {
+                    FoodLogPhoto(key: key, token: auth.token)
+                        .frame(width: 44, height: 44)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
                 VStack(alignment: .leading, spacing: 4) {
                     Text(log.foodName)
                         .font(.headline)
@@ -488,6 +511,446 @@ struct FatSecretBadge: View {
         }
         .accessibilityLabel("Powered by fatsecret")
     }
+}
+
+private struct WrittenDraft: Identifiable {
+    let id = UUID()
+    var mealType: String
+    var time: String
+    var foodName: String
+    var portion: String
+    var calories: Int
+    var protein: Int
+    var carbs: Int
+    var fat: Int
+    var fiber: Int
+    var confidence: String
+    var unclear: Bool
+    var note: String
+    var imageIndex: Int
+    var dateStr: String
+    var imageUrl: String?
+}
+
+private struct WrittenLogScanSheet: View {
+    @Bindable var food: FoodViewModel
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var pages: [UIImage] = []
+    @State private var photoItems: [PhotosPickerItem] = []
+    @State private var showCamera = false
+    @State private var drafts: [WrittenDraft] = []
+    @State private var sharedDate = ""
+    @State private var localError: String?
+    @State private var didRead = false
+
+    private let meals = ["breakfast", "lunch", "dinner", "snack", "drink"]
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Photograph the page you wrote, not the plate. A meal or a whole day is fine, up to 4 pages. Nothing is saved until you review it.")
+                        .font(.subheadline)
+                        .foregroundStyle(HTTheme.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    if !food.isSignedIn {
+                        Text("Sign in under You first. The photo is saved with your account so your coach can see it.")
+                            .font(.subheadline)
+                            .foregroundStyle(HTTheme.forest)
+                    } else if drafts.isEmpty {
+                        picker
+                    }
+
+                    if didRead && drafts.isEmpty && !food.scanBusy {
+                        Text("Nothing on that page was readable. Try a closer photo in better light.")
+                            .font(.subheadline)
+                            .foregroundStyle(HTTheme.forest)
+                    }
+
+                    if !drafts.isEmpty {
+                        review
+                    }
+
+                    if food.scanBusy {
+                        HStack(spacing: 8) {
+                            ProgressView()
+                            Text(drafts.isEmpty ? "Reading your handwriting…" : "Saving…")
+                                .font(.subheadline)
+                                .foregroundStyle(HTTheme.muted)
+                        }
+                    }
+
+                    if let localError {
+                        Text(localError)
+                            .font(.subheadline)
+                            .foregroundStyle(.red)
+                    }
+                }
+                .padding(20)
+            }
+            .background(HTTheme.cream.ignoresSafeArea())
+            .navigationTitle("Written log")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { dismiss() }
+                }
+            }
+            .onAppear { if sharedDate.isEmpty { sharedDate = food.dateStr } }
+            .sheet(isPresented: $showCamera) {
+                CameraPicker { image in
+                    showCamera = false
+                    guard pages.count < 4 else { return }
+                    pages.append(image)
+                    drafts = []
+                    didRead = false
+                }
+            }
+            .onChange(of: photoItems) { _, items in
+                Task { await loadPicked(items) }
+            }
+        }
+    }
+
+    private var picker: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if !pages.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(Array(pages.enumerated()), id: \.offset) { index, image in
+                            ZStack(alignment: .topTrailing) {
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 72, height: 96)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                Button {
+                                    pages.remove(at: index)
+                                    drafts = []
+                                    didRead = false
+                                } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundStyle(HTTheme.forest)
+                                        .background(Circle().fill(Color.white))
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                }
+            }
+
+            HStack(spacing: 10) {
+                PhotosPicker(selection: $photoItems, maxSelectionCount: 4, matching: .images) {
+                    scanActionLabel(title: "Choose pages", system: "photo")
+                }
+                Button {
+                    showCamera = true
+                } label: {
+                    scanActionLabel(title: "Camera", system: "camera")
+                }
+                .buttonStyle(.plain)
+                .disabled(pages.count >= 4)
+            }
+
+            Button {
+                Task { await readPages() }
+            } label: {
+                Text("Read my log")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(pages.isEmpty || food.scanBusy ? HTTheme.muted.opacity(0.35) : HTTheme.forest)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+            }
+            .buttonStyle(.plain)
+            .disabled(pages.isEmpty || food.scanBusy)
+        }
+    }
+
+    private var review: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                TextField("YYYY-MM-DD", text: $sharedDate)
+                    .padding(12)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                Button("Apply to all") {
+                    guard sharedDate.range(of: #"^\d{4}-\d{2}-\d{2}$"#, options: .regularExpression) != nil else {
+                        localError = "Use a date like 2026-11-10."
+                        return
+                    }
+                    for index in drafts.indices {
+                        drafts[index].dateStr = sharedDate
+                    }
+                    localError = nil
+                }
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(HTTheme.forest)
+            }
+
+            ForEach($drafts) { $draft in
+                VStack(alignment: .leading, spacing: 8) {
+                    if draft.unclear || draft.confidence == "low" {
+                        Text(draft.note.isEmpty ? "Check this one — the handwriting was hard to read." : draft.note)
+                            .font(.caption)
+                            .foregroundStyle(HTTheme.forest)
+                            .padding(8)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color(red: 0.98, green: 0.93, blue: 0.91))
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                    }
+                    HStack {
+                        if draft.imageIndex >= 0, draft.imageIndex < pages.count {
+                            Image(uiImage: pages[draft.imageIndex])
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 44, height: 44)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                        }
+                        Picker("Meal", selection: $draft.mealType) {
+                            ForEach(meals, id: \.self) { slot in
+                                Text(slot.capitalized).tag(slot)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        Spacer()
+                        Button(role: .destructive) {
+                            drafts.removeAll { $0.id == draft.id }
+                        } label: {
+                            Image(systemName: "trash")
+                        }
+                    }
+                    TextField("Food", text: $draft.foodName, axis: .vertical)
+                        .lineLimit(1...3)
+                        .padding(12)
+                        .background(HTTheme.cream)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    HStack {
+                        TextField("Portion", text: $draft.portion)
+                        TextField("Time", text: $draft.time)
+                    }
+                    .padding(12)
+                    .background(HTTheme.cream)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    TextField("Date", text: $draft.dateStr)
+                        .padding(12)
+                        .background(HTTheme.cream)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    HStack {
+                        scanField("Cal", $draft.calories)
+                        scanField("Pro", $draft.protein)
+                        scanField("Carb", $draft.carbs)
+                    }
+                    HStack {
+                        scanField("Fat", $draft.fat)
+                        scanField("Fiber", $draft.fiber)
+                    }
+                }
+                .padding(12)
+                .background(Color.white)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .overlay(RoundedRectangle(cornerRadius: 16).stroke(HTTheme.roseBorder))
+            }
+
+            Button {
+                Task { await saveAll() }
+            } label: {
+                Text("Save all")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(food.scanBusy ? HTTheme.muted.opacity(0.35) : HTTheme.forest)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+            }
+            .buttonStyle(.plain)
+            .disabled(food.scanBusy || drafts.isEmpty)
+        }
+    }
+
+    private func scanActionLabel(title: String, system: String) -> some View {
+        VStack(spacing: 6) {
+            Image(systemName: system)
+            Text(title)
+                .font(.caption.weight(.bold))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 14)
+        .background(Color.white)
+        .foregroundStyle(HTTheme.forest)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(HTTheme.roseBorder))
+    }
+
+    private func scanField(_ label: String, _ value: Binding<Int>) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(HTTheme.muted)
+            TextField("0", value: value, format: .number)
+                .keyboardType(.numberPad)
+                .padding(8)
+                .background(HTTheme.cream)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+        }
+    }
+
+    private func loadPicked(_ items: [PhotosPickerItem]) async {
+        var images: [UIImage] = []
+        for item in items.prefix(4) {
+            if let data = try? await item.loadTransferable(type: Data.self),
+               let image = UIImage(data: data) {
+                images.append(image)
+            }
+        }
+        if !images.isEmpty {
+            pages = images
+            drafts = []
+            didRead = false
+        }
+    }
+
+    private func readPages() async {
+        localError = nil
+        var payloads: [String] = []
+        for image in pages {
+            guard let payload = scanJpegDataUrl(from: image) else {
+                localError = "One of those photos is too large. Move closer and try again."
+                return
+            }
+            payloads.append(payload)
+        }
+        guard let result = await food.scanWrittenLog(payloads) else {
+            localError = food.errorMessage
+            didRead = true
+            return
+        }
+        didRead = true
+        let allowed = Set(meals)
+        drafts = result.entries.map { entry in
+            WrittenDraft(
+                mealType: allowed.contains(entry.mealType) ? entry.mealType : "snack",
+                time: entry.time ?? "",
+                foodName: entry.foodName,
+                portion: entry.portion ?? "",
+                calories: entry.calories,
+                protein: entry.protein,
+                carbs: entry.carbs,
+                fat: entry.fat,
+                fiber: entry.fiber,
+                confidence: entry.confidence,
+                unclear: entry.unclear,
+                note: entry.note ?? "",
+                imageIndex: entry.imageIndex,
+                dateStr: food.dateStr,
+                imageUrl: result.images.first { $0.index == entry.imageIndex }?.key
+            )
+        }
+        if drafts.isEmpty {
+            localError = "Nothing on that page was readable. Try a closer photo in better light."
+        }
+    }
+
+    private func saveAll() async {
+        let dateOK = drafts.allSatisfy {
+            $0.dateStr.range(of: #"^\d{4}-\d{2}-\d{2}$"#, options: .regularExpression) != nil
+        }
+        guard dateOK else {
+            localError = "Use dates like 2026-11-10."
+            return
+        }
+        guard drafts.allSatisfy({ !$0.foodName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else {
+            localError = "Add a name or remove the blank row."
+            return
+        }
+        let payload = drafts.map { draft in
+            BatchCalorieLogInput(
+                dateStr: draft.dateStr,
+                mealType: draft.mealType,
+                foodName: draft.foodName.trimmingCharacters(in: .whitespacesAndNewlines),
+                portion: blankToNil(draft.portion),
+                time: blankToNil(draft.time),
+                calories: max(0, draft.calories),
+                protein: max(0, draft.protein),
+                carbs: max(0, draft.carbs),
+                fat: max(0, draft.fat),
+                fiber: max(0, draft.fiber),
+                imageUrl: draft.imageUrl
+            )
+        }
+        let saved = await food.saveWrittenLogs(payload)
+        if saved {
+            dismiss()
+        } else {
+            localError = food.errorMessage
+        }
+    }
+}
+
+private struct FoodLogPhoto: View {
+    let key: String
+    let token: String?
+    @State private var image: UIImage?
+
+    var body: some View {
+        Group {
+            if let image {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                HTTheme.cream
+            }
+        }
+        .task(id: token ?? "") { await load() }
+    }
+
+    private func load() async {
+        guard let token, !token.isEmpty else { return }
+        guard var comps = URLComponents(
+            url: AppConfig.apiRoot.appending(path: "api/food-log-photo"),
+            resolvingAgainstBaseURL: false
+        ) else { return }
+        comps.queryItems = [URLQueryItem(name: "key", value: key)]
+        guard let url = comps.url else { return }
+        var request = URLRequest(url: url)
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        guard let (data, response) = try? await URLSession.shared.data(for: request),
+              (response as? HTTPURLResponse)?.statusCode == 200,
+              let loaded = UIImage(data: data) else { return }
+        image = loaded
+    }
+}
+
+private func blankToNil(_ value: String) -> String? {
+    let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+    return trimmed.isEmpty ? nil : trimmed
+}
+
+private func scanJpegDataUrl(from image: UIImage) -> String? {
+    let maxSide: CGFloat = 1600
+    let size = image.size
+    guard size.width > 0, size.height > 0 else { return nil }
+    let scale = min(1, maxSide / max(size.width, size.height))
+    let target = CGSize(width: max(1, size.width * scale), height: max(1, size.height * scale))
+    let format = UIGraphicsImageRendererFormat.default()
+    format.scale = 1
+    let renderer = UIGraphicsImageRenderer(size: target, format: format)
+    let rendered = renderer.image { _ in
+        image.draw(in: CGRect(origin: .zero, size: target))
+    }
+    var quality: CGFloat = 0.65
+    var data = rendered.jpegData(compressionQuality: quality)
+    while let current = data, current.count > 3_500_000, quality > 0.35 {
+        quality -= 0.15
+        data = rendered.jpegData(compressionQuality: quality)
+    }
+    guard let data, data.count < 4_000_000 else { return nil }
+    return "data:image/jpeg;base64," + data.base64EncodedString()
 }
 
 private struct CameraPicker: UIViewControllerRepresentable {

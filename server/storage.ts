@@ -70,3 +70,29 @@ export async function storageGet(relKey: string): Promise<{ key: string; url: st
   const url = await getSignedUrl(s3, command, { expiresIn: 604800 });
   return { key, url };
 }
+
+/** Read an object with the private R2 credentials. Does not build a public URL. */
+export async function storageRead(
+  relKey: string
+): Promise<{ body: Buffer; contentType: string } | null> {
+  const key = normalizeKey(relKey);
+  const s3 = getS3Client();
+  try {
+    const result = await s3.send(
+      new GetObjectCommand({
+        Bucket: ENV.r2BucketName,
+        Key: key,
+      })
+    );
+    if (!result.Body) return null;
+    const bytes = await result.Body.transformToByteArray();
+    return {
+      body: Buffer.from(bytes),
+      contentType: result.ContentType || "application/octet-stream",
+    };
+  } catch (error) {
+    const name = error && typeof error === "object" && "name" in error ? String(error.name) : "";
+    if (name === "NoSuchKey" || name === "NotFound") return null;
+    throw error;
+  }
+}

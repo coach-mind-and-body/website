@@ -20,8 +20,10 @@ final class FoodViewModel {
     var fatSecretOn = false
     var fatSecretHits: [FatSecretFood] = []
     var estimateBusy = false
+    var scanBusy = false
 
     private let auth: AuthStore
+    var isSignedIn: Bool { auth.isSignedIn }
     var sessionEpoch: Int { auth.sessionEpoch }
 
     init(auth: AuthStore) { self.auth = auth }
@@ -340,6 +342,54 @@ final class FoodViewModel {
         } catch {
             errorMessage = error.localizedDescription
             return nil
+        }
+    }
+
+    func scanWrittenLog(_ images: [String]) async -> WrittenLogScanResult? {
+        guard auth.isSignedIn else {
+            errorMessage = "Sign in under You to scan a written log."
+            return nil
+        }
+        guard !images.isEmpty else { return nil }
+        scanBusy = true
+        defer { scanBusy = false }
+        do {
+            let result: WrittenLogScanResult = try await auth.client.mutate(
+                "calories.analyzeWrittenFoodLog",
+                input: AnalyzeWrittenLogInput(images: images.map { WrittenLogImageInput(imageBase64: $0) })
+            )
+            errorMessage = nil
+            return result
+        } catch {
+            errorMessage = error.localizedDescription
+            return nil
+        }
+    }
+
+    func saveWrittenLogs(_ logs: [BatchCalorieLogInput]) async -> Bool {
+        guard auth.isSignedIn else {
+            errorMessage = "Sign in under You to save a scanned log."
+            return false
+        }
+        guard !logs.isEmpty else { return false }
+        scanBusy = true
+        defer { scanBusy = false }
+        do {
+            let _: AddLogsResult = try await auth.client.mutate(
+                "calories.addLogs",
+                input: AddLogsInput(logs: logs)
+            )
+            let days = Set(logs.map(\.dateStr))
+            if days.count == 1, let day = days.first {
+                dateStr = day
+            }
+            await loadLogs()
+            NotificationCenter.default.post(name: .mbrFoodLogged, object: nil)
+            errorMessage = nil
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
         }
     }
 

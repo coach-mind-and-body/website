@@ -27,6 +27,8 @@ import { getDeviceId } from "@/lib/deviceId";
 import FoodHubNav from "@/components/habit/FoodHubNav";
 import FatSecretAttribution from "@/components/habit/FatSecretAttribution";
 import { FOOD_LOG_HINTS } from "@shared/food";
+import WrittenLogScan from "./WrittenLogScan";
+import { privateFoodLogPhotoSrc } from "@/lib/foodLogPhoto";
 
 type SelectedRecipe = {
   id: number;
@@ -59,6 +61,7 @@ type LocalCalLog = {
   carbs: number;
   fat: number;
   fiber: number;
+  imageUrl?: string | null;
 };
 
 const MEAL_CHIPS: { type: MealType; label: string }[] = [
@@ -629,6 +632,15 @@ export default function CalorieTrackerClient() {
           </div>
         </div>
 
+        <WrittenLogScan
+          dateStr={dateStr}
+          isAuthenticated={isAuthenticated}
+          onSaved={() => {
+            refetch();
+            utils.habit.getUserHabits.invalidate();
+          }}
+        />
+
         <AnimatePresence>
           {isAdding && (
             <motion.div
@@ -1011,13 +1023,18 @@ export default function CalorieTrackerClient() {
             >
               {isToday ? "Today" : format(parseCalendarDate(dateStr), "MMM d")}
             </h3>
-            {dayLogs.map((log) => (
+            {dayLogs.map((log) => {
+              const photoSrc = privateFoodLogPhotoSrc(log.imageUrl);
+              return (
               <div
                 key={log.id}
                 className="bg-white p-4 rounded-2xl shadow-sm border flex items-center justify-between gap-2"
                 style={{ borderColor: "#f0e8e4" }}
               >
-                <div className="min-w-0">
+                {photoSrc ? (
+                  <img src={photoSrc} alt="" className="h-12 w-12 shrink-0 rounded-xl object-cover" />
+                ) : null}
+                <div className="min-w-0 flex-1">
                   <div className="text-[10px] font-bold uppercase" style={{ color: "#c9a96e" }}>
                     {log.mealType}
                   </div>
@@ -1060,7 +1077,8 @@ export default function CalorieTrackerClient() {
                   </button>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
 

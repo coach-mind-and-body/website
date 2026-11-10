@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Flame, Plus, Pencil, Trash2, Calendar, Loader2 } from "lucide-react";
 import { format, subDays, parseISO } from "date-fns";
 import { todayMountainDateStr } from "@/lib/mountainTime";
+import { privateFoodLogPhotoSrc } from "@/lib/foodLogPhoto";
 
 export default function AdminClientHabits({ userId }: { userId: number }) {
   const utils = trpc.useUtils();
@@ -291,7 +292,16 @@ export default function AdminClientHabits({ userId }: { userId: number }) {
             <div>
               <p className="text-[10px] font-bold mb-2 text-gray-400 uppercase tracking-widest">Recent Meals</p>
               <div className="space-y-2">
-                {calorieLogs?.slice(0, 5).map((cl: any) => (
+                {[...(calorieLogs || [])]
+                  .sort((a: any, b: any) => {
+                    const byDate = String(b.dateStr || "").localeCompare(String(a.dateStr || ""));
+                    if (byDate !== 0) return byDate;
+                    return Number(b.id || 0) - Number(a.id || 0);
+                  })
+                  .slice(0, 5)
+                  .map((cl: any) => {
+                  const photoSrc = privateFoodLogPhotoSrc(cl.imageUrl);
+                  return (
                   <div key={cl.id} className="p-3 rounded-lg border bg-white shadow-sm flex flex-col gap-1">
                     <div className="flex justify-between items-start">
                       <p className="text-xs font-bold text-gray-800">{cl.foodName}</p>
@@ -303,8 +313,15 @@ export default function AdminClientHabits({ userId }: { userId: number }) {
                         <span className="text-blue-500">{cl.protein}p</span> • <span className="text-orange-500">{cl.carbs}c</span> • <span className="text-green-700">{cl.fiber ?? 0}fb</span> • <span className="text-yellow-600">{cl.fat}f</span>
                       </p>
                     </div>
+                    {photoSrc ? (
+                      <a href={photoSrc} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-2">
+                        <img src={photoSrc} alt="" className="h-14 w-14 rounded-md object-cover border border-gray-100" />
+                        <span className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Photo</span>
+                      </a>
+                    ) : null}
                   </div>
-                ))}
+                  );
+                })}
                 {(!calorieLogs || calorieLogs.length === 0) && <p className="text-xs text-gray-400">No meals logged.</p>}
               </div>
             </div>
