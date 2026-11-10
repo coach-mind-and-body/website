@@ -135,6 +135,21 @@ ALTER TABLE \`leads\`
   ADD COLUMN \`needsProgram\` boolean NOT NULL DEFAULT false
 `;
 
+const ADD_MODULE_PROGRAM = `
+ALTER TABLE \`program_modules\`
+  ADD COLUMN \`program\` ENUM('fpu','reclaim','challenge','holiday','metabolic') NOT NULL DEFAULT 'reclaim'
+`;
+
+const CREATE_COMMON_FILE_PROGRAMS = `
+CREATE TABLE IF NOT EXISTS \`common_file_programs\` (
+  \`id\` int AUTO_INCREMENT NOT NULL,
+  \`commonFileId\` int NOT NULL,
+  \`program\` ENUM('fpu','reclaim','challenge','holiday','metabolic') NOT NULL,
+  CONSTRAINT \`common_file_programs_id\` PRIMARY KEY(\`id\`),
+  UNIQUE KEY \`common_file_program\` (\`commonFileId\`, \`program\`)
+)
+`;
+
 const CREATE_PROGRAM_INTAKE_QUESTIONS = `
 CREATE TABLE IF NOT EXISTS \`program_intake_questions\` (
   \`id\` int AUTO_INCREMENT NOT NULL,
@@ -234,6 +249,8 @@ export async function applyProgramEnrollmentSchema(db: Db): Promise<void> {
   await runIgnoring(db, ADD_HOLIDAY_ACCEPTED_AT, false);
   await runIgnoring(db, ADD_USER_PENDING_WELCOME, false);
   await runIgnoring(db, ADD_LEAD_NEEDS_PROGRAM, false);
+  await runIgnoring(db, ADD_MODULE_PROGRAM, true);
+  await runIgnoring(db, CREATE_COMMON_FILE_PROGRAMS, true);
   await run(db, CREATE_PROGRAM_INTAKE_QUESTIONS);
   await run(db, CREATE_PROGRAM_INTAKE_SUBMISSIONS);
 }
