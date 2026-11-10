@@ -27,6 +27,18 @@ import {
   REAL_FOOD_RESET_SEQUENCE_ID,
 } from "@shared/realFoodReset";
 import { todayMountainDateStr } from "../lib/mountainTime";
+import {
+  HOLIDAY_ONBOARDING_DAY_OFFSETS,
+  HOLIDAY_ONBOARDING_EMAILS,
+} from "./emails/holidayOnboarding";
+import {
+  METABOLIC_ONBOARDING_DAY_OFFSETS,
+  METABOLIC_ONBOARDING_EMAILS,
+} from "./emails/metabolicOnboarding";
+import {
+  HOLIDAY_ONBOARDING_SEQUENCE_ID,
+  METABOLIC_ONBOARDING_SEQUENCE_ID,
+} from "@shared/programs";
 
 export const SNACK_HACK_SEQUENCE_ID = "snack_hack_nurture";
 export const FOOD_QUIZ_SEQUENCE_ID = "food_quiz_nurture";
@@ -90,9 +102,19 @@ const SEQUENCE_CONFIG: Record<string, SequenceConfig> = {
     emails: [...REAL_FOOD_RESET_OFFER_EMAILS],
     dates: REAL_FOOD_RESET_OFFER_DATES,
   },
+  [METABOLIC_ONBOARDING_SEQUENCE_ID]: {
+    type: "absolute_days",
+    emails: METABOLIC_ONBOARDING_EMAILS,
+    dayOffsets: METABOLIC_ONBOARDING_DAY_OFFSETS,
+  },
+  [HOLIDAY_ONBOARDING_SEQUENCE_ID]: {
+    type: "absolute_days",
+    emails: HOLIDAY_ONBOARDING_EMAILS,
+    dayOffsets: HOLIDAY_ONBOARDING_DAY_OFFSETS,
+  },
 };
 
-function getSequenceConfig(sequenceId: string): SequenceConfig | null {
+export function getSequenceConfig(sequenceId: string): SequenceConfig | null {
   return SEQUENCE_CONFIG[sequenceId] ?? null;
 }
 
@@ -158,6 +180,10 @@ async function sendSequenceStep(
       "You're receiving this because you registered for the 5-Day No Processed Food Challenge.",
     [REAL_FOOD_RESET_OFFER_SEQUENCE_ID]:
       "You're receiving this because you registered for the 5-Day No Processed Food Challenge.",
+    [METABOLIC_ONBOARDING_SEQUENCE_ID]:
+      "You're receiving this because you're enrolled in Metabolic Coaching.",
+    [HOLIDAY_ONBOARDING_SEQUENCE_ID]:
+      "You're receiving this because you're enrolled in the holiday program.",
   };
 
   const result = await sendMarketingEmail({
