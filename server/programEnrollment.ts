@@ -20,6 +20,8 @@ export type StoredUser = {
   name: string | null;
   email: string | null;
   phone: string | null;
+  /** Set when an intake created the account before a program was known. */
+  pendingWelcome?: boolean;
 };
 
 export type EnrollmentStatus = "pending" | "active" | "completed" | "cancelled";
@@ -52,8 +54,18 @@ export interface EnrollmentStore {
     openId: string;
     passwordResetToken: string;
     passwordResetExpiry: Date;
+    pendingWelcome?: boolean;
   }): Promise<StoredUser>;
-  updateUser(id: number, patch: { name?: string; phone?: string | null }): Promise<void>;
+  updateUser(
+    id: number,
+    patch: {
+      name?: string;
+      phone?: string | null;
+      pendingWelcome?: boolean;
+      passwordResetToken?: string | null;
+      passwordResetExpiry?: Date | null;
+    }
+  ): Promise<void>;
   findEnrollment(userId: number, program: ProgramId): Promise<StoredEnrollment | null>;
   insertEnrollment(row: {
     userId: number;
@@ -122,6 +134,8 @@ export type EnrollPersonResult = {
   message: string;
   welcomeEmailSent: boolean;
   sequenceStarted: boolean;
+  /** True when skipWelcome left a welcome email still to send. */
+  welcomeOwed: boolean;
 };
 
 type WelcomeParams = {
@@ -132,7 +146,7 @@ type WelcomeParams = {
   programs?: ProgramId[];
 };
 
-type EnrollDeps = {
+export type EnrollDeps = {
   sendWelcome: (params: WelcomeParams) => Promise<boolean>;
   startSequence: (email: string, firstName: string | null, sequenceId: string) => Promise<unknown>;
   now?: Date;
@@ -261,8 +275,19 @@ export async function enrollPerson(
     }
   }
 
+  let welcomeOwed = false;
+  if (!createdUser && user.pendingWelcome) {
+    resetToken = (deps.createResetToken ?? defaultResetToken)();
+    await store.updateUser(user.id, {
+      passwordResetToken: resetToken,
+      passwordResetExpiry: new Date(now.getTime() + 24 * 60 * 60 * 1000),
+    });
+    welcomeOwed = true;
+  }
+
   let welcomeEmailSent = false;
-  if (createdUser && resetToken && !deps.skipWelcome) {
+  const sendWelcomeNow = !!resetToken && !deps.skipWelcome && (createdUser || welcomeOwed);
+  if (sendWelcomeNow && resetToken) {
     try {
       welcomeEmailSent = await deps.sendWelcome({
         clientEmail: email,
@@ -273,6 +298,10 @@ export async function enrollPerson(
       });
     } catch (err) {
       console.error("[enroll] Welcome email failed:", err);
+    }
+    if (welcomeEmailSent && welcomeOwed) {
+      await store.updateUser(user.id, { pendingWelcome: false });
+      welcomeOwed = false;
     }
   }
 
@@ -304,11 +333,68 @@ export async function enrollPerson(
     message,
     welcomeEmailSent,
     sequenceStarted,
+    welcomeOwed: welcomeOwed && !welcomeEmailSent,
   };
 }
 
 function defaultResetToken(): string {
   return crypto.randomBytes(32).toString("hex");
+}
+
+/**
+ * Create or attach the account the same way enrollment does, without enrolling
+ * or sending the welcome email. The welcome goes out on the first real enrollment.
+ */
+export async function ensureClientAccount(
+  store: EnrollmentStore,
+  input: { email: string; name?: string | null; phone?: string | null },
+  deps: { now?: Date; createResetToken?: () => string } = {}
+): Promise<{
+  userId: number;
+  createdUser: boolean;
+  clientName: string;
+  clientEmail: string;
+  pendingWelcome: boolean;
+}> {
+  const email = normalizeEnrollmentEmail(input.email);
+  const now = deps.now ?? new Date();
+  let user = await store.findUserByEmail(email);
+  let createdUser = false;
+
+  if (!user) {
+    const resetToken = (deps.createResetToken ?? defaultResetToken)();
+    const name = displayName(input.name, email);
+    user = await store.insertUser({
+      email,
+      name,
+      phone: input.phone?.trim() || null,
+      openId: `email:${email}`.slice(0, 64),
+      passwordResetToken: resetToken,
+      passwordResetExpiry: new Date(now.getTime() + 24 * 60 * 60 * 1000),
+      pendingWelcome: true,
+    });
+    createdUser = true;
+  } else {
+    const patch: { name?: string; phone?: string | null } = {};
+    if (input.name && looksLikePlaceholder(user.name, email)) {
+      patch.name = displayName(input.name, email);
+    }
+    if (input.phone?.trim() && !user.phone) {
+      patch.phone = input.phone.trim();
+    }
+    if (Object.keys(patch).length > 0) {
+      await store.updateUser(user.id, patch);
+      user = { ...user, ...patch };
+    }
+  }
+
+  return {
+    userId: user.id,
+    createdUser,
+    clientName: displayName(user.name, email),
+    clientEmail: email,
+    pendingWelcome: createdUser || !!user.pendingWelcome,
+  };
 }
 
 function joinLabels(programs: ProgramId[]): string {
@@ -345,6 +431,9 @@ export async function enrollInPrograms(
   const sequencesStarted: string[] = [];
   let createdUser = false;
   let resetToken: string | null = null;
+  let owedWelcome = false;
+  let owedToken: string | null = null;
+  let owedUserId = 0;
   let clientName = displayName(input.name, normalizeEnrollmentEmail(input.email));
   const email = normalizeEnrollmentEmail(input.email);
 
@@ -360,6 +449,11 @@ export async function enrollInPrograms(
       if (result.createdUser) {
         createdUser = true;
         resetToken = result.resetToken;
+      }
+      if (result.welcomeOwed && result.resetToken) {
+        owedWelcome = true;
+        owedToken = result.resetToken;
+        owedUserId = result.userId;
       }
       if (result.sequenceStarted) {
         const sequenceId = sequenceForProgram(program, input.challengeThemeTag);
@@ -393,6 +487,21 @@ export async function enrollInPrograms(
       });
     } catch (err) {
       console.error("[enroll] Welcome email failed:", err);
+    }
+  } else if (owedWelcome && owedToken) {
+    try {
+      welcomeEmailSent = await deps.sendWelcome({
+        clientEmail: email,
+        clientName,
+        resetToken: owedToken,
+        program: enrolled[0].program,
+        programs: enrolled.map((row) => row.program),
+      });
+    } catch (err) {
+      console.error("[enroll] Welcome email failed:", err);
+    }
+    if (welcomeEmailSent && owedUserId) {
+      await store.updateUser(owedUserId, { pendingWelcome: false });
     }
   }
 
@@ -444,6 +553,7 @@ export async function acceptHolidayApplication(
       message: `${application.fullName} is already enrolled in Metabolic Coaching.`,
       welcomeEmailSent: false,
       sequenceStarted: false,
+      welcomeOwed: false,
     };
   }
 
@@ -476,6 +586,7 @@ export async function acceptHolidayApplication(
         message: err.message,
         welcomeEmailSent: false,
         sequenceStarted: false,
+        welcomeOwed: false,
       };
     }
     throw err;

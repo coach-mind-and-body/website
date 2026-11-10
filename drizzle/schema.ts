@@ -25,6 +25,8 @@ export const users = mysqlTable("users", {
   googleId: varchar("googleId", { length: 128 }),
   // Sign in with Apple subject, so a later sign-in finds this same account
   appleId: varchar("appleId", { length: 128 }),
+  // Intake created the account before a program was chosen. Cleared when the welcome email sends.
+  pendingWelcome: boolean("pendingWelcome").default(false).notNull(),
   // email verification for email/password accounts
   emailVerified: boolean("emailVerified").default(false).notNull(),
   emailVerifyToken: varchar("emailVerifyToken", { length: 128 }),
@@ -49,6 +51,8 @@ export const leads = mysqlTable("leads", {
   phone: varchar("phone", { length: 50 }),
   notes: text("notes"),
   status: mysqlEnum("status", ["new", "contacted", "enrolled", "not_a_fit"]).default("new").notNull(),
+  /** Intake arrived without a program. Lee Anne still needs to enroll them. */
+  needsProgram: boolean("needsProgram").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -1143,6 +1147,37 @@ export const clientIntakes = mysqlTable("client_intakes", {
 
 export type ClientIntake = typeof clientIntakes.$inferSelect;
 export type InsertClientIntake = typeof clientIntakes.$inferInsert;
+
+const intakeProgram = ["fpu", "reclaim", "challenge", "holiday", "metabolic"] as const;
+
+/** Optional questions Lee Anne adds to a short program intake. Metabolic uses the full form. */
+export const programIntakeQuestions = mysqlTable("program_intake_questions", {
+  id: int("id").autoincrement().primaryKey(),
+  program: mysqlEnum("program", intakeProgram).notNull(),
+  prompt: varchar("prompt", { length: 500 }).notNull(),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ProgramIntakeQuestion = typeof programIntakeQuestions.$inferSelect;
+
+/** One row per person per program. A resubmit updates this row. */
+export const programIntakeSubmissions = mysqlTable(
+  "program_intake_submissions",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    program: mysqlEnum("program", intakeProgram).notNull(),
+    name: varchar("name", { length: 200 }).notNull(),
+    email: varchar("email", { length: 320 }).notNull(),
+    phone: varchar("phone", { length: 40 }).notNull(),
+    answersJson: text("answersJson"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => [uniqueIndex("program_intake_submissions_email_program").on(table.email, table.program)]
+);
+
+export type ProgramIntakeSubmission = typeof programIntakeSubmissions.$inferSelect;
 
 // --- DUMMY EXPORTS TO BYPASS STATIC WEBPACK ERRORS FOR LEGACY CRM CODE ---
 export const vacationQuotes = mysqlTable("dummy_vq", { id: int("id") });

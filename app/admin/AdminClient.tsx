@@ -19,11 +19,13 @@ import { AdminFpuGroupTab } from "@/components/admin/tabs/AdminFpuGroupTab";
 import { AdminBlogTab } from "@/components/admin/tabs/AdminBlogTab";
 import { AdminCommonFilesTab } from "@/components/admin/tabs/AdminCommonFilesTab";
 import { AdminClientIntakeTab } from "@/components/admin/tabs/AdminClientIntakeTab";
+import { AdminProgramsTab } from "@/components/admin/tabs/AdminProgramsTab";
 import { AdminManualEnrollModal, type EnrollModalSeed } from "@/components/admin/tabs/AdminManualEnrollModal";
 import { AdminApplicantsTab } from "@/components/admin/tabs/AdminApplicantsTab";
 import { AdminNewsletterTab } from "@/components/admin/AdminNewsletterTab";
 import { AdminSprintTab } from "@/components/admin/AdminSprintTab";
 import { ADMIN_TAB_IDS, TABS, type AdminTab } from "@/components/admin/tabs/adminTypes";
+import type { ProgramId } from "@shared/programs";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -49,8 +51,10 @@ export default function Admin() {
 
   const [showEnrollModal, setShowEnrollModal] = useState(false);
   const [enrollSeed, setEnrollSeed] = useState<EnrollModalSeed | null>(null);
-  const openEnroll = (seed: EnrollModalSeed | null = null) => {
+  const [presetPrograms, setPresetPrograms] = useState<ProgramId[] | null>(null);
+  const openEnroll = (seed: EnrollModalSeed | null = null, programs: ProgramId[] | null = null) => {
     setEnrollSeed(seed);
+    setPresetPrograms(programs);
     setShowEnrollModal(true);
   };
   const isAdmin = isAuthenticated && user?.role === "admin";
@@ -233,6 +237,7 @@ export default function Admin() {
         )}
 
         {tab === "intakes" && <AdminClientIntakeTab />}
+        {tab === "programs" && <AdminProgramsTab onEnroll={(program) => openEnroll(null, [program])} />}
         {tab === "snackhack" && <AdminSnackHackTab />}
         {tab === "challenge" && <AdminRealFoodResetTab />}
         {tab === "fpu" && <AdminFpuCoachingTab />}
@@ -254,9 +259,13 @@ export default function Admin() {
       <AdminManualEnrollModal
         open={showEnrollModal}
         seed={enrollSeed}
+        presetPrograms={presetPrograms}
         onOpenChange={(next) => {
           setShowEnrollModal(next);
-          if (!next) setEnrollSeed(null);
+          if (!next) {
+            setEnrollSeed(null);
+            setPresetPrograms(null);
+          }
         }}
       />
     </div>

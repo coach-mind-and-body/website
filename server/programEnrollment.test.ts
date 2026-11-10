@@ -38,6 +38,7 @@ function memoryStore() {
         name: row.name,
         email: row.email,
         phone: row.phone,
+        pendingWelcome: row.pendingWelcome ?? false,
       };
       users.push(user);
       return user;
@@ -47,6 +48,7 @@ function memoryStore() {
       if (!user) return;
       if (patch.name !== undefined) user.name = patch.name;
       if (patch.phone !== undefined) user.phone = patch.phone;
+      if (patch.pendingWelcome !== undefined) user.pendingWelcome = patch.pendingWelcome;
     },
     async findEnrollment(userIdValue, program) {
       return enrollments.find((row) => row.userId === userIdValue && row.program === program) ?? null;

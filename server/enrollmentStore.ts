@@ -23,8 +23,15 @@ function asUser(row: {
   name: string | null;
   email: string | null;
   phone: string | null;
+  pendingWelcome?: boolean | null;
 }): StoredUser {
-  return { id: row.id, name: row.name, email: row.email, phone: row.phone };
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    phone: row.phone,
+    pendingWelcome: !!row.pendingWelcome,
+  };
 }
 
 export function drizzleEnrollmentStore(db: Db): EnrollmentStore {
@@ -37,6 +44,7 @@ export function drizzleEnrollmentStore(db: Db): EnrollmentStore {
           name: users.name,
           email: users.email,
           phone: users.phone,
+          pendingWelcome: users.pendingWelcome,
         })
         .from(users)
         .where(sql`lower(${users.email}) = ${normalized}`)
@@ -57,6 +65,7 @@ export function drizzleEnrollmentStore(db: Db): EnrollmentStore {
           role: "user",
           passwordResetToken: row.passwordResetToken,
           passwordResetExpiry: row.passwordResetExpiry,
+          pendingWelcome: row.pendingWelcome ?? false,
           lastSignedIn: new Date(),
         })
         .$returningId();
@@ -67,6 +76,7 @@ export function drizzleEnrollmentStore(db: Db): EnrollmentStore {
         name: row.name,
         email: row.email,
         phone: row.phone,
+        pendingWelcome: row.pendingWelcome ?? false,
       };
     },
 

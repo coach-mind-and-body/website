@@ -125,6 +125,43 @@ ALTER TABLE \`users\`
   ADD COLUMN \`appleId\` varchar(128) NULL
 `;
 
+const ADD_USER_PENDING_WELCOME = `
+ALTER TABLE \`users\`
+  ADD COLUMN \`pendingWelcome\` boolean NOT NULL DEFAULT false
+`;
+
+const ADD_LEAD_NEEDS_PROGRAM = `
+ALTER TABLE \`leads\`
+  ADD COLUMN \`needsProgram\` boolean NOT NULL DEFAULT false
+`;
+
+const CREATE_PROGRAM_INTAKE_QUESTIONS = `
+CREATE TABLE IF NOT EXISTS \`program_intake_questions\` (
+  \`id\` int AUTO_INCREMENT NOT NULL,
+  \`program\` enum('fpu','reclaim','challenge','holiday','metabolic') NOT NULL,
+  \`prompt\` varchar(500) NOT NULL,
+  \`sortOrder\` int NOT NULL DEFAULT 0,
+  \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT \`program_intake_questions_id\` PRIMARY KEY(\`id\`),
+  KEY \`program_intake_questions_program\` (\`program\`, \`sortOrder\`)
+)
+`;
+
+const CREATE_PROGRAM_INTAKE_SUBMISSIONS = `
+CREATE TABLE IF NOT EXISTS \`program_intake_submissions\` (
+  \`id\` int AUTO_INCREMENT NOT NULL,
+  \`program\` enum('fpu','reclaim','challenge','holiday','metabolic') NOT NULL,
+  \`name\` varchar(200) NOT NULL,
+  \`email\` varchar(320) NOT NULL,
+  \`phone\` varchar(40) NOT NULL,
+  \`answersJson\` text,
+  \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT \`program_intake_submissions_id\` PRIMARY KEY(\`id\`),
+  UNIQUE KEY \`program_intake_submissions_email_program\` (\`email\`, \`program\`)
+)
+`;
+
 function errorText(err: unknown): string {
   const row = err as { code?: string; message?: string; cause?: { code?: string; message?: string } };
   return `${row?.code ?? ""} ${row?.message ?? ""} ${row?.cause?.code ?? ""} ${row?.cause?.message ?? ""} ${String(err)}`;
@@ -195,4 +232,8 @@ export async function applyProgramEnrollmentSchema(db: Db): Promise<void> {
   await runIgnoring(db, ADD_HOLIDAY_STATUS, false);
   await runIgnoring(db, ADD_HOLIDAY_ENROLLMENT_ID, false);
   await runIgnoring(db, ADD_HOLIDAY_ACCEPTED_AT, false);
+  await runIgnoring(db, ADD_USER_PENDING_WELCOME, false);
+  await runIgnoring(db, ADD_LEAD_NEEDS_PROGRAM, false);
+  await run(db, CREATE_PROGRAM_INTAKE_QUESTIONS);
+  await run(db, CREATE_PROGRAM_INTAKE_SUBMISSIONS);
 }

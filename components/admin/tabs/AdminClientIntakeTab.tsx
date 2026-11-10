@@ -40,8 +40,8 @@ export function AdminClientIntakeTab() {
             Client intakes
           </h2>
           <p className="max-w-xl text-sm" style={{ color: "oklch(0.52 0.015 50)" }}>
-            Send the link before a session, or fill the same questions out here while you are with a client.
-            A finished form from the link also lands in your email.
+            This is the Metabolic Coaching intake. Send the link before a session, or fill the same questions out
+            here while you are with a client. A first submit from the link also lands in your email and enrolls them.
           </p>
         </div>
         <div className="rounded-xl px-5 py-4 text-center" style={{ background: "oklch(1 0 0)", minWidth: "140px" }}>

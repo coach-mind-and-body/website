@@ -21,6 +21,8 @@ type AdminManualEnrollModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   seed?: EnrollModalSeed | null;
+  /** Programs to check when opening a blank enroll window. */
+  presetPrograms?: ProgramId[] | null;
 };
 
 const fieldStyle = {
@@ -29,7 +31,12 @@ const fieldStyle = {
   color: "oklch(0.20 0.015 50)",
 };
 
-export function AdminManualEnrollModal({ open, onOpenChange, seed = null }: AdminManualEnrollModalProps) {
+export function AdminManualEnrollModal({
+  open,
+  onOpenChange,
+  seed = null,
+  presetPrograms = null,
+}: AdminManualEnrollModalProps) {
   const utils = trpc.useUtils();
   const [mode, setMode] = useState<"existing" | "new">("existing");
   const [search, setSearch] = useState("");
@@ -71,6 +78,7 @@ export function AdminManualEnrollModal({ open, onOpenChange, seed = null }: Admi
     if (!seed) {
       setLocked(null);
       setApplicationId(undefined);
+      if (presetPrograms?.length) setPrograms([...presetPrograms]);
       return;
     }
     setLocked(seed);
@@ -79,14 +87,16 @@ export function AdminManualEnrollModal({ open, onOpenChange, seed = null }: Admi
     setNewEmail(seed.email);
     setPrograms(seed.programs ? [...seed.programs] : []);
     setApplicationId(seed.applicationId);
-  }, [open, seed]);
+  }, [open, seed, presetPrograms]);
 
   const adminCreateEnrollment = trpc.enrollment.adminCreate.useMutation({
     onSuccess: (data) => {
       toast.success(data.message);
       utils.leads.unifiedContacts.invalidate();
+      utils.leads.list.invalidate();
       utils.enrollment.adminListAllUsers.invalidate();
       utils.enrollment.adminListHolidayApplications.invalidate();
+      utils.enrollment.adminProgramRoster.invalidate();
       onOpenChange(false);
       reset();
     },
