@@ -243,6 +243,11 @@ struct FormFillView: View {
     private func control(_ field: FormFieldModel, locked: Bool) -> some View {
         let answer = answers[field.id] ?? FormAnswerModel()
         switch field.type {
+        case "short_text":
+            TextField(field.label.isEmpty ? "Type here" : field.label, text: textBinding(field.id))
+                .textFieldStyle(.roundedBorder)
+                .frame(minHeight: 48)
+                .disabled(locked)
         case "long_text":
             TextField("Type here", text: textBinding(field.id), axis: .vertical)
                 .lineLimit(4...10)

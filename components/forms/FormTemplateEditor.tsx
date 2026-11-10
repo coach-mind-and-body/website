@@ -92,7 +92,10 @@ export function FormTemplateEditor({
         </label>
 
         <div>
-          <p className="mb-2 text-sm font-semibold" style={{ color: "#2d3b2d" }}>Who can see it</p>
+          <p className="mb-1 text-sm font-semibold" style={{ color: "#2d3b2d" }}>Programs</p>
+          <p className="mb-2 text-sm" style={{ color: "#5a6b5a" }}>
+            Check every program that should see this. A client in any one of them can open it.
+          </p>
           <div className="flex flex-wrap gap-2">
             {PROGRAM_LIST.map((program) => {
               const on = value.programTags.includes(program.id);
@@ -261,23 +264,23 @@ export function FormTemplateEditor({
               ) : null}
             </div>
           ))}
-          <button
-            type="button"
-            className="min-h-12 rounded-full px-4 text-sm font-bold"
-            style={{ background: "#fbeee9", color: "#2d3b2d" }}
-            onClick={() => {
-              const field = { ...blankField("short_text"), id: newFieldId() };
+          {publishStatus === "published" ? (
+            <p className="text-sm" style={{ color: "#5a6b5a" }}>
+              This form is live. A new question starts empty on answers already saved. Removing a question hides it. Those answers stay stored.
+            </p>
+          ) : null}
+          <AddFieldControl
+            onAdd={(type) => {
+              const field = { ...blankField(type), id: newFieldId(), label: "" };
               onChange({ ...value, fields: [...value.fields, field] });
               setOpenId(field.id);
             }}
-          >
-            Add field
-          </button>
+          />
         </div>
 
         <div className="flex flex-wrap gap-2">
           <button type="button" disabled={saving} className="min-h-12 rounded-full px-5 text-sm font-bold" style={{ background: "#fbeee9", color: "#2d3b2d" }} onClick={onSave}>
-            {saving ? "Saving…" : "Save draft"}
+            {saving ? "Saving…" : publishStatus === "published" ? "Save changes" : "Save draft"}
           </button>
           <button type="button" disabled={saving} className="min-h-12 rounded-full px-5 text-sm font-bold text-white" style={{ background: "#2d3b2d" }} onClick={onPublish}>
             Publish
@@ -296,6 +299,37 @@ export function FormTemplateEditor({
           <FillableForm fields={preview} answers={{}} onChange={() => undefined} disabled />
         </div>
       </div>
+    </div>
+  );
+}
+
+function AddFieldControl({ onAdd }: { onAdd: (type: FieldType) => void }) {
+  const [type, setType] = useState<FieldType>("short_text");
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-white p-3" style={{ border: "1px solid #f0e8e4" }}>
+      <label className="text-sm font-semibold" htmlFor="add-field-type" style={{ color: "#2d3b2d" }}>
+        Add field
+      </label>
+      <select
+        id="add-field-type"
+        aria-label="Field type"
+        className="min-h-12 min-w-[12rem] flex-1 rounded-xl border px-3 text-base"
+        style={{ borderColor: "#f0e8e4", color: "#2d3b2d" }}
+        value={type}
+        onChange={(event) => setType(event.target.value as FieldType)}
+      >
+        {TYPES.map((item) => (
+          <option key={item.id} value={item.id}>{item.label}</option>
+        ))}
+      </select>
+      <button
+        type="button"
+        className="min-h-12 rounded-full px-5 text-sm font-bold text-white"
+        style={{ background: "#2d3b2d" }}
+        onClick={() => onAdd(type)}
+      >
+        Add field
+      </button>
     </div>
   );
 }

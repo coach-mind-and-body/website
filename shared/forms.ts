@@ -361,6 +361,20 @@ function clampTable(value: unknown): string[][] {
   return rows;
 }
 
+/**
+ * Keep answers for questions that were removed from a published form.
+ * The client only sees fields that are still on the form. A new field has no stored answer.
+ */
+export function mergeStoredAnswers(fields: FormField[], previous: FormAnswers, incoming: FormAnswers, userId: number): FormAnswers {
+  const visible = sanitizeAnswers(fields, incoming, userId);
+  const live = new Set(fields.map((field) => field.id));
+  const stored: FormAnswers = { ...visible };
+  for (const [id, answer] of Object.entries(previous)) {
+    if (!live.has(id)) stored[id] = answer;
+  }
+  return stored;
+}
+
 export function sanitizeAnswers(fields: FormField[], raw: FormAnswers, userId: number): FormAnswers {
   const out: FormAnswers = {};
   for (const field of fields) {

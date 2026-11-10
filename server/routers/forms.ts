@@ -22,6 +22,7 @@ import {
   fieldsForClient,
   formIsListedForClients,
   formatAnswer,
+  mergeStoredAnswers,
   missingRequired,
   parseAnswers,
   parseFields,
@@ -725,7 +726,8 @@ async function saveAnswers(
   if (template.kind === "handout") {
     throw new TRPCError({ code: "BAD_REQUEST", message: "This handout is for reading." });
   }
-  const answers = sanitizeAnswers(fields, rawAnswers, user.id);
+  const previous = existing ? parseAnswers(existing.answersJson) : {};
+  const answers = mergeStoredAnswers(fields, previous, rawAnswers, user.id);
   if (mode === "submitted") {
     const missing = missingRequired(fields, answers);
     if (missing.length) {

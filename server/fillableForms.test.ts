@@ -4,6 +4,7 @@ import {
   canWriteSubmission,
   clientCanSeeForm,
   clientFormStatus,
+  mergeStoredAnswers,
   missingRequired,
   normalizeDraft,
   sanitizeAnswers,
@@ -62,6 +63,14 @@ const nameField: FormField = {
 describe("form visibility and submissions", () => {
   it("shows a program form to an enrolled client", () => {
     expect(clientCanSeeForm(visibility())).toBe(true);
+  });
+
+  it("shows one form to a client in any of its programs", () => {
+    const both = visibility({ programTags: ["metabolic", "reclaim"] });
+    expect(clientCanSeeForm({ ...both, enrolledPrograms: ["reclaim"] })).toBe(true);
+    expect(clientCanSeeForm({ ...both, enrolledPrograms: ["metabolic"] })).toBe(true);
+    expect(clientCanSeeForm({ ...both, enrolledPrograms: ["holiday", "reclaim"] })).toBe(true);
+    expect(clientCanSeeForm({ ...both, enrolledPrograms: ["fpu"] })).toBe(false);
   });
 
   it("hides a program form from a client who is not enrolled", () => {
@@ -230,5 +239,74 @@ describe("template drafting normalizer", () => {
     expect(draft.kind).toBe("handout");
     expect(draft.content).toContain("Eat protein first.");
     expect(draft.fields.every((field) => field.type === "info")).toBe(true);
+  });
+});
+
+function question(partial: Partial<FormField> & Pick<FormField, "id" | "type" | "label">): FormField {
+  return {
+    help: "",
+    required: false,
+    options: [],
+    rows: [],
+    columns: [],
+    content: "",
+    allowExtraRows: false,
+    ...partial,
+  };
+}
+
+describe("editing a published form that already has answers", () => {
+  const name = question({ id: "name", type: "short_text", label: "Name", required: true });
+  const energy = question({ id: "energy", type: "scale", label: "Energy" });
+  const when = question({ id: "when", type: "date", label: "Date" });
+  const stored = {
+    name: { text: "Ada" },
+    energy: { scale: 4 },
+  };
+
+  it("reorders fields without moving the saved answers", () => {
+    const reordered = [energy, name];
+    const next = mergeStoredAnswers(reordered, stored, stored, 7);
+    expect(reordered.map((field) => field.id)).toEqual(["energy", "name"]);
+    expect(next.name?.text).toBe("Ada");
+    expect(next.energy?.scale).toBe(4);
+    expect(sanitizeAnswers(reordered, next, 7)).toEqual(next);
+  });
+
+  it("adds a field that is empty on the old submission", () => {
+    const withDate = [name, energy, when];
+    const next = mergeStoredAnswers(withDate, stored, stored, 7);
+    expect(next.when).toBeUndefined();
+    expect(next.name?.text).toBe("Ada");
+    expect(next.energy?.scale).toBe(4);
+    expect(sanitizeAnswers(withDate, next, 7).when).toBeUndefined();
+  });
+
+  it("hides a removed field and keeps its answer stored", () => {
+    const withoutEnergy = [name];
+    const incoming = { name: { text: "Ada" } };
+    const next = mergeStoredAnswers(withoutEnergy, stored, incoming, 7);
+    expect(next.energy?.scale).toBe(4);
+    expect(next.name?.text).toBe("Ada");
+    const shown = sanitizeAnswers(withoutEnergy, next, 7);
+    expect(shown.energy).toBeUndefined();
+    expect(shown.name?.text).toBe("Ada");
+  });
+
+  it("keeps the form published and still lets an enrolled client open it", () => {
+    const edited = [when, name];
+    const next = mergeStoredAnswers(edited, stored, { name: { text: "Ada Lee" } }, 7);
+    expect(next.name?.text).toBe("Ada Lee");
+    expect(next.energy?.scale).toBe(4);
+    expect(
+      clientCanSeeForm(
+        visibility({
+          publishStatus: "published",
+          programTags: ["metabolic", "holiday"],
+          enrolledPrograms: ["holiday"],
+        })
+      )
+    ).toBe(true);
+    expect(edited.map((field) => field.label)).toEqual(["Date", "Name"]);
   });
 });
