@@ -56,7 +56,7 @@ export default function RealFoodResetThankYouClient() {
             color: "#2d3b2d",
           }}
         >
-          See you {REAL_FOOD_RESET.startLabel}.
+          You're registered.
         </h1>
         <p className="text-base leading-relaxed mb-6" style={{ color: "#555" }}>
           Check your inbox for confirmation. <strong>The app is home base</strong> — open it now so daily check-ins, food logging, chat, and live reminders are ready.
