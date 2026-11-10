@@ -3,90 +3,31 @@
 import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
-  BookOpen,
-  ChefHat,
-  ClipboardList,
-  Cookie,
   CreditCard,
-  Salad,
-  FileText,
   FolderOpen,
-  Layers,
   LayoutList,
   Link2,
-  Mail,
   Megaphone,
   Target,
-  UserCheck,
-  UserPlus,
   Users,
-  Video,
 } from "lucide-react";
+import { ADMIN_SECTION_IDS, ADMIN_SECTION_LABELS, type AdminSectionId } from "@/lib/adminNav";
 
-export type AdminTab =
-  | "overview"
-  | "sprint"
-  | "contacts"
-  | "applicants"
-  | "intakes"
-  | "programs"
-  | "crm-automations"
-  | "newsletters"
-  | "snackhack"
-  | "challenge"
-  | "fpu"
-  | "fpugroup"
-  | "programbuilder"
-  | "engagement"
-  | "food"
-  | "blog"
-  | "deposits"
-  | "filelibrary"
-  | "settings"
-  | "pageeditor";
+export type { AdminSectionId };
 
-export const ADMIN_TAB_IDS: AdminTab[] = [
-  "overview",
-  "sprint",
-  "contacts",
-  "applicants",
-  "intakes",
-  "programs",
-  "crm-automations",
-  "newsletters",
-  "snackhack",
-  "challenge",
-  "fpu",
-  "fpugroup",
-  "programbuilder",
-  "engagement",
-  "food",
-  "blog",
-  "deposits",
-  "filelibrary",
-  "settings",
-  "pageeditor",
-];
+const ICONS: Record<AdminSectionId, LucideIcon> = {
+  overview: BarChart3,
+  programs: LayoutList,
+  people: Users,
+  library: FolderOpen,
+  marketing: Megaphone,
+  engagement: Target,
+  deposits: CreditCard,
+  settings: Link2,
+};
 
-export const TABS: { id: AdminTab; label: string; icon: LucideIcon }[] = [
-  { id: "overview", label: "Overview", icon: BarChart3 },
-  { id: "sprint", label: "This month", icon: ClipboardList },
-  { id: "contacts", label: "Contacts", icon: Users },
-  { id: "applicants", label: "Applicants", icon: UserCheck },
-  { id: "intakes", label: "Client intakes", icon: FileText },
-  { id: "programs", label: "Programs", icon: LayoutList },
-  { id: "crm-automations", label: "CRM & AI", icon: Megaphone },
-  { id: "newsletters", label: "Newsletters", icon: Mail },
-  { id: "snackhack", label: "Snack Hack Leads", icon: Cookie },
-  { id: "challenge", label: "Challenge Leads", icon: Salad },
-  { id: "fpu", label: "FPU Coaching", icon: Video },
-  { id: "fpugroup", label: "FPU Sign-Ups", icon: UserPlus },
-  { id: "programbuilder", label: "Program Builder", icon: Layers },
-  { id: "engagement", label: "Habit Tracker", icon: Target },
-  { id: "food", label: "Food Vault", icon: ChefHat },
-  { id: "pageeditor", label: "Edit Financial Peace", icon: BookOpen },
-  { id: "blog", label: "Blog", icon: BookOpen },
-  { id: "deposits", label: "Payments", icon: CreditCard },
-  { id: "filelibrary", label: "File library", icon: FolderOpen },
-  { id: "settings", label: "Settings", icon: Link2 },
-];
+export const TABS: { id: AdminSectionId; label: string; icon: LucideIcon }[] = ADMIN_SECTION_IDS.map((id) => ({
+  id,
+  label: ADMIN_SECTION_LABELS[id],
+  icon: ICONS[id],
+}));

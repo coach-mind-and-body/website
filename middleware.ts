@@ -84,7 +84,15 @@ export function middleware(request: NextRequest) {
     const fbc = `fb.1.${now}.${fbclid}`;
     cookiesToSet.push({ name: "_fbc", value: fbc, maxAge, domain });
   }
-  const response = NextResponse.next();
+  const requestHeaders = new Headers(request.headers);
+  const adminPreview =
+    process.env.NODE_ENV !== "production" &&
+    path.startsWith("/admin") &&
+    request.nextUrl.searchParams.get("preview") === "1";
+  if (adminPreview) requestHeaders.set("x-admin-preview", "1");
+  else requestHeaders.delete("x-admin-preview");
+
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
 
   for (const cookie of cookiesToSet) {
     response.cookies.set(cookie.name, cookie.value, {

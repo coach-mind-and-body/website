@@ -401,7 +401,7 @@ export default function AdminClientSessions({ enrollmentId, gcalConnected }: Pro
               </div>
             ) : (
               <p className="text-xs" style={{ color: "oklch(0.52 0.015 50)" }}>
-                Library is empty. Go to Admin → <strong>File library</strong> tab and upload common
+                Library is empty. Go to Admin → <strong>Library</strong> and upload common
                 worksheets first.
               </p>
             )}
