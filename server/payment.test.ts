@@ -34,10 +34,9 @@ vi.mock("./db", () => ({
 function createPublicContext(): TrpcContext {
   return {
     user: null,
-    req: {
-      protocol: "https",
+    req: new Request("https://example.com/enroll", {
       headers: { origin: "https://example.com" },
-    } as TrpcContext["req"],
+    }),
     res: {} as TrpcContext["res"],
   };
 }
