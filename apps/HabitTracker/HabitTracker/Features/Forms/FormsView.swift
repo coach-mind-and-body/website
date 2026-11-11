@@ -211,6 +211,7 @@ struct FormFillView: View {
             }
             .padding(16)
         }
+        .dockScrollClearance()
         .background(HTTheme.cream)
         .navigationTitle(detail?.form.title ?? "Worksheet")
         .navigationBarTitleDisplayMode(.inline)
@@ -515,6 +516,7 @@ struct FormFillView: View {
 struct LibraryPagesView: View {
     var title: String
     var pages: [FormPageModel]
+    @State private var preview: ProgramFilePreview?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -528,8 +530,12 @@ struct LibraryPagesView: View {
                             } placeholder: {
                                 ProgressView()
                             }
-                        } else {
-                            Link(page.fileName, destination: URL(string: page.fileUrl) ?? AppConfig.apiRoot)
+                        } else if let url = URL(string: page.fileUrl) {
+                            Button(page.fileName) {
+                                preview = ProgramFilePreview(id: "page-\(page.id)", url: url, name: page.fileName)
+                            }
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(HTTheme.forest)
                         }
                     }
                     .padding(8)
@@ -542,6 +548,9 @@ struct LibraryPagesView: View {
             Text("Swipe for the next page")
                 .font(.caption)
                 .foregroundStyle(HTTheme.muted)
+        }
+        .sheet(item: $preview) { item in
+            InAppFilePreview(remote: item.url, name: item.name)
         }
     }
 }

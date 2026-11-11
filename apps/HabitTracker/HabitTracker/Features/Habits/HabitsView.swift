@@ -261,7 +261,6 @@ struct HabitsView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
         }
-        .dockScrollClearance()
     }
 
     private var forYouSheet: some View {

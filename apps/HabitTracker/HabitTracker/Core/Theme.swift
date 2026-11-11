@@ -60,13 +60,13 @@ enum HTTheme {
 
     static let serif = Font.system(.largeTitle, design: .serif).weight(.bold)
     static let title = Font.system(.title, design: .serif).weight(.bold)
-    /// Extra scroll room so the last row can sit above the floating glass pill.
-    static let dockClearance: CGFloat = 72
+    /// Extra scroll room so the last row can sit above the floating glass pill and chat button.
+    static let dockClearance: CGFloat = 112
 }
 
 extension View {
     func dockScrollClearance() -> some View {
-        contentMargins(.bottom, HTTheme.dockClearance, for: .scrollContent)
+        safeAreaPadding(.bottom, HTTheme.dockClearance)
     }
 }
 

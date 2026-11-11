@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { PROGRAM_LIST, type ProgramId } from "@shared/programs";
+import { ProgramFilesForms } from "@/components/admin/ProgramFilesForms";
 
 export default function ProgramBuilderTab({ program: lockedProgram }: { program?: ProgramId } = {}) {
   const [picked, setPicked] = useState<ProgramId>(lockedProgram ?? "reclaim");
@@ -145,6 +146,7 @@ export default function ProgramBuilderTab({ program: lockedProgram }: { program?
                 ))}
                 {modules?.length === 0 && <p className="text-sm" style={{ color: "oklch(0.52 0.015 50)" }}>No modules created yet.</p>}
               </div>
+              <ProgramFilesForms program={program} />
             </>
           ) : (
             <div className="p-6 rounded-xl space-y-4" style={{ background: "oklch(1 0 0)" }}>

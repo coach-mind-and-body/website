@@ -426,6 +426,7 @@ export const formsRouter = router({
       return {
         ...itemPayload(item),
         linkedFormId: linked?.id ?? null,
+        linkedFormTitle: linked?.title?.trim() || linked?.question || null,
         linkedPublishStatus: linked?.publishStatus ?? null,
         convertible: (item.kind === "group" ? item.pages : [item.file]).some((page) =>
           Boolean(convertibleMime(page.mimeType, page.fileName))

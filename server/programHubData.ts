@@ -1,4 +1,5 @@
 import { asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { selectHubForms, type HubFormCard, type HubFormInput } from "@shared/forms";
 import { PROGRAMS, PROGRAM_IDS, isProgramId, type ProgramId } from "@shared/programs";
 import {
   assignmentSubmissions,
@@ -78,6 +79,7 @@ export async function loadClientHub(db: Db, user: HubUser, options?: { programs?
       id: commonFiles.id,
       fileName: commonFiles.fileName,
       fileUrl: commonFiles.fileUrl,
+      fileKey: commonFiles.fileKey,
       mimeType: commonFiles.mimeType,
       createdAt: commonFiles.createdAt,
       program: commonFilePrograms.program,
@@ -86,12 +88,27 @@ export async function loadClientHub(db: Db, user: HubUser, options?: { programs?
     .innerJoin(commonFilePrograms, eq(commonFilePrograms.commonFileId, commonFiles.id))
     .where(isNull(commonFiles.groupId));
 
+  const tagRows = await db
+    .select({
+      fileId: commonFilePrograms.commonFileId,
+      program: commonFilePrograms.program,
+    })
+    .from(commonFilePrograms);
+  const filePrograms = new Map<number, ProgramId[]>();
+  for (const row of tagRows) {
+    if (!isProgramId(row.program)) continue;
+    const list = filePrograms.get(row.fileId) ?? [];
+    if (!list.includes(row.program)) list.push(row.program);
+    filePrograms.set(row.fileId, list);
+  }
+
   const libraryById = new Map<
     number,
     {
       id: number;
       fileName: string;
       fileUrl: string;
+      fileKey: string;
       mimeType: string | null;
       createdAt: Date;
       programs: ProgramId[];
@@ -106,6 +123,7 @@ export async function loadClientHub(db: Db, user: HubUser, options?: { programs?
         id: row.id,
         fileName: row.fileName,
         fileUrl: row.fileUrl,
+        fileKey: row.fileKey,
         mimeType: row.mimeType,
         createdAt: row.createdAt,
         programs: [row.program],
@@ -113,6 +131,33 @@ export async function loadClientHub(db: Db, user: HubUser, options?: { programs?
     }
   }
   const libraryFiles = [...libraryById.values()];
+  const libraryIdByKey = new Map(libraryFiles.map((file) => [file.fileKey, file.id]));
+  const libraryIdByUrl = new Map(libraryFiles.map((file) => [file.fileUrl, file.id]));
+  const moduleProgramById = new Map<number, ProgramId>();
+  for (const mod of modules) {
+    if (isProgramId(mod.program)) moduleProgramById.set(mod.id, mod.program);
+  }
+  const statusByFormId = new Map<number, { status: string; at: number }>();
+  for (const row of submissionRows) {
+    const at = row.updatedAt ? new Date(row.updatedAt).getTime() : 0;
+    const prev = statusByFormId.get(row.assignmentId);
+    if (!prev || at >= prev.at) statusByFormId.set(row.assignmentId, { status: row.status, at });
+  }
+  const hubFormRows: HubFormInput[] = assignmentRows.map((row) => ({
+    id: row.id,
+    moduleId: row.moduleId,
+    moduleProgram: row.moduleId == null ? null : moduleProgramById.get(row.moduleId) ?? null,
+    question: row.question,
+    title: row.title,
+    instructions: row.instructions,
+    fieldsJson: row.fieldsJson,
+    programTags: row.programTags,
+    publishStatus: row.publishStatus,
+    kind: row.kind,
+    content: row.content,
+    sourceFileIds: row.sourceFileIds,
+    order: row.order,
+  }));
 
   const accessModules = modules
     .filter((mod) => isProgramId(mod.program))
@@ -179,6 +224,7 @@ export async function loadClientHub(db: Db, user: HubUser, options?: { programs?
         createdAt: file.createdAt,
         source: "upload",
         uploadedByRole: file.uploadedByRole,
+        libraryFileId: libraryIdByKey.get(file.fileKey) ?? libraryIdByUrl.get(file.fileUrl) ?? null,
       });
     }
     for (const file of libraryFiles) {
@@ -192,8 +238,17 @@ export async function loadClientHub(db: Db, user: HubUser, options?: { programs?
         createdAt: file.createdAt,
         source: "library",
         uploadedByRole: "library",
+        libraryFileId: file.id,
       });
     }
+
+    const forms = selectHubForms({
+      program,
+      visibleModuleIds: moduleIds,
+      rows: hubFormRows,
+      filePrograms,
+      statusByFormId: new Map([...statusByFormId].map(([id, value]) => [id, value.status])),
+    });
 
     bundles.push({
       program,
@@ -203,6 +258,7 @@ export async function loadClientHub(db: Db, user: HubUser, options?: { programs?
       assignments: assignmentRows.filter((row) => assignmentIds.has(row.id)),
       submissions: submissionRows.filter((row) => submissionIds.has(row.id)),
       files,
+      forms,
     });
   }
 
@@ -217,6 +273,8 @@ export type HubFile = {
   createdAt: Date;
   source: "upload" | "library";
   uploadedByRole: "client" | "admin" | "library";
+  /** Common-file id when this row is, or was copied from, a library file. Older apps ignore it. */
+  libraryFileId: number | null;
 };
 
 export type ClientProgramBundle = {
@@ -233,6 +291,8 @@ export type ClientProgramBundle = {
   assignments: (typeof assignments.$inferSelect)[];
   submissions: (typeof assignmentSubmissions.$inferSelect)[];
   files: HubFile[];
+  /** Digitized forms for this program. Missing on older responses; files stay in `files` either way. */
+  forms: HubFormCard[];
 };
 
 export async function loadCoachClientWorkspace(db: Db, lookup: { userId?: number; email?: string }) {
