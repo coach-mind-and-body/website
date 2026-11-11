@@ -1,22 +1,8 @@
 import { and, eq, isNull, lte } from "drizzle-orm";
 import { SITE_URL } from "@shared/brand";
-import {
-  coachReplyEmailNotices,
-  conversations,
-  messages,
-  users,
-} from "../drizzle/schema";
-import {
-  apnsConfigFromEnv,
-  sendApnsAlerts,
-  type ApnsConfig,
-  type ApnsSendResult,
-} from "./apns";
-import {
-  deleteDeviceTokens,
-  tokensForAdmins,
-  tokensForUser,
-} from "./apnsDevices";
+import { coachReplyEmailNotices, conversations, messages, users } from "../drizzle/schema";
+import { apnsConfigFromEnv, sendApnsAlerts, type ApnsConfig, type ApnsSendResult } from "./apns";
+import { deleteDeviceTokens, tokensForAdmins, tokensForUser } from "./apnsDevices";
 import { ENV } from "./_core/env";
 import { getDb } from "./db";
 import { sendOwnerEmail, sendTransactionalEmail } from "./notifications";
@@ -62,12 +48,9 @@ export function decideUnreadCoachEmail(
 ): "wait" | "already-sent" | "skip-read" | "skip-no-email" | "send" {
   if (row.sentAt) return "already-sent";
   if (now.getTime() < new Date(row.dueAt).getTime()) return "wait";
-  const readAt = row.clientLastReadAt
-    ? new Date(row.clientLastReadAt).getTime()
-    : null;
+  const readAt = row.clientLastReadAt ? new Date(row.clientLastReadAt).getTime() : null;
   const createdAt = new Date(row.messageCreatedAt).getTime();
-  if (readAt != null && !Number.isNaN(readAt) && readAt >= createdAt)
-    return "skip-read";
+  if (readAt != null && !Number.isNaN(readAt) && readAt >= createdAt) return "skip-read";
   if (!row.email || !row.email.includes("@")) return "skip-no-email";
   return "send";
 }
@@ -81,9 +64,7 @@ function escapeHtml(value: string): string {
 }
 
 export function buildCoachReplyFallbackEmail(preview: string) {
-  const plain =
-    preview.replace(/\s+/g, " ").trim().slice(0, 500) ||
-    "You have a new message.";
+  const plain = preview.replace(/\s+/g, " ").trim().slice(0, 500) || "You have a new message.";
   const link = `${SITE_URL}/habit-tracker/coach`;
   return {
     subject: "Lee Anne sent you a message",
@@ -95,20 +76,11 @@ export function buildCoachReplyFallbackEmail(preview: string) {
 const ADMIN_MESSAGES_URL = `${SITE_URL}/admin?tab=overview#admin-messages`;
 
 /** One branded note for a thread. Several unread bubbles in that thread share this email. */
-export function buildCoachUnreadAlertEmail(input: {
-  clientName: string;
-  preview: string;
-  count: number;
-}) {
+export function buildCoachUnreadAlertEmail(input: { clientName: string; preview: string; count: number }) {
   const name = input.clientName.replace(/\s+/g, " ").trim() || "A client";
-  const plain =
-    input.preview.replace(/\s+/g, " ").trim().slice(0, 500) ||
-    "Sent a message.";
+  const plain = input.preview.replace(/\s+/g, " ").trim().slice(0, 500) || "Sent a message.";
   const count = Math.max(1, input.count);
-  const subject =
-    count > 1
-      ? `${count} unread messages from ${name}`
-      : `New message from ${name}`;
+  const subject = count > 1 ? `${count} unread messages from ${name}` : `New message from ${name}`;
   const lead =
     count > 1
       ? `${escapeHtml(name)} sent ${count} messages that are still unread.`
@@ -168,22 +140,18 @@ export function planUnreadThreadEmails(
     byThread.set(conversationId, list);
   }
 
-  const batches: ThreadEmailBatch[] = [...byThread.entries()].map(
-    ([conversationId, list]) => {
-      const newest = [...list].sort(
-        (a, b) =>
-          new Date(b.messageCreatedAt).getTime() -
-          new Date(a.messageCreatedAt).getTime()
-      )[0];
-      return {
-        conversationId,
-        noticeIds: list.map(row => row.id),
-        preview: newest.preview,
-        clientName: newest.name?.trim() || "A client",
-        count: list.length,
-      };
-    }
-  );
+  const batches: ThreadEmailBatch[] = [...byThread.entries()].map(([conversationId, list]) => {
+    const newest = [...list].sort(
+      (a, b) => new Date(b.messageCreatedAt).getTime() - new Date(a.messageCreatedAt).getTime()
+    )[0];
+    return {
+      conversationId,
+      noticeIds: list.map((row) => row.id),
+      preview: newest.preview,
+      clientName: newest.name?.trim() || "A client",
+      count: list.length,
+    };
+  });
 
   return { batches, skipIds, waitIds };
 }
@@ -215,11 +183,7 @@ export async function processUnreadThreadEmails(args: {
       if (id === lockId) continue;
       if (await args.claim(id)) claimed.push(id);
     }
-    const ok = await args.sendEmail({
-      ...batch,
-      noticeIds: claimed,
-      count: claimed.length,
-    });
+    const ok = await args.sendEmail({ ...batch, noticeIds: claimed, count: claimed.length });
     if (!ok) {
       for (const id of claimed) await args.release(id);
       continue;
@@ -272,15 +236,8 @@ async function claimNotice(id: number): Promise<boolean> {
   const result = await db
     .update(coachReplyEmailNotices)
     .set({ sentAt: new Date() })
-    .where(
-      and(
-        eq(coachReplyEmailNotices.id, id),
-        isNull(coachReplyEmailNotices.sentAt)
-      )
-    );
-  const header = (Array.isArray(result) ? result[0] : result) as
-    | { affectedRows?: number }
-    | undefined;
+    .where(and(eq(coachReplyEmailNotices.id, id), isNull(coachReplyEmailNotices.sentAt)));
+  const header = (Array.isArray(result) ? result[0] : result) as { affectedRows?: number } | undefined;
   return (header?.affectedRows ?? 0) > 0;
 }
 
@@ -302,9 +259,7 @@ export async function queueCoachReplyEmail(input: {
 }): Promise<void> {
   const db = await getDb();
   if (!db) {
-    console.warn(
-      "[Coach email] database unavailable — unread reply email was not queued"
-    );
+    console.warn("[Coach email] database unavailable — unread reply email was not queued");
     return;
   }
   const now = input.now ?? new Date();
@@ -330,9 +285,7 @@ export async function queueCoachUnreadEmail(input: {
 }): Promise<void> {
   const db = await getDb();
   if (!db) {
-    console.warn(
-      "[Coach email] database unavailable — unread client email was not queued"
-    );
+    console.warn("[Coach email] database unavailable — unread client email was not queued");
     return;
   }
   const now = input.now ?? new Date();
@@ -349,9 +302,7 @@ export async function queueCoachUnreadEmail(input: {
     .onDuplicateKeyUpdate({ set: { messageId: input.messageId } });
 }
 
-export async function deliverDueCoachReplyEmails(
-  now = new Date()
-): Promise<{ sent: number; skipped: number }> {
+export async function deliverDueCoachReplyEmails(now = new Date()): Promise<{ sent: number; skipped: number }> {
   const db = await getDb();
   if (!db) return { sent: 0, skipped: 0 };
   const due = await db
@@ -367,10 +318,7 @@ export async function deliverDueCoachReplyEmails(
     })
     .from(coachReplyEmailNotices)
     .innerJoin(messages, eq(messages.id, coachReplyEmailNotices.messageId))
-    .innerJoin(
-      conversations,
-      eq(conversations.id, coachReplyEmailNotices.conversationId)
-    )
+    .innerJoin(conversations, eq(conversations.id, coachReplyEmailNotices.conversationId))
     .innerJoin(users, eq(users.id, coachReplyEmailNotices.userId))
     .where(
       and(
@@ -383,7 +331,7 @@ export async function deliverDueCoachReplyEmails(
 
   const result = await processUnreadCoachReplyEmails({
     now,
-    rows: due.map(row => ({
+    rows: due.map((row) => ({
       id: row.id,
       email: row.email,
       name: row.name,
@@ -395,7 +343,7 @@ export async function deliverDueCoachReplyEmails(
     })),
     claim: claimNotice,
     release: releaseNotice,
-    sendEmail: async row => {
+    sendEmail: async (row) => {
       if (!row.email) return false;
       const content = buildCoachReplyFallbackEmail(row.preview);
       return sendTransactionalEmail({
@@ -413,9 +361,7 @@ export async function deliverDueCoachReplyEmails(
   return result;
 }
 
-export async function deliverDueCoachUnreadEmails(
-  now = new Date()
-): Promise<{ sent: number; skipped: number }> {
+export async function deliverDueCoachUnreadEmails(now = new Date()): Promise<{ sent: number; skipped: number }> {
   const db = await getDb();
   if (!db) return { sent: 0, skipped: 0 };
   const due = await db
@@ -432,10 +378,7 @@ export async function deliverDueCoachUnreadEmails(
     })
     .from(coachReplyEmailNotices)
     .innerJoin(messages, eq(messages.id, coachReplyEmailNotices.messageId))
-    .innerJoin(
-      conversations,
-      eq(conversations.id, coachReplyEmailNotices.conversationId)
-    )
+    .innerJoin(conversations, eq(conversations.id, coachReplyEmailNotices.conversationId))
     .leftJoin(users, eq(users.id, coachReplyEmailNotices.userId))
     .where(
       and(
@@ -448,7 +391,7 @@ export async function deliverDueCoachUnreadEmails(
 
   const result = await processUnreadThreadEmails({
     now,
-    rows: due.map(row => ({
+    rows: due.map((row) => ({
       id: row.id,
       conversationId: row.conversationId,
       email: ENV.ownerEmail,
@@ -461,7 +404,7 @@ export async function deliverDueCoachUnreadEmails(
     })),
     claim: claimNotice,
     release: releaseNotice,
-    sendEmail: async batch => {
+    sendEmail: async (batch) => {
       const content = buildCoachUnreadAlertEmail(batch);
       return sendOwnerEmail({
         subject: content.subject,
@@ -484,17 +427,11 @@ export function startCoachReplyEmailPoller() {
   if (globalForCoachEmail.__coachReplyEmailPoller) return;
   globalForCoachEmail.__coachReplyEmailPoller = true;
   const tick = () => {
-    deliverDueCoachReplyEmails().catch(err => {
-      console.error(
-        "[Coach email] poll failed:",
-        err instanceof Error ? err.message : "error"
-      );
+    deliverDueCoachReplyEmails().catch((err) => {
+      console.error("[Coach email] poll failed:", err instanceof Error ? err.message : "error");
     });
-    deliverDueCoachUnreadEmails().catch(err => {
-      console.error(
-        "[Coach email] client-unread poll failed:",
-        err instanceof Error ? err.message : "error"
-      );
+    deliverDueCoachUnreadEmails().catch((err) => {
+      console.error("[Coach email] client-unread poll failed:", err instanceof Error ? err.message : "error");
     });
   };
   tick();
@@ -514,12 +451,7 @@ async function pushAndForget(
 }
 
 export async function notifyClientOfCoachMessage(
-  input: {
-    userId: number;
-    conversationId: number;
-    messageId: number;
-    preview: string;
-  },
+  input: { userId: number; conversationId: number; messageId: number; preview: string },
   io?: {
     tokensForUser?: (userId: number) => Promise<string[]>;
     send?: SendFn;
@@ -528,8 +460,7 @@ export async function notifyClientOfCoachMessage(
     config?: ApnsConfig | null;
   }
 ): Promise<void> {
-  const config =
-    io && "config" in io ? (io.config ?? null) : apnsConfigFromEnv();
+  const config = io && "config" in io ? (io.config ?? null) : apnsConfigFromEnv();
   try {
     const tokens = await (io?.tokensForUser ?? tokensForUser)(input.userId);
     await pushAndForget(
@@ -537,37 +468,21 @@ export async function notifyClientOfCoachMessage(
       config,
       tokens,
       { title: "Lee Anne sent a message", body: clipPushBody(input.preview) },
-      {
-        tab: "coach",
-        url: "/habit-tracker/coach",
-        conversationId: input.conversationId,
-      },
+      { tab: "coach", url: "/habit-tracker/coach", conversationId: input.conversationId },
       io?.forgetTokens ?? deleteDeviceTokens
     );
   } catch (err) {
-    console.error(
-      "[APNs] client notify failed:",
-      err instanceof Error ? err.message : "error"
-    );
+    console.error("[APNs] client notify failed:", err instanceof Error ? err.message : "error");
   }
   try {
     await (io?.queueEmail ?? queueCoachReplyEmail)(input);
   } catch (err) {
-    console.error(
-      "[Coach email] queue failed:",
-      err instanceof Error ? err.message : "error"
-    );
+    console.error("[Coach email] queue failed:", err instanceof Error ? err.message : "error");
   }
 }
 
 export async function notifyAdminsOfClientMessage(
-  input: {
-    conversationId: number;
-    preview: string;
-    clientName: string;
-    messageId?: number;
-    userId?: number;
-  },
+  input: { conversationId: number; preview: string; clientName: string; messageId?: number; userId?: number },
   io?: {
     tokens?: () => Promise<string[]>;
     send?: SendFn;
@@ -576,8 +491,7 @@ export async function notifyAdminsOfClientMessage(
     config?: ApnsConfig | null;
   }
 ): Promise<void> {
-  const config =
-    io && "config" in io ? (io.config ?? null) : apnsConfigFromEnv();
+  const config = io && "config" in io ? (io.config ?? null) : apnsConfigFromEnv();
   try {
     const tokens = await (io?.tokens ?? tokensForAdmins)();
     const who = input.clientName.replace(/\s+/g, " ").trim() || "A client";
@@ -585,18 +499,12 @@ export async function notifyAdminsOfClientMessage(
       io?.send ?? sendApnsAlerts,
       config,
       tokens,
-      {
-        title: "New client message",
-        body: clipPushBody(`${who}: ${input.preview}`),
-      },
+      { title: "New client message", body: clipPushBody(`${who}: ${input.preview}`) },
       { tab: "coach", url: "/admin", conversationId: input.conversationId },
       io?.forgetTokens ?? deleteDeviceTokens
     );
   } catch (err) {
-    console.error(
-      "[APNs] coach notify failed:",
-      err instanceof Error ? err.message : "error"
-    );
+    console.error("[APNs] coach notify failed:", err instanceof Error ? err.message : "error");
   }
   if (!input.messageId) return;
   try {
@@ -607,9 +515,6 @@ export async function notifyAdminsOfClientMessage(
       preview: input.preview,
     });
   } catch (err) {
-    console.error(
-      "[Coach email] queue failed:",
-      err instanceof Error ? err.message : "error"
-    );
+    console.error("[Coach email] queue failed:", err instanceof Error ? err.message : "error");
   }
 }

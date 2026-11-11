@@ -37,17 +37,9 @@ const ADD_NOTICE_KIND = `ALTER TABLE \`coach_reply_email_notices\` ADD \`kind\` 
 const ADD_COACH_LAST_READ = `ALTER TABLE \`conversations\` ADD \`coachLastReadAt\` timestamp NULL`;
 
 function isAlreadyApplied(err: unknown): boolean {
-  const row = err as {
-    code?: string;
-    message?: string;
-    cause?: { code?: string; message?: string };
-  };
+  const row = err as { code?: string; message?: string; cause?: { code?: string; message?: string } };
   const text = `${row?.code ?? ""} ${row?.message ?? ""} ${row?.cause?.code ?? ""} ${row?.cause?.message ?? ""} ${String(err)}`;
-  return (
-    text.includes("ER_DUP_FIELDNAME") ||
-    text.includes("Duplicate column") ||
-    text.includes("1060")
-  );
+  return text.includes("ER_DUP_FIELDNAME") || text.includes("Duplicate column") || text.includes("1060");
 }
 
 async function runIgnoring(db: Db, statement: string): Promise<void> {
@@ -70,7 +62,7 @@ export async function ensureApnsSchema(db: Db): Promise<void> {
       .then(() => runIgnoring(db, ADD_NOTICE_KIND))
       .then(() => runIgnoring(db, ADD_COACH_LAST_READ))
       .then(() => undefined)
-      .catch(err => {
+      .catch((err) => {
         ready = null;
         throw err;
       });

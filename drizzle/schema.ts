@@ -37,9 +37,7 @@ export const users = mysqlTable("users", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
-  shareHabitsWithCoach: boolean("shareHabitsWithCoach")
-    .default(false)
-    .notNull(),
+  shareHabitsWithCoach: boolean("shareHabitsWithCoach").default(false).notNull(),
 });
 
 export type User = typeof users.$inferSelect;
@@ -52,9 +50,7 @@ export const leads = mysqlTable("leads", {
   email: varchar("email", { length: 320 }).notNull(),
   phone: varchar("phone", { length: 50 }),
   notes: text("notes"),
-  status: mysqlEnum("status", ["new", "contacted", "enrolled", "not_a_fit"])
-    .default("new")
-    .notNull(),
+  status: mysqlEnum("status", ["new", "contacted", "enrolled", "not_a_fit"]).default("new").notNull(),
   /** Intake arrived without a program. Lee Anne still needs to enroll them. */
   needsProgram: boolean("needsProgram").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -65,37 +61,23 @@ export type Lead = typeof leads.$inferSelect;
 export type InsertLead = typeof leads.$inferInsert;
 
 // ── Enrollments ───────────────────────────────────────────────────────────────
-export const enrollments = mysqlTable(
-  "enrollments",
-  {
-    id: int("id").autoincrement().primaryKey(),
-    userId: int("userId").notNull(),
-    stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 255 }),
-    stripeCustomerId: varchar("stripeCustomerId", { length: 255 }),
-    program: mysqlEnum("program", [
-      "fpu",
-      "reclaim",
-      "challenge",
-      "holiday",
-      "metabolic",
-    ])
-      .default("reclaim")
-      .notNull(),
-    paymentType: mysqlEnum("paymentType", ["full", "deposit"]).notNull(),
-    depositPaid: boolean("depositPaid").default(false).notNull(),
-    balancePaid: boolean("balancePaid").default(false).notNull(),
-    status: mysqlEnum("status", ["pending", "active", "completed", "cancelled"])
-      .default("pending")
-      .notNull(),
-    enrolledAt: timestamp("enrolledAt").defaultNow().notNull(),
-    completedAt: timestamp("completedAt"),
-    createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  },
-  table => [
-    uniqueIndex("enrollments_user_program").on(table.userId, table.program),
-  ]
-);
+export const enrollments = mysqlTable("enrollments", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 255 }),
+  stripeCustomerId: varchar("stripeCustomerId", { length: 255 }),
+  program: mysqlEnum("program", ["fpu", "reclaim", "challenge", "holiday", "metabolic"]).default("reclaim").notNull(),
+  paymentType: mysqlEnum("paymentType", ["full", "deposit"]).notNull(),
+  depositPaid: boolean("depositPaid").default(false).notNull(),
+  balancePaid: boolean("balancePaid").default(false).notNull(),
+  status: mysqlEnum("status", ["pending", "active", "completed", "cancelled"]).default("pending").notNull(),
+  enrolledAt: timestamp("enrolledAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+  uniqueIndex("enrollments_user_program").on(table.userId, table.program),
+]);
 
 export type Enrollment = typeof enrollments.$inferSelect;
 export type InsertEnrollment = typeof enrollments.$inferInsert;
@@ -106,14 +88,7 @@ export const coachingSessions = mysqlTable("coaching_sessions", {
   enrollmentId: int("enrollmentId").notNull(),
   userId: int("userId").notNull(),
   sessionNumber: int("sessionNumber").notNull(),
-  status: mysqlEnum("status", [
-    "not_scheduled",
-    "scheduled",
-    "completed",
-    "cancelled",
-  ])
-    .default("not_scheduled")
-    .notNull(),
+  status: mysqlEnum("status", ["not_scheduled", "scheduled", "completed", "cancelled"]).default("not_scheduled").notNull(),
   scheduledAt: timestamp("scheduledAt"),
   completedAt: timestamp("completedAt"),
   googleMeetLink: varchar("googleMeetLink", { length: 500 }),
@@ -146,10 +121,10 @@ export const blogPosts = mysqlTable("blog_posts", {
   authorId: int("authorId"),
   // JSON-LD Schema markup
   schemaTypes: varchar("schemaTypes", { length: 500 }), // comma-separated: "Article,FAQ,VideoObject"
-  schemaFaqJson: text("schemaFaqJson"), // JSON array of {question, answer}
+  schemaFaqJson: text("schemaFaqJson"),                 // JSON array of {question, answer}
   schemaVideoUrl: varchar("schemaVideoUrl", { length: 1000 }), // YouTube URL for VideoObject
   schemaVideoDescription: text("schemaVideoDescription"),
-  schemaHowToStepsJson: text("schemaHowToStepsJson"), // JSON array of {name, text} steps
+  schemaHowToStepsJson: text("schemaHowToStepsJson"),   // JSON array of {name, text} steps
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -164,9 +139,7 @@ export const followUps = mysqlTable("follow_ups", {
   userId: int("userId").notNull(),
   type: mysqlEnum("type", ["review_request", "check_in", "upsell"]).notNull(),
   sentAt: timestamp("sentAt"),
-  status: mysqlEnum("status", ["pending", "sent", "responded"])
-    .default("pending")
-    .notNull(),
+  status: mysqlEnum("status", ["pending", "sent", "responded"]).default("pending").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -176,15 +149,11 @@ export type InsertFollowUp = typeof followUps.$inferInsert;
 // ── Deposits (Stripe webhook records) ────────────────────────────────────────
 export const deposits = mysqlTable("deposits", {
   id: int("id").autoincrement().primaryKey(),
-  stripeSessionId: varchar("stripeSessionId", { length: 255 })
-    .notNull()
-    .unique(),
+  stripeSessionId: varchar("stripeSessionId", { length: 255 }).notNull().unique(),
   stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 255 }),
   clientName: varchar("clientName", { length: 255 }),
   clientEmail: varchar("clientEmail", { length: 320 }),
-  status: mysqlEnum("status", ["pending", "paid", "failed"])
-    .default("pending")
-    .notNull(),
+  status: mysqlEnum("status", ["pending", "paid", "failed"]).default("pending").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -256,17 +225,9 @@ export const commonFilePrograms = mysqlTable(
   {
     id: int("id").autoincrement().primaryKey(),
     commonFileId: int("commonFileId").notNull(),
-    program: mysqlEnum("program", [
-      "fpu",
-      "reclaim",
-      "challenge",
-      "holiday",
-      "metabolic",
-    ]).notNull(),
+    program: mysqlEnum("program", ["fpu", "reclaim", "challenge", "holiday", "metabolic"]).notNull(),
   },
-  table => [
-    uniqueIndex("common_file_program").on(table.commonFileId, table.program),
-  ]
+  (table) => [uniqueIndex("common_file_program").on(table.commonFileId, table.program)]
 );
 
 export type CommonFileProgram = typeof commonFilePrograms.$inferSelect;
@@ -274,19 +235,13 @@ export type CommonFileProgram = typeof commonFilePrograms.$inferSelect;
 // ── FPU Orders (Financial Peace University Stripe purchases) ────────────────
 export const fpuOrders = mysqlTable("fpu_orders", {
   id: int("id").autoincrement().primaryKey(),
-  stripeSessionId: varchar("stripeSessionId", { length: 255 })
-    .notNull()
-    .unique(),
+  stripeSessionId: varchar("stripeSessionId", { length: 255 }).notNull().unique(),
   stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 255 }),
   userId: int("userId"),
   clientName: varchar("clientName", { length: 255 }),
   clientEmail: varchar("clientEmail", { length: 320 }),
-  productType: mysqlEnum("productType", ["fpu_class", "fpu_coaching"])
-    .default("fpu_class")
-    .notNull(),
-  status: mysqlEnum("status", ["pending", "paid", "failed"])
-    .default("pending")
-    .notNull(),
+  productType: mysqlEnum("productType", ["fpu_class", "fpu_coaching"]).default("fpu_class").notNull(),
+  status: mysqlEnum("status", ["pending", "paid", "failed"]).default("pending").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -321,6 +276,7 @@ export const siteSettings = mysqlTable("site_settings", {
 export type SiteSetting = typeof siteSettings.$inferSelect;
 export type InsertSiteSetting = typeof siteSettings.$inferInsert;
 
+
 // ── Podcast Native Broadcasting ───────────────────────────────────────────────
 export const podcastSubscribers = mysqlTable("podcast_subscribers", {
   id: int("id").autoincrement().primaryKey(),
@@ -352,14 +308,13 @@ export const apnsDeviceTokens = mysqlTable(
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },
-  table => [uniqueIndex("apns_device_tokens_token").on(table.token)]
+  (table) => [uniqueIndex("apns_device_tokens_token").on(table.token)]
 );
 
 /**
  * One row per in-app message that may need an unread email.
- * kind "client" is a coach reply waiting on the client.
- * kind "coach" is a client message waiting on Lee Anne.
- * sentAt is set when the email goes out, or when the reader already opened it.
+ * kind "client" waits on the client. kind "coach" waits on Lee Anne.
+ * sentAt is set when the email goes out, or when that person already opened it.
  */
 export const coachReplyEmailNotices = mysqlTable(
   "coach_reply_email_notices",
@@ -375,9 +330,7 @@ export const coachReplyEmailNotices = mysqlTable(
     sentAt: timestamp("sentAt"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
-  table => [
-    uniqueIndex("coach_reply_email_notices_message").on(table.messageId),
-  ]
+  (table) => [uniqueIndex("coach_reply_email_notices_message").on(table.messageId)]
 );
 
 export const challenges = mysqlTable("challenges", {
@@ -405,23 +358,14 @@ export const userChallenges = mysqlTable("user_challenges", {
   deviceId: text("deviceId"), // For anonymous users
   email: varchar("email", { length: 320 }),
   claimToken: varchar("claimToken", { length: 64 }),
-  challengeId: int("challengeId")
-    .references(() => challenges.id)
-    .notNull(),
+  challengeId: int("challengeId").references(() => challenges.id).notNull(),
   startDate: date("startDate", { mode: "string" }).notNull(),
-  status: varchar("status", {
-    length: 50,
-    enum: ["active", "completed", "failed"],
-  })
-    .notNull()
-    .default("active"),
+  status: varchar("status", { length: 50, enum: ["active", "completed", "failed"] }).notNull().default("active"),
 });
 
 export const userChallengeLogs = mysqlTable("user_challenge_logs", {
   id: int("id").primaryKey().autoincrement(),
-  userChallengeId: int("userChallengeId")
-    .references(() => userChallenges.id)
-    .notNull(),
+  userChallengeId: int("userChallengeId").references(() => userChallenges.id).notNull(),
   dateStr: date("dateStr", { mode: "string" }).notNull(),
 });
 
@@ -437,9 +381,7 @@ export const challengeDayVideos = mysqlTable("challenge_day_videos", {
 
 export const userChallengeJournals = mysqlTable("user_challenge_journals", {
   id: int("id").primaryKey().autoincrement(),
-  userChallengeId: int("userChallengeId")
-    .references(() => userChallenges.id)
-    .notNull(),
+  userChallengeId: int("userChallengeId").references(() => userChallenges.id).notNull(),
   dateStr: date("dateStr", { mode: "string" }).notNull(),
   noticed: text("noticed"),
   glad: text("glad"),
@@ -495,9 +437,7 @@ export const podcastEpisodes = mysqlTable("podcast_episodes", {
   habitActionsJson: text("habitActionsJson"),
   linkedChallengeId: int("linkedChallengeId"),
   linkedBlogSlug: varchar("linkedBlogSlug", { length: 255 }),
-  status: mysqlEnum("status", ["draft", "published"])
-    .default("draft")
-    .notNull(),
+  status: mysqlEnum("status", ["draft", "published"]).default("draft").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -519,11 +459,11 @@ export type InsertFpuLead = typeof fpuLeads.$inferInsert;
 // ── Page Content (editable page sections, draft/publish workflow) ─────────────
 export const pageContent = mysqlTable("page_content", {
   id: int("id").autoincrement().primaryKey(),
-  page: varchar("page", { length: 100 }).notNull(), // e.g. "financial-peace"
-  key: varchar("key", { length: 100 }).notNull(), // e.g. "hero-heading"
-  publishedContent: text("publishedContent"), // live content visitors see
-  draftContent: text("draftContent"), // unpublished edits
-  hasDraft: boolean("hasDraft").default(false).notNull(), // true when draft differs from published
+  page: varchar("page", { length: 100 }).notNull(),       // e.g. "financial-peace"
+  key: varchar("key", { length: 100 }).notNull(),          // e.g. "hero-heading"
+  publishedContent: text("publishedContent"),              // live content visitors see
+  draftContent: text("draftContent"),                      // unpublished edits
+  hasDraft: boolean("hasDraft").default(false).notNull(),  // true when draft differs from published
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
@@ -534,13 +474,7 @@ export type InsertPageContent = typeof pageContent.$inferInsert;
 export const programModules = mysqlTable("program_modules", {
   id: int("id").autoincrement().primaryKey(),
   /** Existing rows stay Reclaim. New modules are built per program. */
-  program: mysqlEnum("program", [
-    "fpu",
-    "reclaim",
-    "challenge",
-    "holiday",
-    "metabolic",
-  ])
+  program: mysqlEnum("program", ["fpu", "reclaim", "challenge", "holiday", "metabolic"])
     .default("reclaim")
     .notNull(),
   title: varchar("title", { length: 255 }).notNull(),
@@ -569,12 +503,8 @@ export const assignments = mysqlTable("assignments", {
   fieldsJson: text("fieldsJson"),
   /** JSON array of program ids. Library forms are visible to those enrollments. */
   programTags: text("programTags"),
-  publishStatus: mysqlEnum("publishStatus", ["draft", "published"])
-    .default("published")
-    .notNull(),
-  kind: mysqlEnum("kind", ["fillable", "handout"])
-    .default("fillable")
-    .notNull(),
+  publishStatus: mysqlEnum("publishStatus", ["draft", "published"]).default("published").notNull(),
+  kind: mysqlEnum("kind", ["fillable", "handout"]).default("fillable").notNull(),
   /** Readable body for a handout that has no blanks. */
   content: text("content"),
   /** JSON array of common_files ids kept as the original pages. */
@@ -595,9 +525,7 @@ export const assignmentSubmissions = mysqlTable("assignment_submissions", {
   feedback: text("feedback"),
   /** Structured fillable-form answers. `answer` stays a plain-text copy for the coach list. */
   answersJson: text("answersJson"),
-  status: mysqlEnum("status", ["draft", "submitted", "reviewed"])
-    .default("submitted")
-    .notNull(),
+  status: mysqlEnum("status", ["draft", "submitted", "reviewed"]).default("submitted").notNull(),
   reviewedAt: timestamp("reviewedAt"),
   reviewedByUserId: int("reviewedByUserId"),
   submittedAt: timestamp("submittedAt").defaultNow().notNull(),
@@ -605,8 +533,7 @@ export const assignmentSubmissions = mysqlTable("assignment_submissions", {
 });
 
 export type AssignmentSubmission = typeof assignmentSubmissions.$inferSelect;
-export type InsertAssignmentSubmission =
-  typeof assignmentSubmissions.$inferInsert;
+export type InsertAssignmentSubmission = typeof assignmentSubmissions.$inferInsert;
 
 export const moduleProgress = mysqlTable("module_progress", {
   id: int("id").autoincrement().primaryKey(),
@@ -730,15 +657,12 @@ export const habitNotificationPrefs = mysqlTable("habit_notification_prefs", {
   victoryPromptEnabled: boolean("victoryPromptEnabled").default(true).notNull(),
   challengePushEnabled: boolean("challengePushEnabled").default(true).notNull(),
   day1Day3Enabled: boolean("day1Day3Enabled").default(true).notNull(),
-  weeklyInsightEmailEnabled: boolean("weeklyInsightEmailEnabled")
-    .default(true)
-    .notNull(),
+  weeklyInsightEmailEnabled: boolean("weeklyInsightEmailEnabled").default(true).notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
 export type HabitNotificationPref = typeof habitNotificationPrefs.$inferSelect;
-export type InsertHabitNotificationPref =
-  typeof habitNotificationPrefs.$inferInsert;
+export type InsertHabitNotificationPref = typeof habitNotificationPrefs.$inferInsert;
 
 /** Lightweight funnel / lifecycle events for habit tracker. */
 export const habitFunnelEvents = mysqlTable("habit_funnel_events", {
@@ -811,9 +735,7 @@ export const conversations = mysqlTable("conversations", {
     "gmb",
     "facebook",
     "instagram",
-  ])
-    .default("sms")
-    .notNull(),
+  ]).default("sms").notNull(),
   status: mysqlEnum("status", ["open", "closed", "snoozed"])
     .default("open")
     .notNull(),
@@ -838,12 +760,8 @@ export type Conversation = typeof conversations.$inferSelect;
 export const messages = mysqlTable("messages", {
   id: int("id").autoincrement().primaryKey(),
   conversationId: int("conversationId").notNull(),
-  direction: mysqlEnum("direction", [
-    "inbound",
-    "outbound",
-    "system",
-  ]).notNull(),
-  senderName: varchar("senderName", { length: 255 }),
+  direction: mysqlEnum("direction", ["inbound", "outbound", "system"]).notNull(),
+  senderName: varchar("senderName", { length: 255 }), 
   content: text("content"), // The message body
   mediaUrl: varchar("mediaUrl", { length: 1000 }), // URL for MMS (images, PDFs, VCFs)
   twilioSid: varchar("twilioSid", { length: 128 }), // To track delivery status via Twilio API
@@ -853,9 +771,7 @@ export const messages = mysqlTable("messages", {
     "delivered",
     "failed",
     "received",
-  ])
-    .default("received")
-    .notNull(),
+  ]).default("received").notNull(),
   isAutomated: boolean("isAutomated").default(false).notNull(), // Was this sent by Gemini/System?
   isInternal: boolean("isInternal").default(false).notNull(), // Team whisper
   /** Quoted parent — iMessage-style reply to a specific bubble. */
@@ -894,13 +810,7 @@ export const campaigns = mysqlTable("campaigns", {
   targetTagId: int("targetTagId"), // Leaving for compatibility, might map to user segments later
   messageBody: text("messageBody").notNull(), // The content of the SMS
   mediaUrl: varchar("mediaUrl", { length: 1000 }), // URL for MMS (images, PDFs, VCFs)
-  status: mysqlEnum("status", [
-    "draft",
-    "scheduled",
-    "sending",
-    "completed",
-    "failed",
-  ])
+  status: mysqlEnum("status", ["draft", "scheduled", "sending", "completed", "failed"])
     .default("draft")
     .notNull(),
   scheduledAt: timestamp("scheduledAt"), // When to send (null if immediate/draft)
@@ -915,7 +825,7 @@ export type Campaign = typeof campaigns.$inferSelect;
 // ─── Phase 5: CRM Sequences (Drip Automation) ────────────────────────────────
 export const sequences = mysqlTable("sequences", {
   id: int("id").autoincrement().primaryKey(),
-  name: varchar("name", { length: 255 }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(), 
   triggerTagId: int("triggerTagId"), // Optional: Tag that automatically triggers this sequence
   isActive: boolean("isActive").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -943,7 +853,7 @@ export const sequenceEnrollments = mysqlTable("sequence_enrollments", {
   leadId: int("leadId"),
   currentStepId: int("currentStepId").default(0).notNull(), // Links to sequence_steps.id (null if completed)
   nextExecutionAt: timestamp("nextExecutionAt"), // When the current step should be sent
-
+  
   // Dummy columns added to bypass drizzle-kit rename prompts in CI
   subscriberId: int("subscriberId"),
   currentStep: int("currentStep"),
@@ -972,6 +882,8 @@ export const aiKnowledge = mysqlTable("ai_knowledge", {
 export type AiKnowledge = typeof aiKnowledge.$inferSelect;
 export type InsertAiKnowledge = typeof aiKnowledge.$inferInsert;
 
+
+
 export const messageTemplates = mysqlTable("message_templates", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
@@ -980,20 +892,13 @@ export const messageTemplates = mysqlTable("message_templates", {
 });
 export type MessageTemplate = typeof messageTemplates.$inferSelect;
 
+
 // ── Calories & Fitness Tracking ───────────────────────────────────────────────
 export const calorieLogs = mysqlTable("calorie_logs", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
   dateStr: varchar("dateStr", { length: 10 }).notNull(), // YYYY-MM-DD
-  mealType: mysqlEnum("mealType", [
-    "breakfast",
-    "lunch",
-    "dinner",
-    "snack",
-    "drink",
-  ])
-    .default("snack")
-    .notNull(),
+  mealType: mysqlEnum("mealType", ["breakfast", "lunch", "dinner", "snack", "drink"]).default("snack").notNull(),
   foodName: varchar("foodName", { length: 500 }).notNull(),
   calories: int("calories").default(0).notNull(),
   protein: int("protein").default(0).notNull(),
@@ -1050,13 +955,9 @@ export const emailNewsletters = mysqlTable("email_newsletters", {
   headline: varchar("headline", { length: 500 }),
   subheadline: varchar("subheadline", { length: 500 }),
   /** Editable opening line; supports {{firstName}} — e.g. "Hi {{firstName}}," */
-  greetingTemplate: varchar("greetingTemplate", { length: 500 }).default(
-    "Hi {{firstName}},"
-  ),
+  greetingTemplate: varchar("greetingTemplate", { length: 500 }).default("Hi {{firstName}},"),
   /** Sign-off lines (editable) */
-  signOffClosing: varchar("signOffClosing", { length: 255 }).default(
-    "With love,"
-  ),
+  signOffClosing: varchar("signOffClosing", { length: 255 }).default("With love,"),
   signOffName: varchar("signOffName", { length: 255 }).default("Lee Anne"),
   signOffTitle: varchar("signOffTitle", { length: 500 }).default(
     "Certified Life & Health Coach · Mind and Body Reset Coaching"
@@ -1159,10 +1060,8 @@ export const emailNewsletterSnippets = mysqlTable("email_newsletter_snippets", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
-export type EmailNewsletterSnippet =
-  typeof emailNewsletterSnippets.$inferSelect;
-export type InsertEmailNewsletterSnippet =
-  typeof emailNewsletterSnippets.$inferInsert;
+export type EmailNewsletterSnippet = typeof emailNewsletterSnippets.$inferSelect;
+export type InsertEmailNewsletterSnippet = typeof emailNewsletterSnippets.$inferInsert;
 
 // ── Food vault: recipes, meal plans, shopping ────────────────────────────────
 export const recipes = mysqlTable("recipes", {
@@ -1171,9 +1070,7 @@ export const recipes = mysqlTable("recipes", {
   title: varchar("title", { length: 500 }).notNull(),
   description: text("description"),
   imageUrl: varchar("imageUrl", { length: 1000 }),
-  source: mysqlEnum("source", ["coach", "fatsecret", "imported"])
-    .default("coach")
-    .notNull(),
+  source: mysqlEnum("source", ["coach", "fatsecret", "imported"]).default("coach").notNull(),
   fatsecretRecipeId: varchar("fatsecretRecipeId", { length: 32 }),
   fatsecretFoodId: varchar("fatsecretFoodId", { length: 32 }),
   tagsJson: text("tagsJson"),
@@ -1222,13 +1119,7 @@ export const mealPlanSlots = mysqlTable("meal_plan_slots", {
   id: int("id").autoincrement().primaryKey(),
   mealPlanId: int("mealPlanId").notNull(),
   dayOfWeek: int("dayOfWeek").notNull(), // 0 = Sunday
-  slot: mysqlEnum("slot", [
-    "breakfast",
-    "lunch",
-    "dinner",
-    "snack",
-    "snack2",
-  ]).notNull(),
+  slot: mysqlEnum("slot", ["breakfast", "lunch", "dinner", "snack", "snack2"]).notNull(),
   recipeId: int("recipeId").notNull(),
   servings: int("servings").default(1).notNull(),
   sortOrder: int("sortOrder").default(0).notNull(),
@@ -1285,10 +1176,7 @@ export const holidayApplications = mysqlTable("holiday_applications", {
   phone: varchar("phone", { length: 40 }).notNull(),
   age18: mysqlEnum("age18", yesNo).notNull(),
   newToFasting: mysqlEnum("newToFasting", yesNo).notNull(),
-  pregnantOrBreastfeeding: mysqlEnum(
-    "pregnantOrBreastfeeding",
-    yesNo
-  ).notNull(),
+  pregnantOrBreastfeeding: mysqlEnum("pregnantOrBreastfeeding", yesNo).notNull(),
   eatingDisorder: mysqlEnum("eatingDisorder", yesNo).notNull(),
   addiction: mysqlEnum("addiction", yesNo).notNull(),
   twelveStep: mysqlEnum("twelveStep", yesNo).notNull(),
@@ -1313,9 +1201,7 @@ export const holidayApplications = mysqlTable("holiday_applications", {
   landingUrl: varchar("landingUrl", { length: 1000 }),
   eventId: varchar("eventId", { length: 80 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  status: mysqlEnum("status", ["pending", "accepted"])
-    .default("pending")
-    .notNull(),
+  status: mysqlEnum("status", ["pending", "accepted"]).default("pending").notNull(),
   enrollmentId: int("enrollmentId"),
   acceptedAt: timestamp("acceptedAt"),
 });
@@ -1324,11 +1210,7 @@ export type HolidayApplication = typeof holidayApplications.$inferSelect;
 export type InsertHolidayApplication = typeof holidayApplications.$inferInsert;
 
 // ── Client intake (paper form, digital) ──────────────────────────────────────
-const menopauseStatus = [
-  "premenopausal",
-  "perimenopausal",
-  "postmenopausal",
-] as const;
+const menopauseStatus = ["premenopausal", "perimenopausal", "postmenopausal"] as const;
 const intakeSource = ["link", "portal"] as const;
 
 export const clientIntakes = mysqlTable("client_intakes", {
@@ -1353,13 +1235,7 @@ export const clientIntakes = mysqlTable("client_intakes", {
 export type ClientIntake = typeof clientIntakes.$inferSelect;
 export type InsertClientIntake = typeof clientIntakes.$inferInsert;
 
-const intakeProgram = [
-  "fpu",
-  "reclaim",
-  "challenge",
-  "holiday",
-  "metabolic",
-] as const;
+const intakeProgram = ["fpu", "reclaim", "challenge", "holiday", "metabolic"] as const;
 
 /** Optional questions Lee Anne adds to a short program intake. Metabolic uses the full form. */
 export const programIntakeQuestions = mysqlTable("program_intake_questions", {
@@ -1385,16 +1261,10 @@ export const programIntakeSubmissions = mysqlTable(
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },
-  table => [
-    uniqueIndex("program_intake_submissions_email_program").on(
-      table.email,
-      table.program
-    ),
-  ]
+  (table) => [uniqueIndex("program_intake_submissions_email_program").on(table.email, table.program)]
 );
 
-export type ProgramIntakeSubmission =
-  typeof programIntakeSubmissions.$inferSelect;
+export type ProgramIntakeSubmission = typeof programIntakeSubmissions.$inferSelect;
 
 // --- DUMMY EXPORTS TO BYPASS STATIC WEBPACK ERRORS FOR LEGACY CRM CODE ---
 export const vacationQuotes = mysqlTable("dummy_vq", { id: int("id") });
@@ -1408,3 +1278,4 @@ export const userTags = mysqlTable("dummy_ut", { id: int("id") });
 export const reviews = mysqlTable("dummy_reviews", { id: int("id") });
 export const reviewInvites = mysqlTable("dummy_ri", { id: int("id") });
 export const clientLeads = mysqlTable("dummy_cl", { id: int("id") });
+

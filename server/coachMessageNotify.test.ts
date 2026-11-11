@@ -20,9 +20,7 @@ function notice(overrides: Partial<UnreadNotice> = {}): UnreadNotice {
     email: "client@example.com",
     name: "Ava",
     preview: "See you Thursday",
-    messageCreatedAt: new Date(
-      now.getTime() - COACH_REPLY_EMAIL_DELAY_MS - 60_000
-    ),
+    messageCreatedAt: new Date(now.getTime() - COACH_REPLY_EMAIL_DELAY_MS - 60_000),
     clientLastReadAt: null,
     dueAt: new Date(now.getTime() - 1000),
     sentAt: null,
@@ -32,17 +30,10 @@ function notice(overrides: Partial<UnreadNotice> = {}): UnreadNotice {
 
 describe("coach reply notifications", () => {
   it("pushes a coach reply to that client's devices and queues one unread email", async () => {
-    const send = vi
-      .fn()
-      .mockResolvedValue({ sent: 1, failed: 0, removed: [], skipped: false });
+    const send = vi.fn().mockResolvedValue({ sent: 1, failed: 0, removed: [], skipped: false });
     const queueEmail = vi.fn().mockResolvedValue(undefined);
     await notifyClientOfCoachMessage(
-      {
-        userId: 7,
-        conversationId: 3,
-        messageId: 9,
-        preview: "See you Thursday",
-      },
+      { userId: 7, conversationId: 3, messageId: 9, preview: "See you Thursday" },
       {
         tokensForUser: async () => ["aa".repeat(32)],
         send,
@@ -76,12 +67,7 @@ describe("coach reply notifications", () => {
       { userId: 7, conversationId: 3, messageId: 9, preview: "Hi" },
       {
         tokensForUser: async () => ["dead"],
-        send: async () => ({
-          sent: 0,
-          failed: 1,
-          removed: ["dead"],
-          skipped: false,
-        }),
+        send: async () => ({ sent: 0, failed: 1, removed: ["dead"], skipped: false }),
         queueEmail: async () => {},
         forgetTokens,
         config: null,
@@ -91,15 +77,9 @@ describe("coach reply notifications", () => {
   });
 
   it("pushes a new client message to admin devices and does not queue the client email", async () => {
-    const send = vi
-      .fn()
-      .mockResolvedValue({ sent: 1, failed: 0, removed: [], skipped: false });
+    const send = vi.fn().mockResolvedValue({ sent: 1, failed: 0, removed: [], skipped: false });
     await notifyAdminsOfClientMessage(
-      {
-        conversationId: 11,
-        preview: "The evening was loud",
-        clientName: "Ava",
-      },
+      { conversationId: 11, preview: "The evening was loud", clientName: "Ava" },
       {
         tokens: async () => ["bb".repeat(32)],
         send,
@@ -110,34 +90,22 @@ describe("coach reply notifications", () => {
     expect(send).toHaveBeenCalledWith(
       expect.objectContaining({
         tokens: ["bb".repeat(32)],
-        alert: {
-          title: "New client message",
-          body: "Ava: The evening was loud",
-        },
+        alert: { title: "New client message", body: "Ava: The evening was loud" },
         data: { tab: "coach", url: "/admin", conversationId: 11 },
       })
     );
   });
 
   it("emails only after the delay, only while the thread is still unread, and only once", async () => {
-    expect(
-      decideUnreadCoachEmail(
-        notice({ dueAt: new Date(now.getTime() + 60_000) }),
-        now
-      )
-    ).toBe("wait");
+    expect(decideUnreadCoachEmail(notice({ dueAt: new Date(now.getTime() + 60_000) }), now)).toBe("wait");
     expect(
       decideUnreadCoachEmail(
         notice({ clientLastReadAt: new Date(now.getTime() - 30_000) }),
         now
       )
     ).toBe("skip-read");
-    expect(decideUnreadCoachEmail(notice({ sentAt: now }), now)).toBe(
-      "already-sent"
-    );
-    expect(decideUnreadCoachEmail(notice({ email: null }), now)).toBe(
-      "skip-no-email"
-    );
+    expect(decideUnreadCoachEmail(notice({ sentAt: now }), now)).toBe("already-sent");
+    expect(decideUnreadCoachEmail(notice({ email: null }), now)).toBe("skip-no-email");
     expect(decideUnreadCoachEmail(notice(), now)).toBe("send");
 
     let locked = false;
@@ -227,14 +195,11 @@ describe("coach reply notifications", () => {
       email: "coach@mindandbodyresetcoach.com",
     });
 
-    const plan = planUnreadThreadEmails(
-      [older, newer, otherThread, alreadyRead, tooSoon],
-      now
-    );
+    const plan = planUnreadThreadEmails([older, newer, otherThread, alreadyRead, tooSoon], now);
     expect(plan.waitIds).toEqual([14]);
     expect(plan.skipIds).toEqual([13]);
     expect(plan.batches).toHaveLength(2);
-    const ava = plan.batches.find(batch => batch.conversationId === 4);
+    const ava = plan.batches.find((batch) => batch.conversationId === 4);
     expect(ava).toMatchObject({
       clientName: "Ava",
       count: 2,
@@ -283,12 +248,8 @@ describe("coach reply notifications", () => {
     expect(email.htmlBody).toContain("#c9a96e");
     expect(email.htmlBody).toContain("&lt;script&gt;");
     expect(email.htmlBody).not.toContain("<script>");
-    expect(email.htmlBody).toContain(
-      "https://mindandbodyresetcoach.com/admin?tab=overview#admin-messages"
-    );
-    expect(email.textBody).toContain(
-      "https://mindandbodyresetcoach.com/admin?tab=overview#admin-messages"
-    );
+    expect(email.htmlBody).toContain("https://mindandbodyresetcoach.com/admin?tab=overview#admin-messages");
+    expect(email.textBody).toContain("https://mindandbodyresetcoach.com/admin?tab=overview#admin-messages");
     expect(email.htmlBody).not.toMatch(/APNS_|BEGIN PRIVATE KEY|sk_live/);
   });
 
@@ -312,25 +273,16 @@ describe("coach reply notifications", () => {
     );
     expect(queueEmail).toHaveBeenCalledTimes(1);
     expect(queueEmail).toHaveBeenCalledWith(
-      expect.objectContaining({
-        messageId: 44,
-        conversationId: 11,
-        userId: 7,
-        preview: "The evening was loud",
-      })
+      expect.objectContaining({ messageId: 44, conversationId: 11, userId: 7, preview: "The evening was loud" })
     );
   });
 
   it("builds a plain fallback email with the thread link and escaped preview", () => {
-    const email = buildCoachReplyFallbackEmail(
-      'Hi <script>alert("x")</script>'
-    );
+    const email = buildCoachReplyFallbackEmail('Hi <script>alert("x")</script>');
     expect(email.subject).toBe("Lee Anne sent you a message");
     expect(email.htmlBody).toContain("&lt;script&gt;");
     expect(email.htmlBody).not.toContain("<script>");
-    expect(email.textBody).toContain(
-      "https://mindandbodyresetcoach.com/habit-tracker/coach"
-    );
+    expect(email.textBody).toContain("https://mindandbodyresetcoach.com/habit-tracker/coach");
     expect(email.htmlBody).not.toMatch(/APNS_|BEGIN PRIVATE KEY|sk_live/);
   });
 });
