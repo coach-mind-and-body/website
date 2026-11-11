@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getTableName, type SQL } from "drizzle-orm";
 import { MySqlDialect } from "drizzle-orm/mysql-core";
 import { REAL_FOOD_RESET, REAL_FOOD_RESET_THEME } from "@shared/realFoodReset";
+import { calendarDateStr } from "../lib/mountainTime";
 import { challenges, userChallenges } from "../drizzle/schema";
 
 const clock = vi.hoisted(() => ({ today: "2026-09-29" }));
@@ -46,9 +47,11 @@ import { sendMarketingEmail } from "./emailMarketing";
 import { fireMetaPixelLead } from "./metaCapi";
 import { resendSubscribe } from "./resendSubscribe";
 import {
+  challengeClosedMessage,
   enrollRealFoodResetByEmail,
   ensureRealFoodResetChallenge,
   getChallengeToday,
+  isChallengeHidden,
 } from "./realFoodResetChallenge";
 import { challengesRouter } from "./routers/challenges";
 import { leadgenRouter } from "./routers/leadgen";
@@ -77,6 +80,20 @@ function predicates(condition: unknown): { column: string; value: unknown }[] {
     throw new Error(`Unparsed where: ${query.sql} ${JSON.stringify(query.params)}`);
   }
   return preds;
+}
+
+/** mysql2 returns DATE columns as local-midnight Date objects even when Drizzle's mode is "string". */
+function asMysqlDate(table: unknown, row: Row): Row {
+  const copy = { ...row };
+  if (getTableName(table as never) !== getTableName(challenges)) return copy;
+  for (const key of ["startDate", "endDate"]) {
+    const value = copy[key];
+    if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      const [year, month, day] = value.split("-").map(Number);
+      copy[key] = new Date(year, month - 1, day);
+    }
+  }
+  return copy;
 }
 
 function same(left: unknown, right: unknown) {
@@ -111,7 +128,7 @@ function memoryDb() {
         from(table: unknown) {
           return {
             where(condition: unknown) {
-              const rows = matching(table, condition).map((row) => ({ ...row }));
+              const rows = matching(table, condition).map((row) => asMysqlDate(table, row));
               return Object.assign(Promise.resolve(rows), {
                 limit: async (n: number) => rows.slice(0, n),
               });
@@ -221,6 +238,25 @@ beforeEach(() => {
   vi.mocked(sendMarketingEmail).mockClear();
   vi.mocked(resendSubscribe).mockClear();
   vi.mocked(fireMetaPixelLead).mockClear();
+});
+
+describe("mysql DATE values", () => {
+  const end = new Date(2026, 9, 2);
+
+  it("does not treat a Date endDate as already past when compared as a string", () => {
+    expect("2026-10-03" > (end as unknown as string)).toBe(false);
+    expect(calendarDateStr(end)).toBe("2026-10-02");
+    expect(calendarDateStr("2026-10-02T06:00:00.000Z")).toBe("2026-10-02");
+  });
+
+  it("hides the day after a Date endDate and keeps the end date itself", () => {
+    expect(isChallengeHidden({ isActive: true, endDate: end }, "2026-10-03")).toBe(true);
+    expect(isChallengeHidden({ isActive: true, endDate: end }, "2026-10-02")).toBe(false);
+    expect(challengeClosedMessage({ isActive: true, endDate: end }, "2026-10-03")).toBe(
+      "This challenge has ended."
+    );
+    expect(isChallengeHidden({ isActive: 0, endDate: null }, "2026-09-29")).toBe(true);
+  });
 });
 
 describe("ensureRealFoodResetChallenge", () => {
