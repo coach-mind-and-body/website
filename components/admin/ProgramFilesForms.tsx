@@ -31,6 +31,7 @@ export function ProgramFilesForms({ program }: { program: ProgramId }) {
     pages: item.pages.map((page) => ({ id: page.id, fileName: page.fileName, fileUrl: page.fileUrl })),
     linkedFormId: item.linkedFormId,
     linkedFormTitle: item.linkedFormTitle,
+    linkedPublishStatus: item.linkedPublishStatus,
   }));
   const rows = listProgramContent(items, program);
   const available = libraryItemsAvailableToAdd(items, program);
@@ -72,7 +73,7 @@ export function ProgramFilesForms({ program }: { program: ProgramId }) {
             Files & forms
           </h3>
           <p className="text-sm mt-1 max-w-xl" style={{ color: "oklch(0.52 0.015 50)" }}>
-            Library files tagged to this program, and the digital form made from those pages. Removing one only takes the tag off. The file stays in the library.
+            Each file is listed once. Clients see the form after you publish it. Until then they see the original file. Removing one only takes it off this program.
           </p>
         </div>
         <button
@@ -107,7 +108,7 @@ export function ProgramFilesForms({ program }: { program: ProgramId }) {
                   />
                   <span className="font-semibold">{item.title}</span>
                   <span className="text-xs" style={{ color: "oklch(0.52 0.015 50)" }}>
-                    {item.kind === "group" ? "Page group" : "File"}
+                    {item.kind === "group" ? "Original pages" : "Original file"}
                   </span>
                 </label>
               );
@@ -140,19 +141,25 @@ export function ProgramFilesForms({ program }: { program: ProgramId }) {
             <div key={row.key} className="p-4 rounded-xl flex flex-wrap items-center justify-between gap-3" style={{ background: "white" }}>
               <div className="min-w-0">
                 <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "oklch(0.72 0.12 75)" }}>
-                  {row.type === "form" ? "Form" : "File"}
+                  {row.type === "form" ? "Form" : "Original file"}
                   {row.pageGroup ? ` · ${row.pageGroup}` : ""}
                 </p>
                 <p className="font-semibold mt-1" style={{ color: "oklch(0.20 0.015 50)" }}>{row.title}</p>
               </div>
-              <div className="flex items-center gap-3">
-                {row.href && row.type === "form" ? (
-                  <Link href={row.href} className="text-sm font-bold" style={{ color: "oklch(0.72 0.12 75)" }}>
-                    Edit
+              <div className="flex flex-wrap items-center gap-3">
+                {row.formHref ? (
+                  <Link href={row.formHref} className="text-sm font-bold" style={{ color: "oklch(0.72 0.12 75)" }}>
+                    Edit the form
                   </Link>
-                ) : row.href ? (
-                  <a href={row.href} target="_blank" rel="noopener noreferrer" className="text-sm font-bold" style={{ color: "oklch(0.72 0.12 75)" }}>
-                    Open
+                ) : null}
+                {row.draftFormHref ? (
+                  <Link href={row.draftFormHref} className="text-sm font-bold" style={{ color: "oklch(0.72 0.12 75)" }}>
+                    Edit the draft form
+                  </Link>
+                ) : null}
+                {row.fileHref ? (
+                  <a href={row.fileHref} target="_blank" rel="noopener noreferrer" className="text-sm font-bold" style={{ color: "#5a6b5a" }}>
+                    {row.fileLinkLabel}
                   </a>
                 ) : null}
                 <button

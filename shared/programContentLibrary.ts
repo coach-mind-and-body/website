@@ -10,6 +10,8 @@ export type ProgramLibraryItem = {
   pages: { id: number; fileName: string; fileUrl: string }[];
   linkedFormId: number | null;
   linkedFormTitle: string | null;
+  /** Null when this file has no form. Drafts do not replace the file for clients. */
+  linkedPublishStatus: "draft" | "published" | null;
 };
 
 export type ProgramContentRow = {
@@ -18,9 +20,14 @@ export type ProgramContentRow = {
   title: string;
   /** Group title when the pages were grouped. Loose files have none. */
   pageGroup: string | null;
-  href: string | null;
-  linkLabel: "Open" | "Edit";
-  /** What adminSetTags expects. Forms untag the library item they came from. */
+  /** Edit the published form. Null when clients still see the file. */
+  formHref: string | null;
+  /** The original file or the first original page. */
+  fileHref: string | null;
+  fileLinkLabel: "Open the original file" | "Open the original pages";
+  /** A form that is not published yet. Clients still see the file. */
+  draftFormHref: string | null;
+  /** What adminSetTags expects. Removing a program untags the original file. */
   tagKind: "file" | "group";
   tagId: number;
   programTags: ProgramId[];
@@ -51,40 +58,45 @@ export function programTagUpdate(
   };
 }
 
-/** Library files on this program, then the digital form made from those pages. */
+/** One row per library item. A published form replaces the file. A draft does not. */
 export function listProgramContent(items: readonly ProgramLibraryItem[], program: ProgramId): ProgramContentRow[] {
   const rows: ProgramContentRow[] = [];
   const seenForms = new Set<number>();
   for (const item of items) {
     if (!item.programTags.includes(program)) continue;
+    const published = item.linkedPublishStatus === "published" && item.linkedFormId != null;
+    if (published && seenForms.has(item.linkedFormId!)) continue;
+    if (published) seenForms.add(item.linkedFormId!);
     const pageGroup = item.kind === "group" ? item.title : null;
+    const fileLinkLabel = item.kind === "group" ? "Open the original pages" : "Open the original file";
+    const fileHref = item.pages[0]?.fileUrl ?? null;
     rows.push({
-      key: `file-${item.kind}-${item.refId}`,
-      type: "file",
-      title: item.title,
+      key: published ? `form-${item.linkedFormId}` : `file-${item.kind}-${item.refId}`,
+      type: published ? "form" : "file",
+      title: published ? item.linkedFormTitle?.trim() || item.title : item.title,
       pageGroup,
-      href: item.pages[0]?.fileUrl ?? null,
-      linkLabel: "Open",
+      formHref: published ? `/admin/forms/${item.linkedFormId}` : null,
+      fileHref,
+      fileLinkLabel,
+      draftFormHref:
+        !published && item.linkedFormId != null ? `/admin/forms/${item.linkedFormId}` : null,
       tagKind: item.kind,
       tagId: item.refId,
       programTags: [...item.programTags],
     });
-    if (item.linkedFormId != null && !seenForms.has(item.linkedFormId)) {
-      seenForms.add(item.linkedFormId);
-      rows.push({
-        key: `form-${item.linkedFormId}`,
-        type: "form",
-        title: item.linkedFormTitle?.trim() || item.title,
-        pageGroup,
-        href: `/admin/forms/${item.linkedFormId}`,
-        linkLabel: "Edit",
-        tagKind: item.kind,
-        tagId: item.refId,
-        programTags: [...item.programTags],
-      });
-    }
   }
   return rows;
+}
+
+/** Page ids of library files a published form already replaces. */
+export function sourceFileIdsCoveredByForms(
+  forms: readonly { sourceFileIds?: readonly number[] | null }[]
+): Set<number> {
+  const ids = new Set<number>();
+  for (const form of forms) {
+    for (const id of form.sourceFileIds ?? []) ids.add(id);
+  }
+  return ids;
 }
 
 /** Library items that can be tagged onto this program. Already-tagged items stay out of the picker. */

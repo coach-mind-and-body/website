@@ -320,21 +320,13 @@ struct ProgramsView: View {
                         .font(.headline)
                         .foregroundStyle(HTTheme.forest)
                     ForEach(forms) { form in
-                        VStack(alignment: .leading, spacing: 6) {
-                            NavigationLink {
-                                FormFillView(auth: auth, formId: form.id)
-                                    .onDisappear { Task { await model.load(bypassCache: true) } }
-                            } label: {
-                                formCard(form)
-                            }
-                            .buttonStyle(.plain)
-                            if let original = originalFile(for: form, in: current) {
-                                Button("View original PDF") { openFile(original) }
-                                    .font(.caption.weight(.bold))
-                                    .foregroundStyle(HTTheme.gold)
-                                    .padding(.leading, 6)
-                            }
+                        NavigationLink {
+                            FormFillView(auth: auth, formId: form.id)
+                                .onDisappear { Task { await model.load(bypassCache: true) } }
+                        } label: {
+                            formCard(form)
                         }
+                        .buttonStyle(.plain)
                     }
                 }
 
@@ -386,14 +378,6 @@ struct ProgramsView: View {
             Text(form.title)
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(HTTheme.forest)
-        }
-    }
-
-    private func originalFile(for form: ProgramFormCard, in bundle: ProgramBundle) -> ProgramFile? {
-        guard !form.sourceFileIds.isEmpty else { return nil }
-        return bundle.files.first { file in
-            if let libraryId = file.libraryFileId, form.sourceFileIds.contains(libraryId) { return true }
-            return file.source == "library" && form.sourceFileIds.contains(file.id)
         }
     }
 

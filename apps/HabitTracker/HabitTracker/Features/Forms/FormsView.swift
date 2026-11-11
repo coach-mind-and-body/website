@@ -8,6 +8,7 @@ struct ClientFormSummary: Codable, Identifiable {
     var kind: String
     var status: String
     var programTags: [String]
+    var sourceFileIds: [Int]?
 }
 
 struct FormFieldModel: Codable, Identifiable, Hashable {
@@ -119,15 +120,15 @@ struct FormsListView: View {
                     }
                 }
             }
-            if !library.isEmpty {
-                Section("Pages") {
-                    ForEach(library) { item in
+            if !visibleLibrary.isEmpty {
+                Section("Files") {
+                    ForEach(visibleLibrary) { item in
                         NavigationLink {
                             LibraryPagesView(title: item.title, pages: item.pages)
                         } label: {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(item.title).foregroundStyle(HTTheme.forest)
-                                Text("\(item.pages.count) \(item.pages.count == 1 ? "page" : "pages")")
+                                Text("Original file")
                                     .font(.caption)
                                     .foregroundStyle(HTTheme.muted)
                             }
@@ -142,6 +143,14 @@ struct FormsListView: View {
         .navigationTitle("Worksheets")
         .task { await load() }
         .refreshable { await load() }
+    }
+
+    private var visibleLibrary: [LibraryListItemModel] {
+        let covered = Set(forms.flatMap { $0.sourceFileIds ?? [] })
+        guard !covered.isEmpty else { return library }
+        return library.filter { item in
+            !item.pages.contains { covered.contains($0.id) }
+        }
     }
 
     private func load() async {

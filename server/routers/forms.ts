@@ -311,6 +311,7 @@ export const formsRouter = router({
           title: template.title,
           kind: template.kind,
           programTags: template.programTags,
+          sourceFileIds: template.sourceFileIds,
           status: clientFormStatus(sub?.status),
         },
       ];

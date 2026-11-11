@@ -325,7 +325,7 @@ export function FormTemplateEditor({
       </div>
 
       <div className="space-y-6">
-        {pages.length > 0 ? <LibraryPager pages={pages} title="Original pages" /> : null}
+        {pages.length > 0 ? <LibraryPager pages={pages} title="The original file, not the form" /> : null}
         <div className="rounded-2xl bg-white p-4" style={{ border: "1px solid #f0e8e4" }}>
           <h2 className="mb-4 text-xl font-bold" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
             Client preview

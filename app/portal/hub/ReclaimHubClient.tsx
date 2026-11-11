@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { BRAND } from "@shared/brand";
 import { isProgramId, type ProgramId } from "@shared/programs";
+import { hubFileIsHiddenByForm } from "@shared/forms";
 import Link from 'next/link';
 import {
   Carousel,
@@ -106,6 +107,7 @@ export default function ReclaimHub() {
         assignments: selectedProgram.assignments,
         submissions: selectedProgram.submissions,
         files: selectedProgram.files,
+        forms: selectedProgram.forms,
         label: selectedProgram.label,
         program: selectedProgram.program,
       }
@@ -424,11 +426,26 @@ export default function ReclaimHub() {
                 </div>
               </Link>
 
-              {(data?.files.length ?? 0) > 0 && (
+              {((data?.forms?.length ?? 0) > 0 || (data?.files.length ?? 0) > 0) && (
                 <div className="mb-10 rounded-2xl p-5" style={{ background: "white", border: "1px solid #f0e8e4" }}>
-                  <p className="text-sm font-bold mb-3" style={{ color: "#2d3b2d" }}>Files for this program</p>
+                  <p className="text-sm font-bold mb-3" style={{ color: "#2d3b2d" }}>Files and forms</p>
                   <div className="space-y-2">
-                    {data?.files.map((file) => (
+                    {(data?.forms ?? [])
+                      .filter((form) => form.sourceFileIds.length > 0)
+                      .map((form) => (
+                        <Link
+                          key={`form-${form.id}`}
+                          href={`/portal/forms/${form.id}`}
+                          className="flex items-center justify-between gap-3 p-3 rounded-xl"
+                          style={{ background: "#faf5f5" }}
+                        >
+                          <span className="text-sm font-semibold truncate" style={{ color: "#2d3b2d" }}>{form.title}</span>
+                          <span className="text-xs font-bold shrink-0" style={{ color: "#c9a96e" }}>Form</span>
+                        </Link>
+                      ))}
+                    {(data?.files ?? [])
+                      .filter((file) => !hubFileIsHiddenByForm(file, data?.forms ?? []))
+                      .map((file) => (
                       <a
                         key={`${file.source}-${file.id}`}
                         href={file.fileUrl}
@@ -438,7 +455,7 @@ export default function ReclaimHub() {
                         style={{ background: "#faf5f5" }}
                       >
                         <span className="text-sm font-semibold truncate" style={{ color: "#2d3b2d" }}>{file.fileName}</span>
-                        <span className="text-xs font-bold shrink-0" style={{ color: "#c9a96e" }}>Open</span>
+                        <span className="text-xs font-bold shrink-0" style={{ color: "#c9a96e" }}>Original file</span>
                       </a>
                     ))}
                   </div>

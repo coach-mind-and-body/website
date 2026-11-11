@@ -17,6 +17,7 @@ const metabolicGroup: ProgramLibraryItem = {
   ],
   linkedFormId: 21,
   linkedFormTitle: "Fasting check-in",
+  linkedPublishStatus: "published",
 };
 
 const reclaimFile: ProgramLibraryItem = {
@@ -27,6 +28,7 @@ const reclaimFile: ProgramLibraryItem = {
   pages: [{ id: 8, fileName: "Muai Quote.pdf", fileUrl: "https://cdn.example/muai.pdf" }],
   linkedFormId: null,
   linkedFormTitle: null,
+  linkedPublishStatus: null,
 };
 
 const untagged: ProgramLibraryItem = {
@@ -37,29 +39,39 @@ const untagged: ProgramLibraryItem = {
   pages: [{ id: 9, fileName: "Grocery list.pdf", fileUrl: "https://cdn.example/grocery.pdf" }],
   linkedFormId: null,
   linkedFormTitle: null,
+  linkedPublishStatus: null,
 };
 
 describe("program content library", () => {
-  it("lists the file and its form for the tagged program, with the page group", () => {
+  it("shows a published form once, and keeps a link to the original pages", () => {
     const rows = listProgramContent([metabolicGroup, reclaimFile, untagged], "metabolic");
-    expect(rows.map((row) => row.type)).toEqual(["file", "form"]);
+    expect(rows.map((row) => row.type)).toEqual(["form"]);
     expect(rows[0]).toMatchObject({
-      title: "Men's fasting calendar",
-      pageGroup: "Men's fasting calendar",
-      linkLabel: "Open",
-      href: "https://cdn.example/3.png",
-      tagKind: "group",
-      tagId: 10,
-    });
-    expect(rows[1]).toMatchObject({
-      type: "form",
       title: "Fasting check-in",
       pageGroup: "Men's fasting calendar",
-      href: "/admin/forms/21",
-      linkLabel: "Edit",
+      formHref: "/admin/forms/21",
+      fileHref: "https://cdn.example/3.png",
+      fileLinkLabel: "Open the original pages",
+      draftFormHref: null,
       tagKind: "group",
       tagId: 10,
     });
+  });
+
+  it("keeps the original file when the form is still a draft", () => {
+    const rows = listProgramContent(
+      [{ ...metabolicGroup, linkedPublishStatus: "draft" }],
+      "metabolic"
+    );
+    expect(rows).toEqual([
+      expect.objectContaining({
+        type: "file",
+        title: "Men's fasting calendar",
+        formHref: null,
+        draftFormHref: "/admin/forms/21",
+        fileLinkLabel: "Open the original pages",
+      }),
+    ]);
   });
 
   it("lists a loose file without a page group and keeps it on every tagged program", () => {
@@ -71,7 +83,8 @@ describe("program content library", () => {
         type: "file",
         title: "Muai Quote.pdf",
         pageGroup: null,
-        href: "https://cdn.example/muai.pdf",
+        fileHref: "https://cdn.example/muai.pdf",
+        formHref: null,
         tagKind: "file",
         tagId: 8,
       }),

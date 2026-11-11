@@ -8,7 +8,6 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/use-auth";
 import { getLoginUrl } from "@/lib/const";
 import { FillableForm } from "@/components/forms/FillableForm";
-import { LibraryPager } from "@/components/forms/LibraryPager";
 import type { FormAnswers } from "@shared/forms";
 
 export default function FormFillClient() {
@@ -86,10 +85,16 @@ export default function FormFillClient() {
         <h1 className="mt-3 text-4xl font-bold" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>{form.title}</h1>
         <p className="mt-2 text-sm font-bold" style={{ color: "#c9a96e" }}>{note}</p>
         {form.instructions ? <p className="mt-4 whitespace-pre-wrap text-base" style={{ color: "#5a6b5a" }}>{form.instructions}</p> : null}
-        {detail.data.pages.length > 0 ? (
-          <div className="mt-6">
-            <LibraryPager pages={detail.data.pages} title="Original pages" />
-          </div>
+        {detail.data.pages[0] ? (
+          <a
+            href={detail.data.pages[0].fileUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 inline-block text-sm font-bold"
+            style={{ color: "#c9a96e" }}
+          >
+            View the original file
+          </a>
         ) : null}
         {form.kind === "handout" ? (
           <p className="mt-6 whitespace-pre-wrap text-base leading-relaxed" style={{ color: "#2d3b2d" }}>{form.content}</p>
