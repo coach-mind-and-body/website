@@ -232,6 +232,10 @@ export const leadgenRouter = router({
   subscribeRealFoodReset: publicProcedure
     .input(leadInputSchema)
     .mutation(async ({ input, ctx }) => {
+      // Refuse before any list write or email. enroll throws once the challenge has ended or is archived.
+      const enrolled = await enrollRealFoodResetByEmail(input.email);
+      const claimToken = enrolled.claimToken;
+
       try {
         await addSubscriberSegment(input.email, input.firstName, REAL_FOOD_RESET.segment);
       } catch (e) {
@@ -248,13 +252,6 @@ export const leadgenRouter = router({
       }
 
       const firstName = input.firstName?.trim() || "friend";
-      let claimToken: string | null = null;
-      try {
-        const enrolled = await enrollRealFoodResetByEmail(input.email);
-        claimToken = enrolled.claimToken;
-      } catch (e) {
-        console.error("[LeadGen] Real Food Reset challenge enroll failed:", e);
-      }
       try {
         await enrollUserInSequence(input.email, firstName, REAL_FOOD_RESET_SEQUENCE_ID);
         await enrollUserInSequence(input.email, firstName, REAL_FOOD_RESET_OFFER_SEQUENCE_ID);
