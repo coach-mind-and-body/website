@@ -150,8 +150,9 @@ enum HTTheme {
 }
 
 /// iPhone Duo uses one expanding layout. Compact width is the outer display and regular width is the inner display.
-/// The system tab bar and navigation bars move to the side when the pose calls for it. These helpers only choose
-/// an even column count and a 16:9 stage that follows the width just offered, including while the device folds.
+/// The system tab bar moves itself. These helpers only pick an even column count on the inner display, so a fold
+/// can split cards around the center, and a 16:9 stage that follows the width just offered.
+/// Scrolling screens stay in place across the fold. The hinge angle is not a layout input.
 enum DuoLayout {
     static func isRegularWidth(_ sizeClass: UserInterfaceSizeClass?) -> Bool {
         sizeClass == .regular
