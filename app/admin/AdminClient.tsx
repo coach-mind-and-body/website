@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Bell } from "lucide-react";
 import { useWebPush } from "@/hooks/useWebPush";
+import { useInboxNewMessageAlerts } from "@/hooks/useInboxNewMessageAlerts";
 import AdminPaymentsTab from "@/components/AdminPaymentsTab";
 import { AdminEngagementHub } from "@/components/admin/AdminEngagementHub";
 import { AdminPillNav } from "@/components/admin/AdminPillNav";
@@ -50,7 +51,18 @@ export default function Admin() {
     setShowEnrollModal(true);
   };
   const isAdmin = isAuthenticated && user?.role === "admin";
+  const { unread, alertsOn, enableAlerts } = useInboxNewMessageAlerts(isAdmin);
   const { isSupported: pushSupported, isSubscribed: pushOn, isSubscribing, subscribeToPush } = useWebPush();
+  const navItems = TABS.map((item) => (item.id === "overview" ? { ...item, badge: unread } : item));
+
+  const openMessages = () => {
+    setTab("overview");
+    window.setTimeout(() => {
+      const banner = document.getElementById("admin-unread-banner");
+      const list = document.getElementById("admin-messages");
+      (banner ?? list)?.scrollIntoView({ block: "center" });
+    }, 60);
+  };
 
   const { data: gcalStatus, refetch: refetchGcal } = trpc.googleCalendar.status.useQuery(undefined, {
     enabled: isAdmin && (tab === "people" || tab === "settings"),
@@ -137,7 +149,31 @@ export default function Admin() {
               Admin Portal
             </span>
           </a>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={openMessages}
+              className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full"
+              style={{ background: unread > 0 ? "oklch(0.52 0.2 25)" : "oklch(0.96 0.025 50)", color: unread > 0 ? "white" : "oklch(0.35 0.04 50)", border: unread > 0 ? "none" : "1px solid oklch(0.90 0.015 80)" }}
+            >
+              Messages
+              {unread > 0 ? (
+                <span className="min-w-5 rounded-full bg-white px-1.5 text-center text-[11px] leading-5" style={{ color: "oklch(0.42 0.16 25)" }}>
+                  {unread > 99 ? "99+" : unread}
+                </span>
+              ) : null}
+            </button>
+            {isAdmin && !alertsOn && (
+              <button
+                type="button"
+                onClick={enableAlerts}
+                className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full"
+                style={{ background: "oklch(0.96 0.025 50)", color: "oklch(0.35 0.04 50)", border: "1px solid oklch(0.90 0.015 80)" }}
+              >
+                <Bell size={13} />
+                Allow alerts
+              </button>
+            )}
             {pushSupported && !pushOn && (
               <button
                 type="button"
@@ -172,7 +208,7 @@ export default function Admin() {
         }`}
       >
         <div className="mb-8">
-          <AdminPillNav label="Admin" activeId={tab} onSelect={(id) => setTab(id as AdminSectionId)} items={TABS} />
+          <AdminPillNav label="Admin" activeId={tab} onSelect={(id) => setTab(id as AdminSectionId)} items={navItems} />
         </div>
 
         {preview && (

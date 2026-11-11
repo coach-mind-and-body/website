@@ -609,7 +609,7 @@ export const messagingRouter = router({
       }
 
       // Save outbound message to DB
-      await db.insert(messages).values({
+      const inserted = await db.insert(messages).values({
         conversationId: input.conversationId,
         direction: "outbound",
         content: storedContent || null,
@@ -621,7 +621,8 @@ export const messagingRouter = router({
         isInternal: isInternal,
         scheduledAt: isScheduled ? new Date(input.scheduledAt!) : null,
         replyToId: input.replyToId ?? null,
-      });
+      }).$returningId();
+      const messageId = inserted[0]?.id;
 
       // Update conversation's last active time
       await db.update(conversations)
@@ -638,6 +639,15 @@ export const messagingRouter = router({
           body: preview,
           url: "/habit-tracker/coach",
         }).catch((e) => console.error("[Messaging] notifyUser failed", e));
+        if (convo.platform === "webchat" && messageId) {
+          const { notifyClientOfCoachMessage } = await import("../coachMessageNotify");
+          void notifyClientOfCoachMessage({
+            userId: convo.userId,
+            conversationId: input.conversationId,
+            messageId,
+            preview,
+          });
+        }
       }
 
       if (!isInternal && !isScheduled) {

@@ -4,6 +4,7 @@ import { startLmsPoller } from "./lmsPoller";
 import { startYoutubePoller } from "./youtubePoller";
 import { startSequencePoller } from "./sequencePoller";
 import { startHabitReminderPoller } from "./habitReminderPoller";
+import { startCoachReplyEmailPoller } from "./coachMessageNotify";
 import { processScheduledCampaigns } from "./crm/campaignJob";
 import { processSendingNewsletters } from "./newsletterJob";
 
@@ -23,6 +24,9 @@ startSequencePoller();
 
 // Daily habit push reminders (~8:00 PM America/Denver)
 startHabitReminderPoller();
+
+// Email a client if Lee Anne's in-app reply is still unread after ~10 minutes.
+startCoachReplyEmailPoller();
 
 // Process scheduled CRM SMS campaigns every 60 seconds
 processScheduledCampaigns().catch((err) =>

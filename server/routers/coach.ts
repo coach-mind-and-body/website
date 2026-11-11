@@ -185,6 +185,13 @@ export const coachRouter = router({
         url: "/admin",
       }).catch((e) => console.error("[Coach] notifyAdmins failed", e));
 
+      const { notifyAdminsOfClientMessage } = await import("../coachMessageNotify");
+      void notifyAdminsOfClientMessage({
+        conversationId: thread.id,
+        preview: text || "Sent a file",
+        clientName: ctx.user.name || "A client",
+      });
+
       const { publishCoachEvent } = await import("../coachEvents");
       publishCoachEvent({ type: "message", conversationId: thread.id, who: "client" });
 

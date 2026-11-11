@@ -103,6 +103,28 @@ final class CoachInboxViewModel {
         replyingTo = nil
     }
 
+    func openConversation(id: Int) async {
+        if conversations.isEmpty {
+            await loadList()
+        }
+        if let row = conversations.first(where: { $0.id == id }) {
+            await open(row)
+            return
+        }
+        await open(
+            InboxConversation(
+                id: id,
+                platform: "webchat",
+                userName: nil,
+                contactPhone: nil,
+                contactEmail: nil,
+                unreadCount: 0,
+                lastMessagePreview: nil,
+                lastMessageAt: nil
+            )
+        )
+    }
+
     func loadThread() async {
         guard let id = selected?.id else { return }
         loadingThread = true
@@ -306,6 +328,16 @@ struct CoachInboxView: View {
                 await model.loadList()
                 await model.loadTemplates()
                 coach.unread = model.conversations.reduce(0) { $0 + ($1.unreadCount ?? 0) }
+                if let id = DeepLink.pendingConversationId {
+                    DeepLink.pendingConversationId = nil
+                    await model.openConversation(id: id)
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .mbrOpenDeepLink)) { note in
+                let fromNote = DeepLink.conversationId(from: note.userInfo ?? [:])
+                guard let id = fromNote ?? DeepLink.pendingConversationId else { return }
+                DeepLink.pendingConversationId = nil
+                Task { await model.openConversation(id: id) }
             }
         }
     }

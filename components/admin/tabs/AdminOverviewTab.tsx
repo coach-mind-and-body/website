@@ -66,6 +66,10 @@ export function AdminOverviewTab({ onEnrollLead }: AdminOverviewTabProps) {
     onError: (e) => toast.error(e.message),
   });
 
+  const unreadThreads = (activeConversations ?? []).filter((conversation) => (conversation.unreadCount ?? 0) > 0);
+  const unreadTotal = unreadThreads.reduce((sum, conversation) => sum + (conversation.unreadCount ?? 0), 0);
+  const newestUnread = unreadThreads[0];
+
   const now = Date.now();
   const allEvents = calendar?.events ?? [];
   const upcomingEvents = allEvents.filter((e) => new Date(e.startTime).getTime() >= now - 30 * 60 * 1000);
@@ -76,6 +80,33 @@ export function AdminOverviewTab({ onEnrollLead }: AdminOverviewTabProps) {
 
   return (
     <div>
+      {unreadTotal > 0 && newestUnread && (
+        <button
+          id="admin-unread-banner"
+          type="button"
+          onClick={() =>
+            setActiveChatMeta({
+              conversationId: newestUnread.id,
+              userId: newestUnread.userId ?? null,
+              contactPhone: newestUnread.contactPhone,
+              userName: newestUnread.userName || newestUnread.contactEmail || newestUnread.contactPhone,
+            })
+          }
+          className="mb-6 w-full rounded-2xl px-5 py-5 text-left shadow-md"
+          style={{ background: "oklch(0.48 0.18 25)", color: "white" }}
+          aria-live="assertive"
+        >
+          <p className="text-xl font-bold">
+            {unreadTotal} unread client message{unreadTotal === 1 ? "" : "s"}
+          </p>
+          <p className="mt-1 text-sm" style={{ color: "oklch(0.95 0.02 25)" }}>
+            {(newestUnread.userName || newestUnread.contactEmail || newestUnread.contactPhone || "A client") +
+              ": " +
+              (newestUnread.lastMessagePreview || "New message")}
+          </p>
+          <p className="mt-3 text-sm font-bold">Open the conversation</p>
+        </button>
+      )}
       <h2
         className="font-bold text-2xl mb-6"
         style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.20 0.015 50)" }}
@@ -375,7 +406,7 @@ export function AdminOverviewTab({ onEnrollLead }: AdminOverviewTabProps) {
           </div>
         </div>
 
-        <div>
+        <div id="admin-messages">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-lg" style={{ color: "oklch(0.20 0.015 50)" }}>
               Recent Messages

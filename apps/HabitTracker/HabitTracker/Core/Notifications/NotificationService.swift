@@ -1,14 +1,53 @@
 import Foundation
+import UIKit
 import UserNotifications
 
+enum DeviceTokenStore {
+    private static let key = "apns.deviceToken"
+
+    static var current: String? {
+        UserDefaults.standard.string(forKey: key)
+    }
+
+    static func save(_ token: String) {
+        UserDefaults.standard.set(token, forKey: key)
+    }
+}
+
 enum NotificationService {
+    private static var suppressLocalCoachUntil = Date.distantPast
+    private static var lastLocalCoachId: String?
+
     static func requestAuthorization() async -> Bool {
         let center = UNUserNotificationCenter.current()
         do {
-            return try await center.requestAuthorization(options: [.alert, .badge, .sound])
+            let ok = try await center.requestAuthorization(options: [.alert, .badge, .sound])
+            if ok { registerForRemoteNotifications() }
+            return ok
         } catch {
             return false
         }
+    }
+
+    static func registerForRemoteNotifications() {
+        DispatchQueue.main.async {
+            UIApplication.shared.registerForRemoteNotifications()
+        }
+    }
+
+    /// Registers when the user already allowed alerts, without showing the system prompt again.
+    static func registerIfAuthorized() async {
+        if await isAuthorized() {
+            registerForRemoteNotifications()
+        }
+    }
+
+    static func noteRemoteCoachDelivery() {
+        suppressLocalCoachUntil = Date().addingTimeInterval(30)
+        guard let lastLocalCoachId else { return }
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: [lastLocalCoachId])
+        center.removeDeliveredNotifications(withIdentifiers: [lastLocalCoachId])
     }
 
     static func isAuthorized() async -> Bool {
@@ -17,6 +56,7 @@ enum NotificationService {
     }
 
     static func notifyCoachReply(preview: String) async {
+        if Date() < suppressLocalCoachUntil { return }
         let granted = await requestAuthorization()
         guard granted else { return }
         let content = UNMutableNotificationContent()
@@ -25,8 +65,10 @@ enum NotificationService {
         content.sound = .default
         content.userInfo = ["tab": "coach", "url": "/habit-tracker/coach"]
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 0.5, repeats: false)
+        let identifier = "coach-\(Int(Date().timeIntervalSince1970))"
+        lastLocalCoachId = identifier
         let req = UNNotificationRequest(
-            identifier: "coach-\(Int(Date().timeIntervalSince1970))",
+            identifier: identifier,
             content: content,
             trigger: trigger
         )
@@ -189,6 +231,12 @@ final class NotificationTapDelegate: NSObject, UNUserNotificationCenterDelegate 
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
+        let info = notification.request.content.userInfo
+        let tab = (info["tab"] as? String)?.lowercased()
+        let url = (info["url"] as? String)?.lowercased() ?? ""
+        if !notification.request.identifier.hasPrefix("coach-"), tab == "coach" || url.contains("coach") {
+            NotificationService.noteRemoteCoachDelivery()
+        }
         completionHandler([.banner, .sound, .list])
     }
 

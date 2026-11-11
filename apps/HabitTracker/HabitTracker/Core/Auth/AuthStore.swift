@@ -42,6 +42,7 @@ final class AuthStore {
             if let me = try await loadMeOptional() {
                 user = me
                 sessionEpoch += 1
+                await syncPushRegistration()
             } else {
                 signOut()
             }
@@ -49,6 +50,7 @@ final class AuthStore {
             if let optional = try? await loadMeOptional() {
                 user = optional
                 sessionEpoch += 1
+                await syncPushRegistration()
             } else {
                 signOut()
             }
@@ -121,6 +123,7 @@ final class AuthStore {
         if let me = try? await loadMeOptional() {
             user = me
             sessionEpoch += 1
+            await syncPushRegistration()
             return
         }
         errorMessage = "Signed in, but your profile did not load. Pull to refresh on the You screen."
@@ -150,5 +153,26 @@ final class AuthStore {
         KeychainStore.saveToken(token)
         await client.setToken(token)
         sessionEpoch += 1
+        await syncPushRegistration()
+    }
+
+    func uploadDeviceToken(_ token: String) async {
+        guard isSignedIn, !token.isEmpty else { return }
+        let marker = "apns.uploaded.\(user?.id ?? 0)"
+        if UserDefaults.standard.string(forKey: marker) == token { return }
+        do {
+            let _: SuccessFlag = try await client.mutate(
+                "push.registerDeviceToken",
+                input: DeviceTokenInput(token: token)
+            )
+            UserDefaults.standard.set(token, forKey: marker)
+        } catch {
+            // Keep the token on device and try again next launch.
+        }
+    }
+
+    private func syncPushRegistration() async {
+        guard let token = DeviceTokenStore.current else { return }
+        await uploadDeviceToken(token)
     }
 }

@@ -3,6 +3,7 @@ import SwiftUI
 extension Notification.Name {
     static let mbrFoodLogged = Notification.Name("mbr.foodLogged")
     static let mbrOpenDeepLink = Notification.Name("mbr.openDeepLink")
+    static let mbrDeviceToken = Notification.Name("mbr.deviceToken")
 }
 
 enum DeepLink: String {
@@ -11,14 +12,26 @@ enum DeepLink: String {
     case habits
 
     static var pending: DeepLink?
+    /// Set when a push names a thread. The coach inbox consumes it.
+    static var pendingConversationId: Int?
+
+    static func conversationId(from userInfo: [AnyHashable: Any]) -> Int? {
+        if let n = userInfo["conversationId"] as? Int { return n }
+        if let n = userInfo["conversationId"] as? NSNumber { return n.intValue }
+        if let s = userInfo["conversationId"] as? String, let n = Int(s) { return n }
+        return nil
+    }
 
     static func post(_ link: DeepLink) {
+        let conversationId = pendingConversationId
         DispatchQueue.main.async {
             pending = link
+            var info: [String: Any] = ["link": link.rawValue]
+            if let conversationId { info["conversationId"] = conversationId }
             NotificationCenter.default.post(
                 name: .mbrOpenDeepLink,
                 object: nil,
-                userInfo: ["link": link.rawValue]
+                userInfo: info
             )
         }
     }
@@ -30,6 +43,9 @@ enum DeepLink: String {
     }
 
     static func fromNotification(_ userInfo: [AnyHashable: Any]) -> DeepLink? {
+        if let id = conversationId(from: userInfo) {
+            pendingConversationId = id
+        }
         if let raw = userInfo["tab"] as? String, let link = DeepLink(rawValue: raw.lowercased()) {
             return link
         }
