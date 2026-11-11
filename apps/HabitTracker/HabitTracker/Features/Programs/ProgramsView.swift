@@ -106,7 +106,14 @@ struct ProgramSession: Decodable, Equatable {
         if let date = withFraction.date(from: trimmed) { return date }
         let plain = ISO8601DateFormatter()
         plain.formatOptions = [.withInternetDateTime]
-        return plain.date(from: trimmed)
+        if let date = plain.date(from: trimmed) { return date }
+        // MySQL "YYYY-MM-DD HH:MM:SS" and zone-less ISO are UTC instants from the server.
+        var normalized = trimmed.replacingOccurrences(of: " ", with: "T")
+        let hasZone = normalized.hasSuffix("Z")
+            || normalized.range(of: #"[+-]\d{2}:?\d{2}$"#, options: .regularExpression) != nil
+        if !hasZone { normalized += "Z" }
+        if let date = withFraction.date(from: normalized) { return date }
+        return plain.date(from: normalized)
     }
 }
 
@@ -156,6 +163,8 @@ struct ProgramAssignment: Decodable, Identifiable {
     var moduleId: Int
     var question: String
     var order: Int
+    /// "Homework" marks the lesson's written answer. Older responses omit it.
+    var title: String?
 }
 
 struct ProgramSubmission: Decodable, Identifiable {
@@ -258,16 +267,21 @@ final class ProgramsModel {
     }
 
     func submit(assignmentId: Int, answer: String?, file: Data?, fileName: String, mimeType: String) async {
-        guard let enrollmentId = current?.enrollment?.id else {
+        let text = answer?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let hasText = text?.isEmpty == false
+        if file != nil && current?.enrollment?.id == nil {
             errorMessage = "This program is not open for uploads yet."
             return
         }
-        let text = answer?.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !hasText && file == nil {
+            errorMessage = "Write an answer or add a photo."
+            return
+        }
         sendingAssignmentId = assignmentId
         defer { sendingAssignmentId = nil }
         do {
             var fileUrl: String?
-            if let file {
+            if let file, let enrollmentId = current?.enrollment?.id {
                 let uploaded: ProgramUploadResult = try await auth.client.mutate(
                     "clientFiles.upload",
                     input: FileUploadInput(
@@ -868,8 +882,20 @@ private struct ProgramModuleView: View {
                             .foregroundStyle(HTTheme.muted)
                             .fixedSize(horizontal: false, vertical: true)
                     }
+                    if let session = bundle?.nextUpcomingSession(), let when = session.scheduledAt {
+                        NextSessionCard(when: when, joinURL: session.joinURL)
+                    }
                     if let content = module.content, !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                        ProgramRichText(source: content)
+                        let sections = programLessonSections(from: content)
+                        let inlineId = homeworkAssignmentId(moduleId: module.id, sections: sections)
+                        ForEach(Array(sections.enumerated()), id: \.offset) { _, section in
+                            if !section.blocks.isEmpty {
+                                ProgramRichText(blocks: section.blocks)
+                            }
+                            if section.answerAfter, let inlineId, let bundle {
+                                assignmentTask(inlineId, bundle: bundle, showsQuestion: false)
+                            }
+                        }
                     }
                     if let videoUrl = module.videoUrl, let url = URL(string: videoUrl) {
                         Button("Watch the lesson") { video = IdentifiedURL(url: url) }
@@ -885,32 +911,12 @@ private struct ProgramModuleView: View {
                         .foregroundStyle(HTTheme.gold)
                     }
                     if let bundle {
-                        let tasks = bundle.assignments.filter { $0.moduleId == module.id }.sorted { $0.order < $1.order }
+                        let inlineId = module.content.map { homeworkAssignmentId(moduleId: module.id, sections: programLessonSections(from: $0)) } ?? nil
+                        let tasks = bundle.assignments
+                            .filter { $0.moduleId == module.id && $0.id != inlineId }
+                            .sorted { $0.order < $1.order }
                         ForEach(tasks) { task in
-                            if let form = (bundle.forms ?? []).first(where: { $0.id == task.id }) {
-                                if let onOpenForm {
-                                    Button {
-                                        onOpenForm(form.id)
-                                    } label: {
-                                        moduleFormCard(form)
-                                    }
-                                    .buttonStyle(.plain)
-                                } else {
-                                    NavigationLink {
-                                        FormFillView(
-                                            auth: auth,
-                                            formId: form.id,
-                                            session: formCache?.existing(formId: form.id)
-                                        )
-                                        .onDisappear { Task { await model.load(bypassCache: true) } }
-                                    } label: {
-                                        moduleFormCard(form)
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                            } else {
-                                AssignmentComposer(task: task, bundle: bundle, model: model, drafts: draftsBinding)
-                            }
+                            assignmentTask(task.id, bundle: bundle)
                         }
                     }
                 } else {
@@ -935,6 +941,50 @@ private struct ProgramModuleView: View {
         }
         .sheet(item: $video) { item in
             InAppSafari(url: item.url)
+        }
+    }
+
+    private func homeworkAssignmentId(moduleId: Int, sections: [ProgramLessonSection]) -> Int? {
+        guard sections.contains(where: { $0.answerAfter }), let bundle else { return nil }
+        return bundle.assignments.first { task in
+            task.moduleId == moduleId
+                && task.title?.trimmingCharacters(in: .whitespacesAndNewlines).caseInsensitiveCompare("Homework") == .orderedSame
+        }?.id
+    }
+
+    @ViewBuilder
+    private func assignmentTask(_ taskId: Int, bundle: ProgramBundle, showsQuestion: Bool = true) -> some View {
+        if let task = bundle.assignments.first(where: { $0.id == taskId }) {
+            if let form = (bundle.forms ?? []).first(where: { $0.id == task.id }) {
+                if let onOpenForm {
+                    Button {
+                        onOpenForm(form.id)
+                    } label: {
+                        moduleFormCard(form)
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    NavigationLink {
+                        FormFillView(
+                            auth: auth,
+                            formId: form.id,
+                            session: formCache?.existing(formId: form.id)
+                        )
+                        .onDisappear { Task { await model.load(bypassCache: true) } }
+                    } label: {
+                        moduleFormCard(form)
+                    }
+                    .buttonStyle(.plain)
+                }
+            } else {
+                AssignmentComposer(
+                    task: task,
+                    bundle: bundle,
+                    model: model,
+                    drafts: draftsBinding,
+                    showsQuestion: showsQuestion
+                )
+            }
         }
     }
 
@@ -990,15 +1040,18 @@ private struct AssignmentComposer: View {
     var bundle: ProgramBundle
     var model: ProgramsModel
     @Binding var drafts: [Int: String]
+    var showsQuestion: Bool = true
     @State private var photoItem: PhotosPickerItem?
     @State private var showFiles = false
 
     var body: some View {
         let submission = bundle.submissions.first { $0.assignmentId == task.id }
         HTCard {
-            Text(task.question)
-                .font(.body.weight(.semibold))
-                .foregroundStyle(HTTheme.forest)
+            if showsQuestion {
+                Text(task.question)
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(HTTheme.forest)
+            }
             TextField("Your answer", text: Binding(
                 get: { drafts[task.id] ?? "" },
                 set: { drafts[task.id] = $0 }

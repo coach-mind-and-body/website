@@ -3,12 +3,13 @@ import SwiftUI
 /// Module body from the hub. The API stores the same HTML the website renders.
 /// This keeps headings, lists, breaks, and emphasis instead of collapsing them into one paragraph.
 struct ProgramRichText: View {
-    var source: String
+    var source: String = ""
+    var blocks: [ProgramHTML.Block]? = nil
 
     var body: some View {
-        let blocks = ProgramHTML.blocks(from: source)
+        let rendered = blocks ?? ProgramHTML.blocks(from: source)
         VStack(alignment: .leading, spacing: 14) {
-            ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
+            ForEach(Array(rendered.enumerated()), id: \.offset) { _, block in
                 blockView(block)
             }
         }
@@ -90,6 +91,45 @@ struct ProgramRichText: View {
             return .system(.title3, design: .serif).weight(.semibold)
         }
     }
+}
+
+struct ProgramLessonSection {
+    var blocks: [ProgramHTML.Block]
+    var answerAfter: Bool
+}
+
+/// Splits a lesson so a written answer can sit under the Homework heading.
+func programLessonSections(from source: String) -> [ProgramLessonSection] {
+    let blocks = ProgramHTML.blocks(from: source)
+    var sections: [ProgramLessonSection] = []
+    var current: [ProgramHTML.Block] = []
+    var inHomework = false
+    for block in blocks {
+        if case .heading(_, let text) = block,
+           text.trimmingCharacters(in: .whitespacesAndNewlines).caseInsensitiveCompare("Homework") == .orderedSame {
+            if !current.isEmpty {
+                sections.append(ProgramLessonSection(blocks: current, answerAfter: false))
+                current = []
+            }
+            current.append(block)
+            inHomework = true
+            continue
+        }
+        if inHomework, case .heading = block {
+            sections.append(ProgramLessonSection(blocks: current, answerAfter: true))
+            current = [block]
+            inHomework = false
+            continue
+        }
+        current.append(block)
+    }
+    if !current.isEmpty {
+        sections.append(ProgramLessonSection(blocks: current, answerAfter: inHomework))
+    }
+    if sections.isEmpty {
+        return [ProgramLessonSection(blocks: [], answerAfter: false)]
+    }
+    return sections
 }
 
 enum ProgramHTML {

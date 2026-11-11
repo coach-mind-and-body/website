@@ -68,6 +68,19 @@ export function nowMountain(): string {
   return utcToMountain(new Date().toISOString());
 }
 
+/** Coaching times are kept in America/Denver so an evening appointment is not labeled as the next UTC morning. */
+export function formatMountainStamp(value: Date | string | number): string {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return (
+    date.toLocaleString("en-US", {
+      timeZone: MOUNTAIN_TZ,
+      dateStyle: "long",
+      timeStyle: "short",
+    }) + " MT"
+  );
+}
+
 /** Returns the current Mountain Time as a date string ("YYYY-MM-DD") */
 export function todayMountainDateStr(): string {
   return nowMountain().slice(0, 10);

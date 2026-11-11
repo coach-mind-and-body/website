@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { PROGRAM_LIST, type ProgramId } from "@shared/programs";
+import { MODULE_HOMEWORK_TITLE, homeworkPromptFromHtml } from "@shared/moduleHomework";
 import { ProgramFilesForms } from "@/components/admin/ProgramFilesForms";
 
 export default function ProgramBuilderTab({ program: lockedProgram }: { program?: ProgramId } = {}) {
@@ -254,7 +255,7 @@ export default function ProgramBuilderTab({ program: lockedProgram }: { program?
 
               {editingModule.id && (
                 <div className="mt-8 pt-6 border-t" style={{ borderColor: "oklch(0.90 0.015 80)" }}>
-                  <ModuleAssignmentsEditor moduleId={editingModule.id} />
+                  <ModuleAssignmentsEditor moduleId={editingModule.id} content={editingModule.content || ""} />
                 </div>
               )}
 
@@ -342,8 +343,18 @@ export default function ProgramBuilderTab({ program: lockedProgram }: { program?
   );
 }
 
-function ModuleAssignmentsEditor({ moduleId }: { moduleId: number }) {
+function ModuleAssignmentsEditor({ moduleId, content }: { moduleId: number; content: string }) {
   const { data: assignments, refetch } = trpc.reclaimHub.adminListAssignments.useQuery({ moduleId });
+  const prompt = homeworkPromptFromHtml(content);
+  const homework = (assignments || []).find((assignment) => assignment.title === MODULE_HOMEWORK_TITLE);
+  const answerBoxOn = homework ? homework.publishStatus !== "draft" : false;
+  const setAnswerBox = trpc.reclaimHub.adminSetHomeworkAnswerBox.useMutation({
+    onSuccess: (result) => {
+      toast.success(result.enabled ? "Clients can type an answer." : "Answer box hidden.");
+      refetch();
+    },
+    onError: (e) => toast.error(e.message),
+  });
   const [adding, setAdding] = useState(false);
   const [newQuestion, setNewQuestion] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -366,6 +377,28 @@ function ModuleAssignmentsEditor({ moduleId }: { moduleId: number }) {
 
   return (
     <div>
+      <div className="p-4 rounded-lg mb-4" style={{ background: "oklch(0.985 0.008 80)", border: "1px solid oklch(0.90 0.015 80)" }}>
+        <label className="flex items-start gap-2" style={{ color: "oklch(0.20 0.015 50)" }}>
+          <input
+            type="checkbox"
+            className="mt-1"
+            checked={answerBoxOn}
+            disabled={setAnswerBox.isPending}
+            onChange={(e) => setAnswerBox.mutate({ moduleId, enabled: e.target.checked })}
+          />
+          <span>
+            <span className="font-bold text-sm">Add a typed answer box</span>
+            <span className="block text-xs mt-1" style={{ color: "oklch(0.42 0.015 50)" }}>
+              {prompt
+                ? `Homework asks: “${prompt}” Clients get a text box. Answers show in Submissions.`
+                : "Add a Homework heading that asks them to write, journal, or reflect, save the module, then turn this on."}
+            </span>
+          </span>
+        </label>
+        <p className="text-xs mt-3" style={{ color: "oklch(0.52 0.015 50)" }}>
+          More questions: Add Task below. Choices, a table, or several blanks: open Form on that task.
+        </p>
+      </div>
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-bold text-lg" style={{ color: "oklch(0.20 0.015 50)" }}>Tasks & Assignments</h3>
         <Button 

@@ -16,6 +16,9 @@ import {
 } from "../drizzle/schema";
 import type { getDb } from "./db";
 import { clientModuleSession, nextCoachingSession, type ClientModuleSession, type HubNextSession } from "./coachingSessionHub";
+import { soonestJoinableSession } from "./calendarAppointments";
+import { getUpcomingEventsForEmail } from "./googleCalendar";
+import { ensureModuleHomeworkAssignments } from "./moduleHomework";
 import {
   coachMaySeeFoodLogs,
   enrollmentGrantsContent,
@@ -27,7 +30,7 @@ import {
 
 type Db = NonNullable<Awaited<ReturnType<typeof getDb>>>;
 
-type HubUser = { id: number; role?: string | null };
+type HubUser = { id: number; role?: string | null; email?: string | null };
 
 function asStatus(value: string): ContentEnrollmentStatus {
   if (value === "pending" || value === "active" || value === "completed" || value === "cancelled") {
@@ -61,13 +64,24 @@ export async function loadClientHub(db: Db, user: HubUser, options?: { programs?
 
   if (programs.length === 0) return { programs: [] as ClientProgramBundle[] };
 
-  const [modules, progressRows, assignmentRows, submissionRows, sessionRows] = await Promise.all([
+  const [modules, progressRows, assignmentSeed, submissionRows, sessionRows] = await Promise.all([
     db.select().from(programModules).orderBy(asc(programModules.order)),
     db.select().from(moduleProgress).where(eq(moduleProgress.userId, user.id)),
     db.select().from(assignments).orderBy(asc(assignments.order)),
     db.select().from(assignmentSubmissions).where(eq(assignmentSubmissions.userId, user.id)),
     db.select().from(coachingSessions).where(eq(coachingSessions.userId, user.id)),
   ]);
+  let assignmentRows = assignmentSeed;
+  try {
+    const addedHomework = await ensureModuleHomeworkAssignments(db, modules, assignmentRows);
+    if (addedHomework) {
+      assignmentRows = await db.select().from(assignments).orderBy(asc(assignments.order));
+    }
+  } catch (err) {
+    console.error("[Hub] Homework answer box was not created:", err instanceof Error ? err.message : "failed");
+  }
+  // A draft task is Lee Anne's off switch (including the homework answer box). Clients don't see it.
+  const clientAssignmentRows = assignmentRows.filter((row) => row.publishStatus !== "draft");
 
   const enrollmentIds = accessEnrollments.map((row) => row.id);
   const uploads =
@@ -144,7 +158,7 @@ export async function loadClientHub(db: Db, user: HubUser, options?: { programs?
     const prev = statusByFormId.get(row.assignmentId);
     if (!prev || at >= prev.at) statusByFormId.set(row.assignmentId, { status: row.status, at });
   }
-  const hubFormRows: HubFormInput[] = assignmentRows.map((row) => ({
+  const hubFormRows: HubFormInput[] = clientAssignmentRows.map((row) => ({
     id: row.id,
     moduleId: row.moduleId,
     moduleProgram: row.moduleId == null ? null : moduleProgramById.get(row.moduleId) ?? null,
@@ -177,7 +191,7 @@ export async function loadClientHub(db: Db, user: HubUser, options?: { programs?
       enrollments: accessEnrollments,
       modules: accessModules,
       progress: progressRows,
-      assignments: assignmentRows.flatMap((row) =>
+      assignments: clientAssignmentRows.flatMap((row) =>
         row.moduleId == null ? [] : [{ id: row.id, moduleId: row.moduleId }]
       ),
       submissions: submissionRows,
@@ -259,14 +273,50 @@ export async function loadClientHub(db: Db, user: HubUser, options?: { programs?
       // The next session's module is often still locked. It unlocks when the
       // session is marked complete, so the card cannot depend on visible modules.
       nextSession: enrollment ? nextCoachingSession(sessionRows, enrollment.id) : null,
-      assignments: assignmentRows.filter((row) => assignmentIds.has(row.id)),
+      assignments: clientAssignmentRows.filter((row) => assignmentIds.has(row.id)),
       submissions: submissionRows.filter((row) => submissionIds.has(row.id)),
       files,
       forms,
     });
   }
 
+  await attachCalendarAppointments(bundles, user.email);
+
   return { programs: bundles };
+}
+
+/**
+ * A Google Calendar booking for this person's email shows on the next-session card
+ * even when it was never written onto a coaching_sessions row.
+ * Tonight stays visible: the instant is the real start, not a UTC calendar date.
+ */
+async function attachCalendarAppointments(
+  bundles: ClientProgramBundle[],
+  email: string | null | undefined
+): Promise<void> {
+  if (bundles.length === 0 || !email) return;
+  try {
+    const events = await getUpcomingEventsForEmail(email);
+    const appointments = events.map((event) => ({
+      id: event.id,
+      summary: event.summary,
+      startTime: event.startTime instanceof Date ? event.startTime : new Date(event.startTime),
+      endTime:
+        event.endTime == null
+          ? null
+          : event.endTime instanceof Date
+            ? event.endTime
+            : new Date(event.endTime),
+      meetLink: event.meetLink,
+      htmlLink: event.htmlLink,
+    }));
+    if (appointments.length === 0) return;
+    for (const bundle of bundles) {
+      bundle.nextSession = soonestJoinableSession(bundle.nextSession, appointments);
+    }
+  } catch (err) {
+    console.error("[Hub] Calendar appointments were not loaded:", err instanceof Error ? err.message : "failed");
+  }
 }
 
 export type HubFile = {
