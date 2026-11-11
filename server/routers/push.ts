@@ -5,6 +5,7 @@ import { getDb } from "../db";
 import { challenges, pushSubscriptions, users, habitNotificationPrefs } from "../../drizzle/schema";
 import { eq, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { InvalidDeviceTokenError, saveDeviceToken } from "../apnsDevices";
 
 
 // ─── Configure VAPID ─────────────────────────────────────────────────────────
@@ -177,6 +178,24 @@ export async function notifyAllAdmins(payload: {
 
 // ─── tRPC Router ─────────────────────────────────────────────────────────────
 export const pushRouter = router({
+  /** Signed-in iOS app registers its APNs device token. One token follows the current user. */
+  registerDeviceToken: protectedProcedure
+    .input(z.object({ token: z.string().min(8).max(400) }))
+    .mutation(async ({ ctx, input }) => {
+      try {
+        await saveDeviceToken(ctx.user.id, input.token);
+      } catch (err) {
+        if (err instanceof InvalidDeviceTokenError) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: err.message });
+        }
+        if (err instanceof Error && err.message === "Database not available") {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: err.message });
+        }
+        throw err;
+      }
+      return { success: true as const };
+    }),
+
   // Get VAPID public key so the client can subscribe
   getPublicKey: publicProcedure.query(() => {
     return { publicKey: VAPID_PUBLIC_KEY };

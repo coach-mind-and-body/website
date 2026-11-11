@@ -40,5 +40,9 @@ export async function register() {
       );
     runScheduled();
     setInterval(runScheduled, 60_000);
+
+    // Unread coach-reply emails, about 10 minutes after the in-app message.
+    const { startCoachReplyEmailPoller } = await import("./server/coachMessageNotify");
+    startCoachReplyEmailPoller();
   }
 }

@@ -263,6 +263,10 @@ struct SendCoachInput: Encodable {
     var replyToId: Int?
 }
 
+struct DeviceTokenInput: Encodable {
+    var token: String
+}
+
 struct InboxConversation: Codable, Identifiable, Hashable {
     var id: Int
     var platform: String?

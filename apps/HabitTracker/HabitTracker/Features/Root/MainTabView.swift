@@ -75,6 +75,14 @@ struct MainTabView: View {
         }
         .tint(HTTheme.forest)
         .task {
+            if auth.usesAdminChrome {
+                _ = await NotificationService.requestAuthorization()
+            } else {
+                await NotificationService.registerIfAuthorized()
+            }
+            if let token = DeviceTokenStore.current {
+                await auth.uploadDeviceToken(token)
+            }
             applyDeepLink(DeepLink.consumePending())
             await habits.load()
             applyDeepLink(DeepLink.consumePending())
@@ -101,6 +109,10 @@ struct MainTabView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .mbrFoodLogged)) { _ in
             Task { await habits.onFoodLogged() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .mbrDeviceToken)) { note in
+            guard let token = note.object as? String else { return }
+            Task { await auth.uploadDeviceToken(token) }
         }
         .onReceive(NotificationCenter.default.publisher(for: .mbrOpenDeepLink)) { note in
             let raw = note.userInfo?["link"] as? String
@@ -148,6 +160,11 @@ struct MainTabView: View {
             tab = .habits
             Task { await habits.openChallengePane() }
         case .coach:
+            if auth.isAdmin, DeepLink.pendingConversationId != nil {
+                auth.preferClientPreview = false
+            } else if !auth.isAdmin {
+                DeepLink.pendingConversationId = nil
+            }
             tab = .coach
         case .habits:
             tab = .habits
@@ -200,7 +217,7 @@ struct MainTabView: View {
         Group {
             if auth.usesAdminChrome {
                 HStack(spacing: 0) {
-                    tabButton(.coach, "message")
+                    tabButton(.coach, "message", badge: coach.unread)
                     tabButton(.habits, "checklist")
                     tabButton(.profile, "person.crop.circle")
                 }
@@ -232,18 +249,30 @@ struct MainTabView: View {
         }
     }
 
-    private func tabButton(_ value: AppTab, _ icon: String) -> some View {
+    private func tabButton(_ value: AppTab, _ icon: String, badge: Int = 0) -> some View {
         let on = tab == value
         return Button {
             tab = value
         } label: {
-            Image(systemName: icon)
-                .font(.system(size: 18, weight: on ? .semibold : .regular))
-                .foregroundStyle(on ? Color.white : HTTheme.muted)
-                .frame(maxWidth: .infinity)
-                .frame(height: 40)
-                .background(on ? HTTheme.forest : Color.clear)
-                .clipShape(Capsule())
+            ZStack(alignment: .topTrailing) {
+                Image(systemName: icon)
+                    .font(.system(size: 18, weight: on ? .semibold : .regular))
+                    .foregroundStyle(on ? Color.white : HTTheme.muted)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 40)
+                    .background(on ? HTTheme.forest : Color.clear)
+                    .clipShape(Capsule())
+                if badge > 0 {
+                    Text(badge > 9 ? "9+" : "\(badge)")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(Color.red)
+                        .clipShape(Capsule())
+                        .offset(x: -8, y: 2)
+                }
+            }
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label(for: value))

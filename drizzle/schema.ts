@@ -298,6 +298,38 @@ export const pushSubscriptions = mysqlTable("push_subscriptions", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
+/** iOS remote-notification tokens. One row per device; the same token moves when the signed-in user changes. */
+export const apnsDeviceTokens = mysqlTable(
+  "apns_device_tokens",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    token: varchar("token", { length: 128 }).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => [uniqueIndex("apns_device_tokens_token").on(table.token)]
+);
+
+/**
+ * One row per coach reply. sentAt is set when the unread email goes out,
+ * or when the client already read the message, so the poller does not send twice.
+ */
+export const coachReplyEmailNotices = mysqlTable(
+  "coach_reply_email_notices",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    messageId: int("messageId").notNull(),
+    conversationId: int("conversationId").notNull(),
+    userId: int("userId").notNull(),
+    preview: varchar("preview", { length: 500 }).notNull().default(""),
+    dueAt: timestamp("dueAt").notNull(),
+    sentAt: timestamp("sentAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex("coach_reply_email_notices_message").on(table.messageId)]
+);
+
 export const challenges = mysqlTable("challenges", {
   id: int("id").primaryKey().autoincrement(),
   title: text("title").notNull(),
@@ -364,6 +396,8 @@ export const appUpdates = mysqlTable("app_updates", {
 
 export type PushSubscription = typeof pushSubscriptions.$inferSelect;
 export type InsertPushSubscription = typeof pushSubscriptions.$inferInsert;
+export type ApnsDeviceToken = typeof apnsDeviceTokens.$inferSelect;
+export type CoachReplyEmailNotice = typeof coachReplyEmailNotices.$inferSelect;
 export type Challenge = typeof challenges.$inferSelect;
 export type InsertChallenge = typeof challenges.$inferInsert;
 export type UserChallenge = typeof userChallenges.$inferSelect;
