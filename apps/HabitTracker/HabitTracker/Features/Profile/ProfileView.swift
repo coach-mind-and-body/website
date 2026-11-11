@@ -80,6 +80,11 @@ struct ProfileView: View {
                 }
 
                 if auth.isSignedIn && !auth.usesAdminChrome {
+                    Section("Worksheets") {
+                        NavigationLink("Fillable forms") {
+                            FormsListView(auth: auth)
+                        }
+                    }
                     Section("Coach") {
                         Toggle("Share habits with Lee Anne", isOn: $shareWithCoach)
                             .onChange(of: shareWithCoach) { _, on in

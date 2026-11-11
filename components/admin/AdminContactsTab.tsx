@@ -6,6 +6,8 @@ import { trpc } from "@/lib/trpc";
 import { formatPhoneDisplay, formatPhoneE164 } from "@/lib/phone";
 import { useInbox } from "./messaging/InboxContext";
 import AdminClientSessions from "../AdminClientSessions";
+import { ClientFormSubmissions } from "../forms/ClientFormSubmissions";
+import AdminModuleAssignment from "../AdminModuleAssignment";
 import AdminClientHabits from "../AdminClientHabits";
 import { AdminClientWorkspace } from "./AdminClientWorkspace";
 import { toast } from "sonner";
@@ -802,8 +804,16 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
                         enrollmentId={selectedContact.enrollmentId}
                         gcalConnected={gcalConnected}
                       />
+                      {selectedContact.userId ? (
+                        <>
+                          <p className="text-xs font-bold uppercase tracking-widest mt-6 mb-2" style={{ color: "oklch(0.52 0.015 50)" }}>Module Assignment</p>
+                          <AdminModuleAssignment userId={selectedContact.userId} />
+                        </>
+                      ) : null}
                     </div>
                   )}
+
+                  {selectedContact.userId ? <ClientFormSubmissions userId={selectedContact.userId} /> : null}
 
                   {selectedContact.userId && selectedContact.shareHabitsWithCoach && (
                     <div className="border-t pt-6" style={{ borderColor: "oklch(0.90 0.015 80)" }}>

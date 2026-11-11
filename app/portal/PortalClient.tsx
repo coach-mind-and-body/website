@@ -56,6 +56,16 @@ export default function Portal() {
 
   const { data: hub, isLoading: hubLoading, refetch: refetchHub } = trpc.reclaimHub.myHub.useQuery(undefined, liveOpts);
 
+  const enrollmentId = data?.enrollment?.id ?? 0;
+  const { data: filesData, refetch: refetchFiles } = trpc.clientFiles.list.useQuery(
+    { enrollmentId },
+    {
+      enabled: isAuthenticated && enrollmentId > 0,
+      refetchInterval: liveOpts.refetchInterval,
+      refetchOnWindowFocus: true,
+    }
+  );
+
   const { data: upcomingEvents, isLoading: upcomingLoading } = trpc.reclaimHub.getUpcomingAppointments.useQuery(
     undefined,
     liveOpts
@@ -65,6 +75,7 @@ export default function Portal() {
     onSuccess: () => {
       toast.success("File uploaded successfully!");
       refetchHub();
+      refetchFiles();
       setUploading(false);
     },
     onError: (e) => {
@@ -486,6 +497,82 @@ export default function Portal() {
           })}
         </div>
 
+        <div className="rounded-2xl p-6 mb-6" style={{ background: "white", border: "1px solid #f0e8e4" }}>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-bold" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
+                Worksheets
+              </h2>
+              <p className="text-sm mt-1" style={{ color: "#8a9a8a" }}>
+                Fillable forms and grouped pages for your programs.
+              </p>
+            </div>
+            <Link
+              href="/portal/forms"
+              className="min-h-12 inline-flex items-center rounded-full px-4 text-sm font-bold text-white"
+              style={{ background: "#2d3b2d" }}
+            >
+              Open
+            </Link>
+          </div>
+        </div>
+
+        <div className="rounded-2xl p-6 mb-8" style={{ background: "white", border: "1px solid #f0e8e4" }}>
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-xl font-bold" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
+              Shared Files
+            </h2>
+            <button
+              onClick={() => {
+                setActiveUploadEnrollmentId(enrollment?.id ?? 0);
+                fileInputRef.current?.click();
+              }}
+              disabled={uploading}
+              className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all"
+              style={{ background: "#fbeee9", color: "#c9a96e" }}
+            >
+              {uploading ? (
+                <div className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "#c9a96e" }} />
+              ) : (
+                <Upload size={14} />
+              )}
+              {uploading ? "Uploading..." : "Upload File"}
+            </button>
+          </div>
+
+          {!filesData?.length ? (
+            <div className="text-center py-8">
+              <FileText size={32} className="mx-auto mb-3" style={{ color: "#d0c0b8" }} />
+              <p className="text-sm" style={{ color: "#8a9a8a" }}>No files yet. Upload food journals, worksheets, or anything you'd like to share with your coach.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {filesData.map(file => (
+                <div key={file.id} className="flex items-center justify-between p-3 rounded-xl" style={{ background: "#faf5f5" }}>
+                  <div className="flex items-center gap-3">
+                    <FileText size={16} style={{ color: "#c9a96e" }} />
+                    <div>
+                      <p className="text-sm font-semibold" style={{ color: "#2d3b2d" }}>{file.fileName}</p>
+                      <p className="text-xs" style={{ color: "#8a9a8a" }}>
+                        {file.uploadedByRole === "admin" ? "From your coach" : "Uploaded by you"} · {new Date(file.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <a
+                    href={file.fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-bold px-3 py-1.5 rounded-full"
+                    style={{ background: "#fbeee9", color: "#c9a96e" }}
+                  >
+                    View
+                  </a>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* End RECLAIM section */}
         </>}
 
@@ -553,15 +640,15 @@ export default function Portal() {
                 )}
               </div>
             ))}
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.mp4,.mov,.txt"
-              onChange={handleFileUpload}
-            />
           </div>
         )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.mp4,.mov,.txt"
+          onChange={handleFileUpload}
+        />
 
         {/* FPU Coaching Section */}
         {fpuData && <FpuCoachingSection order={fpuData.order} sessions={fpuData.sessions} />}
