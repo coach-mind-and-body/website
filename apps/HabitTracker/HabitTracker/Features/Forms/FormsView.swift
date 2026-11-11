@@ -175,32 +175,242 @@ struct FormsListView: View {
     }
 }
 
-struct FormFillView: View {
-    @Bindable var auth: AuthStore
+/// Answers live on this class so the Duo pane and a folded compact page share one copy.
+@MainActor
+@Observable
+final class FormFillSession {
     let formId: Int
-    @State private var detail: FormDetailModel?
-    @State private var answers: [String: FormAnswerModel] = [:]
-    @State private var note = "Not started"
-    @State private var errorMessage: String?
-    @State private var ready = false
-    @State private var submitting = false
-    @State private var saveTask: Task<Void, Never>?
-    @State private var preview: ProgramFilePreview?
+    let auth: AuthStore
+    var detail: FormDetailModel?
+    var answers: [String: FormAnswerModel] = [:]
+    var note = "Not started"
+    var errorMessage: String?
+    var ready = false
+    var submitting = false
+    var preview: ProgramFilePreview?
+    @ObservationIgnored private var saveTask: Task<Void, Never>?
+    @ObservationIgnored private var saveGeneration = 0
+    @ObservationIgnored private var answersDirty = false
+    @ObservationIgnored private var loadGeneration = 0
 
-    private var canSubmit: Bool {
+    init(auth: AuthStore, formId: Int) {
+        self.auth = auth
+        self.formId = formId
+    }
+
+    var canSubmit: Bool {
         guard let detail else { return false }
         return detail.form.kind != "handout" && detail.submission?.status != "reviewed"
     }
 
+    func setAnswer(_ answer: FormAnswerModel, for id: String) {
+        answers[id] = answer
+        answersDirty = true
+        scheduleSave()
+    }
+
+    func scheduleSave() {
+        guard canSave else { return }
+        saveTask?.cancel()
+        saveGeneration += 1
+        let generation = saveGeneration
+        saveTask = Task {
+            try? await Task.sleep(for: .milliseconds(800))
+            guard !Task.isCancelled else { return }
+            await self.persistDraft()
+            if self.saveGeneration == generation {
+                self.saveTask = nil
+            }
+        }
+    }
+
+    /// Writes pending answers immediately. A fold should not wait out the debounce.
+    func flush() async {
+        guard canSave, answersDirty || saveTask != nil else { return }
+        saveTask?.cancel()
+        saveTask = nil
+        saveGeneration += 1
+        await persistDraft()
+    }
+
+    private var canSave: Bool {
+        detail?.form.kind != "handout" && detail?.submission?.status != "reviewed" && ready
+    }
+
+    private func persistDraft() async {
+        note = "Saving…"
+        do {
+            let result: SaveFormResult = try await auth.client.mutate(
+                "forms.saveDraft",
+                input: SaveFormInput(formId: formId, answers: answers)
+            )
+            note = result.status == "submitted" ? "Submitted" : "Draft saved"
+        } catch {
+            if Task.isCancelled { return }
+            note = "Could not save"
+        }
+    }
+
+    func load() async {
+        if ready { return }
+        loadGeneration += 1
+        let generation = loadGeneration
+        do {
+            let loaded: FormDetailModel = try await auth.client.query("forms.get", input: FormIdInput(formId: formId))
+            guard generation == loadGeneration else { return }
+            let typed = answersDirty ? answers : nil
+            detail = loaded
+            if let typed {
+                answers = typed
+            } else {
+                answers = loaded.submission?.answers ?? [:]
+            }
+            if !answersDirty {
+                note = statusLabel(loaded.submission?.status ?? "not_started")
+            }
+            ready = true
+            errorMessage = nil
+            if answersDirty { scheduleSave() }
+        } catch {
+            guard generation == loadGeneration, !Task.isCancelled else { return }
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func submit() async {
+        submitting = true
+        defer { submitting = false }
+        saveTask?.cancel()
+        do {
+            let result: SaveFormResult = try await auth.client.mutate(
+                "forms.submit",
+                input: SaveFormInput(formId: formId, answers: answers)
+            )
+            note = statusLabel(result.status)
+            answersDirty = false
+            ready = false
+            await load()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func upload(fieldId: String, data: Data) async {
+        do {
+            let result: UploadPhotoResult = try await auth.client.mutate(
+                "forms.uploadPhoto",
+                input: UploadPhotoInput(
+                    formId: formId,
+                    fieldId: fieldId,
+                    mimeType: "image/jpeg",
+                    base64Data: data.base64EncodedString()
+                )
+            )
+            var next = answers[fieldId] ?? FormAnswerModel()
+            next.photoKey = result.key
+            setAnswer(next, for: fieldId)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+}
+
+/// Keeps one session per form for the life of My Programs, including across a fold.
+@MainActor
+final class FormSessionCache {
+    private var sessions: [Int: FormFillSession] = [:]
+
+    func session(auth: AuthStore, formId: Int) -> FormFillSession {
+        if let existing = sessions[formId] { return existing }
+        let created = FormFillSession(auth: auth, formId: formId)
+        sessions[formId] = created
+        return created
+    }
+
+    func existing(formId: Int) -> FormFillSession? {
+        sessions[formId]
+    }
+}
+
+struct FormFillView: View {
+    @Bindable var auth: AuthStore
+    let formId: Int
+    /// Right-pane presentation skips a second Duo split and the shared navigation title.
+    var embedded = false
+    @State private var owned: FormFillSession
+
+    init(auth: AuthStore, formId: Int, embedded: Bool = false, session: FormFillSession? = nil) {
+        self.auth = auth
+        self.formId = formId
+        self.embedded = embedded
+        _owned = State(initialValue: session ?? FormFillSession(auth: auth, formId: formId))
+    }
+
     var body: some View {
-        DuoPanes(style: .augment) {
-        ScrollView {
+        FormFillContent(auth: auth, session: owned, embedded: embedded)
+    }
+}
+
+private struct FormFillContent: View {
+    @Bindable var auth: AuthStore
+    @Bindable var session: FormFillSession
+    var embedded: Bool
+
+    var body: some View {
+        Group {
+            if embedded {
+                formPage(bottomPadding: 12)
+            } else {
+                DuoPanes(style: .augment) {
+                    formPage(bottomPadding: 56)
+                } controls: {
+                    if session.canSubmit {
+                        Button {
+                            Task { await session.submit() }
+                        } label: {
+                            Text(session.submitting ? "Submitting…" : "Submit")
+                                .font(.headline)
+                                .frame(maxWidth: .infinity, minHeight: 56)
+                                .background(HTTheme.gold)
+                                .foregroundStyle(.white)
+                                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(session.submitting)
+                        .padding(16)
+                    } else {
+                        Text(session.note)
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(HTTheme.forest)
+                            .padding(16)
+                    }
+                }
+                .navigationTitle(session.detail?.form.title ?? "Worksheet")
+                .navigationBarTitleDisplayMode(.inline)
+            }
+        }
+        .sheet(item: $session.preview) { item in
+            InAppFilePreview(remote: item.url, name: item.name)
+        }
+        .task { await session.load() }
+        .onDisappear { Task { await session.flush() } }
+    }
+
+    private func formPage(bottomPadding: CGFloat) -> some View {
+        let detail = session.detail
+        return ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                if let errorMessage {
+                if let errorMessage = session.errorMessage {
                     Text(errorMessage).foregroundStyle(.red)
                 }
+                if embedded, let title = detail?.form.title {
+                    Text(title)
+                        .font(HTTheme.title)
+                        .foregroundStyle(HTTheme.forest)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 if let detail {
-                    Text(note)
+                    Text(session.note)
                         .font(.subheadline.weight(.bold))
                         .foregroundStyle(HTTheme.gold)
                     if !detail.form.instructions.isEmpty {
@@ -211,7 +421,7 @@ struct FormFillView: View {
                     }
                     if let page = detail.pages.first, let url = URL(string: page.fileUrl) {
                         Button("View original PDF") {
-                            preview = ProgramFilePreview(id: "form-\(formId)-\(page.id)", url: url, name: page.fileName)
+                            session.preview = ProgramFilePreview(id: "form-\(session.formId)-\(page.id)", url: url, name: page.fileName)
                         }
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(HTTheme.gold)
@@ -241,11 +451,11 @@ struct FormFillView: View {
         }
         .keyboardTyping()
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            if canSubmit {
+            if session.canSubmit {
                 Button {
-                    Task { await submit() }
+                    Task { await session.submit() }
                 } label: {
-                    Text(submitting ? "Submitting…" : "Submit")
+                    Text(session.submitting ? "Submitting…" : "Submit")
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .frame(minHeight: 52)
@@ -253,42 +463,15 @@ struct FormFillView: View {
                         .foregroundStyle(.white)
                         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }
-                .disabled(submitting)
+                .disabled(session.submitting)
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
-                .padding(.bottom, 56)
+                .padding(.bottom, bottomPadding)
                 .background(HTTheme.cream)
             }
         }
         .background(HTTheme.cream)
-        .navigationTitle(detail?.form.title ?? "Worksheet")
-        .navigationBarTitleDisplayMode(.inline)
-        .sheet(item: $preview) { item in
-            InAppFilePreview(remote: item.url, name: item.name)
-        }
-        .task { await load() }
-        } controls: {
-            if canSubmit {
-                Button {
-                    Task { await submit() }
-                } label: {
-                    Text(submitting ? "Submitting…" : "Submit")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity, minHeight: 56)
-                        .background(HTTheme.gold)
-                        .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                }
-                .buttonStyle(.plain)
-                .disabled(submitting)
-                .padding(16)
-            } else {
-                Text(note)
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(HTTheme.forest)
-                    .padding(16)
-            }
-        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     @ViewBuilder
@@ -316,7 +499,7 @@ struct FormFillView: View {
 
     @ViewBuilder
     private func control(_ field: FormFieldModel, locked: Bool) -> some View {
-        let answer = answers[field.id] ?? FormAnswerModel()
+        let answer = session.answers[field.id] ?? FormAnswerModel()
         switch field.type {
         case "short_text":
             TextField("Type here", text: textBinding(field.id))
@@ -364,8 +547,7 @@ struct FormFillView: View {
             Button {
                 var next = answer
                 next.checked = answer.checked != true
-                answers[field.id] = next
-                scheduleSave()
+                session.setAnswer(next, for: field.id)
             } label: {
                 Text(answer.checked == true ? "Checked" : "Tap to check")
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -380,8 +562,7 @@ struct FormFillView: View {
             ScaleRating(field: field, value: answer.scale, locked: locked) { picked in
                 var next = answer
                 next.scale = picked
-                answers[field.id] = next
-                scheduleSave()
+                session.setAnswer(next, for: field.id)
             }
         case "signature":
             TextField("Type your full name", text: textBinding(field.id))
@@ -394,7 +575,7 @@ struct FormFillView: View {
                 FormPhotoImage(auth: auth, key: key)
             }
             PhotosPickerButton(locked: locked) { data in
-                Task { await upload(fieldId: field.id, data: data) }
+                Task { await session.upload(fieldId: field.id, data: data) }
             }
         case "table":
             table(field, answer: answer, locked: locked)
@@ -422,12 +603,11 @@ struct FormFillView: View {
             }
             if field.allowExtraRows && !locked {
                 Button("Add a row") {
-                    var next = answers[field.id] ?? FormAnswerModel()
+                    var next = session.answers[field.id] ?? FormAnswerModel()
                     var rows = next.table ?? []
                     rows.append(Array(repeating: "", count: columns.count))
                     next.table = rows
-                    answers[field.id] = next
-                    scheduleSave()
+                    session.setAnswer(next, for: field.id)
                 }
                 .frame(minHeight: 48)
             }
@@ -436,12 +616,11 @@ struct FormFillView: View {
 
     private func textBinding(_ id: String) -> Binding<String> {
         Binding(
-            get: { answers[id]?.text ?? "" },
+            get: { session.answers[id]?.text ?? "" },
             set: { value in
-                var next = answers[id] ?? FormAnswerModel()
+                var next = session.answers[id] ?? FormAnswerModel()
                 next.text = value
-                answers[id] = next
-                scheduleSave()
+                session.setAnswer(next, for: id)
             }
         )
     }
@@ -449,26 +628,24 @@ struct FormFillView: View {
     private func numberBinding(_ id: String) -> Binding<String> {
         Binding(
             get: {
-                guard let number = answers[id]?.number else { return "" }
+                guard let number = session.answers[id]?.number else { return "" }
                 return String(number)
             },
             set: { value in
-                var next = answers[id] ?? FormAnswerModel()
+                var next = session.answers[id] ?? FormAnswerModel()
                 next.number = Double(value)
-                answers[id] = next
-                scheduleSave()
+                session.setAnswer(next, for: id)
             }
         )
     }
 
     private func dateBinding(_ id: String) -> Binding<Date> {
         Binding(
-            get: { MountainDate.date(from: answers[id]?.date ?? "") ?? Date() },
+            get: { MountainDate.date(from: session.answers[id]?.date ?? "") ?? Date() },
             set: { value in
-                var next = answers[id] ?? FormAnswerModel()
+                var next = session.answers[id] ?? FormAnswerModel()
                 next.date = MountainDate.string(from: value)
-                answers[id] = next
-                scheduleSave()
+                session.setAnswer(next, for: id)
             }
         )
     }
@@ -476,25 +653,24 @@ struct FormFillView: View {
     private func tableBinding(_ id: String, row: Int, col: Int, columns: Int) -> Binding<String> {
         Binding(
             get: {
-                let table = answers[id]?.table ?? []
+                let table = session.answers[id]?.table ?? []
                 guard row < table.count, col < table[row].count else { return "" }
                 return table[row][col]
             },
             set: { value in
-                var next = answers[id] ?? FormAnswerModel()
+                var next = session.answers[id] ?? FormAnswerModel()
                 var table = next.table ?? []
                 while table.count <= row { table.append(Array(repeating: "", count: columns)) }
                 while table[row].count <= col { table[row].append("") }
                 table[row][col] = value
                 next.table = table
-                answers[id] = next
-                scheduleSave()
+                session.setAnswer(next, for: id)
             }
         )
     }
 
     private func choose(_ field: FormFieldModel, option: String) {
-        var next = answers[field.id] ?? FormAnswerModel()
+        var next = session.answers[field.id] ?? FormAnswerModel()
         if field.type == "single_choice" {
             next.text = option
         } else {
@@ -503,75 +679,7 @@ struct FormFillView: View {
             else { choices.append(option) }
             next.choices = choices
         }
-        answers[field.id] = next
-        scheduleSave()
-    }
-
-    private func scheduleSave() {
-        guard detail?.form.kind != "handout", detail?.submission?.status != "reviewed", ready else { return }
-        saveTask?.cancel()
-        saveTask = Task {
-            try? await Task.sleep(for: .milliseconds(800))
-            if Task.isCancelled { return }
-            note = "Saving…"
-            do {
-                let result: SaveFormResult = try await auth.client.mutate(
-                    "forms.saveDraft",
-                    input: SaveFormInput(formId: formId, answers: answers)
-                )
-                note = result.status == "submitted" ? "Submitted" : "Draft saved"
-            } catch {
-                note = "Could not save"
-            }
-        }
-    }
-
-    private func load() async {
-        do {
-            let loaded: FormDetailModel = try await auth.client.query("forms.get", input: FormIdInput(formId: formId))
-            detail = loaded
-            answers = loaded.submission?.answers ?? [:]
-            note = statusLabel(loaded.submission?.status ?? "not_started")
-            ready = true
-            errorMessage = nil
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-    }
-
-    private func submit() async {
-        submitting = true
-        defer { submitting = false }
-        do {
-            let result: SaveFormResult = try await auth.client.mutate(
-                "forms.submit",
-                input: SaveFormInput(formId: formId, answers: answers)
-            )
-            note = statusLabel(result.status)
-            await load()
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-    }
-
-    private func upload(fieldId: String, data: Data) async {
-        do {
-            let result: UploadPhotoResult = try await auth.client.mutate(
-                "forms.uploadPhoto",
-                input: UploadPhotoInput(
-                    formId: formId,
-                    fieldId: fieldId,
-                    mimeType: "image/jpeg",
-                    base64Data: data.base64EncodedString()
-                )
-            )
-            var next = answers[fieldId] ?? FormAnswerModel()
-            next.photoKey = result.key
-            answers[fieldId] = next
-            scheduleSave()
-        } catch {
-            errorMessage = error.localizedDescription
-        }
+        session.setAnswer(next, for: field.id)
     }
 }
 

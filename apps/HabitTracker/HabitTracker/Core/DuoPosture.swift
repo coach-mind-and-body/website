@@ -13,6 +13,9 @@ enum DuoPosture: Equatable {
     case sideBySide
     /// Half-folded with a horizontal hinge. Content on top, controls underneath.
     case tabletop
+
+    /// Inner display is open. Folded and regular phones stay on the compact layout.
+    var isOpenDisplay: Bool { self != .compact }
 }
 
 private struct DuoPostureKey: EnvironmentKey {
@@ -202,6 +205,29 @@ private struct DuoPaneLayout: Layout {
         let primary = subviews[0].sizeThatFits(ProposedViewSize(width: width, height: nil)).height
         let controls = subviews[1].sizeThatFits(ProposedViewSize(width: width, height: nil)).height
         return primary + spacing + controls
+    }
+}
+
+/// A screen that already sits in a parent split. Compact keeps DuoPanes. The open
+/// inner display stays one column so the parent can use the other side.
+struct DuoNested<Primary: View, Secondary: View>: View {
+    var style: DuoPaneStyle = .augment
+    @ViewBuilder var primary: () -> Primary
+    @ViewBuilder var controls: () -> Secondary
+    @Environment(\.duoPosture) private var posture
+
+    init(style: DuoPaneStyle = .augment, @ViewBuilder primary: @escaping () -> Primary, @ViewBuilder controls: @escaping () -> Secondary) {
+        self.style = style
+        self.primary = primary
+        self.controls = controls
+    }
+
+    var body: some View {
+        if posture == .compact {
+            DuoPanes(style: style, primary: primary, controls: controls)
+        } else {
+            primary()
+        }
     }
 }
 

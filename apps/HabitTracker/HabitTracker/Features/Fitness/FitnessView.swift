@@ -147,19 +147,21 @@ struct FitnessView: View {
     @Bindable var model: FitnessViewModel
     @Bindable var auth: AuthStore
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.duoPosture) private var posture
+    @State private var duoVideo: WorkoutVideo?
+    @State private var elapsed = 0
+    @State private var timerOn = false
+    @State private var playback = YouTubeHold()
 
     var body: some View {
         NavigationStack {
             DuoPanes(style: .augment) {
-            VStack(spacing: 0) {
-                Picker("", selection: $model.tab) {
-                    Text("Log").tag(0)
-                    Text("Videos").tag(1)
+            Group {
+                if posture == .tabletop, let duoVideo {
+                    openVideoStage(duoVideo, fillsTop: true)
+                } else {
+                    fitnessList
                 }
-                .pickerStyle(.segmented)
-                .padding(12)
-
-                if model.tab == 0 { logTab } else { videosTab }
             }
             .background(HTTheme.cream.ignoresSafeArea())
             .navigationTitle("Fitness")
@@ -174,38 +176,184 @@ struct FitnessView: View {
             }
             .task(id: model.sessionEpoch) { await model.load() }
             .refreshable { await model.load() }
+            .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { _ in
+                guard timerOn else { return }
+                elapsed += 1
+            }
+            .onAppear { bindPlayback() }
+            .onChange(of: duoVideo?.id) { _, _ in
+                elapsed = 0
+                timerOn = false
+                bindPlayback()
+            }
             } controls: {
                 fitnessControls
             }
         }
     }
 
+    private var fitnessList: some View {
+        VStack(spacing: 0) {
+                Picker("", selection: $model.tab) {
+                    Text("Log").tag(0)
+                    Text("Videos").tag(1)
+                }
+                .pickerStyle(.segmented)
+                .padding(12)
+
+                if model.tab == 0 { logTab } else { videosTab }
+            }
+    }
+
+    private func bindPlayback() {
+        playback.onPlayState = { playing in
+            timerOn = playing
+        }
+    }
+
     private var fitnessControls: some View {
-        DuoControlWell {
-            Text("\(model.minutesToday) min today")
-                .font(.title2.weight(.semibold))
+        VStack(spacing: 0) {
+            if posture == .sideBySide, let duoVideo {
+                openVideoStage(duoVideo, fillsTop: false)
+            }
+            if duoVideo != nil {
+                timerBar
+            }
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("\(model.minutesToday) min today")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(HTTheme.forest)
+                    HStack {
+                        chip("Walk 10m", 10)
+                        chip("Walk 20m", 20)
+                        chip("Strength", 20)
+                        chip("Stretch", 10)
+                    }
+                    minuteStepper
+                }
+                .padding(16)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(HTTheme.cream)
+    }
+
+    private func openVideoStage(_ video: WorkoutVideo, fillsTop: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(video.title)
+                    .font(.headline)
+                    .foregroundStyle(HTTheme.forest)
+                    .lineLimit(2)
+                Spacer()
+                Button {
+                    duoVideo = nil
+                    timerOn = false
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.caption.weight(.bold))
+                        .padding(8)
+                        .background(Color.white)
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Close video")
+            }
+            if let vid = YouTubeID.parse(video.videoUrl) {
+                YouTubeEmbed(videoId: vid, hold: playback)
+                    .duoStage()
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
+            if fillsTop { Spacer(minLength: 0) }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, maxHeight: fillsTop ? .infinity : nil, alignment: .top)
+        .background(HTTheme.cream)
+    }
+
+    private var timerBar: some View {
+        HStack(spacing: 12) {
+            Text(clock(elapsed))
+                .font(.title2.weight(.bold).monospacedDigit())
                 .foregroundStyle(HTTheme.forest)
-            Text(model.dateStr == MountainDate.today() ? "Today" : MountainDate.long(model.dateStr))
-                .foregroundStyle(HTTheme.muted)
-            Button("Log \(model.minutes) min") {
-                let name = model.name.trimmingCharacters(in: .whitespaces)
-                Task { await model.add(name: name.isEmpty ? "Workout" : name, minutes: model.minutes) }
+                .frame(minWidth: 72, alignment: .leading)
+            Button(timerOn ? "Pause" : "Resume") {
+                timerOn.toggle()
+                if timerOn { playback.play() } else { playback.pause() }
             }
             .font(.headline)
-            .frame(maxWidth: .infinity, minHeight: 52)
-            .background(HTTheme.forest)
+            .foregroundStyle(HTTheme.forest)
+            Spacer()
+            Button("Log") {
+                let mins = max(1, Int((Double(elapsed) / 60).rounded()))
+                model.minutes = mins
+                let title = duoVideo?.title ?? (model.name.isEmpty ? "Workout" : model.name)
+                timerOn = false
+                playback.pause()
+                Task { await model.add(name: title, minutes: mins) }
+            }
+            .font(.headline)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(HTTheme.gold)
             .foregroundStyle(.white)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .clipShape(Capsule())
             .buttonStyle(.plain)
-            Button("Show videos") { model.tab = 1 }
-                .font(.headline)
-                .frame(maxWidth: .infinity, minHeight: 52)
-                .foregroundStyle(HTTheme.forest)
-            Button("Show log") { model.tab = 0 }
-                .font(.headline)
-                .frame(maxWidth: .infinity, minHeight: 52)
-                .foregroundStyle(HTTheme.forest)
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(Color.white)
+    }
+
+    private var minuteStepper: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            TextField("What did you do?", text: $model.name)
+                .padding(10)
+                .background(Color.white)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            HStack(spacing: 10) {
+                Button {
+                    model.minutes = max(1, model.minutes - 5)
+                } label: {
+                    Image(systemName: "minus.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(HTTheme.forest)
+                }
+                TextField("", value: $model.minutes, format: .number)
+                    .keyboardType(.numberPad)
+                    .multilineTextAlignment(.center)
+                    .font(.headline)
+                    .foregroundStyle(HTTheme.forest)
+                    .padding(.vertical, 8)
+                    .frame(width: 56)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(HTTheme.roseBorder))
+                Text("min")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(HTTheme.muted)
+                Button {
+                    model.minutes = min(300, model.minutes + 5)
+                } label: {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(HTTheme.forest)
+                }
+                Spacer()
+                Button("Log") {
+                    let mins = min(300, max(1, model.minutes))
+                    model.minutes = mins
+                    Task { await model.add(name: model.name, minutes: mins); model.name = "" }
+                }
+                .font(.headline)
+                .foregroundStyle(HTTheme.forest)
+            }
+        }
+    }
+
+    private func clock(_ secs: Int) -> String {
+        String(format: "%d:%02d", secs / 60, secs % 60)
     }
 
     private var logTab: some View {
@@ -228,6 +376,7 @@ struct FitnessView: View {
                     .font(.caption)
                     .foregroundStyle(HTTheme.muted)
 
+                if !posture.isOpenDisplay {
                 HStack {
                     chip("Walk 10m", 10)
                     chip("Walk 20m", 20)
@@ -277,6 +426,7 @@ struct FitnessView: View {
                         .font(.headline)
                         .foregroundStyle(HTTheme.forest)
                     }
+                }
                 }
 
                 ForEach(model.sessions) { session in
@@ -344,10 +494,25 @@ struct FitnessView: View {
                 }
                 LazyVGrid(columns: DuoLayout.cardColumns(horizontalSizeClass), alignment: .leading, spacing: 12) {
                     ForEach(model.filteredVideos) { video in
-                        NavigationLink(value: video) {
-                            videoCard(video)
+                        if posture.isOpenDisplay {
+                            Button {
+                                duoVideo = video
+                            } label: {
+                                videoCard(video)
+                            }
+                            .buttonStyle(.plain)
+                            .overlay {
+                                if duoVideo?.id == video.id {
+                                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                        .stroke(HTTheme.gold, lineWidth: 2)
+                                }
+                            }
+                        } else {
+                            NavigationLink(value: video) {
+                                videoCard(video)
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
                     }
                 }
                 .padding(.horizontal, 16)

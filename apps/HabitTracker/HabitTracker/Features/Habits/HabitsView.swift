@@ -4,6 +4,7 @@ struct HabitsView: View {
     @Bindable var model: HabitsViewModel
     @Bindable var health: HealthKitService
     @Bindable var auth: AuthStore
+    @Bindable var food: FoodViewModel
     @State private var showMindful = false
     @State private var mindfulMinutes = 2
     @State private var mindfulRemaining = 0
@@ -111,31 +112,7 @@ struct HabitsView: View {
     }
 
     private var habitControls: some View {
-        DuoControlWell {
-            Text("\(model.doneCount) of \(max(model.habits.count, 1)) today")
-                .font(.title2.weight(.semibold))
-                .foregroundStyle(HTTheme.forest)
-            Text("\(model.currentStreak)-day streak")
-                .foregroundStyle(HTTheme.muted)
-            habitJump(0, "Today")
-            if model.showsChallengePane {
-                habitJump(1, "Challenge")
-            }
-            habitJump(2, "Progress")
-            habitJump(3, "Cycle")
-        }
-    }
-
-    private func habitJump(_ tag: Int, _ title: String) -> some View {
-        Button(title) {
-            model.mainTab = tag
-        }
-        .font(.headline)
-        .frame(maxWidth: .infinity, minHeight: 52)
-        .background(model.mainTab == tag ? HTTheme.forest : Color.white)
-        .foregroundStyle(model.mainTab == tag ? Color.white : HTTheme.forest)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .buttonStyle(.plain)
+        HomeOpenPane(model: model, food: food, auth: auth)
     }
 
     private var guestBanner: some View {
@@ -859,5 +836,146 @@ struct HabitsView: View {
 
     private var filledWins: Int {
         [model.win1, model.win2, model.win3].filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }.count
+    }
+}
+
+/// Open inner display beside the checklist. Compact never builds this pane.
+private struct HomeOpenPane: View {
+    @Bindable var model: HabitsViewModel
+    @Bindable var food: FoodViewModel
+    var auth: AuthStore
+    @State private var meal = "lunch"
+    @State private var showLog = false
+    @State private var showScan = false
+    @State private var nextSession: ProgramSession?
+    @State private var sessionProgram = ""
+
+    private var total: Int { max(model.checklistHabits.count, 1) }
+    private var progress: Double { min(1, Double(model.doneCount) / Double(total)) }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(spacing: 16) {
+                    ZStack {
+                        Circle()
+                            .stroke(HTTheme.roseBorder, lineWidth: 10)
+                        Circle()
+                            .trim(from: 0, to: progress)
+                            .stroke(HTTheme.gold, style: StrokeStyle(lineWidth: 10, lineCap: .round))
+                            .rotationEffect(.degrees(-90))
+                        Text("\(model.doneCount) of \(total)")
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(HTTheme.forest)
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(width: 108, height: 108)
+                    .accessibilityLabel("\(model.doneCount) of \(total) habits today")
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("\(model.currentStreak)-day streak")
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(HTTheme.forest)
+                        weekDots
+                    }
+                }
+
+                HTCard {
+                    Text("Food today")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(HTTheme.gold)
+                    Text("\(food.proteinTotal)g protein · \(food.calorieTotal) cal so far")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(HTTheme.forest)
+                    Button {
+                        showLog = true
+                    } label: {
+                        Text("Log food")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity, minHeight: 52)
+                            .background(HTTheme.forest)
+                            .foregroundStyle(.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    Button {
+                        showScan = true
+                    } label: {
+                        Text("Scan my written log")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity, minHeight: 48)
+                            .background(Color.white)
+                            .foregroundStyle(HTTheme.forest)
+                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(HTTheme.roseBorder))
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                if let nextSession, let when = nextSession.scheduledAt {
+                    if !sessionProgram.isEmpty {
+                        Text(sessionProgram)
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(HTTheme.gold)
+                    }
+                    NextSessionCard(when: when, joinURL: nextSession.joinURL)
+                } else {
+                    Text("No session on the calendar.")
+                        .foregroundStyle(HTTheme.muted)
+                }
+            }
+            .padding(16)
+        }
+        .background(HTTheme.cream)
+        .task {
+            await food.loadLogs()
+            await loadSession()
+        }
+        .sheet(isPresented: $showLog) {
+            LogFoodSheet(food: food, meal: $meal)
+        }
+        .sheet(isPresented: $showScan) {
+            WrittenLogScanSheet(food: food)
+        }
+    }
+
+    private var weekDots: some View {
+        let today = MountainDate.today()
+        let start = MountainDate.shift(today, days: -MountainDate.weekdayIndex(today))
+        let labels = ["S", "M", "T", "W", "T", "F", "S"]
+        return HStack(spacing: 6) {
+            ForEach(0..<7, id: \.self) { index in
+                let day = MountainDate.shift(start, days: index)
+                let done = model.completedDateStrs.contains(day)
+                VStack(spacing: 4) {
+                    Circle()
+                        .fill(done ? HTTheme.gold : HTTheme.roseBorder)
+                        .frame(width: 12, height: 12)
+                    Text(labels[index])
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(HTTheme.muted)
+                }
+                .accessibilityLabel("\(labels[index]) \(done ? "done" : "open")")
+            }
+        }
+    }
+
+    private func loadSession() async {
+        guard auth.isSignedIn else {
+            nextSession = nil
+            return
+        }
+        let hub: ProgramHub? = try? await auth.client.query(
+            "reclaimHub.myHub",
+            cachePolicy: .reloadIgnoringLocalCacheData
+        )
+        let soonest = hub?.programs
+            .compactMap { program -> (ProgramSession, String)? in
+                guard let session = program.nextUpcomingSession() else { return nil }
+                return (session, program.label)
+            }
+            .sorted { ($0.0.scheduledAt ?? .distantFuture) < ($1.0.scheduledAt ?? .distantFuture) }
+            .first
+        nextSession = soonest?.0
+        sessionProgram = soonest?.1 ?? ""
     }
 }

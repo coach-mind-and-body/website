@@ -28,6 +28,10 @@ enum YouTubeID {
 final class YouTubeHold {
     var webView: WKWebView?
     fileprivate var loadedKey: String?
+    /// True when the embedded video is playing. Fitness uses this to run the workout timer.
+    var onPlayState: ((Bool) -> Void)?
+    let playBridge = YouTubePlayBridge()
+    private var hooked = false
 
     func play() { run("var v=document.querySelector('video'); if(v){v.play();}") }
     func pause() { run("var v=document.querySelector('video'); if(v){v.pause();}") }
@@ -36,9 +40,44 @@ final class YouTubeHold {
     }
     func rate(_ value: Double) { run("var v=document.querySelector('video'); if(v){v.playbackRate=\(value);}") }
 
+    fileprivate func hook() {
+        guard !hooked else { return }
+        hooked = true
+        playBridge.onMessage = { [weak self] body in
+            if body == "play" { self?.onPlayState?(true) }
+            if body == "pause" { self?.onPlayState?(false) }
+        }
+    }
+
     private func run(_ script: String) {
         webView?.evaluateJavaScript(script, completionHandler: nil)
     }
+}
+
+final class YouTubePlayBridge: NSObject, WKScriptMessageHandler {
+    var onMessage: ((String) -> Void)?
+
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        if let body = message.body as? String { onMessage?(body) }
+    }
+
+    static let hookScript = """
+    (function() {
+      function hook() {
+        var nodes = document.querySelectorAll('video');
+        for (var i = 0; i < nodes.length; i++) {
+          var v = nodes[i];
+          if (v.dataset.htHook) continue;
+          v.dataset.htHook = '1';
+          v.addEventListener('play', function() { window.webkit.messageHandlers.yt.postMessage('play'); });
+          v.addEventListener('pause', function() { window.webkit.messageHandlers.yt.postMessage('pause'); });
+        }
+        if (!nodes.length) setTimeout(hook, 400);
+      }
+      hook();
+      new MutationObserver(hook).observe(document.documentElement, { childList: true, subtree: true });
+    })();
+    """
 }
 
 /// Plays in-app. YouTube error 152-4 is a missing Referer in WKWebView iframes —
@@ -55,6 +94,13 @@ struct YouTubeEmbed: UIViewRepresentable {
         let config = WKWebViewConfiguration()
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
+        if let hold {
+            hold.hook()
+            let scripts = WKUserContentController()
+            scripts.add(hold.playBridge, name: "yt")
+            scripts.addUserScript(WKUserScript(source: YouTubePlayBridge.hookScript, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+            config.userContentController = scripts
+        }
         let web = WKWebView(frame: .zero, configuration: config)
         web.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"
         web.scrollView.isScrollEnabled = false

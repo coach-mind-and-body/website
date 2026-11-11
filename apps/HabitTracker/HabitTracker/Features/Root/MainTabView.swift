@@ -212,7 +212,7 @@ struct MainTabView: View {
             }
         } else {
             TabView(selection: $tab) {
-                HabitsView(model: habits, health: health, auth: auth)
+                HabitsView(model: habits, health: health, auth: auth, food: food)
                     .tabItem { Label("Habits", systemImage: "square.grid.2x2") }
                     .tag(AppTab.habits)
                 ProgramsView(auth: auth)
@@ -240,6 +240,7 @@ struct RecipesHubView: View {
     @Bindable var food: FoodViewModel
     @Bindable var auth: AuthStore
     @State private var page = 0
+    @State private var foodPane = FoodPaneBridge()
 
     var body: some View {
         NavigationStack {
@@ -259,13 +260,13 @@ struct RecipesHubView: View {
                 Group {
                     switch page {
                     case 0:
-                        CaloriesView(food: food, auth: auth)
+                        CaloriesView(food: food, auth: auth, pane: foodPane)
                     case 2:
-                        MealPlanView(food: food, auth: auth) { page = 3 }
+                        MealPlanView(food: food, auth: auth, pane: foodPane) { page = 3 }
                     case 3:
                         ShopView(food: food, auth: auth)
                     default:
-                        RecipesView(food: food, auth: auth)
+                        RecipesView(food: food, auth: auth, pane: foodPane)
                     }
                 }
             }
@@ -280,28 +281,14 @@ struct RecipesHubView: View {
             .navigationDestination(for: String.self) { slug in
                 RecipeDetailView(slug: slug, food: food, auth: auth)
             }
+            .onChange(of: page) { _, _ in
+                foodPane.log = nil
+                foodPane.recipeSlug = nil
+            }
             } controls: {
-                DuoControlWell {
-                    Text("Food")
-                        .font(.title2.weight(.semibold))
-                        .foregroundStyle(HTTheme.forest)
-                    foodJump(0, "Today")
-                    foodJump(1, "Recipes")
-                    foodJump(2, "This week")
-                    foodJump(3, "Shop")
-                }
+                FoodOpenPane(food: food, auth: auth, pane: foodPane)
             }
         }
-    }
-
-    private func foodJump(_ tag: Int, _ title: String) -> some View {
-        Button(title) { page = tag }
-            .font(.headline)
-            .frame(maxWidth: .infinity, minHeight: 52)
-            .background(page == tag ? HTTheme.forest : Color.white)
-            .foregroundStyle(page == tag ? Color.white : HTTheme.forest)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .buttonStyle(.plain)
     }
 }
 
