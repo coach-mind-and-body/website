@@ -23,7 +23,7 @@ import {
   resolvedAdminParams,
   type ProgramSectionId,
 } from "@/lib/adminNav";
-import { todayMountainDateStr } from "@/lib/mountainTime";
+import { calendarDateStr, todayMountainDateStr } from "@/lib/mountainTime";
 
 const ink = "oklch(0.20 0.015 50)";
 const muted = "oklch(0.52 0.015 50)";
@@ -546,7 +546,8 @@ function ChallengeArchiveSettings() {
     onError: (error) => toast.error(error.message),
   });
   const challenge = list.data?.find((row) => row.themeTag === REAL_FOOD_RESET_THEME);
-  const ended = !!challenge?.endDate && todayMountainDateStr() > challenge.endDate;
+  const endDate = calendarDateStr(challenge?.endDate);
+  const ended = !!endDate && todayMountainDateStr() > endDate;
 
   return (
     <section className="rounded-xl p-5 mb-6" style={{ background: paper, border: `1px solid ${line}` }}>

@@ -77,3 +77,22 @@ export function todayMountainDateStr(): string {
 export function dateToMountainDateStr(date: Date): string {
   return utcToMountain(date.toISOString()).slice(0, 10);
 }
+
+/**
+ * Calendar day stored in a MySQL DATE column.
+ * mysql2 returns those as local-midnight Date objects, and "2026-10-03" > that Date is never true.
+ */
+export function calendarDateStr(value: unknown): string | null {
+  if (value == null || value === "") return null;
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return null;
+    const month = String(value.getMonth() + 1).padStart(2, "0");
+    const day = String(value.getDate()).padStart(2, "0");
+    return `${value.getFullYear()}-${month}-${day}`;
+  }
+  if (typeof value === "string") {
+    const match = /^(\d{4}-\d{2}-\d{2})/.exec(value.trim());
+    return match?.[1] ?? null;
+  }
+  return null;
+}

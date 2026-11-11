@@ -21,7 +21,7 @@ import {
   type RealFoodResetDay,
 } from "@shared/realFoodReset";
 import { getDb } from "./db";
-import { nowMountain, todayMountainDateStr } from "../lib/mountainTime";
+import { calendarDateStr, nowMountain, todayMountainDateStr } from "../lib/mountainTime";
 import { parseReplayToken, replayEmbedUrl, replayWatchUrl } from "@shared/replayVideo";
 
 let dayVideosReady = false;
@@ -111,21 +111,22 @@ function normEmail(email: string) {
   return email.toLowerCase().trim();
 }
 
+type ChallengeWindow = {
+  isActive: boolean | number | null;
+  endDate?: unknown;
+};
+
 /** Hidden once archived, or the day after endDate (America/Denver). The end date itself still counts. */
-export function isChallengeHidden(
-  challenge: { isActive: boolean; endDate?: string | null },
-  todayStr: string
-): boolean {
+export function isChallengeHidden(challenge: ChallengeWindow, todayStr: string): boolean {
   if (!challenge.isActive) return true;
-  return !!challenge.endDate && todayStr > challenge.endDate;
+  const end = calendarDateStr(challenge.endDate);
+  return !!end && todayStr > end;
 }
 
 /** Why a new signup should be refused, or null when the challenge is still open. */
-export function challengeClosedMessage(
-  challenge: { isActive: boolean; endDate?: string | null },
-  todayStr: string
-): string | null {
-  if (challenge.endDate && todayStr > challenge.endDate) return "This challenge has ended.";
+export function challengeClosedMessage(challenge: ChallengeWindow, todayStr: string): string | null {
+  const end = calendarDateStr(challenge.endDate);
+  if (end && todayStr > end) return "This challenge has ended.";
   if (!challenge.isActive) return "This challenge isn't open right now.";
   return null;
 }
@@ -352,8 +353,8 @@ export async function getChallengeToday(opts: {
   const challengeId = await ensureRealFoodResetChallenge();
   const [challenge] = await db.select().from(challenges).where(eq(challenges.id, challengeId)).limit(1);
   const todayStr = todayMountainDateStr();
-  const startDate = challenge?.startDate || REAL_FOOD_RESET.startDate;
-  const endDate = challenge?.endDate || REAL_FOOD_RESET.endDate;
+  const startDate = calendarDateStr(challenge?.startDate) || REAL_FOOD_RESET.startDate;
+  const endDate = calendarDateStr(challenge?.endDate) || REAL_FOOD_RESET.endDate;
   const beforeStart = todayStr < startDate;
   const afterEnd = todayStr > endDate;
 
