@@ -93,12 +93,14 @@ struct PodcastView: View {
     @Bindable var model: PodcastViewModel
     @Bindable var auth: AuthStore
     @State private var playback = YouTubeHold()
+    @State private var showNotes = false
     @Environment(\.duoPosture) private var posture
 
     var body: some View {
         NavigationStack {
             DuoPanes(style: .split) {
                 VStack(alignment: .leading, spacing: 14) {
+                    if posture != .tabletop {
                     Text("Lee Anne’s Mind and Body Reset — listen on YouTube, then add a habit from the episode.")
                         .font(.subheadline)
                         .foregroundStyle(HTTheme.muted)
@@ -120,10 +122,17 @@ struct PodcastView: View {
                             .font(.subheadline)
                             .foregroundStyle(HTTheme.muted)
                     }
+                    }
 
                     if let ep = model.selected {
                         if let vid = YouTubeID.parse(ep.videoId) ?? YouTubeID.parse(ep.id) {
-                            YouTubePlayer(videoId: vid, hold: playback)
+                            if posture == .tabletop {
+                                YouTubeEmbed(videoId: vid, hold: playback)
+                                    .duoStage()
+                                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            } else {
+                                YouTubePlayer(videoId: vid, hold: playback)
+                            }
                         } else {
                             AsyncImage(url: ep.thumbnail.flatMap(URL.init(string:))) { phase in
                                 if case .success(let img) = phase { img.resizable().scaledToFill() }
@@ -137,78 +146,49 @@ struct PodcastView: View {
                         if let d = ep.publishedAt, !d.isEmpty {
                             Text(MountainDate.long(d)).font(.caption).foregroundStyle(HTTheme.muted)
                         }
+                        if posture != .tabletop {
                         if let d = ep.description, !d.isEmpty {
                             Text(d).font(.caption).foregroundStyle(HTTheme.muted).lineLimit(4)
                         }
-                        let actions = model.actions(for: ep)
-                        if actions.isEmpty {
-                            Button("Add “listened” habit") {
-                                Task { await model.addHabit(HabitAction(title: "Listen: \(ep.title)")) }
-                            }
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(HTTheme.forest)
-                        } else {
-                            Text("From this episode").font(.caption.weight(.bold)).foregroundStyle(HTTheme.muted)
-                            ForEach(Array(actions.enumerated()), id: \.offset) { _, action in
-                                Button {
-                                    Task { await model.addHabit(action) }
-                                } label: {
-                                    HStack {
-                                        Text(action.title)
-                                        Spacer()
-                                        Text("Add habit").font(.caption.weight(.bold))
-                                    }
-                                }
-                                .font(.subheadline)
-                                .foregroundStyle(HTTheme.forest)
-                            }
+                        episodeHabits(ep)
                         }
                     }
                 }
                 .padding(16)
             } controls: {
-                VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: 0) {
                     if posture != .compact {
                         podcastTransport
+                            .padding(.bottom, 8)
                     }
-                    ForEach(model.visibleEpisodes) { ep in
-                        Button {
-                            model.selected = ep
-                        } label: {
-                            HStack(alignment: .top, spacing: 10) {
-                                AsyncImage(url: ep.thumbnail.flatMap(URL.init(string:))) { phase in
-                                    if case .success(let img) = phase { img.resizable().scaledToFill() }
-                                    else { HTTheme.roseBorder }
-                                }
-                                .frame(width: 72, height: 54)
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                                VStack(alignment: .leading) {
-                                    Text(ep.title).font(.subheadline.weight(.semibold)).foregroundStyle(HTTheme.forest).multilineTextAlignment(.leading)
-                                    if let d = ep.publishedAt, !d.isEmpty {
-                                        Text(MountainDate.long(d)).font(.caption).foregroundStyle(HTTheme.muted)
-                                    }
-                                }
-                                Spacer()
+                    if posture == .tabletop, let ep = model.selected {
+                        episodeHabits(ep)
+                            .padding(.bottom, 8)
+                        if let d = ep.description, !d.isEmpty {
+                            Button(showNotes ? "Hide description" : "Description") {
+                                showNotes.toggle()
+                            }
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(HTTheme.forest)
+                            if showNotes {
+                                Text(d)
+                                    .font(.caption)
+                                    .foregroundStyle(HTTheme.muted)
                             }
                         }
                     }
-                    if model.canShowMore {
-                        Button {
-                            model.page += 1
-                        } label: {
-                            Text("Show more (\(model.remainingCount) left)")
-                                .font(.subheadline.weight(.bold))
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                                .background(Color.white)
-                                .foregroundStyle(HTTheme.forest)
-                                .clipShape(RoundedRectangle(cornerRadius: 14))
-                                .overlay(RoundedRectangle(cornerRadius: 14).stroke(HTTheme.roseBorder))
+                    Group {
+                        if posture == .tabletop {
+                            ScrollView { episodeList }
+                                .frame(maxHeight: .infinity)
+                                .safeAreaPadding(.bottom)
+                        } else {
+                            episodeList
                         }
-                        .buttonStyle(.plain)
                     }
                 }
                 .padding(16)
+                .onChange(of: model.selected?.id) { _, _ in showNotes = false }
             }
             .dockScrollClearance()
             .keyboardTyping()
@@ -228,6 +208,75 @@ struct PodcastView: View {
                 }
             }
             .refreshable { await model.load() }
+        }
+    }
+
+    private var episodeList: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            ForEach(model.visibleEpisodes) { ep in
+                Button {
+                    model.selected = ep
+                } label: {
+                    HStack(alignment: .top, spacing: 10) {
+                        AsyncImage(url: ep.thumbnail.flatMap(URL.init(string:))) { phase in
+                            if case .success(let img) = phase { img.resizable().scaledToFill() }
+                            else { HTTheme.roseBorder }
+                        }
+                        .frame(width: 72, height: 54)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        VStack(alignment: .leading) {
+                            Text(ep.title).font(.subheadline.weight(.semibold)).foregroundStyle(HTTheme.forest).multilineTextAlignment(.leading)
+                            if let d = ep.publishedAt, !d.isEmpty {
+                                Text(MountainDate.long(d)).font(.caption).foregroundStyle(HTTheme.muted)
+                            }
+                        }
+                        Spacer()
+                    }
+                }
+            }
+            if model.canShowMore {
+                Button {
+                    model.page += 1
+                } label: {
+                    Text("Show more (\(model.remainingCount) left)")
+                        .font(.subheadline.weight(.bold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(Color.white)
+                        .foregroundStyle(HTTheme.forest)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(HTTheme.roseBorder))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private func episodeHabits(_ ep: PodcastEpisode) -> some View {
+        let actions = model.actions(for: ep)
+        return VStack(alignment: .leading, spacing: 8) {
+            if actions.isEmpty {
+                Button("Add “listened” habit") {
+                    Task { await model.addHabit(HabitAction(title: "Listen: \(ep.title)")) }
+                }
+                .font(.caption.weight(.bold))
+                .foregroundStyle(HTTheme.forest)
+            } else {
+                Text("From this episode").font(.caption.weight(.bold)).foregroundStyle(HTTheme.muted)
+                ForEach(Array(actions.enumerated()), id: \.offset) { _, action in
+                    Button {
+                        Task { await model.addHabit(action) }
+                    } label: {
+                        HStack {
+                            Text(action.title)
+                            Spacer()
+                            Text(posture == .tabletop ? "Add" : "Add habit").font(.caption.weight(.bold))
+                        }
+                    }
+                    .font(.subheadline)
+                    .foregroundStyle(HTTheme.forest)
+                }
+            }
         }
     }
 

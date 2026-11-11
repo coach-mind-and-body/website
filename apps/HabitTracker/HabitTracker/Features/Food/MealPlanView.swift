@@ -3,12 +3,14 @@ import SwiftUI
 struct MealPlanView: View {
     @Bindable var food: FoodViewModel
     @Bindable var auth: AuthStore
+    var pane: FoodPaneBridge? = nil
     var onGoShop: () -> Void = {}
+    @Environment(\.duoPosture) private var posture
 
     private let days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
     var body: some View {
-        DuoPanes(style: .augment) {
+        DuoNested(style: .augment) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     if food.plans.count > 1 {
@@ -83,17 +85,20 @@ struct MealPlanView: View {
                                     .foregroundStyle(day == MountainDate.weekdayIndex(MountainDate.today()) ? HTTheme.gold : HTTheme.muted)
                                 ForEach(Array(slots.enumerated()), id: \.offset) { _, slot in
                                     if let rec = slot.recipe {
-                                        NavigationLink(value: rec.slug) {
-                                            HStack {
-                                                Text(slot.slot.capitalized).font(.caption.weight(.bold)).foregroundStyle(HTTheme.gold)
-                                                Text(rec.title).foregroundStyle(HTTheme.forest)
-                                                Spacer()
+                                        if posture.isOpenDisplay, let pane {
+                                            Button {
+                                                pane.log = nil
+                                                pane.recipeSlug = rec.slug
+                                            } label: {
+                                                weekRecipeRow(slot: slot.slot, title: rec.title, selected: pane.recipeSlug == rec.slug)
                                             }
-                                            .padding(12)
-                                            .background(Color.white)
-                                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                                            .buttonStyle(.plain)
+                                        } else {
+                                            NavigationLink(value: rec.slug) {
+                                                weekRecipeRow(slot: slot.slot, title: rec.title, selected: false)
+                                            }
+                                            .buttonStyle(.plain)
                                         }
-                                        .buttonStyle(.plain)
                                     }
                                 }
                             }
@@ -125,6 +130,21 @@ struct MealPlanView: View {
             }
         }
     }
+
+    private func weekRecipeRow(slot: String, title: String, selected: Bool) -> some View {
+        HStack {
+            Text(slot.capitalized).font(.caption.weight(.bold)).foregroundStyle(HTTheme.gold)
+            Text(title).foregroundStyle(HTTheme.forest)
+            Spacer()
+        }
+        .padding(12)
+        .background(selected ? HTTheme.gold.opacity(0.16) : Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(selected ? HTTheme.gold : Color.clear, lineWidth: 1.5)
+        )
+    }
 }
 
 struct ShopView: View {
@@ -133,7 +153,7 @@ struct ShopView: View {
     @State private var newItem = ""
 
     var body: some View {
-        DuoPanes(style: .augment) {
+        DuoNested(style: .augment) {
         VStack(spacing: 0) {
             if auth.isSignedIn {
                 HStack(spacing: 8) {

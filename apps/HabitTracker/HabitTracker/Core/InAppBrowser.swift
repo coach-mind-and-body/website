@@ -19,6 +19,8 @@ struct ProgramFilePreview: Identifiable, Hashable {
 struct InAppFilePreview: View {
     let remote: URL
     let name: String
+    /// When set, Done closes an in-pane preview. A sheet keeps the system dismiss.
+    var onClose: (() -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
     @State private var localURL: URL?
     @State private var useSafari = false
@@ -44,7 +46,13 @@ struct InAppFilePreview: View {
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
-                            Button("Done") { dismiss() }
+                            Button("Done") {
+                                if let onClose {
+                                    onClose()
+                                } else {
+                                    dismiss()
+                                }
+                            }
                         }
                         if let localURL {
                             ToolbarItem(placement: .primaryAction) {

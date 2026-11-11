@@ -179,90 +179,52 @@ final class CoachViewModel {
     }
 }
 
+private struct SharedCoachItem: Identifiable {
+    var id: String
+    var title: String
+    var file: ProgramFilePreview?
+    var recipeSlug: String?
+}
+
 struct CoachView: View {
     @Bindable var model: CoachViewModel
     @Bindable var auth: AuthStore
     @State private var photoItem: PhotosPickerItem?
     @State private var notifyNote: String?
     @State private var sendNote: String?
+    @State private var sharedFile: ProgramFilePreview?
+    @State private var nextSession: ProgramSession?
+    @State private var sessionProgram = ""
+    @Environment(\.duoPosture) private var posture
 
     var body: some View {
         NavigationStack {
-            DuoPanes(style: .dock) {
-            VStack(spacing: 0) {
-                if model.notifyEnabled {
-                    Text("Notifications are on. You will see them when Lee Anne replies.")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(HTTheme.forest)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(10)
-                        .background(Color.white)
+            Group {
+                if posture.isOpenDisplay {
+                    DuoPanes(style: .augment) {
+                        VStack(spacing: 0) {
+                            messageList
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            composer
+                        }
+                        .background(HTTheme.cream)
+                    } controls: {
+                        coachOpenPane
+                    }
                 } else {
-                    Button {
-                        Task {
-                            let on = await model.enableNotifications()
-                            notifyNote = on
-                                ? "Notifications are on. You will see them when Lee Anne replies."
-                                : "Notifications stayed off. Turn them on in iPhone Settings, then try again."
+                    DuoPanes(style: .dock) {
+                        VStack(spacing: 0) {
+                            notifyBanner
+                            messageList
                         }
-                    } label: {
-                        Label("Notify me when Lee Anne replies", systemImage: "bell")
-                            .font(.caption.weight(.bold))
-                            .frame(maxWidth: .infinity)
-                            .padding(10)
-                    }
-                    .foregroundStyle(HTTheme.forest)
-                    .background(Color.white)
-                    if let notifyNote {
-                        Text(notifyNote)
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(HTTheme.forest)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 12)
-                            .padding(.bottom, 8)
-                            .background(Color.white)
-                    }
-                }
-
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        LazyVStack(alignment: .leading, spacing: 10) {
-                            ForEach(Array((model.thread?.messages ?? []).enumerated()), id: \.element.id) { index, msg in
-                                let messages = model.thread?.messages ?? []
-                                let prev = index > 0 ? messages[index - 1] : nil
-                                if ChatDay.key(msg.createdAt) != ChatDay.key(prev?.createdAt) {
-                                    DateChip(label: ChatDay.label(msg.createdAt))
-                                }
-                                bubble(msg)
-                                    .id(msg.id)
-                                    .contextMenu {
-                                        Button {
-                                            model.replyingTo = msg
-                                        } label: {
-                                            Label("Reply", systemImage: "arrowshape.turn.up.left")
-                                        }
-                                    }
-                            }
-                        }
-                        .padding(16)
-                    }
-                    .dockScrollClearance()
-                    .keyboardTyping()
-                    .onChange(of: model.thread?.messages.count) {
-                        if let last = model.thread?.messages.last {
-                            proxy.scrollTo(last.id, anchor: .bottom)
-                        }
-                    }
-                    .onAppear {
-                        if let last = model.thread?.messages.last {
-                            proxy.scrollTo(last.id, anchor: .bottom)
-                        }
+                        .background(HTTheme.cream)
+                    } controls: {
+                        composer
                     }
                 }
             }
-            .background(HTTheme.cream)
-            } controls: {
-                composer
+            .sheet(item: $sharedFile) { item in
+                InAppFilePreview(remote: item.url, name: item.name)
             }
             .navigationTitle(model.thread?.coachName ?? "Coach")
             .navigationBarTitleDisplayMode(.large)
@@ -305,6 +267,208 @@ struct CoachView: View {
                 }
             }
         }
+    }
+
+    private var notifyBanner: some View {
+        Group {
+                if model.notifyEnabled {
+                    Text("Notifications are on. You will see them when Lee Anne replies.")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(HTTheme.forest)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(10)
+                        .background(Color.white)
+                } else {
+                    Button {
+                        Task {
+                            let on = await model.enableNotifications()
+                            notifyNote = on
+                                ? "Notifications are on. You will see them when Lee Anne replies."
+                                : "Notifications stayed off. Turn them on in iPhone Settings, then try again."
+                        }
+                    } label: {
+                        Label("Notify me when Lee Anne replies", systemImage: "bell")
+                            .font(.caption.weight(.bold))
+                            .frame(maxWidth: .infinity)
+                            .padding(10)
+                    }
+                    .foregroundStyle(HTTheme.forest)
+                    .background(Color.white)
+                    if let notifyNote {
+                        Text(notifyNote)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(HTTheme.forest)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 12)
+                            .padding(.bottom, 8)
+                            .background(Color.white)
+                    }
+                }
+        }
+    }
+
+    private var messageList: some View {
+        ScrollViewReader { proxy in
+                    ScrollView {
+                        LazyVStack(alignment: .leading, spacing: 10) {
+                            ForEach(Array((model.thread?.messages ?? []).enumerated()), id: \.element.id) { index, msg in
+                                let messages = model.thread?.messages ?? []
+                                let prev = index > 0 ? messages[index - 1] : nil
+                                if ChatDay.key(msg.createdAt) != ChatDay.key(prev?.createdAt) {
+                                    DateChip(label: ChatDay.label(msg.createdAt))
+                                }
+                                bubble(msg)
+                                    .id(msg.id)
+                                    .contextMenu {
+                                        Button {
+                                            model.replyingTo = msg
+                                        } label: {
+                                            Label("Reply", systemImage: "arrowshape.turn.up.left")
+                                        }
+                                    }
+                            }
+                        }
+                        .padding(16)
+                    }
+                    .dockScrollClearance()
+                    .keyboardTyping()
+                    .onChange(of: model.thread?.messages.count) {
+                        if let last = model.thread?.messages.last {
+                            proxy.scrollTo(last.id, anchor: .bottom)
+                        }
+                    }
+                    .onAppear {
+                        if let last = model.thread?.messages.last {
+                            proxy.scrollTo(last.id, anchor: .bottom)
+                        }
+                    }
+        }
+    }
+
+    private var coachOpenPane: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                if let nextSession, let when = nextSession.scheduledAt {
+                    if !sessionProgram.isEmpty {
+                        Text(sessionProgram)
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(HTTheme.gold)
+                    }
+                    NextSessionCard(when: when, joinURL: nextSession.joinURL)
+                } else {
+                    Text("No session on the calendar.")
+                        .foregroundStyle(HTTheme.muted)
+                }
+                Text("Files & recipes")
+                    .font(.headline)
+                    .foregroundStyle(HTTheme.forest)
+                if sharedItems.isEmpty {
+                    Text("When Lee Anne sends a file or a recipe, it shows up here.")
+                        .font(.subheadline)
+                        .foregroundStyle(HTTheme.muted)
+                }
+                ForEach(sharedItems) { item in
+                    if let slug = item.recipeSlug {
+                        NavigationLink(value: slug) {
+                            sharedRow(item.title, systemImage: "book")
+                        }
+                        .buttonStyle(.plain)
+                    } else if let file = item.file {
+                        Button {
+                            sharedFile = file
+                        } label: {
+                            sharedRow(item.title, systemImage: "doc")
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                Toggle(isOn: Binding(
+                    get: { model.notifyEnabled },
+                    set: { want in
+                        Task {
+                            if want {
+                                let on = await model.enableNotifications()
+                                notifyNote = on
+                                    ? "Notifications are on. You will see them when Lee Anne replies."
+                                    : "Notifications stayed off. Turn them on in iPhone Settings, then try again."
+                            } else {
+                                model.notifyEnabled = false
+                                UserDefaults.standard.set(false, forKey: "coach.notifyEnabled")
+                                notifyNote = nil
+                            }
+                        }
+                    }
+                )) {
+                    Text("Notify me when Lee Anne replies")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(HTTheme.forest)
+                }
+                .tint(HTTheme.gold)
+                if let notifyNote {
+                    Text(notifyNote)
+                        .font(.caption)
+                        .foregroundStyle(HTTheme.muted)
+                }
+            }
+            .padding(16)
+        }
+        .background(HTTheme.cream)
+        .task { await loadNextSession() }
+    }
+
+    private func sharedRow(_ title: String, systemImage: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: systemImage)
+                .foregroundStyle(HTTheme.gold)
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(HTTheme.forest)
+                .multilineTextAlignment(.leading)
+            Spacer()
+        }
+        .padding(12)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private var sharedItems: [SharedCoachItem] {
+        var seen = Set<String>()
+        var items: [SharedCoachItem] = []
+        for msg in model.thread?.messages ?? [] where !msg.isMine {
+            if let slug = msg.recipeSlug, seen.insert("recipe-\(slug)").inserted {
+                let title = msg.content?.split(separator: "\n").first.map(String.init) ?? "Recipe"
+                items.append(SharedCoachItem(id: "recipe-\(slug)", title: title, recipeSlug: slug))
+            }
+            if let raw = msg.mediaUrl, let url = URL(string: raw), !msg.isImageAttachment, seen.insert(raw).inserted {
+                let name = url.lastPathComponent.isEmpty ? "File" : (url.lastPathComponent.removingPercentEncoding ?? url.lastPathComponent)
+                items.append(SharedCoachItem(
+                    id: raw,
+                    title: name,
+                    file: ProgramFilePreview(id: raw, url: url, name: name)
+                ))
+            }
+        }
+        return items
+    }
+
+    private func loadNextSession() async {
+        guard auth.isSignedIn else {
+            nextSession = nil
+            return
+        }
+        let hub: ProgramHub? = try? await auth.client.query(
+            "reclaimHub.myHub",
+            cachePolicy: .reloadIgnoringLocalCacheData
+        )
+        let soonest = hub?.programs
+            .compactMap { program -> (ProgramSession, String)? in
+                guard let session = program.nextUpcomingSession() else { return nil }
+                return (session, program.label)
+            }
+            .sorted { ($0.0.scheduledAt ?? .distantFuture) < ($1.0.scheduledAt ?? .distantFuture) }
+            .first
+        nextSession = soonest?.0
+        sessionProgram = soonest?.1 ?? ""
     }
 
     private var composer: some View {
