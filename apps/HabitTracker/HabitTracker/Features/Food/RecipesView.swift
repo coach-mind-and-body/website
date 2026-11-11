@@ -6,6 +6,7 @@ struct RecipesView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     var body: some View {
+        DuoPanes(style: .augment) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     TextField("Search recipes", text: $food.query)
@@ -57,6 +58,26 @@ struct RecipesView: View {
             .background(HTTheme.cream)
             .task(id: food.sessionEpoch) { await food.loadRecipes() }
             .refreshable { await food.loadRecipes() }
+        } controls: {
+            DuoControlWell {
+                Text("Find a recipe")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(HTTheme.forest)
+                ForEach(["All", "Breakfast", "Lunch", "Dinner", "Snack"], id: \.self) { label in
+                    let slot = label == "All" ? nil : label.lowercased()
+                    Button(label) {
+                        food.mealSlot = slot
+                        Task { await food.loadRecipes() }
+                    }
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, minHeight: 48)
+                    .background(food.mealSlot == slot ? HTTheme.forest : Color.white)
+                    .foregroundStyle(food.mealSlot == slot ? Color.white : HTTheme.forest)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .buttonStyle(.plain)
+                }
+            }
+        }
     }
 
     private func recipeCard(_ recipe: Recipe) -> some View {
@@ -107,6 +128,7 @@ struct RecipeDetailView: View {
     @State private var logged = false
 
     var body: some View {
+        DuoPanes(style: .augment) {
         ScrollView {
             if let recipe {
                 VStack(alignment: .leading, spacing: 14) {
@@ -184,6 +206,24 @@ struct RecipeDetailView: View {
             .keyboardTyping()
         .background(HTTheme.cream.ignoresSafeArea())
         .task { recipe = await food.recipe(slug: slug) }
+        } controls: {
+            if let recipe {
+                Button(logged ? "Logged" : "Log this meal") {
+                    Task {
+                        await food.logRecipe(recipe, meal: meal, servings: servings)
+                        logged = true
+                    }
+                }
+                .font(.headline)
+                .frame(maxWidth: .infinity, minHeight: 56)
+                .background(HTTheme.forest)
+                .foregroundStyle(.white)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .buttonStyle(.plain)
+                .disabled(logged)
+                .padding(16)
+            }
+        }
     }
 
     private func macro(_ label: String, _ value: Int?) -> some View {

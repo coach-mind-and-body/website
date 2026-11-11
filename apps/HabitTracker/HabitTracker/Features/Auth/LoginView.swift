@@ -14,6 +14,7 @@ struct LoginView: View {
     @State private var googleHelper = GoogleAuthHelper()
 
     var body: some View {
+        DuoPanes(style: .augment) {
         ScrollView {
             VStack(spacing: 18) {
                 Text("Habit Tracker")
@@ -165,6 +166,15 @@ struct LoginView: View {
         .background(HTTheme.cream.ignoresSafeArea())
         .onChange(of: auth.isSignedIn) { _, signedIn in
             if signedIn { dismiss() }
+        }
+        } controls: {
+            DuoControlWell {
+                Text("Habit Tracker")
+                    .font(HTTheme.serif)
+                    .foregroundStyle(HTTheme.forest)
+                Text("Sign in to sync this phone with Lee Anne. Folding the device keeps you on this screen.")
+                    .foregroundStyle(HTTheme.muted)
+            }
         }
     }
 

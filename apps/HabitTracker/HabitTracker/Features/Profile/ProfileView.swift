@@ -12,6 +12,7 @@ struct ProfileView: View {
 
     var body: some View {
         NavigationStack {
+            DuoPanes(style: .augment) {
             List {
                 Section {
                     if auth.isSignedIn {
@@ -114,6 +115,29 @@ struct ProfileView: View {
                 if let onClose {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("Close", systemImage: "xmark", action: onClose)
+                    }
+                }
+            }
+            } controls: {
+                DuoControlWell {
+                    Text(auth.user?.name ?? "On this iPhone")
+                        .font(.title2.weight(.semibold))
+                        .foregroundStyle(HTTheme.forest)
+                    if let email = auth.user?.email {
+                        Text(email).foregroundStyle(HTTheme.muted)
+                    }
+                    if auth.isSignedIn {
+                        Button("Sign out") { auth.signOut() }
+                            .font(.headline)
+                            .frame(maxWidth: .infinity, minHeight: 52)
+                            .foregroundStyle(.red)
+                    } else {
+                        Button("Sign in") { showLogin = true }
+                            .font(.headline)
+                            .frame(maxWidth: .infinity, minHeight: 52)
+                            .background(HTTheme.forest)
+                            .foregroundStyle(.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                     }
                 }
             }

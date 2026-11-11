@@ -92,10 +92,12 @@ final class PodcastViewModel {
 struct PodcastView: View {
     @Bindable var model: PodcastViewModel
     @Bindable var auth: AuthStore
+    @State private var playback = YouTubeHold()
+    @Environment(\.duoPosture) private var posture
 
     var body: some View {
         NavigationStack {
-            ScrollView {
+            DuoPanes(style: .split) {
                 VStack(alignment: .leading, spacing: 14) {
                     Text("Lee Anne’s Mind and Body Reset — listen on YouTube, then add a habit from the episode.")
                         .font(.subheadline)
@@ -121,7 +123,7 @@ struct PodcastView: View {
 
                     if let ep = model.selected {
                         if let vid = YouTubeID.parse(ep.videoId) ?? YouTubeID.parse(ep.id) {
-                            YouTubePlayer(videoId: vid)
+                            YouTubePlayer(videoId: vid, hold: playback)
                         } else {
                             AsyncImage(url: ep.thumbnail.flatMap(URL.init(string:))) { phase in
                                 if case .success(let img) = phase { img.resizable().scaledToFill() }
@@ -162,7 +164,13 @@ struct PodcastView: View {
                             }
                         }
                     }
-
+                }
+                .padding(16)
+            } controls: {
+                VStack(alignment: .leading, spacing: 14) {
+                    if posture != .compact {
+                        podcastTransport
+                    }
                     ForEach(model.visibleEpisodes) { ep in
                         Button {
                             model.selected = ep
@@ -221,5 +229,37 @@ struct PodcastView: View {
             }
             .refreshable { await model.load() }
         }
+    }
+
+    private var podcastTransport: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 16) {
+                Button { playback.skip(-15) } label: { Image(systemName: "gobackward.15") }
+                Button { playback.play() } label: { Image(systemName: "play.fill") }
+                Button { playback.pause() } label: { Image(systemName: "pause.fill") }
+                Button { playback.skip(15) } label: { Image(systemName: "goforward.15") }
+            }
+            .font(.title)
+            .foregroundStyle(HTTheme.forest)
+            .frame(maxWidth: .infinity, minHeight: 56)
+            HStack(spacing: 8) {
+                speedButton(1, "1×")
+                speedButton(1.25, "1.25×")
+                speedButton(1.5, "1.5×")
+            }
+        }
+        .padding(12)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+    }
+
+    private func speedButton(_ rate: Double, _ title: String) -> some View {
+        Button(title) { playback.rate(rate) }
+            .font(.headline)
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .background(HTTheme.cream)
+            .foregroundStyle(HTTheme.forest)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .buttonStyle(.plain)
     }
 }

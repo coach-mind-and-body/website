@@ -97,6 +97,7 @@ struct FormsListView: View {
     @State private var errorMessage: String?
 
     var body: some View {
+        DuoPanes(style: .augment) {
         List {
             if let errorMessage {
                 Text(errorMessage).foregroundStyle(.red)
@@ -143,6 +144,15 @@ struct FormsListView: View {
         .navigationTitle("Worksheets")
         .task { await load() }
         .refreshable { await load() }
+        } controls: {
+            DuoControlWell {
+                Text(forms.isEmpty ? "No worksheets yet" : "\(forms.count) worksheets")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(HTTheme.forest)
+                Text("Open one to read or fill it in. On a half-folded phone, the list stays up top and this note stays in reach.")
+                    .foregroundStyle(HTTheme.muted)
+            }
+        }
     }
 
     private var visibleLibrary: [LibraryListItemModel] {
@@ -183,6 +193,7 @@ struct FormFillView: View {
     }
 
     var body: some View {
+        DuoPanes(style: .augment) {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 if let errorMessage {
@@ -256,6 +267,28 @@ struct FormFillView: View {
             InAppFilePreview(remote: item.url, name: item.name)
         }
         .task { await load() }
+        } controls: {
+            if canSubmit {
+                Button {
+                    Task { await submit() }
+                } label: {
+                    Text(submitting ? "Submitting…" : "Submit")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, minHeight: 56)
+                        .background(HTTheme.gold)
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .disabled(submitting)
+                .padding(16)
+            } else {
+                Text(note)
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(HTTheme.forest)
+                    .padding(16)
+            }
+        }
     }
 
     @ViewBuilder

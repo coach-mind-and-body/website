@@ -309,6 +309,7 @@ struct ProgramsView: View {
 
     var body: some View {
         NavigationStack {
+            DuoPanes(style: .augment) {
             Group {
                 if !auth.isSignedIn {
                     signedOut
@@ -337,6 +338,31 @@ struct ProgramsView: View {
             }
             .sheet(item: $preview) { item in
                 InAppFilePreview(remote: item.url, name: item.name)
+            }
+            } controls: {
+                programControls
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var programControls: some View {
+        DuoControlWell {
+            if let current = model.current {
+                Text(current.label)
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(HTTheme.forest)
+                if let session = current.nextUpcomingSession(), let when = session.scheduledAt {
+                    NextSessionCard(when: when, joinURL: session.joinURL)
+                } else {
+                    Text("No session on the calendar.")
+                        .foregroundStyle(HTTheme.muted)
+                }
+                Text("\(current.modules.count) modules")
+                    .foregroundStyle(HTTheme.muted)
+            } else {
+                Text("Sign in to see your program.")
+                    .foregroundStyle(HTTheme.muted)
             }
         }
     }

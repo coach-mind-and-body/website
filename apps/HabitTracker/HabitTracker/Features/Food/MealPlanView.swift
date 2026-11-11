@@ -8,6 +8,7 @@ struct MealPlanView: View {
     private let days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
     var body: some View {
+        DuoPanes(style: .augment) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     if food.plans.count > 1 {
@@ -109,6 +110,20 @@ struct MealPlanView: View {
             .background(HTTheme.cream)
             .task(id: food.sessionEpoch) { await food.loadPlan() }
             .refreshable { await food.loadPlan() }
+        } controls: {
+            DuoControlWell {
+                Text("This week")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(HTTheme.forest)
+                Button("Open the shop list") { onGoShop() }
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, minHeight: 52)
+                    .background(HTTheme.forest)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .buttonStyle(.plain)
+            }
+        }
     }
 }
 
@@ -118,6 +133,7 @@ struct ShopView: View {
     @State private var newItem = ""
 
     var body: some View {
+        DuoPanes(style: .augment) {
         VStack(spacing: 0) {
             if auth.isSignedIn {
                 HStack(spacing: 8) {
@@ -201,6 +217,21 @@ struct ShopView: View {
         .background(HTTheme.cream)
         .task(id: food.sessionEpoch) { await food.loadShop() }
         .refreshable { await food.loadShop() }
+        } controls: {
+            DuoControlWell {
+                Text(food.shop.isEmpty ? "The list is empty" : "\(food.shop.filter { !$0.isChecked }.count) still to buy")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(HTTheme.forest)
+                Button("Add \(newItem.isEmpty ? "item" : newItem)") { addTapped() }
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, minHeight: 52)
+                    .background(HTTheme.forest)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .buttonStyle(.plain)
+                    .disabled(newItem.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        }
     }
 
     private func addTapped() {

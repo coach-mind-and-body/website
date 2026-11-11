@@ -251,6 +251,7 @@ struct CycleLogSheet: View {
 
     var body: some View {
         NavigationStack {
+            DuoPanes(style: .augment) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     Text(MountainDate.friendly(dateStr))
@@ -356,6 +357,20 @@ struct CycleLogSheet: View {
                 }
             }
             .onAppear { load() }
+            } controls: {
+                Button {
+                    save()
+                } label: {
+                    Text("Save")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, minHeight: 56)
+                        .background(HTTheme.forest)
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .padding(16)
+            }
         }
     }
 
