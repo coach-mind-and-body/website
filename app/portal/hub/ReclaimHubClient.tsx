@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { BRAND } from "@shared/brand";
+import { isProgramId, type ProgramId } from "@shared/programs";
 import Link from 'next/link';
 import {
   Carousel,
@@ -40,13 +41,14 @@ export default function ReclaimHub() {
 
   const { user, isAuthenticated, loading } = useAuth();
   
-  const { data, refetch, isLoading } = trpc.reclaimHub.getModules.useQuery(undefined, {
+  const { data: hub, refetch, isLoading, error } = trpc.reclaimHub.myHub.useQuery(undefined, {
     enabled: isAuthenticated,
-    // Coach schedule / notes / unlocks show up without a full page refresh
     refetchInterval: () =>
       typeof document !== "undefined" && document.hidden ? false : 8_000,
     refetchOnWindowFocus: true,
   });
+
+  const [programId, setProgramId] = useState<ProgramId | null>(null);
 
   const submitAssignment = trpc.reclaimHub.submitAssignment.useMutation({
     onSuccess: () => {
@@ -89,6 +91,25 @@ export default function ReclaimHub() {
       window.location.href = getLoginUrl();
     }
   }, [loading, isAuthenticated]);
+
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("program");
+    if (requested && isProgramId(requested)) setProgramId(requested);
+  }, []);
+
+  const programs = hub?.programs ?? [];
+  const selectedProgram = programs.find((item) => item.program === programId) ?? programs[0] ?? null;
+  const data = selectedProgram
+    ? {
+        enrollment: selectedProgram.enrollment,
+        modules: selectedProgram.modules,
+        assignments: selectedProgram.assignments,
+        submissions: selectedProgram.submissions,
+        files: selectedProgram.files,
+        label: selectedProgram.label,
+        program: selectedProgram.program,
+      }
+    : undefined;
 
   const modules = data?.modules || [];
   const assignments = data?.assignments || [];
@@ -134,7 +155,8 @@ export default function ReclaimHub() {
       toast.error("File must be under 10 MB");
       return;
     }
-    if (!data?.enrollment?.id || !selectedModule) {
+    const enrollmentId = data?.enrollment?.id;
+    if (!enrollmentId || !selectedModule) {
       toast.error("Enrollment not found.");
       return;
     }
@@ -146,7 +168,7 @@ export default function ReclaimHub() {
       const fileName = file.name.startsWith(prefix) ? file.name : `${prefix}${file.name}`;
       uploadFile.mutate(
         {
-          enrollmentId: data.enrollment.id,
+          enrollmentId,
           fileName,
           mimeType: file.type || "application/octet-stream",
           base64Data: base64,
@@ -177,7 +199,8 @@ export default function ReclaimHub() {
       return;
     }
 
-    if (!data?.enrollment?.id) {
+    const enrollmentId = data?.enrollment?.id;
+    if (!enrollmentId) {
       toast.error("Enrollment not found.");
       return;
     }
@@ -188,7 +211,7 @@ export default function ReclaimHub() {
       const base64 = (reader.result as string).split(",")[1];
       uploadFile.mutate(
         {
-          enrollmentId: data.enrollment.id,
+          enrollmentId,
           fileName: file.name,
           mimeType: file.type || "application/octet-stream",
           base64Data: base64,
@@ -266,18 +289,64 @@ export default function ReclaimHub() {
                   className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3"
                   style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}
                 >
-                  My modules
+                  {data?.label ?? "My programs"}
                 </h1>
                 <p className="text-base sm:text-lg max-w-xl mx-auto" style={{ color: "#5a6b5a" }}>
-                  Only modules Lee Anne has assigned to you. Sessions and files live on your{" "}
-                  <Link href="/portal" className="font-semibold underline underline-offset-2" style={{ color: "#c9a96e" }}>
-                    portal home
-                  </Link>
-                  .
+                  Only the modules Lee Anne has opened for this program.
                 </p>
+                {programs.length > 1 && (
+                  <div className="flex flex-wrap justify-center gap-2 mt-5">
+                    {programs.map((item) => (
+                      <button
+                        key={item.program}
+                        type="button"
+                        onClick={() => {
+                          setProgramId(item.program);
+                          setSelectedModuleId(null);
+                          const url = new URL(window.location.href);
+                          url.searchParams.set("program", item.program);
+                          window.history.replaceState({}, "", url.toString());
+                        }}
+                        className="px-4 py-2 rounded-full text-sm font-bold"
+                        style={{
+                          background: item.program === data?.program ? "#c9a96e" : "white",
+                          color: item.program === data?.program ? "white" : "#5a6b5a",
+                          border: "1px solid #e8c99a",
+                        }}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {modules.length === 0 && (
+              {error && (
+                <p className="text-center text-sm mb-6" style={{ color: "#8a4a4a" }}>{error.message}</p>
+              )}
+
+              {programs.length === 0 && (
+                <div
+                  className="max-w-md mx-auto mb-10 p-8 rounded-2xl text-center"
+                  style={{ background: "white", border: "1px solid #f0e8e4" }}
+                >
+                  <p className="font-semibold mb-2" style={{ color: "#2d3b2d" }}>
+                    You are not in a program yet
+                  </p>
+                  <p className="text-sm mb-5" style={{ color: "#5a6b5a" }}>
+                    When Lee Anne enrolls you, your modules, assignments, and files will show up here.
+                  </p>
+                  <Link
+                    href="/portal"
+                    className="inline-flex items-center justify-center px-5 py-2.5 rounded-full text-sm font-bold text-white"
+                    style={{ background: "#c9a96e" }}
+                  >
+                    Back to portal home
+                  </Link>
+                </div>
+              )}
+
+              {programs.length > 0 && modules.length === 0 && (
                 <div
                   className="max-w-md mx-auto mb-10 p-8 rounded-2xl text-center"
                   style={{ background: "white", border: "1px solid #f0e8e4" }}
@@ -354,6 +423,27 @@ export default function ReclaimHub() {
                   </div>
                 </div>
               </Link>
+
+              {(data?.files.length ?? 0) > 0 && (
+                <div className="mb-10 rounded-2xl p-5" style={{ background: "white", border: "1px solid #f0e8e4" }}>
+                  <p className="text-sm font-bold mb-3" style={{ color: "#2d3b2d" }}>Files for this program</p>
+                  <div className="space-y-2">
+                    {data?.files.map((file) => (
+                      <a
+                        key={`${file.source}-${file.id}`}
+                        href={file.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between gap-3 p-3 rounded-xl"
+                        style={{ background: "#faf5f5" }}
+                      >
+                        <span className="text-sm font-semibold truncate" style={{ color: "#2d3b2d" }}>{file.fileName}</span>
+                        <span className="text-xs font-bold shrink-0" style={{ color: "#c9a96e" }}>Open</span>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {modules.map((mod, index) => {
@@ -614,6 +704,15 @@ export default function ReclaimHub() {
                                   style={{ borderColor: "#f0e8e4" }}
                                 >
                                   <div className="p-6 md:p-8 pt-6 flex flex-col gap-4">
+                              {assignment.fieldsJson ? (
+                                <Link
+                                  href={`/portal/forms/${assignment.id}`}
+                                  className="inline-flex min-h-12 items-center justify-center rounded-full px-5 text-sm font-bold text-white"
+                                  style={{ background: "#2d3b2d" }}
+                                >
+                                  Open fillable worksheet
+                                </Link>
+                              ) : null}
                               <Textarea 
                                 rows={5}
                                 placeholder="Type your reflection here (or upload a document below)..."

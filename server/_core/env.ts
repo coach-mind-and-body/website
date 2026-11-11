@@ -32,4 +32,10 @@ export const ENV = {
   r2Endpoint: process.env.R2_ENDPOINT ?? "",
   r2BucketName: process.env.R2_BUCKET_NAME ?? "mindbodyreset-assets",
   r2PublicUrl: process.env.R2_PUBLIC_URL ?? "https://pub-c6f7a165acb046c283b129a93cb2c8ec.r2.dev",
+  /** Private bucket for client photos. No public URL. Defaults to mbr-private-uploads. */
+  r2PrivateBucket: process.env.R2_PRIVATE_BUCKET || "mbr-private-uploads",
+  r2PrivateAccessKeyId: process.env.R2_PRIVATE_ACCESS_KEY_ID ?? "",
+  r2PrivateSecretAccessKey: process.env.R2_PRIVATE_SECRET_ACCESS_KEY ?? "",
+  /** Account endpoint for the private bucket. Falls back to R2_ENDPOINT when unset. */
+  r2PrivateEndpoint: process.env.R2_PRIVATE_ENDPOINT ?? "",
 };

@@ -1,15 +1,18 @@
 import { useState } from "react";
+import Link from "next/link";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { Plus, Edit2, Trash2, CheckCircle, Video, FileText, LayoutList } from "lucide-react";
+import { Plus, Edit2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RichTextEditor } from "@/components/RichTextEditor";
+import { PROGRAM_LIST, type ProgramId } from "@shared/programs";
 
 export default function ProgramBuilderTab() {
-  const { data: modules, refetch: refetchModules } = trpc.reclaimHub.adminListModules.useQuery();
+  const [program, setProgram] = useState<ProgramId>("reclaim");
+  const { data: modules, refetch: refetchModules } = trpc.reclaimHub.adminListModules.useQuery({ program });
   const { data: submissions, refetch: refetchSubmissions } = trpc.reclaimHub.adminListSubmissions.useQuery();
   
   const createModule = trpc.reclaimHub.adminCreateModule.useMutation({
@@ -36,7 +39,10 @@ export default function ProgramBuilderTab() {
   });
 
   const updateFeedback = trpc.reclaimHub.adminUpdateFeedback.useMutation({
-    onSuccess: () => { toast.success("Feedback sent!"); refetchSubmissions(); },
+    onSuccess: (result) => {
+      toast.success(result.emailSent ? "Feedback saved and emailed." : "Feedback saved. The email did not go out.");
+      refetchSubmissions();
+    },
     onError: (e) => toast.error(e.message),
   });
 
@@ -49,7 +55,26 @@ export default function ProgramBuilderTab() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="font-bold text-2xl" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.20 0.015 50)" }}>Reclaim Program Builder</h2>
+        <div>
+          <h2 className="font-bold text-2xl" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.20 0.015 50)" }}>Program content</h2>
+          <div className="flex flex-wrap gap-2 mt-3">
+            {PROGRAM_LIST.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => { setProgram(item.id); setEditingModule(null); }}
+                className="px-3 py-1.5 rounded-full text-xs font-bold"
+                style={{
+                  background: program === item.id ? "oklch(0.72 0.12 75)" : "transparent",
+                  color: program === item.id ? "white" : "oklch(0.42 0.015 50)",
+                  border: "1px solid oklch(0.72 0.12 75)",
+                }}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="flex gap-2">
           <Button 
             variant="outline"
@@ -82,7 +107,7 @@ export default function ProgramBuilderTab() {
             <>
               <div className="flex justify-end">
                 <Button 
-                  onClick={() => setEditingModule({ title: "", description: "", content: "", videoUrl: "", pdfUrl: "", order: (modules?.length || 0) + 1, isPublished: false })}
+                  onClick={() => setEditingModule({ program, title: "", description: "", content: "", videoUrl: "", pdfUrl: "", order: (modules?.length || 0) + 1, isPublished: false })}
                   style={{ background: "oklch(0.72 0.12 75)", color: "oklch(1 0 0)" }}
                   className="rounded-full font-bold"
                 >
@@ -130,7 +155,7 @@ export default function ProgramBuilderTab() {
                   />
                 </div>
                 <div>
-                  <Label style={{ color: "oklch(0.42 0.015 50)" }}>Order (1-6)</Label>
+                  <Label style={{ color: "oklch(0.42 0.015 50)" }}>Order</Label>
                   <Input 
                     type="number" 
                     value={editingModule.order} 
@@ -231,9 +256,9 @@ export default function ProgramBuilderTab() {
                 <Button 
                   onClick={() => {
                     if (editingModule.id) {
-                      updateModule.mutate(editingModule);
+                      updateModule.mutate({ ...editingModule, program: editingModule.program || program });
                     } else {
-                      createModule.mutate(editingModule);
+                      createModule.mutate({ ...editingModule, program });
                     }
                   }}
                   disabled={createModule.isPending || updateModule.isPending}
@@ -249,7 +274,7 @@ export default function ProgramBuilderTab() {
 
       {view === "submissions" && (
         <div className="space-y-4">
-          {(submissions || []).map((item: any) => (
+          {(submissions || []).filter((item: { module: { program?: string } }) => !item.module.program || item.module.program === program).map((item: any) => (
             <div key={item.submission.id} className="p-5 rounded-xl" style={{ background: "oklch(1 0 0)" }}>
               <div className="flex items-start justify-between mb-4">
                 <div>
@@ -401,6 +426,9 @@ function ModuleAssignmentsEditor({ moduleId }: { moduleId: number }) {
                   <p className="text-sm" style={{ color: "oklch(0.20 0.015 50)" }}>{assignment.question}</p>
                 </div>
                 <div className="flex items-center gap-1">
+                  <Link href={`/admin/forms/${assignment.id}`} className="text-xs font-bold px-2" style={{ color: "oklch(0.45 0.10 148)" }}>
+                    Form
+                  </Link>
                   <Button variant="ghost" size="icon" onClick={() => { setEditingId(assignment.id); setEditQuestion(assignment.question); }} style={{ color: "oklch(0.72 0.12 75)" }}>
                     <Edit2 size={14} />
                   </Button>

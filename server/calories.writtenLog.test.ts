@@ -4,6 +4,7 @@ import type { User } from "../drizzle/schema";
 
 const state = vi.hoisted(() => ({
   inserted: [] as unknown[],
+  privateReady: true,
   db: null as {
     insert: ReturnType<typeof vi.fn>;
     select: ReturnType<typeof vi.fn>;
@@ -15,10 +16,8 @@ vi.mock("./db", () => ({
 }));
 
 vi.mock("./storage", () => ({
-  storagePut: vi.fn(async (key: string) => ({
-    key,
-    url: `https://cdn.example/${key}`,
-  })),
+  privateFoodLogStorageReady: vi.fn(() => state.privateReady),
+  privateStoragePut: vi.fn(async (key: string) => ({ key })),
 }));
 
 vi.mock("./writtenFoodLog", async () => {
@@ -30,7 +29,7 @@ vi.mock("./writtenFoodLog", async () => {
 });
 
 import { caloriesRouter } from "./routers/calories";
-import { storagePut } from "./storage";
+import { privateStoragePut } from "./storage";
 import {
   readWrittenFoodLog,
   resetWrittenLogScanAllowanceForTests,
@@ -67,8 +66,9 @@ describe("calories written log endpoints", () => {
         })),
       })),
     };
+    state.privateReady = true;
     resetWrittenLogScanAllowanceForTests();
-    vi.mocked(storagePut).mockClear();
+    vi.mocked(privateStoragePut).mockClear();
     vi.mocked(readWrittenFoodLog).mockReset();
   });
 
@@ -152,7 +152,41 @@ describe("calories written log endpoints", () => {
     expect(result.images).toHaveLength(1);
     expect(result.images[0].key).toMatch(/^food-logs\/42\/[A-Za-z0-9._-]+$/);
     expect(result.images[0].key.startsWith("http")).toBe(false);
-    expect(storagePut).toHaveBeenCalledOnce();
+    expect(privateStoragePut).toHaveBeenCalledOnce();
+    const storedKey = vi.mocked(privateStoragePut).mock.calls[0]?.[0];
+    expect(String(storedKey)).toMatch(/^food-logs\/42\//);
+    expect(String(storedKey).startsWith("http")).toBe(false);
+  });
+
+  it("returns the foods without a photo when the private bucket is not configured", async () => {
+    state.privateReady = false;
+    vi.mocked(readWrittenFoodLog).mockResolvedValue({
+      entries: [
+        {
+          mealType: "lunch",
+          foodName: "salad",
+          calories: 100,
+          protein: 5,
+          carbs: 8,
+          fat: 3,
+          fiber: 1,
+          confidence: "high",
+          unclear: false,
+          note: null,
+          imageIndex: 0,
+        },
+      ],
+    });
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const caller = caloriesRouter.createCaller(authContext());
+    const result = await caller.analyzeWrittenFoodLog({
+      images: [{ imageBase64: jpegDataUrl() }],
+    });
+    expect(result.entries.map((entry) => entry.foodName)).toEqual(["salad"]);
+    expect(result.images).toEqual([]);
+    expect(privateStoragePut).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
   });
 
   it("does not store a photo when nothing on the page can be read", async () => {
@@ -162,7 +196,7 @@ describe("calories written log endpoints", () => {
       images: [{ imageBase64: jpegDataUrl() }],
     });
     expect(result).toEqual({ entries: [], images: [] });
-    expect(storagePut).not.toHaveBeenCalled();
+    expect(privateStoragePut).not.toHaveBeenCalled();
   });
 
   it("rejects a file that is not a photo before calling the model", async () => {
@@ -177,7 +211,7 @@ describe("calories written log endpoints", () => {
       })
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     expect(readWrittenFoodLog).not.toHaveBeenCalled();
-    expect(storagePut).not.toHaveBeenCalled();
+    expect(privateStoragePut).not.toHaveBeenCalled();
   });
 
   it("turns a model failure into a plain message", async () => {
@@ -186,7 +220,7 @@ describe("calories written log endpoints", () => {
     await expect(
       caller.analyzeWrittenFoodLog({ images: [{ imageBase64: jpegDataUrl() }] })
     ).rejects.toThrow(/clearer photo/);
-    expect(storagePut).not.toHaveBeenCalled();
+    expect(privateStoragePut).not.toHaveBeenCalled();
   });
 
   it("saves the reviewed list in one insert and keeps the photo on each row", async () => {

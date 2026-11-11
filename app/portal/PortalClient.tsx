@@ -54,12 +54,14 @@ export default function Portal() {
 
   const { data: fpuData, isLoading: fpuLoading } = trpc.fpu.myCoaching.useQuery(undefined, liveOpts);
 
+  const { data: hub, isLoading: hubLoading, refetch: refetchHub } = trpc.reclaimHub.myHub.useQuery(undefined, liveOpts);
+
+  const enrollmentId = data?.enrollment?.id ?? 0;
   const { data: filesData, refetch: refetchFiles } = trpc.clientFiles.list.useQuery(
-    { enrollmentId: data?.enrollment?.id ?? 0 },
+    { enrollmentId },
     {
-      enabled: !!data?.enrollment?.id,
-      refetchInterval: () =>
-        typeof document !== "undefined" && document.hidden ? false : 8_000,
+      enabled: isAuthenticated && enrollmentId > 0,
+      refetchInterval: liveOpts.refetchInterval,
       refetchOnWindowFocus: true,
     }
   );
@@ -72,6 +74,7 @@ export default function Portal() {
   const uploadFile = trpc.clientFiles.upload.useMutation({
     onSuccess: () => {
       toast.success("File uploaded successfully!");
+      refetchHub();
       refetchFiles();
       setUploading(false);
     },
@@ -99,21 +102,23 @@ export default function Portal() {
       isAuthenticated &&
       !isLoading &&
       !fpuLoading &&
+      !hubLoading &&
       !data?.enrollment &&
       !fpuData &&
+      !(hub?.programs.length) &&
       !hasAttemptedLink.current
     ) {
       hasAttemptedLink.current = true;
       linkDeposit.mutate();
     }
-  }, [isAuthenticated, isLoading, fpuLoading, data, fpuData]);
+  }, [isAuthenticated, isLoading, fpuLoading, hubLoading, data, fpuData, hub]);
 
   if (!loading && !isAuthenticated) {
     window.location.href = getLoginUrl();
     return null;
   }
 
-  if (loading || isLoading || fpuLoading) {
+  if (loading || isLoading || fpuLoading || hubLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: "#faf5f5" }}>
         <div className="w-10 h-10 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "#c9a96e" }} />
@@ -121,7 +126,9 @@ export default function Portal() {
     );
   }
 
-  if (!data?.enrollment && !fpuData) {
+  const programCards = hub?.programs ?? [];
+
+  if (!data?.enrollment && !fpuData && programCards.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: "#faf5f5" }}>
         <div className="text-center max-w-md px-6">
@@ -132,7 +139,7 @@ export default function Portal() {
             No coaching program yet
           </h1>
           <p className="text-base mb-6" style={{ color: "#5a6b5a" }}>
-            This portal is for R.E.C.L.A.I.M. and FPU coaching clients. If you signed in for the free habit tracker, you can open it below — no enrollment required.
+            This portal is for people in a program with Lee Anne. If you signed in for the free habit tracker, you can open it below.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center flex-wrap">
             <Link href="/habit-tracker" className="inline-block px-6 py-3 rounded-full font-bold text-white" style={{ background: "#c9a96e" }}>
@@ -211,7 +218,7 @@ export default function Portal() {
               </span>
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
-            {enrollment && (
+            {enrollment || programCards.length > 0 ? (
               <Link
                 href="/portal/hub"
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm"
@@ -220,7 +227,7 @@ export default function Portal() {
                 <BookOpen size={14} />
                 <span className="hidden sm:inline">My modules</span>
               </Link>
-            )}
+            ) : null}
             <Link
               href="/habit-tracker"
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm"
@@ -490,8 +497,27 @@ export default function Portal() {
           })}
         </div>
 
-        {/* Files section */}
-        <div className="rounded-2xl p-6" style={{ background: "white", border: "1px solid #f0e8e4" }}>
+        <div className="rounded-2xl p-6 mb-6" style={{ background: "white", border: "1px solid #f0e8e4" }}>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-bold" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
+                Worksheets
+              </h2>
+              <p className="text-sm mt-1" style={{ color: "#8a9a8a" }}>
+                Fillable forms and grouped pages for your programs.
+              </p>
+            </div>
+            <Link
+              href="/portal/forms"
+              className="min-h-12 inline-flex items-center rounded-full px-4 text-sm font-bold text-white"
+              style={{ background: "#2d3b2d" }}
+            >
+              Open
+            </Link>
+          </div>
+        </div>
+
+        <div className="rounded-2xl p-6 mb-8" style={{ background: "white", border: "1px solid #f0e8e4" }}>
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-xl font-bold" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
               Shared Files
@@ -512,13 +538,6 @@ export default function Portal() {
               )}
               {uploading ? "Uploading..." : "Upload File"}
             </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.mp4,.mov,.txt"
-              onChange={handleFileUpload}
-            />
           </div>
 
           {!filesData?.length ? (
@@ -556,6 +575,80 @@ export default function Portal() {
 
         {/* End RECLAIM section */}
         </>}
+
+        {programCards.length > 0 && (
+          <div className="mb-8 space-y-4">
+            <h2 className="text-lg sm:text-xl font-bold" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
+              Your programs
+            </h2>
+            {programCards.map((program) => (
+              <div key={program.program} className="rounded-2xl p-6" style={{ background: "white", border: "1px solid #f0e8e4" }}>
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                  <div>
+                    <p className="font-bold" style={{ color: "#2d3b2d" }}>{program.label}</p>
+                    <p className="text-xs mt-0.5" style={{ color: "#8a9a8a" }}>
+                      {program.modules.length} module{program.modules.length === 1 ? "" : "s"} open
+                    </p>
+                  </div>
+                  <Link
+                    href={`/portal/hub?program=${program.program}`}
+                    className="px-4 py-2 rounded-full text-xs font-bold"
+                    style={{ background: "#c9a96e", color: "white" }}
+                  >
+                    Open modules
+                  </Link>
+                </div>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-semibold" style={{ color: "#5a6b5a" }}>Files</p>
+                  {program.enrollment?.id ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveUploadEnrollmentId(program.enrollment?.id ?? null);
+                        fileInputRef.current?.click();
+                      }}
+                      disabled={uploading}
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold"
+                      style={{ background: "#fbeee9", color: "#c9a96e" }}
+                    >
+                      <Upload size={12} />
+                      {uploading && activeUploadEnrollmentId === program.enrollment.id ? "Uploading..." : "Upload"}
+                    </button>
+                  ) : null}
+                </div>
+                {program.files.length === 0 ? (
+                  <p className="text-sm" style={{ color: "#8a9a8a" }}>No files for this program yet.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {program.files.map((file) => (
+                      <div key={`${file.source}-${file.id}`} className="flex items-center justify-between p-3 rounded-xl" style={{ background: "#faf5f5" }}>
+                        <div className="flex items-center gap-3 min-w-0">
+                          <FileText size={16} style={{ color: "#c9a96e" }} />
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold truncate" style={{ color: "#2d3b2d" }}>{file.fileName}</p>
+                            <p className="text-xs" style={{ color: "#8a9a8a" }}>
+                              {file.source === "library" ? "From your program" : file.uploadedByRole === "admin" ? "From your coach" : "Uploaded by you"}
+                            </p>
+                          </div>
+                        </div>
+                        <a href={file.fileUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-bold px-3 py-1.5 rounded-full shrink-0" style={{ background: "#fbeee9", color: "#c9a96e" }}>
+                          View
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.mp4,.mov,.txt"
+          onChange={handleFileUpload}
+        />
 
         {/* FPU Coaching Section */}
         {fpuData && <FpuCoachingSection order={fpuData.order} sessions={fpuData.sessions} />}
