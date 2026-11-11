@@ -96,7 +96,6 @@ export default function SiteFooter() {
                 { href: "/health-wellness-blog", label: "Blog" },
                 { href: "/insulin-resistance-after-40", label: "Insulin Resistance After 40" },
                 { href: "/life-after-glp-1", label: "Life After GLP-1" },
-                { href: "/real-food-reset", label: "5-Day No Processed Food Challenge" },
                 { href: "/habit-tracker", label: "Free Habit Tracker" },
                 { href: BRAND.appStoreUrl, label: "Get the iPhone app", external: true },
                 { href: "/book", label: "Book a Free Call" },

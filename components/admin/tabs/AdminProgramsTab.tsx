@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Copy, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
+import { REAL_FOOD_RESET, REAL_FOOD_RESET_THEME } from "@shared/realFoodReset";
 import { isProgramId, PROGRAM_LIST, PROGRAMS, type ProgramId } from "@shared/programs";
 import { METABOLIC_INTAKE_ALIAS, programIntakePath, programIntakeUrl } from "@shared/programIntake";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -22,6 +23,7 @@ import {
   resolvedAdminParams,
   type ProgramSectionId,
 } from "@/lib/adminNav";
+import { todayMountainDateStr } from "@/lib/mountainTime";
 
 const ink = "oklch(0.20 0.015 50)";
 const muted = "oklch(0.52 0.015 50)";
@@ -298,6 +300,8 @@ function ProgramRoster({
         </section>
       )}
 
+      {section === "settings" && program === "challenge" && <ChallengeArchiveSettings />}
+
       {section === "settings" && program !== "metabolic" && (
         <section className="rounded-xl p-5 mb-6" style={{ background: paper, border: `1px solid ${line}` }}>
           <h3 className="font-bold" style={{ color: ink }}>
@@ -528,6 +532,63 @@ function RosterTable({
         </tbody>
       </table>
     </div>
+  );
+}
+
+function ChallengeArchiveSettings() {
+  const utils = trpc.useUtils();
+  const list = trpc.challenges.adminListChallenges.useQuery();
+  const update = trpc.challenges.updateChallenge.useMutation({
+    onSuccess: (_data, vars) => {
+      toast.success(vars.isActive ? "Challenge unarchived" : "Challenge archived");
+      utils.challenges.adminListChallenges.invalidate();
+    },
+    onError: (error) => toast.error(error.message),
+  });
+  const challenge = list.data?.find((row) => row.themeTag === REAL_FOOD_RESET_THEME);
+  const ended = !!challenge?.endDate && todayMountainDateStr() > challenge.endDate;
+
+  return (
+    <section className="rounded-xl p-5 mb-6" style={{ background: paper, border: `1px solid ${line}` }}>
+      <h3 className="font-bold" style={{ color: ink }}>
+        Archive
+      </h3>
+      <p className="text-sm mt-1 mb-4 max-w-xl" style={{ color: muted }}>
+        Archive hides {REAL_FOOD_RESET.shortName} in the iPhone app and on the habit tracker. Deactivate under Habit
+        Tracker → Challenges does the same thing.
+        {ended ? " It has ended, so it stays hidden after the end date either way." : ""}
+      </p>
+      {list.isLoading ? (
+        <p className="text-sm" style={{ color: muted }}>
+          Loading…
+        </p>
+      ) : list.error ? (
+        <p className="text-sm" style={{ color: "oklch(0.45 0.14 25)" }}>
+          {list.error.message}
+        </p>
+      ) : !challenge ? (
+        <p className="text-sm" style={{ color: muted }}>
+          No challenge record yet.
+        </p>
+      ) : (
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            disabled={update.isPending}
+            onClick={() => update.mutate({ id: challenge.id, isActive: !challenge.isActive })}
+            className="rounded-full px-4 py-2 text-sm font-bold disabled:opacity-70"
+            style={{ background: challenge.isActive ? gold : paper, color: challenge.isActive ? "white" : ink, border: `1px solid ${challenge.isActive ? gold : line}` }}
+          >
+            {challenge.isActive ? "Archive" : "Unarchive"}
+          </button>
+          <span className="text-sm" style={{ color: muted }}>
+            {ended || !challenge.isActive ? "Hidden in the app" : "Showing in the app"}
+            {!challenge.isActive ? " · archived" : ""}
+            {ended ? ` · ended ${REAL_FOOD_RESET.endLabel}` : ""}
+          </span>
+        </div>
+      )}
+    </section>
   );
 }
 

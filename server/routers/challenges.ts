@@ -16,6 +16,7 @@ import {
   ensureRealFoodResetChallenge,
   getChallengeDayVideo,
   getChallengeToday,
+  isChallengeHidden,
   listChallengeDayVideos,
   mergeRealFoodResetToUser,
   upsertChallengeDayVideo,
@@ -35,7 +36,10 @@ export const challengesRouter = router({
     const db = await getDb();
     if (!db) return [];
     const rows = await db.select().from(challenges).where(eq(challenges.isActive, true));
-    return rows.map(({ meetUrl: _meetUrl, ...rest }) => rest);
+    const today = todayMountainDateStr();
+    return rows
+      .filter((row) => !isChallengeHidden(row, today))
+      .map(({ meetUrl: _meetUrl, ...rest }) => rest);
   }),
 
   getToday: publicProcedure

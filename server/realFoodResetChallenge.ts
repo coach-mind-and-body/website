@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { TRPCError } from "@trpc/server";
 import { and, eq, or } from "drizzle-orm";
 import { sql } from "drizzle-orm";
 import {
@@ -110,6 +111,25 @@ function normEmail(email: string) {
   return email.toLowerCase().trim();
 }
 
+/** Hidden once archived, or the day after endDate (America/Denver). The end date itself still counts. */
+export function isChallengeHidden(
+  challenge: { isActive: boolean; endDate?: string | null },
+  todayStr: string
+): boolean {
+  if (!challenge.isActive) return true;
+  return !!challenge.endDate && todayStr > challenge.endDate;
+}
+
+/** Why a new signup should be refused, or null when the challenge is still open. */
+export function challengeClosedMessage(
+  challenge: { isActive: boolean; endDate?: string | null },
+  todayStr: string
+): string | null {
+  if (challenge.endDate && todayStr > challenge.endDate) return "This challenge has ended.";
+  if (!challenge.isActive) return "This challenge isn't open right now.";
+  return null;
+}
+
 export async function ensureRealFoodResetChallenge() {
   const db = await getDb();
   if (!db) throw new Error("DB Error");
@@ -120,7 +140,7 @@ export async function ensureRealFoodResetChallenge() {
     .where(eq(challenges.themeTag, REAL_FOOD_RESET_THEME))
     .limit(1);
 
-  const values = {
+  const content = {
     title: REAL_FOOD_RESET.name,
     description:
       `Five days of real food skills — lives Mon/Wed/Fri at ${REAL_FOOD_RESET.liveTime}. Progress, not perfection.`,
@@ -129,17 +149,20 @@ export async function ensureRealFoodResetChallenge() {
     endDate: REAL_FOOD_RESET.endDate,
     themeTag: REAL_FOOD_RESET_THEME,
     meetUrl: REAL_FOOD_RESET.meetUrl,
-    isFeatured: true,
     featuredOrder: 1,
-    isActive: true,
   };
 
   if (existing) {
-    await db.update(challenges).set(values).where(eq(challenges.id, existing.id));
+    // isActive and isFeatured are admin choices. Rewriting them here undoes Deactivate and Archive.
+    await db.update(challenges).set(content).where(eq(challenges.id, existing.id));
     return existing.id;
   }
 
-  const [res] = await db.insert(challenges).values(values);
+  const [res] = await db.insert(challenges).values({
+    ...content,
+    isFeatured: true,
+    isActive: true,
+  });
   return res.insertId;
 }
 
@@ -147,6 +170,13 @@ export async function enrollRealFoodResetByEmail(email: string) {
   const db = await getDb();
   if (!db) throw new Error("DB Error");
   const challengeId = await ensureRealFoodResetChallenge();
+  const [challenge] = await db.select().from(challenges).where(eq(challenges.id, challengeId)).limit(1);
+  const closed = challenge
+    ? challengeClosedMessage(challenge, todayMountainDateStr())
+    : "This challenge has ended.";
+  if (closed) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: closed });
+  }
   const normalized = normEmail(email);
 
   const [existing] = await db
@@ -321,14 +351,32 @@ export async function getChallengeToday(opts: {
 
   const challengeId = await ensureRealFoodResetChallenge();
   const [challenge] = await db.select().from(challenges).where(eq(challenges.id, challengeId)).limit(1);
-  const enrollment = await findEnrollment({ challengeId, ...opts });
   const todayStr = todayMountainDateStr();
-  const beforeStart = todayStr < REAL_FOOD_RESET.startDate;
-  const afterEnd = todayStr > REAL_FOOD_RESET.endDate;
+  const startDate = challenge?.startDate || REAL_FOOD_RESET.startDate;
+  const endDate = challenge?.endDate || REAL_FOOD_RESET.endDate;
+  const beforeStart = todayStr < startDate;
+  const afterEnd = todayStr > endDate;
+
+  // Installed iOS builds show the Challenge tab only when getActiveChallenges
+  // returns rows, and the web card only when enrolled is true. afterEnd used
+  // to keep an archive view for people already enrolled. Hide it instead.
+  if (!challenge || isChallengeHidden(challenge, todayStr)) {
+    return {
+      ...empty,
+      challengeId: challenge?.id ?? challengeId,
+      startsOn: startDate,
+      endsOn: endDate,
+      beforeStart,
+      afterEnd,
+      enrolled: false,
+    };
+  }
+
+  const enrollment = await findEnrollment({ challengeId, ...opts });
   const day = realFoodResetDayForDate(todayStr);
 
   if (!enrollment) {
-    return { ...empty, challengeId, beforeStart, afterEnd };
+    return { ...empty, challengeId, startsOn: startDate, endsOn: endDate, beforeStart, afterEnd };
   }
 
   let done = false;
