@@ -12,6 +12,7 @@ struct CaloriesView: View {
     private let meals = ["breakfast", "lunch", "dinner", "snack", "drink"]
 
     var body: some View {
+        DuoPanes(style: .augment) {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 dateRow
@@ -88,6 +89,27 @@ struct CaloriesView: View {
             .padding(16)
         }
         .dockScrollClearance()
+        } controls: {
+            DuoControlWell {
+                Text("\(food.proteinTotal)g protein · \(food.calorieTotal) cal")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(HTTheme.forest)
+                Button("Log food") {
+                    meal = suggestedMeal
+                    showLog = true
+                }
+                .font(.headline)
+                .frame(maxWidth: .infinity, minHeight: 52)
+                .background(HTTheme.forest)
+                .foregroundStyle(.white)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .buttonStyle(.plain)
+                Button("Scan my written log") { showScan = true }
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, minHeight: 52)
+                    .foregroundStyle(HTTheme.forest)
+            }
+        }
         .keyboardTyping()
         .background(HTTheme.cream.ignoresSafeArea())
         .task(id: food.sessionEpoch) {

@@ -24,15 +24,34 @@ enum YouTubeID {
     }
 }
 
+/// Keeps one web view alive when a fold only changes the layout around the player.
+final class YouTubeHold {
+    var webView: WKWebView?
+    fileprivate var loadedKey: String?
+
+    func play() { run("var v=document.querySelector('video'); if(v){v.play();}") }
+    func pause() { run("var v=document.querySelector('video'); if(v){v.pause();}") }
+    func skip(_ seconds: Double) {
+        run("var v=document.querySelector('video'); if(v){v.currentTime=Math.max(0,v.currentTime+(\(seconds)));}")
+    }
+    func rate(_ value: Double) { run("var v=document.querySelector('video'); if(v){v.playbackRate=\(value);}") }
+
+    private func run(_ script: String) {
+        webView?.evaluateJavaScript(script, completionHandler: nil)
+    }
+}
+
 /// Plays in-app. YouTube error 152-4 is a missing Referer in WKWebView iframes —
 /// we load the embed URL directly with a Safari user agent and our site as Referer.
 struct YouTubeEmbed: UIViewRepresentable {
     let videoId: String
     var startSeconds: Int = 0
+    var hold: YouTubeHold? = nil
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
     func makeUIView(context: Context) -> WKWebView {
+        if let existing = hold?.webView { return existing }
         let config = WKWebViewConfiguration()
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
@@ -42,14 +61,16 @@ struct YouTubeEmbed: UIViewRepresentable {
         web.backgroundColor = .black
         web.isOpaque = false
         web.navigationDelegate = context.coordinator
+        hold?.webView = web
         return web
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {
         let key = "\(videoId)-\(startSeconds)"
-        guard context.coordinator.loadedId != key else { return }
+        if hold?.loadedKey == key || context.coordinator.loadedId == key { return }
+        hold?.loadedKey = key
         context.coordinator.loadedId = key
-        var urlStr = "https://www.youtube.com/embed/\(videoId)?playsinline=1&rel=0&modestbranding=1&fs=1"
+        var urlStr = "https://www.youtube.com/embed/\(videoId)?playsinline=1&enablejsapi=1&rel=0&modestbranding=1&fs=1"
         if startSeconds > 0 { urlStr += "&start=\(startSeconds)" }
         let url = URL(string: urlStr)!
         var request = URLRequest(url: url)
@@ -65,10 +86,11 @@ struct YouTubeEmbed: UIViewRepresentable {
 
 struct YouTubePlayer: View {
     let videoId: String
+    var hold: YouTubeHold? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            YouTubeEmbed(videoId: videoId)
+            YouTubeEmbed(videoId: videoId, hold: hold)
                 .duoStage()
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             Link("Open in YouTube", destination: YouTubeID.watchURL(videoId))

@@ -150,6 +150,7 @@ struct FitnessView: View {
 
     var body: some View {
         NavigationStack {
+            DuoPanes(style: .augment) {
             VStack(spacing: 0) {
                 Picker("", selection: $model.tab) {
                     Text("Log").tag(0)
@@ -173,6 +174,37 @@ struct FitnessView: View {
             }
             .task(id: model.sessionEpoch) { await model.load() }
             .refreshable { await model.load() }
+            } controls: {
+                fitnessControls
+            }
+        }
+    }
+
+    private var fitnessControls: some View {
+        DuoControlWell {
+            Text("\(model.minutesToday) min today")
+                .font(.title2.weight(.semibold))
+                .foregroundStyle(HTTheme.forest)
+            Text(model.dateStr == MountainDate.today() ? "Today" : MountainDate.long(model.dateStr))
+                .foregroundStyle(HTTheme.muted)
+            Button("Log \(model.minutes) min") {
+                let name = model.name.trimmingCharacters(in: .whitespaces)
+                Task { await model.add(name: name.isEmpty ? "Workout" : name, minutes: model.minutes) }
+            }
+            .font(.headline)
+            .frame(maxWidth: .infinity, minHeight: 52)
+            .background(HTTheme.forest)
+            .foregroundStyle(.white)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .buttonStyle(.plain)
+            Button("Show videos") { model.tab = 1 }
+                .font(.headline)
+                .frame(maxWidth: .infinity, minHeight: 52)
+                .foregroundStyle(HTTheme.forest)
+            Button("Show log") { model.tab = 0 }
+                .font(.headline)
+                .frame(maxWidth: .infinity, minHeight: 52)
+                .foregroundStyle(HTTheme.forest)
         }
     }
 
@@ -396,19 +428,26 @@ struct WorkoutWatchView: View {
     @State private var remaining = 0
     @State private var running = false
     @State private var logged = false
+    @State private var playback = YouTubeHold()
 
     private var intervals: [WorkoutInterval] { video.intervals }
     private var videoId: String? { YouTubeID.parse(video.videoUrl) }
 
     var body: some View {
-        ScrollView {
+        DuoPanes(style: .split) {
             VStack(alignment: .leading, spacing: 14) {
                 if let vid = videoId {
-                    YouTubeEmbed(videoId: vid, startSeconds: startSeconds)
+                    YouTubeEmbed(videoId: vid, startSeconds: startSeconds, hold: playback)
                         .duoStage()
                         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }
-
+                if let d = video.description, !d.isEmpty {
+                    Text(d).font(.subheadline).foregroundStyle(HTTheme.muted)
+                }
+            }
+            .padding(16)
+        } controls: {
+            VStack(alignment: .leading, spacing: 14) {
                 if !intervals.isEmpty {
                     timerCard
                     Text("Lee Anne’s timestamps")
@@ -440,10 +479,6 @@ struct WorkoutWatchView: View {
                         }
                         .buttonStyle(.plain)
                     }
-                }
-
-                if let d = video.description, !d.isEmpty {
-                    Text(d).font(.subheadline).foregroundStyle(HTTheme.muted)
                 }
 
                 Button {

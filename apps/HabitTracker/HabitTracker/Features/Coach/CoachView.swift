@@ -188,6 +188,7 @@ struct CoachView: View {
 
     var body: some View {
         NavigationStack {
+            DuoPanes(style: .dock) {
             VStack(spacing: 0) {
                 if model.notifyEnabled {
                     Text("Notifications are on. You will see them when Lee Anne replies.")
@@ -260,7 +261,7 @@ struct CoachView: View {
                 }
             }
             .background(HTTheme.cream)
-            .safeAreaInset(edge: .bottom, spacing: 0) {
+            } controls: {
                 composer
             }
             .navigationTitle(model.thread?.coachName ?? "Coach")

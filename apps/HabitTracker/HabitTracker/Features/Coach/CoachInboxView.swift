@@ -289,6 +289,7 @@ struct CoachInboxView: View {
 
     var body: some View {
         NavigationStack {
+            DuoPanes(style: .augment) {
             Group {
                 if model.selected != nil {
                     thread
@@ -338,6 +339,15 @@ struct CoachInboxView: View {
                 guard let id = fromNote ?? DeepLink.pendingConversationId else { return }
                 DeepLink.pendingConversationId = nil
                 Task { await model.openConversation(id: id) }
+            }
+            } controls: {
+                DuoControlWell {
+                    Text(model.selected == nil ? "Pick a conversation" : model.selectedTitle)
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(HTTheme.forest)
+                    Text(coach.unread > 0 ? "\(coach.unread) unread" : "You're caught up")
+                        .foregroundStyle(HTTheme.muted)
+                }
             }
         }
     }

@@ -19,6 +19,7 @@ struct HabitsView: View {
 
     var body: some View {
         NavigationStack {
+            DuoPanes(style: .augment) {
             VStack(spacing: 0) {
                 if !auth.isSignedIn {
                     guestBanner
@@ -103,7 +104,38 @@ struct HabitsView: View {
             .sheet(isPresented: $showCycle) {
                 CycleLogSheet(store: cycle, health: health, dateStr: cycleDate)
             }
+            } controls: {
+                habitControls
+            }
         }
+    }
+
+    private var habitControls: some View {
+        DuoControlWell {
+            Text("\(model.doneCount) of \(max(model.habits.count, 1)) today")
+                .font(.title2.weight(.semibold))
+                .foregroundStyle(HTTheme.forest)
+            Text("\(model.currentStreak)-day streak")
+                .foregroundStyle(HTTheme.muted)
+            habitJump(0, "Today")
+            if model.showsChallengePane {
+                habitJump(1, "Challenge")
+            }
+            habitJump(2, "Progress")
+            habitJump(3, "Cycle")
+        }
+    }
+
+    private func habitJump(_ tag: Int, _ title: String) -> some View {
+        Button(title) {
+            model.mainTab = tag
+        }
+        .font(.headline)
+        .frame(maxWidth: .infinity, minHeight: 52)
+        .background(model.mainTab == tag ? HTTheme.forest : Color.white)
+        .foregroundStyle(model.mainTab == tag ? Color.white : HTTheme.forest)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .buttonStyle(.plain)
     }
 
     private var guestBanner: some View {

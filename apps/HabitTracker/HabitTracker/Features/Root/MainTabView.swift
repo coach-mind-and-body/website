@@ -243,6 +243,7 @@ struct RecipesHubView: View {
 
     var body: some View {
         NavigationStack {
+            DuoPanes(style: .augment) {
             VStack(spacing: 0) {
                 Picker("", selection: $page) {
                     Text("Today").tag(0)
@@ -279,7 +280,28 @@ struct RecipesHubView: View {
             .navigationDestination(for: String.self) { slug in
                 RecipeDetailView(slug: slug, food: food, auth: auth)
             }
+            } controls: {
+                DuoControlWell {
+                    Text("Food")
+                        .font(.title2.weight(.semibold))
+                        .foregroundStyle(HTTheme.forest)
+                    foodJump(0, "Today")
+                    foodJump(1, "Recipes")
+                    foodJump(2, "This week")
+                    foodJump(3, "Shop")
+                }
+            }
         }
+    }
+
+    private func foodJump(_ tag: Int, _ title: String) -> some View {
+        Button(title) { page = tag }
+            .font(.headline)
+            .frame(maxWidth: .infinity, minHeight: 52)
+            .background(page == tag ? HTTheme.forest : Color.white)
+            .foregroundStyle(page == tag ? Color.white : HTTheme.forest)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .buttonStyle(.plain)
     }
 }
 
@@ -288,6 +310,7 @@ private struct NotifyPromptView: View {
 
     var body: some View {
         NavigationStack {
+            DuoPanes(style: .augment) {
             VStack(alignment: .leading, spacing: 16) {
                 Text("Evening check-in")
                     .font(HTTheme.serif)
@@ -314,6 +337,21 @@ private struct NotifyPromptView: View {
             }
             .padding(24)
             .background(HTTheme.cream.ignoresSafeArea())
+            } controls: {
+                Button("Turn on reminders") {
+                    Task {
+                        UserDefaults.standard.set(true, forKey: "notify.prompted")
+                        let ok = await NotificationService.requestAuthorization()
+                        if ok { await NotificationService.scheduleEveningNudge() }
+                        isPresented = false
+                    }
+                }
+                .font(.headline)
+                .frame(maxWidth: .infinity, minHeight: 56)
+                .buttonStyle(.borderedProminent)
+                .tint(HTTheme.forest)
+                .padding(16)
+            }
         }
         .presentationDetents([.medium])
     }
@@ -325,6 +363,7 @@ private struct ShareHabitsPromptView: View {
 
     var body: some View {
         NavigationStack {
+            DuoPanes(style: .augment) {
             VStack(alignment: .leading, spacing: 16) {
                 Text("Share habits with Lee Anne?")
                     .font(HTTheme.serif)
@@ -353,6 +392,23 @@ private struct ShareHabitsPromptView: View {
             }
             .padding(24)
             .background(HTTheme.cream.ignoresSafeArea())
+            } controls: {
+                Button("Share with Lee Anne") {
+                    Task {
+                        UserDefaults.standard.set(true, forKey: "share.prompted")
+                        _ = try? await auth.client.mutate(
+                            "habit.toggleShareHabits",
+                            input: ShareInput(share: true)
+                        ) as SuccessFlag
+                        isPresented = false
+                    }
+                }
+                .font(.headline)
+                .frame(maxWidth: .infinity, minHeight: 56)
+                .buttonStyle(.borderedProminent)
+                .tint(HTTheme.forest)
+                .padding(16)
+            }
         }
         .presentationDetents([.medium])
     }
@@ -364,6 +420,7 @@ struct HealthPermissionView: View {
 
     var body: some View {
         NavigationStack {
+            DuoPanes(style: .augment) {
             VStack(alignment: .leading, spacing: 16) {
                 Text("Apple Health")
                     .font(HTTheme.serif)
@@ -392,6 +449,20 @@ struct HealthPermissionView: View {
             }
             .padding(24)
             .background(HTTheme.cream.ignoresSafeArea())
+            } controls: {
+                Button("Continue") {
+                    Task {
+                        await health.requestAccess()
+                        UserDefaults.standard.set(true, forKey: "health.prompted")
+                        isPresented = false
+                    }
+                }
+                .font(.headline)
+                .frame(maxWidth: .infinity, minHeight: 56)
+                .buttonStyle(.borderedProminent)
+                .tint(HTTheme.forest)
+                .padding(16)
+            }
         }
         .presentationDetents([.medium])
     }
@@ -402,13 +473,15 @@ struct RootView: View {
     var health: HealthKitService
 
     var body: some View {
-        Group {
-            if auth.isRestoring {
-                ProgressView("Loading")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(HTTheme.cream.ignoresSafeArea())
-            } else {
-                MainTabView(auth: auth, health: health)
+        DuoPostureHost {
+            Group {
+                if auth.isRestoring {
+                    ProgressView("Loading")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(HTTheme.cream.ignoresSafeArea())
+                } else {
+                    MainTabView(auth: auth, health: health)
+                }
             }
         }
         .installKeyboardDismissTap()
