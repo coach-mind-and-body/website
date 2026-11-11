@@ -273,9 +273,9 @@ enum CoachingReminders {
         let identifier = "\(prefix)\(reminder.id)-\(kind)"
         let stamp = reminder.scheduledAt.timeIntervalSince1970
         let pendingRequest = pending.first { $0.identifier == identifier }
-        let pendingStamp = pendingRequest.flatMap { stamp(in: $0) }
+        let pendingStamp = pendingRequest.flatMap { Self.stamp(in: $0) }
         let deliveredNote = delivered.first { $0.request.identifier == identifier }
-        let deliveredStamp = deliveredNote.flatMap { stamp(in: $0.request) }
+        let deliveredStamp = deliveredNote.flatMap { Self.stamp(in: $0.request) }
 
         // The old fire time is no longer right. Drop a pending request that would
         // still go off, and a banner that names the previous time.
