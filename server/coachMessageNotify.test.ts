@@ -1,11 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   buildCoachReplyFallbackEmail,
+  buildCoachUnreadAlertEmail,
   COACH_REPLY_EMAIL_DELAY_MS,
   decideUnreadCoachEmail,
   notifyAdminsOfClientMessage,
   notifyClientOfCoachMessage,
+  planUnreadThreadEmails,
   processUnreadCoachReplyEmails,
+  processUnreadThreadEmails,
   type UnreadNotice,
 } from "./coachMessageNotify";
 
@@ -153,6 +156,125 @@ describe("coach reply notifications", () => {
     });
     expect(result.sent).toBe(0);
     expect(release).toHaveBeenCalledWith(1);
+  });
+
+  it("sends Lee Anne one email per unread thread after 10 minutes, and none if she already read it", async () => {
+    const older = notice({
+      id: 11,
+      conversationId: 4,
+      name: "Ava",
+      preview: "The evening was loud",
+      messageCreatedAt: new Date(now.getTime() - 12 * 60 * 1000),
+      email: "coach@mindandbodyresetcoach.com",
+    });
+    const newer = notice({
+      id: 12,
+      conversationId: 4,
+      name: "Ava",
+      preview: "Still sitting with it",
+      messageCreatedAt: new Date(now.getTime() - 11 * 60 * 1000),
+      email: "coach@mindandbodyresetcoach.com",
+    });
+    const otherThread = notice({
+      id: 21,
+      conversationId: 8,
+      name: "Bea",
+      preview: "Can we move Thursday?",
+      email: "coach@mindandbodyresetcoach.com",
+    });
+    const alreadyRead = notice({
+      id: 13,
+      conversationId: 4,
+      clientLastReadAt: now,
+      email: "coach@mindandbodyresetcoach.com",
+    });
+    const tooSoon = notice({
+      id: 14,
+      conversationId: 9,
+      dueAt: new Date(now.getTime() + 60_000),
+      email: "coach@mindandbodyresetcoach.com",
+    });
+
+    const plan = planUnreadThreadEmails([older, newer, otherThread, alreadyRead, tooSoon], now);
+    expect(plan.waitIds).toEqual([14]);
+    expect(plan.skipIds).toEqual([13]);
+    expect(plan.batches).toHaveLength(2);
+    const ava = plan.batches.find((batch) => batch.conversationId === 4);
+    expect(ava).toMatchObject({
+      clientName: "Ava",
+      count: 2,
+      preview: "Still sitting with it",
+      noticeIds: [11, 12],
+    });
+
+    let locked = false;
+    const sendEmail = vi.fn().mockResolvedValue(true);
+    const claim = vi.fn(async (id: number) => {
+      if (id === 11 && locked) return false;
+      if (id === 11) locked = true;
+      return true;
+    });
+    const release = vi.fn(async () => {
+      locked = false;
+    });
+    const due = [older, newer];
+    const [first, second] = await Promise.all([
+      processUnreadThreadEmails({ rows: due, now, claim, release, sendEmail }),
+      processUnreadThreadEmails({ rows: due, now, claim, release, sendEmail }),
+    ]);
+    expect(sendEmail).toHaveBeenCalledTimes(1);
+    expect(first.sent + second.sent).toBe(1);
+    expect(sendEmail.mock.calls[0][0].count).toBeGreaterThan(0);
+
+    sendEmail.mockClear();
+    await processUnreadThreadEmails({
+      rows: [alreadyRead],
+      now,
+      claim: async () => true,
+      release,
+      sendEmail,
+    });
+    expect(sendEmail).not.toHaveBeenCalled();
+  });
+
+  it("builds a branded coach alert with the preview and the admin messages link", () => {
+    const email = buildCoachUnreadAlertEmail({
+      clientName: "Ava",
+      preview: 'Hi <script>alert("x")</script>',
+      count: 2,
+    });
+    expect(email.subject).toBe("2 unread messages from Ava");
+    expect(email.htmlBody).toContain("Nunito Sans");
+    expect(email.htmlBody).toContain("#c9a96e");
+    expect(email.htmlBody).toContain("&lt;script&gt;");
+    expect(email.htmlBody).not.toContain("<script>");
+    expect(email.htmlBody).toContain("https://mindandbodyresetcoach.com/admin?tab=overview#admin-messages");
+    expect(email.textBody).toContain("https://mindandbodyresetcoach.com/admin?tab=overview#admin-messages");
+    expect(email.htmlBody).not.toMatch(/APNS_|BEGIN PRIVATE KEY|sk_live/);
+  });
+
+  it("queues one unread email for Lee Anne when a client message is saved", async () => {
+    const queueEmail = vi.fn().mockResolvedValue(undefined);
+    await notifyAdminsOfClientMessage(
+      {
+        conversationId: 11,
+        preview: "The evening was loud",
+        clientName: "Ava",
+        messageId: 44,
+        userId: 7,
+      },
+      {
+        tokens: async () => [],
+        send: async () => ({ sent: 0, failed: 0, removed: [], skipped: true }),
+        forgetTokens: async () => {},
+        queueEmail,
+        config: null,
+      }
+    );
+    expect(queueEmail).toHaveBeenCalledTimes(1);
+    expect(queueEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ messageId: 44, conversationId: 11, userId: 7, preview: "The evening was loud" })
+    );
   });
 
   it("builds a plain fallback email with the thread link and escaped preview", () => {

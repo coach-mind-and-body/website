@@ -871,7 +871,7 @@ export const messagingRouter = router({
       }
 
       await db.update(conversations)
-        .set({ unreadCount: 0 })
+        .set({ unreadCount: 0, coachLastReadAt: new Date() })
         .where(inArray(conversations.id, allConvIds));
         
       return { success: true };

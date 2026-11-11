@@ -159,7 +159,7 @@ export const coachRouter = router({
         throw new TRPCError({ code: "BAD_REQUEST", message: "Message is empty" });
       }
 
-      await db.insert(messages).values({
+      const inserted = await db.insert(messages).values({
         conversationId: thread.id,
         direction: "inbound",
         senderName: ctx.user.name || ctx.user.email || "Client",
@@ -168,7 +168,8 @@ export const coachRouter = router({
         status: "received",
         isAutomated: false,
         replyToId: input.replyToId ?? null,
-      });
+      }).$returningId();
+      const messageId = inserted[0]?.id;
 
       await db
         .update(conversations)
@@ -190,6 +191,8 @@ export const coachRouter = router({
         conversationId: thread.id,
         preview: text || "Sent a file",
         clientName: ctx.user.name || "A client",
+        messageId,
+        userId: ctx.user.id,
       });
 
       const { publishCoachEvent } = await import("../coachEvents");

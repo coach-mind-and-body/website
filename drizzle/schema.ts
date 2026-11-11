@@ -312,8 +312,9 @@ export const apnsDeviceTokens = mysqlTable(
 );
 
 /**
- * One row per coach reply. sentAt is set when the unread email goes out,
- * or when the client already read the message, so the poller does not send twice.
+ * One row per in-app message that may need an unread email.
+ * kind "client" waits on the client. kind "coach" waits on Lee Anne.
+ * sentAt is set when the email goes out, or when that person already opened it.
  */
 export const coachReplyEmailNotices = mysqlTable(
   "coach_reply_email_notices",
@@ -323,6 +324,8 @@ export const coachReplyEmailNotices = mysqlTable(
     conversationId: int("conversationId").notNull(),
     userId: int("userId").notNull(),
     preview: varchar("preview", { length: 500 }).notNull().default(""),
+    /** "client" emails the client. "coach" emails OWNER_EMAIL. */
+    kind: varchar("kind", { length: 16 }).notNull().default("client"),
     dueAt: timestamp("dueAt").notNull(),
     sentAt: timestamp("sentAt"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -742,6 +745,8 @@ export const conversations = mysqlTable("conversations", {
   lastMessageAt: timestamp("lastMessageAt").defaultNow().notNull(),
   /** Client last opened the in-app coach thread (for unread badge). */
   clientLastReadAt: timestamp("clientLastReadAt"),
+  /** Coach last opened this thread. Unread client-message emails use this. */
+  coachLastReadAt: timestamp("coachLastReadAt"),
   /** Last keystroke from the client / coach — used for iMessage-style dots. */
   clientTypingAt: timestamp("clientTypingAt"),
   coachTypingAt: timestamp("coachTypingAt"),
