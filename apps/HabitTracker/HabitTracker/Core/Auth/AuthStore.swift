@@ -83,7 +83,7 @@ final class AuthStore {
             }
             await apply(token: tok, user: u)
         } catch {
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
         }
     }
 
@@ -97,7 +97,7 @@ final class AuthStore {
             }
             await apply(token: tok, user: u)
         } catch {
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
         }
     }
 
@@ -111,7 +111,7 @@ final class AuthStore {
             }
             await apply(token: tok, user: u)
         } catch {
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
         }
     }
 
@@ -135,7 +135,7 @@ final class AuthStore {
             let _: SuccessFlag = try await client.mutateEmpty("auth.deleteAccount")
             signOut()
         } catch {
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
         }
     }
 

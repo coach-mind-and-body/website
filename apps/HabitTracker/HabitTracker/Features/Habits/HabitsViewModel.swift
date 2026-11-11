@@ -284,7 +284,7 @@ final class HabitsViewModel {
                 noteDraft = notes.first(where: { $0.dateStr == dateStr })?.note ?? ""
                 publishWidget()
             } catch {
-                errorMessage = error.localizedDescription
+                if !error.isCancellation { errorMessage = error.localizedDescription }
             }
         } else {
             await loadGuest()
@@ -437,7 +437,7 @@ final class HabitsViewModel {
             if celebrate { celebrateStreakIfIncreased(from: previous) }
         } catch {
             patchLog(habitId: habit.id, day: day, completed: current?.completed ?? false, numeric: current?.numericValue)
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
         }
     }
 
@@ -505,7 +505,7 @@ final class HabitsViewModel {
                 )
                 if celebrate { celebrateStreakIfIncreased(from: previous) }
             } catch {
-                errorMessage = error.localizedDescription
+                if !error.isCancellation { errorMessage = error.localizedDescription }
             }
             return
         }
@@ -549,7 +549,7 @@ final class HabitsViewModel {
                 notes = notes.filter { $0.dateStr != dateStr } + [DailyNote(dateStr: dateStr, note: noteDraft)]
                 noteSaved = true
             } catch {
-                errorMessage = error.localizedDescription
+                if !error.isCancellation { errorMessage = error.localizedDescription }
             }
             return
         }
@@ -634,7 +634,7 @@ final class HabitsViewModel {
             )
             await loadDashboard()
         } catch {
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
         }
     }
 
@@ -697,7 +697,7 @@ final class HabitsViewModel {
             )
             await loadDashboard()
         } catch {
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
         }
     }
 
@@ -720,7 +720,7 @@ final class HabitsViewModel {
             await loadDashboard()
             if next { celebrate() }
         } catch {
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
         }
     }
 
@@ -745,7 +745,7 @@ final class HabitsViewModel {
             await loadDashboard()
             if next { celebrate() }
         } catch {
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
         }
     }
 
@@ -806,7 +806,7 @@ final class HabitsViewModel {
             victoriesSaved = true
             victoriesExpanded = true
         } catch {
-            victoriesError = error.localizedDescription
+            if !error.isCancellation { victoriesError = error.localizedDescription }
         }
     }
 

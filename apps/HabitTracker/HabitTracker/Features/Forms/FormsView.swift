@@ -170,7 +170,7 @@ struct FormsListView: View {
             library = try await auth.client.query("forms.myLibrary")
             errorMessage = nil
         } catch {
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
         }
     }
 }
@@ -246,7 +246,7 @@ final class FormFillSession {
             )
             note = result.status == "submitted" ? "Submitted" : "Draft saved"
         } catch {
-            if Task.isCancelled { return }
+            if Task.isCancelled || error.isCancellation { return }
             note = "Could not save"
         }
     }
@@ -273,7 +273,7 @@ final class FormFillSession {
             if answersDirty { scheduleSave() }
         } catch {
             guard generation == loadGeneration, !Task.isCancelled else { return }
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
         }
     }
 
@@ -291,7 +291,7 @@ final class FormFillSession {
             ready = false
             await load()
         } catch {
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
         }
     }
 
@@ -310,7 +310,7 @@ final class FormFillSession {
             next.photoKey = result.key
             setAnswer(next, for: fieldId)
         } catch {
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
         }
     }
 }

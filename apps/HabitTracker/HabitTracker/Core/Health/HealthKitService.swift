@@ -76,7 +76,7 @@ final class HealthKitService {
             authorizationAsked = true
             await refreshToday()
         } catch {
-            lastError = error.localizedDescription
+            if !error.isCancellation { lastError = error.localizedDescription }
         }
     }
 
@@ -127,7 +127,7 @@ final class HealthKitService {
             }
             .sorted { $0.minutes > $1.minutes }
         } catch {
-            lastError = error.localizedDescription
+            if !error.isCancellation { lastError = error.localizedDescription }
             return []
         }
     }
@@ -153,7 +153,7 @@ final class HealthKitService {
             try await finishWorkout(builder)
             await refreshToday()
         } catch {
-            lastError = error.localizedDescription
+            if !error.isCancellation { lastError = error.localizedDescription }
         }
     }
 
@@ -221,7 +221,7 @@ final class HealthKitService {
             try await store.save(sample)
             await refreshToday()
         } catch {
-            lastError = error.localizedDescription
+            if !error.isCancellation { lastError = error.localizedDescription }
         }
     }
 
@@ -242,7 +242,7 @@ final class HealthKitService {
             }
             return map
         } catch {
-            lastError = error.localizedDescription
+            if !error.isCancellation { lastError = error.localizedDescription }
             return [:]
         }
     }
@@ -291,7 +291,7 @@ final class HealthKitService {
                 }
             }
         } catch {
-            lastError = error.localizedDescription
+            if !error.isCancellation { lastError = error.localizedDescription }
         }
     }
 

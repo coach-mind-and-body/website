@@ -41,7 +41,7 @@ final class CoachInboxViewModel {
         do {
             conversations = try await auth.client.query("messaging.listConversations")
         } catch {
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
         }
     }
 
@@ -81,7 +81,7 @@ final class CoachInboxViewModel {
             newTitle = ""
             await loadTemplates()
         } catch {
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
         }
     }
 
@@ -160,7 +160,7 @@ final class CoachInboxViewModel {
                 input: AdminTypingInput(conversationId: id)
             )
         } catch {
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
         }
     }
 
@@ -206,7 +206,7 @@ final class CoachInboxViewModel {
             messages.removeAll { $0.id == optId }
             if mediaUrl == nil { draft = text }
             replyingTo = reply
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
             return false
         }
     }
@@ -222,7 +222,7 @@ final class CoachInboxViewModel {
             )
             await send(mediaUrl: result.url)
         } catch {
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
         }
     }
 

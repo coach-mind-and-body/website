@@ -40,16 +40,9 @@ final class PodcastViewModel {
             if page < 1 { page = 1 }
             errorMessage = nil
         } catch {
-            if Self.isCancellation(error) { return }
+            if error.isCancellation { return }
             errorMessage = error.localizedDescription
         }
-    }
-
-    private static func isCancellation(_ error: Error) -> Bool {
-        if error is CancellationError { return true }
-        if (error as? URLError)?.code == .cancelled { return true }
-        let ns = error as NSError
-        return ns.domain == NSURLErrorDomain && ns.code == NSURLErrorCancelled
     }
 
     func actions(for episode: PodcastEpisode) -> [HabitAction] {

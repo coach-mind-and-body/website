@@ -262,7 +262,7 @@ final class ProgramsModel {
             await CoachingReminderCoordinator.shared.apply(token: reminderToken, reminders: next.coachingReminders())
         } catch {
             guard generation == loadGeneration else { return }
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
         }
     }
 
@@ -305,7 +305,7 @@ final class ProgramsModel {
             errorMessage = nil
             await load()
         } catch {
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
         }
     }
 }
