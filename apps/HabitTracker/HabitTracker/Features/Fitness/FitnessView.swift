@@ -146,6 +146,7 @@ final class FitnessViewModel {
 struct FitnessView: View {
     @Bindable var model: FitnessViewModel
     @Bindable var auth: AuthStore
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     var body: some View {
         NavigationStack {
@@ -309,7 +310,7 @@ struct FitnessView: View {
                         .foregroundStyle(HTTheme.muted)
                         .padding(16)
                 }
-                LazyVStack(alignment: .leading, spacing: 12) {
+                LazyVGrid(columns: DuoLayout.cardColumns(horizontalSizeClass), alignment: .leading, spacing: 12) {
                     ForEach(model.filteredVideos) { video in
                         NavigationLink(value: video) {
                             videoCard(video)
@@ -335,6 +336,7 @@ struct FitnessView: View {
                         AsyncImage(url: YouTubeID.thumbURL(vid)) { phase in
                             if case .success(let img) = phase {
                                 img.resizable().scaledToFill()
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                             } else {
                                 HTTheme.roseBorder
                             }
@@ -343,9 +345,7 @@ struct FitnessView: View {
                         HTTheme.roseBorder
                     }
                 }
-                .frame(maxWidth: .infinity)
-                .frame(height: 180)
-                .clipped()
+                .duoStage()
 
                 Image(systemName: "play.circle.fill")
                     .font(.system(size: 52))
@@ -405,7 +405,7 @@ struct WorkoutWatchView: View {
             VStack(alignment: .leading, spacing: 14) {
                 if let vid = videoId {
                     YouTubeEmbed(videoId: vid, startSeconds: startSeconds)
-                        .frame(height: 210)
+                        .duoStage()
                         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }
 
@@ -461,7 +461,7 @@ struct WorkoutWatchView: View {
                 .buttonStyle(.plain)
             }
             .padding(16)
-            .padding(.bottom, HTTheme.dockClearance)
+            .dockBottomPadding()
         }
         .dockScrollClearance()
         .keyboardTyping()

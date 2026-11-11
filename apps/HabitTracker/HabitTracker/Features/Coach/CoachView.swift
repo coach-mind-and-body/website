@@ -270,10 +270,8 @@ struct CoachView: View {
                     NavigationLink {
                         FormsListView(auth: auth)
                     } label: {
-                        Image(systemName: "list.clipboard")
-                            .foregroundStyle(HTTheme.forest)
+                        Label("Worksheets", systemImage: "list.clipboard")
                     }
-                    .accessibilityLabel("Worksheets")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     ProfileAvatarButton(auth: auth)
@@ -411,7 +409,7 @@ struct CoachView: View {
         .padding(.horizontal, 12)
         .padding(.top, 10)
         .padding(.bottom, 10)
-        .padding(.bottom, HTTheme.dockClearance)
+        .dockBottomPadding()
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(HTTheme.cream.opacity(0.92))
     }
@@ -484,7 +482,9 @@ struct CoachView: View {
                                     ProgressView()
                                 }
                             }
-                            .frame(maxHeight: 180)
+                            .aspectRatio(4.0 / 3.0, contentMode: .fill)
+                            .frame(maxWidth: .infinity)
+                            .clipped()
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                         } else {
                             Link("Open file", destination: url)

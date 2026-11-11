@@ -17,6 +17,7 @@ struct MainTabView: View {
     @State private var showNotifyPrompt = false
     @State private var showSharePrompt = false
     @Environment(\.scenePhase) private var scenePhase
+    @State private var showProfile = false
 
     init(auth: AuthStore, health: HealthKitService) {
         self.auth = auth
@@ -30,44 +31,23 @@ struct MainTabView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            HTTheme.cream.ignoresSafeArea()
-            Group {
-                switch tab {
-                case .habits:
-                    if auth.usesAdminChrome {
-                        AdminHabitsPhoneView(auth: auth)
-                    } else {
-                        HabitsView(model: habits, health: health, auth: auth)
-                    }
-                case .macros, .recipes:
-                    RecipesHubView(food: food, auth: auth)
-                case .fitness:
-                    FitnessView(model: fitness, auth: auth)
-                case .profile:
-                    ProfileView(auth: auth, health: health)
-                case .coach:
-                    if auth.usesAdminChrome {
-                        CoachInboxView(coach: coach, auth: auth, showsModePicker: false)
-                    } else {
-                        CoachView(model: coach, auth: auth)
-                    }
-                case .podcast:
-                    PodcastView(model: podcast, auth: auth)
-                case .programs:
-                    ProgramsView(auth: auth)
-                }
+        rootTabs
+            .overlay {
+                ConfettiBurst(token: habits.confettiBurst)
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
             }
-            tabBar
-                .padding(.horizontal, 14)
-                .padding(.bottom, 2)
-                .ignoresSafeArea(.container, edges: .bottom)
-            ConfettiBurst(token: habits.confettiBurst)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .ignoresSafeArea()
-                .allowsHitTesting(false)
+            .background(HTTheme.cream.ignoresSafeArea())
+            .fullScreenCover(isPresented: $showProfile) {
+                ProfileView(auth: auth, health: health, onClose: { showProfile = false })
+            }
+        .environment(\.openProfile) {
+            if auth.usesAdminChrome {
+                tab = .profile
+            } else {
+                showProfile = true
+            }
         }
-        .environment(\.openProfile) { tab = .profile }
         .onChange(of: auth.preferClientPreview) { _, preview in
             if auth.isAdmin {
                 tab = preview ? .habits : .coach
@@ -213,112 +193,45 @@ struct MainTabView: View {
         }
     }
 
-    private var tabBar: some View {
-        Group {
-            if auth.usesAdminChrome {
-                HStack(spacing: 0) {
-                    tabButton(.coach, "message", badge: coach.unread)
-                    tabButton(.habits, "checklist")
-                    tabButton(.profile, "person.crop.circle")
-                }
-                .padding(.horizontal, 6)
-                .padding(.vertical, 5)
-                .background(.ultraThinMaterial)
-                .clipShape(Capsule())
-                .overlay(Capsule().stroke(Color.white.opacity(0.4), lineWidth: 1))
-                .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
-            } else {
-                HStack(spacing: 10) {
-                    HStack(spacing: 0) {
-                        tabButton(.habits, "square.grid.2x2")
-                        tabButton(.programs, "book.closed")
-                        tabButton(.recipes, "frying.pan")
-                        tabButton(.fitness, "figure.strengthtraining.traditional")
-                        tabButton(.podcast, "headphones")
-                    }
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 5)
-                    .background(.ultraThinMaterial)
-                    .clipShape(Capsule())
-                    .overlay(Capsule().stroke(Color.white.opacity(0.4), lineWidth: 1))
-                    .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
-
-                    circleButton(.coach, "message", badge: coach.unread)
-                }
+    /// System tabs, each with a title and a symbol, so iPhone Duo can place the bar on the side
+    /// and overflow the less-used items. Coach stays ahead of Podcast so the badge remains reachable.
+    @ViewBuilder
+    private var rootTabs: some View {
+        if auth.usesAdminChrome {
+            TabView(selection: $tab) {
+                CoachInboxView(coach: coach, auth: auth, showsModePicker: false)
+                    .countBadge(coach.unread)
+                    .tabItem { Label("Coach", systemImage: "message") }
+                    .tag(AppTab.coach)
+                AdminHabitsPhoneView(auth: auth)
+                    .tabItem { Label("Habits", systemImage: "checklist") }
+                    .tag(AppTab.habits)
+                ProfileView(auth: auth, health: health)
+                    .tabItem { Label("Profile", systemImage: "person.crop.circle") }
+                    .tag(AppTab.profile)
             }
-        }
-    }
-
-    private func tabButton(_ value: AppTab, _ icon: String, badge: Int = 0) -> some View {
-        let on = tab == value
-        return Button {
-            tab = value
-        } label: {
-            ZStack(alignment: .topTrailing) {
-                Image(systemName: icon)
-                    .font(.system(size: 18, weight: on ? .semibold : .regular))
-                    .foregroundStyle(on ? Color.white : HTTheme.muted)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 40)
-                    .background(on ? HTTheme.forest : Color.clear)
-                    .clipShape(Capsule())
-                if badge > 0 {
-                    Text(badge > 9 ? "9+" : "\(badge)")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 2)
-                        .background(Color.red)
-                        .clipShape(Capsule())
-                        .offset(x: -8, y: 2)
-                }
+        } else {
+            TabView(selection: $tab) {
+                HabitsView(model: habits, health: health, auth: auth)
+                    .tabItem { Label("Habits", systemImage: "square.grid.2x2") }
+                    .tag(AppTab.habits)
+                ProgramsView(auth: auth)
+                    .tabItem { Label("My Programs", systemImage: "book.closed") }
+                    .tag(AppTab.programs)
+                RecipesHubView(food: food, auth: auth)
+                    .tabItem { Label("Recipes", systemImage: "frying.pan") }
+                    .tag(AppTab.recipes)
+                FitnessView(model: fitness, auth: auth)
+                    .tabItem { Label("Fitness", systemImage: "figure.strengthtraining.traditional") }
+                    .tag(AppTab.fitness)
+                CoachView(model: coach, auth: auth)
+                    .countBadge(coach.unread)
+                    .tabItem { Label("Coach", systemImage: "message") }
+                    .tag(AppTab.coach)
+                PodcastView(model: podcast, auth: auth)
+                    .tabItem { Label("Podcast", systemImage: "headphones") }
+                    .tag(AppTab.podcast)
             }
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(label(for: value))
-    }
-
-    private func circleButton(_ value: AppTab, _ icon: String, badge: Int) -> some View {
-        let on = tab == value
-        return Button {
-            tab = value
-        } label: {
-            ZStack(alignment: .topTrailing) {
-                Image(systemName: icon)
-                    .font(.system(size: 18, weight: on ? .semibold : .regular))
-                    .foregroundStyle(on ? Color.white : HTTheme.muted)
-                    .frame(width: 48, height: 48)
-                    .background(on ? HTTheme.forest : Color.clear)
-                    .background(.ultraThinMaterial)
-                    .clipShape(Circle())
-                    .overlay(Circle().stroke(Color.white.opacity(0.45), lineWidth: 1))
-                    .shadow(color: HTTheme.forest.opacity(0.12), radius: 12, y: 4)
-                if badge > 0 {
-                    Text(badge > 9 ? "9+" : "\(badge)")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 2)
-                        .background(Color.red)
-                        .clipShape(Capsule())
-                        .offset(x: 4, y: -4)
-                }
-            }
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(label(for: value))
-    }
-
-    private func label(for tab: AppTab) -> String {
-        switch tab {
-        case .habits: "Habits"
-        case .macros: "Macros"
-        case .recipes: "Recipes"
-        case .fitness: "Fitness"
-        case .profile: "Profile"
-        case .coach: "Coach"
-        case .podcast: "Podcast"
-        case .programs: "My Programs"
         }
     }
 }

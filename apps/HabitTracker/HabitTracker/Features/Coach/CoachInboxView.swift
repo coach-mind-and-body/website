@@ -558,7 +558,7 @@ struct CoachInboxView: View {
         .padding(.horizontal, 12)
         .padding(.top, 10)
         .padding(.bottom, 10)
-        .padding(.bottom, HTTheme.dockClearance)
+        .dockBottomPadding()
         .background(HTTheme.cream.opacity(0.92))
     }
 
@@ -594,7 +594,9 @@ struct CoachInboxView: View {
                                     ProgressView()
                                 }
                             }
-                            .frame(maxHeight: 180)
+                            .aspectRatio(4.0 / 3.0, contentMode: .fill)
+                            .frame(maxWidth: .infinity)
+                            .clipped()
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                         } else {
                             Link(msg.content ?? "Open file", destination: url)

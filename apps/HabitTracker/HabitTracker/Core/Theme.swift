@@ -147,13 +147,56 @@ enum HTTheme {
 
     static let serif = Font.system(.largeTitle, design: .serif).weight(.bold)
     static let title = Font.system(.title, design: .serif).weight(.bold)
-    /// Extra scroll room so the last row can sit above the floating glass pill and chat button.
-    static let dockClearance: CGFloat = 112
+}
+
+/// iPhone Duo uses one expanding layout. Compact width is the outer display and regular width is the inner display.
+/// The system tab bar moves itself. These helpers only pick an even column count on the inner display, so a fold
+/// can split cards around the center, and a 16:9 stage that follows the width just offered.
+/// Scrolling screens stay in place across the fold. The hinge angle is not a layout input.
+enum DuoLayout {
+    static func isRegularWidth(_ sizeClass: UserInterfaceSizeClass?) -> Bool {
+        sizeClass == .regular
+    }
+
+    static func cardColumns(_ sizeClass: UserInterfaceSizeClass?) -> [GridItem] {
+        if isRegularWidth(sizeClass) {
+            return [
+                GridItem(.flexible(), spacing: 12),
+                GridItem(.flexible(), spacing: 12),
+            ]
+        }
+        return [GridItem(.flexible(), spacing: 12)]
+    }
 }
 
 extension View {
-    func dockScrollClearance() -> some View {
-        safeAreaPadding(.bottom, HTTheme.dockClearance)
+    /// The system tab bar is in the safe area, so screens no longer reserve a fixed dock gap.
+    func dockScrollClearance() -> some View { self }
+
+    func dockBottomPadding() -> some View { self }
+
+    /// 16:9 of the width just offered, so a fold resizes the stage instead of jumping to a fixed height.
+    func duoStage() -> some View {
+        modifier(DuoStage())
+    }
+
+    @ViewBuilder
+    func countBadge(_ count: Int) -> some View {
+        if count > 0 {
+            badge(count)
+        } else {
+            self
+        }
+    }
+}
+
+private struct DuoStage: ViewModifier {
+    func body(content: Content) -> some View {
+        Color.clear
+            .aspectRatio(16.0 / 9.0, contentMode: .fit)
+            .overlay { content }
+            .clipped()
+            .background(HTTheme.roseBorder)
     }
 }
 
@@ -178,14 +221,8 @@ struct ProfileAvatarButton: View {
         Button {
             (action ?? openProfile)()
         } label: {
-            Image(systemName: auth.isSignedIn ? "person.crop.circle.fill" : "person.crop.circle")
-                .font(.system(size: 22, weight: .regular))
+            Label("Profile", systemImage: auth.isSignedIn ? "person.crop.circle.fill" : "person.crop.circle")
                 .foregroundStyle(isActive ? Color.white : HTTheme.forest)
-                .frame(width: 40, height: 40)
-                .background(isActive ? HTTheme.forest : Color.white.opacity(0.92))
-                .clipShape(Circle())
-                .overlay(Circle().stroke(isActive ? HTTheme.forest : HTTheme.roseBorder))
-                .shadow(color: HTTheme.forest.opacity(0.1), radius: 6, y: 2)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Profile")

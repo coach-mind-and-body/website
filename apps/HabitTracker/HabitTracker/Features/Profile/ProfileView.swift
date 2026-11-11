@@ -3,6 +3,7 @@ import SwiftUI
 struct ProfileView: View {
     @Bindable var auth: AuthStore
     @Bindable var health: HealthKitService
+    var onClose: (() -> Void)? = nil
     @State private var notifyOn = false
     @State private var shareWithCoach = false
     @State private var showLogin = false
@@ -109,6 +110,13 @@ struct ProfileView: View {
             .dockScrollClearance()
             .keyboardTyping()
             .navigationTitle("You")
+            .toolbar {
+                if let onClose {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Close", systemImage: "xmark", action: onClose)
+                    }
+                }
+            }
             .sheet(isPresented: $showLogin) {
                 LoginView(auth: auth, allowsSkip: true)
             }

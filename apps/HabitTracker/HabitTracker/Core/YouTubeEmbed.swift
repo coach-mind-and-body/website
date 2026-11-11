@@ -69,7 +69,7 @@ struct YouTubePlayer: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             YouTubeEmbed(videoId: videoId)
-                .frame(height: 210)
+                .duoStage()
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             Link("Open in YouTube", destination: YouTubeID.watchURL(videoId))
                 .font(.caption.weight(.bold))

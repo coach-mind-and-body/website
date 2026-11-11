@@ -23,7 +23,13 @@ struct HabitsView: View {
                 if !auth.isSignedIn {
                     guestBanner
                 }
-                header
+                Text("Today · \(MountainDate.shortMonthDay(MountainDate.today()))")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(HTTheme.muted)
+                    .textCase(.uppercase)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
                 tabPicker
                 if model.mainTab == 0 {
                     dailyScroll
@@ -36,7 +42,33 @@ struct HabitsView: View {
                 }
             }
             .background(HTTheme.cream.ignoresSafeArea())
-            .navigationBarHidden(true)
+            .navigationTitle("My Daily Reset")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Label(
+                        "\(model.currentStreak)-day streak",
+                        systemImage: model.currentStreak >= 3 ? "flame.fill" : "flame"
+                    )
+                    .foregroundStyle(model.currentStreak >= 3 ? Color.orange : HTTheme.muted)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        model.showUpdates = true
+                        model.showChallenges = false
+                        showForYou = true
+                    } label: {
+                        Label(
+                            "Notes from Lee Anne",
+                            systemImage: model.unreadUpdateCount > 0 ? "bell.fill" : "bell"
+                        )
+                    }
+                    .countBadge(model.unreadUpdateCount)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    ProfileAvatarButton(auth: auth)
+                }
+            }
             .task(id: model.sessionEpoch) {
                 await model.load()
                 await health.refreshToday()
@@ -94,63 +126,6 @@ struct HabitsView: View {
             .background(HTTheme.gold)
         }
         .buttonStyle(.plain)
-    }
-
-    private var header: some View {
-        HStack(alignment: .center, spacing: 8) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Today · \(MountainDate.shortMonthDay(MountainDate.today()))")
-                    .font(.caption2.weight(.bold))
-                    .foregroundStyle(HTTheme.muted)
-                    .textCase(.uppercase)
-                Text("My Daily Reset")
-                    .font(HTTheme.title)
-                    .foregroundStyle(HTTheme.forest)
-            }
-            Spacer(minLength: 8)
-            HStack(spacing: 4) {
-                Image(systemName: model.currentStreak >= 3 ? "flame.fill" : "flame")
-                Text("\(model.currentStreak)")
-                    .font(.subheadline.weight(.bold))
-            }
-            .foregroundStyle(model.currentStreak >= 3 ? Color.orange : HTTheme.muted)
-            .frame(height: 40)
-            .padding(.horizontal, 12)
-            .background(model.currentStreak >= 3 ? Color.orange.opacity(0.15) : Color.white)
-            .clipShape(Capsule())
-            .overlay(Capsule().stroke(model.currentStreak >= 3 ? Color.orange.opacity(0.4) : HTTheme.roseBorder))
-            .accessibilityLabel("\(model.currentStreak)-day streak")
-            Button {
-                model.showUpdates = true
-                model.showChallenges = false
-                showForYou = true
-            } label: {
-                ZStack(alignment: .topTrailing) {
-                    Image(systemName: model.unreadUpdateCount > 0 ? "bell.fill" : "bell")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(HTTheme.forest)
-                        .frame(width: 40, height: 40)
-                        .background(Color.white)
-                        .clipShape(Circle())
-                        .overlay(Circle().stroke(HTTheme.roseBorder))
-                    if model.unreadUpdateCount > 0 {
-                        Text(model.unreadUpdateCount > 9 ? "9+" : "\(model.unreadUpdateCount)")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 2)
-                            .background(HTTheme.gold)
-                            .clipShape(Capsule())
-                            .offset(x: 4, y: -4)
-                    }
-                }
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Notes from Lee Anne")
-            ProfileAvatarButton(auth: auth)
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, 8)
     }
 
     private var tabPicker: some View {

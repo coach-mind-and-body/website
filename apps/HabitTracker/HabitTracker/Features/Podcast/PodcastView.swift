@@ -127,7 +127,7 @@ struct PodcastView: View {
                                 if case .success(let img) = phase { img.resizable().scaledToFill() }
                                 else { HTTheme.roseBorder }
                             }
-                            .frame(height: 180)
+                            .duoStage()
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
 

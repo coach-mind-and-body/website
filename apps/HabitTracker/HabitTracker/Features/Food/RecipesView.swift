@@ -3,6 +3,7 @@ import SwiftUI
 struct RecipesView: View {
     @Bindable var food: FoodViewModel
     @Bindable var auth: AuthStore
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     var body: some View {
             ScrollView {
@@ -40,7 +41,7 @@ struct RecipesView: View {
                             .foregroundStyle(HTTheme.muted)
                     }
 
-                    LazyVStack(spacing: 12) {
+                    LazyVGrid(columns: DuoLayout.cardColumns(horizontalSizeClass), spacing: 12) {
                         ForEach(food.recipes) { recipe in
                             NavigationLink(value: recipe.slug) {
                                 recipeCard(recipe)
@@ -115,8 +116,7 @@ struct RecipeDetailView: View {
                         default: HTTheme.roseBorder
                         }
                     }
-                    .frame(height: 220)
-                    .clipped()
+                    .duoStage()
                     .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
 
                     Text(recipe.title).font(HTTheme.serif).foregroundStyle(HTTheme.forest)
@@ -175,7 +175,7 @@ struct RecipeDetailView: View {
                     }
                 }
                 .padding(16)
-                .padding(.bottom, HTTheme.dockClearance)
+                .dockBottomPadding()
             } else {
                 ProgressView().padding(.top, 80)
             }
