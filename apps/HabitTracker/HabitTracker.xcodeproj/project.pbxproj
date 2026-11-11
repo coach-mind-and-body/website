@@ -39,6 +39,7 @@
 		B291EC2B4505131B76A84B83 /* HabitTracker/Features/Coach/CoachView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CD1992A3C7EAA350CB4097D /* HabitTracker/Features/Coach/CoachView.swift */; };
 		1603C9441021B7892F92B852 /* HabitTracker/Features/Coach/CoachInboxView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6490626316D04E8543A32C0 /* HabitTracker/Features/Coach/CoachInboxView.swift */; };
 		C9741343A9DAFCF79FE79C6D /* HabitTracker/Features/Profile/ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48D2DDDE039F8EDBCFE7FB49 /* HabitTracker/Features/Profile/ProfileView.swift */; };
+		F0A1B2C3D4E5F60718293A02 /* HabitTracker/Features/Forms/FormsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0A1B2C3D4E5F60718293A01 /* HabitTracker/Features/Forms/FormsView.swift */; };
 		B7E4C1A09F2D48A6B5C3E811 /* HabitTracker/Features/Programs/ProgramsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3A91E70B4D25F18A6C0E942 /* HabitTracker/Features/Programs/ProgramsView.swift */; };
 		79EEE852158F8A47B7B124BE /* HabitTracker/Features/Intents/HabitAppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = D64791DBBD8BA5C8EAA7353F /* HabitTracker/Features/Intents/HabitAppIntents.swift */; };
 		D00A97248C1CB6A5B7C27098 /* Shared/WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAC86B6D680BA26DF6AD6624 /* Shared/WidgetSnapshot.swift */; };
@@ -113,6 +114,7 @@
 		7CD1992A3C7EAA350CB4097D /* HabitTracker/Features/Coach/CoachView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Features/Coach/CoachView.swift; sourceTree = "<group>"; };
 		F6490626316D04E8543A32C0 /* HabitTracker/Features/Coach/CoachInboxView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Features/Coach/CoachInboxView.swift; sourceTree = "<group>"; };
 		48D2DDDE039F8EDBCFE7FB49 /* HabitTracker/Features/Profile/ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Features/Profile/ProfileView.swift; sourceTree = "<group>"; };
+		F0A1B2C3D4E5F60718293A01 /* HabitTracker/Features/Forms/FormsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Features/Forms/FormsView.swift; sourceTree = "<group>"; };
 		C3A91E70B4D25F18A6C0E942 /* HabitTracker/Features/Programs/ProgramsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Features/Programs/ProgramsView.swift; sourceTree = "<group>"; };
 		D64791DBBD8BA5C8EAA7353F /* HabitTracker/Features/Intents/HabitAppIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTracker/Features/Intents/HabitAppIntents.swift; sourceTree = "<group>"; };
 		FAC86B6D680BA26DF6AD6624 /* Shared/WidgetSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shared/WidgetSnapshot.swift; sourceTree = "<group>"; };
@@ -186,6 +188,7 @@
 				7CD1992A3C7EAA350CB4097D /* HabitTracker/Features/Coach/CoachView.swift */,
 				F6490626316D04E8543A32C0 /* HabitTracker/Features/Coach/CoachInboxView.swift */,
 				48D2DDDE039F8EDBCFE7FB49 /* HabitTracker/Features/Profile/ProfileView.swift */,
+				F0A1B2C3D4E5F60718293A01 /* HabitTracker/Features/Forms/FormsView.swift */,
 				C3A91E70B4D25F18A6C0E942 /* HabitTracker/Features/Programs/ProgramsView.swift */,
 				D64791DBBD8BA5C8EAA7353F /* HabitTracker/Features/Intents/HabitAppIntents.swift */,
 				FAC86B6D680BA26DF6AD6624 /* Shared/WidgetSnapshot.swift */,
@@ -345,6 +348,7 @@
 				B291EC2B4505131B76A84B83 /* HabitTracker/Features/Coach/CoachView.swift in Sources */,
 				1603C9441021B7892F92B852 /* HabitTracker/Features/Coach/CoachInboxView.swift in Sources */,
 				C9741343A9DAFCF79FE79C6D /* HabitTracker/Features/Profile/ProfileView.swift in Sources */,
+				F0A1B2C3D4E5F60718293A02 /* HabitTracker/Features/Forms/FormsView.swift in Sources */,
 				B7E4C1A09F2D48A6B5C3E811 /* HabitTracker/Features/Programs/ProgramsView.swift in Sources */,
 				79EEE852158F8A47B7B124BE /* HabitTracker/Features/Intents/HabitAppIntents.swift in Sources */,
 				D00A97248C1CB6A5B7C27098 /* Shared/WidgetSnapshot.swift in Sources */,

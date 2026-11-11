@@ -385,7 +385,12 @@ export const reclaimHubRouter = router({
 
       await db
         .update(assignmentSubmissions)
-        .set({ feedback: input.feedback })
+        .set({
+          feedback: input.feedback,
+          ...(input.feedback.trim()
+            ? { status: "reviewed" as const, reviewedAt: new Date(), reviewedByUserId: ctx.user!.id }
+            : {}),
+        })
         .where(eq(assignmentSubmissions.id, input.submissionId));
 
       const [row] = await db

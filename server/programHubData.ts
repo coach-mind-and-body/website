@@ -1,4 +1,4 @@
-import { asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { PROGRAMS, PROGRAM_IDS, isProgramId, type ProgramId } from "@shared/programs";
 import {
   assignmentSubmissions,
@@ -83,7 +83,8 @@ export async function loadClientHub(db: Db, user: HubUser, options?: { programs?
       program: commonFilePrograms.program,
     })
     .from(commonFiles)
-    .innerJoin(commonFilePrograms, eq(commonFilePrograms.commonFileId, commonFiles.id));
+    .innerJoin(commonFilePrograms, eq(commonFilePrograms.commonFileId, commonFiles.id))
+    .where(isNull(commonFiles.groupId));
 
   const libraryById = new Map<
     number,
@@ -130,7 +131,9 @@ export async function loadClientHub(db: Db, user: HubUser, options?: { programs?
       enrollments: accessEnrollments,
       modules: accessModules,
       progress: progressRows,
-      assignments: assignmentRows,
+      assignments: assignmentRows.flatMap((row) =>
+        row.moduleId == null ? [] : [{ id: row.id, moduleId: row.moduleId }]
+      ),
       submissions: submissionRows,
       clientFiles: uploads,
       libraryFiles,

@@ -53,6 +53,27 @@ export async function storagePut(
   }
 }
 
+/** Read a public-bucket object, such as a library worksheet, so it can be turned into a form. */
+export async function storageRead(
+  relKey: string
+): Promise<{ body: Buffer; contentType: string } | null> {
+  const key = normalizeKey(relKey);
+  const s3 = getS3Client();
+  try {
+    const result = await s3.send(new GetObjectCommand({ Bucket: ENV.r2BucketName, Key: key }));
+    if (!result.Body) return null;
+    const bytes = await result.Body.transformToByteArray();
+    return {
+      body: Buffer.from(bytes),
+      contentType: result.ContentType || "application/octet-stream",
+    };
+  } catch (error) {
+    const name = error && typeof error === "object" && "name" in error ? String(error.name) : "";
+    if (name === "NoSuchKey" || name === "NotFound") return null;
+    throw error;
+  }
+}
+
 export async function storageGet(relKey: string): Promise<{ key: string; url: string; }> {
   const key = normalizeKey(relKey);
   

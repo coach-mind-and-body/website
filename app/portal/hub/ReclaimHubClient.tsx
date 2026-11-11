@@ -704,6 +704,15 @@ export default function ReclaimHub() {
                                   style={{ borderColor: "#f0e8e4" }}
                                 >
                                   <div className="p-6 md:p-8 pt-6 flex flex-col gap-4">
+                              {assignment.fieldsJson ? (
+                                <Link
+                                  href={`/portal/forms/${assignment.id}`}
+                                  className="inline-flex min-h-12 items-center justify-center rounded-full px-5 text-sm font-bold text-white"
+                                  style={{ background: "#2d3b2d" }}
+                                >
+                                  Open fillable worksheet
+                                </Link>
+                              ) : null}
                               <Textarea 
                                 rows={5}
                                 placeholder="Type your reflection here (or upload a document below)..."

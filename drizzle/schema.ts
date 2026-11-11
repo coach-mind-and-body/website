@@ -193,6 +193,16 @@ export type ClientFile = typeof clientFiles.$inferSelect;
 export type InsertClientFile = typeof clientFiles.$inferInsert;
 
 // ── Common Files (shared library admins re-share to clients) ─────────────────
+export const libraryGroups = mysqlTable("library_groups", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 500 }).notNull(),
+  createdByUserId: int("createdByUserId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type LibraryGroupRow = typeof libraryGroups.$inferSelect;
+export type InsertLibraryGroup = typeof libraryGroups.$inferInsert;
+
 export const commonFiles = mysqlTable("common_files", {
   id: int("id").autoincrement().primaryKey(),
   fileName: varchar("fileName", { length: 500 }).notNull(),
@@ -201,6 +211,9 @@ export const commonFiles = mysqlTable("common_files", {
   mimeType: varchar("mimeType", { length: 255 }),
   uploadedByUserId: int("uploadedByUserId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
+  /** Set while this page belongs to a library group. Ungroup clears it; the file stays. */
+  groupId: int("groupId"),
+  pageOrder: int("pageOrder").default(0).notNull(),
 });
 
 export type CommonFile = typeof commonFiles.$inferSelect;
@@ -443,9 +456,22 @@ export type InsertProgramModule = typeof programModules.$inferInsert;
 
 export const assignments = mysqlTable("assignments", {
   id: int("id").autoincrement().primaryKey(),
-  moduleId: int("moduleId").notNull(),
+  /** Null for a library worksheet. Reclaim tasks keep their module. */
+  moduleId: int("moduleId"),
   question: text("question").notNull(),
   order: int("order").notNull(),
+  title: varchar("title", { length: 500 }),
+  instructions: text("instructions"),
+  /** Ordered fillable fields. Null means a legacy single written answer. */
+  fieldsJson: text("fieldsJson"),
+  /** JSON array of program ids. Library forms are visible to those enrollments. */
+  programTags: text("programTags"),
+  publishStatus: mysqlEnum("publishStatus", ["draft", "published"]).default("published").notNull(),
+  kind: mysqlEnum("kind", ["fillable", "handout"]).default("fillable").notNull(),
+  /** Readable body for a handout that has no blanks. */
+  content: text("content"),
+  /** JSON array of common_files ids kept as the original pages. */
+  sourceFileIds: text("sourceFileIds"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -460,6 +486,11 @@ export const assignmentSubmissions = mysqlTable("assignment_submissions", {
   answer: text("answer"),
   fileUrl: varchar("fileUrl", { length: 1000 }),
   feedback: text("feedback"),
+  /** Structured fillable-form answers. `answer` stays a plain-text copy for the coach list. */
+  answersJson: text("answersJson"),
+  status: mysqlEnum("status", ["draft", "submitted", "reviewed"]).default("submitted").notNull(),
+  reviewedAt: timestamp("reviewedAt"),
+  reviewedByUserId: int("reviewedByUserId"),
   submittedAt: timestamp("submittedAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
