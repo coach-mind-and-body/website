@@ -589,12 +589,13 @@ struct CoachInboxView: View {
                         if isImageURL(urlStr) {
                             AsyncImage(url: url) { phase in
                                 if case .success(let img) = phase {
-                                    img.resizable().duoHeroContent()
+                                    img.resizable().scaledToFill()
                                 } else {
                                     ProgressView()
                                 }
                             }
-                            .frame(maxWidth: 320, maxHeight: 180)
+                            .aspectRatio(4.0 / 3.0, contentMode: .fill)
+                            .frame(maxWidth: .infinity)
                             .clipped()
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                         } else {
@@ -614,7 +615,6 @@ struct CoachInboxView: View {
                     .font(.caption2)
                     .foregroundStyle(HTTheme.muted)
             }
-            .frame(maxWidth: 480)
             if !msg.isMine { Spacer(minLength: 40) }
         }
     }

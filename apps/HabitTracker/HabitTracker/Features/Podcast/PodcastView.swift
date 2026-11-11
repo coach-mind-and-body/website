@@ -124,10 +124,10 @@ struct PodcastView: View {
                             YouTubePlayer(videoId: vid)
                         } else {
                             AsyncImage(url: ep.thumbnail.flatMap(URL.init(string:))) { phase in
-                                if case .success(let img) = phase { img.resizable().duoHeroContent() }
+                                if case .success(let img) = phase { img.resizable().scaledToFill() }
                                 else { HTTheme.roseBorder }
                             }
-                            .duoStage(compactHeight: 180)
+                            .duoStage()
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
 

@@ -345,7 +345,7 @@ struct FitnessView: View {
                         HTTheme.roseBorder
                     }
                 }
-                .duoStage(compactHeight: 180)
+                .duoStage()
 
                 Image(systemName: "play.circle.fill")
                     .font(.system(size: 52))
@@ -405,7 +405,7 @@ struct WorkoutWatchView: View {
             VStack(alignment: .leading, spacing: 14) {
                 if let vid = videoId {
                     YouTubeEmbed(videoId: vid, startSeconds: startSeconds)
-                        .duoStage(compactHeight: 210)
+                        .duoStage()
                         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }
 

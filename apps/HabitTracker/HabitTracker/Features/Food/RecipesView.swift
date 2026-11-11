@@ -112,11 +112,11 @@ struct RecipeDetailView: View {
                 VStack(alignment: .leading, spacing: 14) {
                     AsyncImage(url: recipe.imageUrl.flatMap(URL.init(string:))) { phase in
                         switch phase {
-                        case .success(let img): img.resizable().duoHeroContent()
+                        case .success(let img): img.resizable().scaledToFill()
                         default: HTTheme.roseBorder
                         }
                     }
-                    .duoStage(compactHeight: 220)
+                    .duoStage()
                     .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
 
                     Text(recipe.title).font(HTTheme.serif).foregroundStyle(HTTheme.forest)

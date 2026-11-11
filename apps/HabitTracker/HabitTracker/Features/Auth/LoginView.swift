@@ -160,7 +160,6 @@ struct LoginView: View {
                     .padding(.horizontal, 32)
             }
             .padding(.vertical, 28)
-            .duoCenteredMeasure(480)
         }
         .keyboardTyping()
         .background(HTTheme.cream.ignoresSafeArea())

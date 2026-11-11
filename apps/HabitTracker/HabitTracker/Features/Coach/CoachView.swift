@@ -270,10 +270,8 @@ struct CoachView: View {
                     NavigationLink {
                         FormsListView(auth: auth)
                     } label: {
-                        Image(systemName: "list.clipboard")
-                            .foregroundStyle(HTTheme.forest)
+                        Label("Worksheets", systemImage: "list.clipboard")
                     }
-                    .accessibilityLabel("Worksheets")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     ProfileAvatarButton(auth: auth)
@@ -479,12 +477,13 @@ struct CoachView: View {
                         if msg.isImageAttachment {
                             AsyncImage(url: url) { phase in
                                 if case .success(let img) = phase {
-                                    img.resizable().duoHeroContent()
+                                    img.resizable().scaledToFill()
                                 } else {
                                     ProgressView()
                                 }
                             }
-                            .frame(maxWidth: 320, maxHeight: 180)
+                            .aspectRatio(4.0 / 3.0, contentMode: .fill)
+                            .frame(maxWidth: .infinity)
                             .clipped()
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                         } else {
@@ -520,7 +519,6 @@ struct CoachView: View {
                         .foregroundStyle(HTTheme.muted)
                 }
             }
-            .frame(maxWidth: 480)
             if !msg.isMine { Spacer(minLength: 40) }
         }
     }
