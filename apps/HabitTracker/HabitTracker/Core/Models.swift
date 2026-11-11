@@ -129,6 +129,73 @@ struct CalorieLog: Codable, Identifiable, Hashable {
     var fiber: Int
     var recipeId: Int?
     var imageUrl: String?
+    /// When the row was saved. Duo uses this only if `mealType` is missing.
+    var createdAt: Date?
+
+    init(
+        id: Int,
+        dateStr: String,
+        mealType: String,
+        foodName: String,
+        calories: Int,
+        protein: Int,
+        carbs: Int,
+        fat: Int,
+        fiber: Int,
+        recipeId: Int? = nil,
+        imageUrl: String? = nil,
+        createdAt: Date? = nil
+    ) {
+        self.id = id
+        self.dateStr = dateStr
+        self.mealType = mealType
+        self.foodName = foodName
+        self.calories = calories
+        self.protein = protein
+        self.carbs = carbs
+        self.fat = fat
+        self.fiber = fiber
+        self.recipeId = recipeId
+        self.imageUrl = imageUrl
+        self.createdAt = createdAt
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, dateStr, mealType, foodName, calories, protein, carbs, fat, fiber, recipeId, imageUrl, createdAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(Int.self, forKey: .id)
+        dateStr = try c.decode(String.self, forKey: .dateStr)
+        mealType = try c.decodeIfPresent(String.self, forKey: .mealType) ?? ""
+        foodName = try c.decode(String.self, forKey: .foodName)
+        calories = try c.decodeIfPresent(Int.self, forKey: .calories) ?? 0
+        protein = try c.decodeIfPresent(Int.self, forKey: .protein) ?? 0
+        carbs = try c.decodeIfPresent(Int.self, forKey: .carbs) ?? 0
+        fat = try c.decodeIfPresent(Int.self, forKey: .fat) ?? 0
+        fiber = try c.decodeIfPresent(Int.self, forKey: .fiber) ?? 0
+        recipeId = try c.decodeIfPresent(Int.self, forKey: .recipeId)
+        imageUrl = try c.decodeIfPresent(String.self, forKey: .imageUrl)
+        // A bad timestamp must not drop the rest of the day's log.
+        createdAt = (try? c.decodeIfPresent(Date.self, forKey: .createdAt)) ?? nil
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(dateStr, forKey: .dateStr)
+        try c.encode(mealType, forKey: .mealType)
+        try c.encode(foodName, forKey: .foodName)
+        try c.encode(calories, forKey: .calories)
+        try c.encode(protein, forKey: .protein)
+        try c.encode(carbs, forKey: .carbs)
+        try c.encode(fat, forKey: .fat)
+        try c.encode(fiber, forKey: .fiber)
+        try c.encodeIfPresent(recipeId, forKey: .recipeId)
+        try c.encodeIfPresent(imageUrl, forKey: .imageUrl)
+        try c.encodeIfPresent(createdAt, forKey: .createdAt)
+    }
 }
 
 struct DateStrInput: Encodable {
@@ -681,6 +748,18 @@ struct HabitAction: Codable, Hashable {
 struct DeleteCalorieInput: Encodable {
     let id: Int
     let dateStr: String
+}
+
+struct UpdateCalorieInput: Encodable {
+    let id: Int
+    let dateStr: String
+    let mealType: String
+    let foodName: String
+    let calories: Int
+    let protein: Int
+    let carbs: Int
+    let fat: Int
+    let fiber: Int
 }
 
 struct FoodEstimate: Codable, Hashable {
