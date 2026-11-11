@@ -558,7 +558,7 @@ struct CoachInboxView: View {
         .padding(.horizontal, 12)
         .padding(.top, 10)
         .padding(.bottom, 10)
-        .padding(.bottom, HTTheme.dockClearance)
+        .dockBottomPadding()
         .background(HTTheme.cream.opacity(0.92))
     }
 
@@ -589,12 +589,13 @@ struct CoachInboxView: View {
                         if isImageURL(urlStr) {
                             AsyncImage(url: url) { phase in
                                 if case .success(let img) = phase {
-                                    img.resizable().scaledToFill()
+                                    img.resizable().duoHeroContent()
                                 } else {
                                     ProgressView()
                                 }
                             }
-                            .frame(maxHeight: 180)
+                            .frame(maxWidth: 320, maxHeight: 180)
+                            .clipped()
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                         } else {
                             Link(msg.content ?? "Open file", destination: url)
@@ -613,6 +614,7 @@ struct CoachInboxView: View {
                     .font(.caption2)
                     .foregroundStyle(HTTheme.muted)
             }
+            .frame(maxWidth: 480)
             if !msg.isMine { Spacer(minLength: 40) }
         }
     }

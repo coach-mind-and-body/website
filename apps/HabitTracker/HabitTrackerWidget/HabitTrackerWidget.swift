@@ -106,8 +106,7 @@ struct HabitTrackerWidgetEntryView: View {
                     .lineLimit(2)
                     .minimumScaleFactor(0.8)
             } else {
-                ProgressRing(percent: habitPct, center: "\(snap.habitsDone)/\(max(snap.habitsTotal, 0))", caption: "done", size: 86)
-                    .frame(maxWidth: .infinity)
+                FittingRing(percent: habitPct, center: "\(snap.habitsDone)/\(max(snap.habitsTotal, 0))", caption: "done", maxSide: ringMax)
             }
             Spacer(minLength: 4)
             Text(snap.mindsetLine)
@@ -143,7 +142,7 @@ struct HabitTrackerWidgetEntryView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             } else {
-                ProgressRing(percent: habitPct, center: "\(snap.habitsDone)/\(max(snap.habitsTotal, 0))", caption: "today", size: 108)
+                FittingRing(percent: habitPct, center: "\(snap.habitsDone)/\(max(snap.habitsTotal, 0))", caption: "today", maxSide: ringMax)
                 VStack(alignment: .leading, spacing: 8) {
                     Text("TODAY")
                         .font(.system(size: 10, weight: .bold))
@@ -213,6 +212,17 @@ struct HabitTrackerWidgetEntryView: View {
              : snap.mindsetLine)
     }
 
+    /// Grows with the widget container, up to a cap for the current family, and re-reads that size when the widget is resized.
+    private var ringMax: CGFloat {
+        switch family {
+        case .systemSmall: 86
+        case .systemMedium: 108
+        case .systemLarge: 160
+        case .systemExtraLarge: 200
+        default: 108
+        }
+    }
+
     private func metricRow(label: String, value: String, pct: Double) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack {
@@ -233,6 +243,28 @@ struct HabitTrackerWidgetEntryView: View {
             }
             .frame(height: 7)
         }
+    }
+}
+
+private struct FittingRing: View {
+    var percent: Double
+    var center: String
+    var caption: String
+    var maxSide: CGFloat
+
+    var body: some View {
+        Color.clear
+            .aspectRatio(1, contentMode: .fit)
+            .frame(maxWidth: maxSide, maxHeight: maxSide)
+            .overlay {
+                GeometryReader { geo in
+                    let side = min(geo.size.width, geo.size.height)
+                    ProgressRing(percent: percent, center: center, caption: caption, size: side)
+                        .frame(width: side, height: side)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            }
+            .frame(maxWidth: .infinity)
     }
 }
 
@@ -274,6 +306,8 @@ struct HabitTrackerWidget: Widget {
         .supportedFamilies([
             .systemSmall,
             .systemMedium,
+            .systemLarge,
+            .systemExtraLarge,
             .accessoryCircular,
             .accessoryRectangular,
             .accessoryInline,

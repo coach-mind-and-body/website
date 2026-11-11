@@ -148,12 +148,137 @@ enum HTTheme {
     static let serif = Font.system(.largeTitle, design: .serif).weight(.bold)
     static let title = Font.system(.title, design: .serif).weight(.bold)
     /// Extra scroll room so the last row can sit above the floating glass pill and chat button.
+    /// Used on the compact outer display, where that pill is overlaid rather than in the safe area.
     static let dockClearance: CGFloat = 112
+    /// Inner-display column. Wide enough to use the unfolded screen, narrow enough that lines stay readable.
+    static let regularContentMax: CGFloat = 760
+}
+
+/// iPhone Duo: compact width is the outer display, regular width is the inner display.
+/// Size class is read from the environment on every layout pass, so a fold or unfold updates these layouts.
+enum DuoLayout {
+    static func isRegularWidth(_ sizeClass: UserInterfaceSizeClass?) -> Bool {
+        sizeClass == .regular
+    }
+
+    static func cardColumns(_ sizeClass: UserInterfaceSizeClass?) -> [GridItem] {
+        if isRegularWidth(sizeClass) {
+            return [
+                GridItem(.flexible(), spacing: 12),
+                GridItem(.flexible(), spacing: 12),
+            ]
+        }
+        return [GridItem(.flexible(), spacing: 12)]
+    }
 }
 
 extension View {
     func dockScrollClearance() -> some View {
-        safeAreaPadding(.bottom, HTTheme.dockClearance)
+        modifier(DockScrollClearance())
+    }
+
+    /// Same clearance as the floating dock, applied as padding on bars that sit above it.
+    func dockBottomPadding() -> some View {
+        modifier(DockBottomPadding())
+    }
+
+    /// Centers a column on the inner display. On the outer display the proposal is already narrower than the cap.
+    func duoReadableColumn() -> some View {
+        modifier(DuoReadableColumn())
+    }
+
+    func duoCenteredMeasure(_ maxWidth: CGFloat) -> some View {
+        frame(maxWidth: maxWidth)
+            .frame(maxWidth: .infinity)
+    }
+
+    /// Trailing rail only while the width is regular, so the compact outer display is left untouched.
+    @ViewBuilder
+    func duoTrailingRail<Rail: View>(active: Bool, @ViewBuilder rail: () -> Rail) -> some View {
+        if active {
+            safeAreaInset(edge: .trailing, spacing: 0) { rail() }
+        } else {
+            self
+        }
+    }
+
+    /// Compact keeps today's fixed stage height. Regular follows a 16:9 frame of the width just offered.
+    func duoStage(compactHeight: CGFloat) -> some View {
+        modifier(DuoStage(compactHeight: compactHeight))
+    }
+
+    /// Full-bleed fill on the outer display. Fit on the inner display so a wider frame does not crop the subject.
+    func duoHeroContent() -> some View {
+        modifier(DuoHeroContent())
+    }
+}
+
+private struct DockScrollClearance: ViewModifier {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    @ViewBuilder func body(content: Content) -> some View {
+        if DuoLayout.isRegularWidth(horizontalSizeClass) {
+            content
+        } else {
+            content.safeAreaPadding(.bottom, HTTheme.dockClearance)
+        }
+    }
+}
+
+private struct DockBottomPadding: ViewModifier {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    @ViewBuilder func body(content: Content) -> some View {
+        if DuoLayout.isRegularWidth(horizontalSizeClass) {
+            content
+        } else {
+            content.padding(.bottom, HTTheme.dockClearance)
+        }
+    }
+}
+
+private struct DuoReadableColumn: ViewModifier {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    @ViewBuilder func body(content: Content) -> some View {
+        if DuoLayout.isRegularWidth(horizontalSizeClass) {
+            content
+                .frame(maxWidth: HTTheme.regularContentMax, maxHeight: .infinity)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            content
+        }
+    }
+}
+
+private struct DuoStage: ViewModifier {
+    var compactHeight: CGFloat
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    @ViewBuilder func body(content: Content) -> some View {
+        if DuoLayout.isRegularWidth(horizontalSizeClass) {
+            HTTheme.roseBorder
+                .aspectRatio(16.0 / 9.0, contentMode: .fit)
+                .overlay { content }
+                .clipped()
+        } else {
+            content
+                .frame(maxWidth: .infinity)
+                .frame(height: compactHeight)
+                .clipped()
+        }
+    }
+}
+
+private struct DuoHeroContent: ViewModifier {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    @ViewBuilder func body(content: Content) -> some View {
+        if DuoLayout.isRegularWidth(horizontalSizeClass) {
+            content.scaledToFit()
+        } else {
+            content.scaledToFill()
+        }
     }
 }
 

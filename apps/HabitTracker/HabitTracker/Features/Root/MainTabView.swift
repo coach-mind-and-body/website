@@ -17,6 +17,7 @@ struct MainTabView: View {
     @State private var showNotifyPrompt = false
     @State private var showSharePrompt = false
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     init(auth: AuthStore, health: HealthKitService) {
         self.auth = auth
@@ -28,6 +29,8 @@ struct MainTabView: View {
         _podcast = State(initialValue: PodcastViewModel(auth: auth))
         _tab = State(initialValue: auth.usesAdminChrome ? .coach : .habits)
     }
+
+    private var usesSideRail: Bool { DuoLayout.isRegularWidth(horizontalSizeClass) }
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -58,14 +61,20 @@ struct MainTabView: View {
                     ProgramsView(auth: auth)
                 }
             }
-            tabBar
-                .padding(.horizontal, 14)
-                .padding(.bottom, 2)
-                .ignoresSafeArea(.container, edges: .bottom)
+            .duoReadableColumn()
+            if !usesSideRail {
+                tabBar
+                    .padding(.horizontal, 14)
+                    .padding(.bottom, 2)
+                    .ignoresSafeArea(.container, edges: .bottom)
+            }
             ConfettiBurst(token: habits.confettiBurst)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .ignoresSafeArea()
                 .allowsHitTesting(false)
+        }
+        .duoTrailingRail(active: usesSideRail) {
+            sideRail
         }
         .environment(\.openProfile) { tab = .profile }
         .onChange(of: auth.preferClientPreview) { _, preview in
@@ -211,6 +220,61 @@ struct MainTabView: View {
         if health.isAvailable && !UserDefaults.standard.bool(forKey: "health.prompted") {
             showHealth = true
         }
+    }
+
+    /// Inner display: a vertical rail on the trailing edge, under the status bar, inside the safe area.
+    private var sideRail: some View {
+        VStack(spacing: 8) {
+            if auth.usesAdminChrome {
+                railIcon(.coach, "message", badge: coach.unread)
+                railIcon(.habits, "checklist", badge: 0)
+                railIcon(.profile, "person.crop.circle", badge: 0)
+                Spacer(minLength: 0)
+            } else {
+                railIcon(.habits, "square.grid.2x2", badge: 0)
+                railIcon(.programs, "book.closed", badge: 0)
+                railIcon(.recipes, "frying.pan", badge: 0)
+                railIcon(.fitness, "figure.strengthtraining.traditional", badge: 0)
+                railIcon(.podcast, "headphones", badge: 0)
+                Spacer(minLength: 8)
+                circleButton(.coach, "message", badge: coach.unread)
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 12)
+        .frame(maxHeight: .infinity)
+        .background(.ultraThinMaterial)
+        .overlay(alignment: .leading) {
+            Rectangle().fill(Color.white.opacity(0.45)).frame(width: 1)
+        }
+    }
+
+    private func railIcon(_ value: AppTab, _ icon: String, badge: Int) -> some View {
+        let on = tab == value
+        return Button {
+            tab = value
+        } label: {
+            ZStack(alignment: .topTrailing) {
+                Image(systemName: icon)
+                    .font(.system(size: 18, weight: on ? .semibold : .regular))
+                    .foregroundStyle(on ? Color.white : HTTheme.muted)
+                    .frame(width: 44, height: 44)
+                    .background(on ? HTTheme.forest : Color.clear)
+                    .clipShape(Circle())
+                if badge > 0 {
+                    Text(badge > 9 ? "9+" : "\(badge)")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(Color.red)
+                        .clipShape(Capsule())
+                        .offset(x: 6, y: -4)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label(for: value))
     }
 
     private var tabBar: some View {
@@ -400,6 +464,7 @@ private struct NotifyPromptView: View {
                 .frame(maxWidth: .infinity)
             }
             .padding(24)
+            .duoCenteredMeasure(480)
             .background(HTTheme.cream.ignoresSafeArea())
         }
         .presentationDetents([.medium])
@@ -439,6 +504,7 @@ private struct ShareHabitsPromptView: View {
                 .frame(maxWidth: .infinity)
             }
             .padding(24)
+            .duoCenteredMeasure(480)
             .background(HTTheme.cream.ignoresSafeArea())
         }
         .presentationDetents([.medium])
@@ -478,6 +544,7 @@ struct HealthPermissionView: View {
                 .frame(maxWidth: .infinity)
             }
             .padding(24)
+            .duoCenteredMeasure(480)
             .background(HTTheme.cream.ignoresSafeArea())
         }
         .presentationDetents([.medium])

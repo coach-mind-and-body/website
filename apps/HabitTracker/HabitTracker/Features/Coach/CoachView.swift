@@ -411,7 +411,7 @@ struct CoachView: View {
         .padding(.horizontal, 12)
         .padding(.top, 10)
         .padding(.bottom, 10)
-        .padding(.bottom, HTTheme.dockClearance)
+        .dockBottomPadding()
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(HTTheme.cream.opacity(0.92))
     }
@@ -479,12 +479,13 @@ struct CoachView: View {
                         if msg.isImageAttachment {
                             AsyncImage(url: url) { phase in
                                 if case .success(let img) = phase {
-                                    img.resizable().scaledToFill()
+                                    img.resizable().duoHeroContent()
                                 } else {
                                     ProgressView()
                                 }
                             }
-                            .frame(maxHeight: 180)
+                            .frame(maxWidth: 320, maxHeight: 180)
+                            .clipped()
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                         } else {
                             Link("Open file", destination: url)
@@ -519,6 +520,7 @@ struct CoachView: View {
                         .foregroundStyle(HTTheme.muted)
                 }
             }
+            .frame(maxWidth: 480)
             if !msg.isMine { Spacer(minLength: 40) }
         }
     }
