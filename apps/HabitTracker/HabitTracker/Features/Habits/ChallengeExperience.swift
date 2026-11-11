@@ -524,6 +524,7 @@ struct ChallengeExperience: View {
                 }
                 .padding(20)
             }
+            .keyboardTyping()
             .background(HTTheme.cream.ignoresSafeArea())
             .navigationTitle("Daily note")
             .navigationBarTitleDisplayMode(.inline)

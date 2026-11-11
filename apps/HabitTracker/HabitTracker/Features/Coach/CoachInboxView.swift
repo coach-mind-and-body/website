@@ -387,6 +387,7 @@ struct CoachInboxView: View {
                     .padding(16)
                 }
                 .dockScrollClearance()
+                .keyboardTyping()
                 .onChange(of: model.messages.count) {
                     if let last = model.messages.last {
                         proxy.scrollTo(last.id, anchor: .bottom)

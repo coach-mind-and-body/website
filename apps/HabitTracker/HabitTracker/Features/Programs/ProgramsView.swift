@@ -249,6 +249,7 @@ struct ProgramsView: View {
         }
         .refreshable { await model.load(bypassCache: true) }
         .dockScrollClearance()
+        .keyboardTyping()
     }
 
     private func programList(_ current: ProgramBundle) -> some View {
@@ -361,6 +362,7 @@ struct ProgramsView: View {
             .padding(20)
         }
         .dockScrollClearance()
+        .keyboardTyping()
         .refreshable { await model.load(bypassCache: true) }
     }
 
@@ -486,6 +488,7 @@ private struct ProgramModuleView: View {
             .padding(20)
         }
         .dockScrollClearance()
+        .keyboardTyping()
         .refreshable { await model.load(bypassCache: true) }
         .background(HTTheme.cream)
         .navigationTitle(module.map { "Module \($0.order)" } ?? "Module")

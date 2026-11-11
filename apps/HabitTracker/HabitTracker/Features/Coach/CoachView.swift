@@ -246,6 +246,7 @@ struct CoachView: View {
                         .padding(16)
                     }
                     .dockScrollClearance()
+                    .keyboardTyping()
                     .onChange(of: model.thread?.messages.count) {
                         if let last = model.thread?.messages.last {
                             proxy.scrollTo(last.id, anchor: .bottom)

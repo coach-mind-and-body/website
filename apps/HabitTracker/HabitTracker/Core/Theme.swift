@@ -1,4 +1,72 @@
 import SwiftUI
+import UIKit
+
+enum Keyboard {
+    static func dismiss() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+}
+
+/// One tap recognizer on the window. It ignores text fields and does not cancel other taps.
+private struct KeyboardDismissInstaller: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        view.isUserInteractionEnabled = false
+        view.backgroundColor = .clear
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {
+        DispatchQueue.main.async {
+            guard let window = uiView.window else { return }
+            context.coordinator.attach(to: window)
+        }
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        private weak var attached: UIView?
+
+        func attach(to view: UIView) {
+            guard attached !== view else { return }
+            let tap = UITapGestureRecognizer(target: self, action: #selector(dismiss))
+            tap.cancelsTouchesInView = false
+            tap.delegate = self
+            view.addGestureRecognizer(tap)
+            attached = view
+        }
+
+        @objc func dismiss() { Keyboard.dismiss() }
+
+        func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+            var view: UIView? = touch.view
+            while let current = view {
+                if current is UITextField || current is UITextView { return false }
+                view = current.superview
+            }
+            return true
+        }
+    }
+}
+
+extension View {
+    /// Drag a list or scroll view to hide the keyboard, and Done to dismiss it.
+    func keyboardTyping() -> some View {
+        scrollDismissesKeyboard(.interactively)
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") { Keyboard.dismiss() }
+                        .fontWeight(.semibold)
+                }
+            }
+    }
+
+    func installKeyboardDismissTap() -> some View {
+        background(KeyboardDismissInstaller())
+    }
+}
 
 extension Notification.Name {
     static let mbrFoodLogged = Notification.Name("mbr.foodLogged")

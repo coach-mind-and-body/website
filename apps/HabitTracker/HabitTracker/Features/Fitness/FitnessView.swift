@@ -268,6 +268,7 @@ struct FitnessView: View {
             .padding(16)
         }
         .dockScrollClearance()
+        .keyboardTyping()
     }
 
     private func chip(_ label: String, _ minutes: Int) -> some View {
@@ -320,6 +321,7 @@ struct FitnessView: View {
                 .padding(.bottom, 16)
             }
             .dockScrollClearance()
+        .keyboardTyping()
         }
     }
 
@@ -462,6 +464,7 @@ struct WorkoutWatchView: View {
             .padding(.bottom, HTTheme.dockClearance)
         }
         .dockScrollClearance()
+        .keyboardTyping()
         .background(HTTheme.cream.ignoresSafeArea())
         .navigationTitle(video.title)
         .navigationBarTitleDisplayMode(.inline)

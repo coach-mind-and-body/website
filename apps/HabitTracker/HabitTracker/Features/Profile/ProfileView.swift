@@ -107,6 +107,7 @@ struct ProfileView: View {
                 }
             }
             .dockScrollClearance()
+            .keyboardTyping()
             .navigationTitle("You")
             .sheet(isPresented: $showLogin) {
                 LoginView(auth: auth, allowsSkip: true)

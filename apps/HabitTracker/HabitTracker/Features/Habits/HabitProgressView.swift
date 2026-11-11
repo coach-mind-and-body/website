@@ -28,6 +28,7 @@ struct HabitProgressView: View {
             .padding(16)
         }
         .dockScrollClearance()
+        .keyboardTyping()
         .sheet(item: Binding(
             get: { model.progressDay.map { DaySheet(id: $0) } },
             set: { model.progressDay = $0?.id }

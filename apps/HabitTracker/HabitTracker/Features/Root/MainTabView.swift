@@ -432,6 +432,7 @@ struct RootView: View {
                 MainTabView(auth: auth, health: health)
             }
         }
+        .installKeyboardDismissTap()
         .task { await auth.restore() }
     }
 }

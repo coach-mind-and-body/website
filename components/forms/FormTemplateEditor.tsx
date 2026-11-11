@@ -211,6 +211,42 @@ export function FormTemplateEditor({
                       onChange={(event) => updateField(field.id, { help: event.target.value })}
                     />
                   )}
+                  {field.type === "scale" && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        className="min-h-12 rounded-xl border px-3 text-base"
+                        style={{ borderColor: "#f0e8e4" }}
+                        type="number"
+                        aria-label="Scale minimum"
+                        value={field.scaleMin ?? 1}
+                        onChange={(event) => updateField(field.id, { scaleMin: Number(event.target.value) })}
+                      />
+                      <input
+                        className="min-h-12 rounded-xl border px-3 text-base"
+                        style={{ borderColor: "#f0e8e4" }}
+                        type="number"
+                        aria-label="Scale maximum"
+                        value={field.scaleMax ?? 10}
+                        onChange={(event) => updateField(field.id, { scaleMax: Number(event.target.value) })}
+                      />
+                      <input
+                        className="min-h-12 rounded-xl border px-3 text-base"
+                        style={{ borderColor: "#f0e8e4" }}
+                        placeholder="Low label"
+                        aria-label="Low label"
+                        value={field.scaleLow ?? ""}
+                        onChange={(event) => updateField(field.id, { scaleLow: event.target.value })}
+                      />
+                      <input
+                        className="min-h-12 rounded-xl border px-3 text-base"
+                        style={{ borderColor: "#f0e8e4" }}
+                        placeholder="High label"
+                        aria-label="High label"
+                        value={field.scaleHigh ?? ""}
+                        onChange={(event) => updateField(field.id, { scaleHigh: event.target.value })}
+                      />
+                    </div>
+                  )}
                   {(field.type === "single_choice" || field.type === "multi_choice") && (
                     <textarea
                       className="min-h-24 w-full rounded-xl border px-3 py-2 text-base"

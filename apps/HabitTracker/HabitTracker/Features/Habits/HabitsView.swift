@@ -198,6 +198,7 @@ struct HabitsView: View {
             .padding(16)
         }
         .dockScrollClearance()
+            .keyboardTyping()
     }
 
     private func loadRecentCycleHealth() async {
@@ -225,6 +226,7 @@ struct HabitsView: View {
                 .padding(16)
             }
             .dockScrollClearance()
+            .keyboardTyping()
             .onChange(of: model.notesExpanded) { _, open in
                 scrollOpen(proxy, to: "notes", open: open)
             }
@@ -586,12 +588,6 @@ struct HabitsView: View {
                     .background(HTTheme.cream)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .focused($noteFocused)
-                    .toolbar {
-                        ToolbarItemGroup(placement: .keyboard) {
-                            Spacer()
-                            Button("Done") { noteFocused = false }
-                        }
-                    }
                 Button {
                     noteFocused = false
                     Task { await model.saveNote() }

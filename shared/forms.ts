@@ -30,6 +30,12 @@ export type FormField = {
   columns: string[];
   content: string;
   allowExtraRows: boolean;
+  /** Inclusive ends of a scale. Missing values mean 1 and 10. */
+  scaleMin?: number;
+  scaleMax?: number;
+  /** End captions. Empty means the number itself. */
+  scaleLow?: string;
+  scaleHigh?: string;
 };
 
 export type FormAnswer = {
@@ -155,7 +161,24 @@ export function normalizeField(raw: unknown, index: number): FormField | null {
     columns: typeName === "table" ? asStringList(row.columns, 12, 80) : [],
     content: asString(row.content, 20000),
     allowExtraRows: typeName === "table" && row.allowExtraRows !== false,
+    scaleMin: typeName === "scale" ? scaleBound(row.scaleMin, 1) : undefined,
+    scaleMax: typeName === "scale" ? scaleBound(row.scaleMax, 10) : undefined,
+    scaleLow: typeName === "scale" ? asString(row.scaleLow, 40) : undefined,
+    scaleHigh: typeName === "scale" ? asString(row.scaleHigh, 40) : undefined,
   };
+}
+
+export function scaleBounds(field: { scaleMin?: number | null; scaleMax?: number | null }): { min: number; max: number } {
+  const min = scaleBound(field.scaleMin, 1);
+  let max = scaleBound(field.scaleMax, 10);
+  if (max <= min) max = Math.min(100, min + 1);
+  return { min, max };
+}
+
+function scaleBound(value: unknown, fallback: number): number {
+  const number = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.min(100, Math.max(0, Math.round(number)));
 }
 
 export function normalizeFields(raw: unknown): FormField[] {
@@ -403,7 +426,8 @@ export function sanitizeAnswers(fields: FormField[], raw: FormAnswers, userId: n
     } else if (field.type === "checkbox") {
       out[field.id] = { checked: answer.checked === true };
     } else if (field.type === "scale") {
-      const scale = typeof answer.scale === "number" && answer.scale >= 1 && answer.scale <= 10 ? Math.round(answer.scale) : null;
+      const { min, max } = scaleBounds(field);
+      const scale = typeof answer.scale === "number" && answer.scale >= min && answer.scale <= max ? Math.round(answer.scale) : null;
       out[field.id] = { scale };
     } else if (field.type === "table") {
       out[field.id] = { table: clampTable(answer.table) };

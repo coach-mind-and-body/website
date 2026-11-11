@@ -73,6 +73,10 @@ const fieldInput = z.object({
   columns: z.array(z.string()).optional(),
   content: z.string().optional(),
   allowExtraRows: z.boolean().optional(),
+  scaleMin: z.number().optional(),
+  scaleMax: z.number().optional(),
+  scaleLow: z.string().optional(),
+  scaleHigh: z.string().optional(),
 });
 
 function toLibraryFile(row: typeof commonFiles.$inferSelect, programs: ProgramId[]): LibraryFile {
