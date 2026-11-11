@@ -70,12 +70,13 @@ function memoryDb(seed?: { subs?: Row[]; enrollments?: Row[] }) {
             subs.push(created);
             return { $returningId: async () => [{ id: created.id }] };
           }
+          const id = enrollments.length + 1;
           enrollments.push({
-            id: enrollments.length + 1,
+            id,
             status: "active",
             ...row,
           });
-          return Promise.resolve();
+          return { $returningId: async () => [{ id }] };
         },
       };
     },
