@@ -7,25 +7,59 @@ import { toast } from "sonner";
 import { Upload, FileText, Trash2, ExternalLink, FolderOpen, Layers } from "lucide-react";
 import { PROGRAM_LIST, type ProgramId } from "@shared/programs";
 
+function ProgramChecks({
+  selected,
+  onChange,
+  disabled,
+}: {
+  selected: ProgramId[];
+  onChange: (next: ProgramId[]) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="flex flex-wrap gap-x-3 gap-y-1">
+      {PROGRAM_LIST.map((program) => {
+        const checked = selected.includes(program.id);
+        return (
+          <label key={program.id} className="flex items-center gap-1.5 text-xs" style={{ color: "oklch(0.30 0.015 50)" }}>
+            <input
+              type="checkbox"
+              checked={checked}
+              disabled={disabled}
+              onChange={() =>
+                onChange(checked ? selected.filter((id) => id !== program.id) : [...selected, program.id])
+              }
+            />
+            {program.label}
+          </label>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * Admin library. Program checks use common_file_programs.
+ * Pages can be grouped, and a PDF or photo can become a fillable form.
+ */
 export function AdminCommonFilesTab() {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
+  const [pending, setPending] = useState<{ fileName: string; mimeType: string; base64Data: string } | null>(null);
+  const [pendingPrograms, setPendingPrograms] = useState<ProgramId[]>([]);
   const [selected, setSelected] = useState<number[]>([]);
   const [groupTitle, setGroupTitle] = useState("");
-  const [groupTags, setGroupTags] = useState<ProgramId[]>([]);
+  const [groupPrograms, setGroupPrograms] = useState<ProgramId[]>([]);
   const [grouping, setGrouping] = useState(false);
 
   const library = trpc.forms.adminLibrary.useQuery();
   const uploadCommon = trpc.clientFiles.uploadCommon.useMutation({
     onSuccess: (data) => {
-      toast.success(`Added "${data.fileName}" to library`);
+      toast.success(`Added "${data.fileName}" to the library`);
       library.refetch();
-      setUploading(false);
+      setPending(null);
+      setPendingPrograms([]);
     },
-    onError: (error) => {
-      toast.error(error.message);
-      setUploading(false);
-    },
+    onError: (error) => toast.error(error.message),
   });
   const deleteCommon = trpc.clientFiles.deleteCommon.useMutation({
     onSuccess: () => {
@@ -40,6 +74,7 @@ export function AdminCommonFilesTab() {
       setSelected([]);
       setGrouping(false);
       setGroupTitle("");
+      setGroupPrograms([]);
       library.refetch();
     },
     onError: (error) => toast.error(error.message),
@@ -79,16 +114,17 @@ export function AdminCommonFilesTab() {
       toast.error("File must be under 10 MB");
       return;
     }
-    setUploading(true);
     const reader = new FileReader();
     reader.onload = () => {
       const base64 = String(reader.result).split(",")[1] ?? "";
-      uploadCommon.mutate({ fileName: file.name, mimeType: file.type || "application/octet-stream", base64Data: base64 });
+      setPending({
+        fileName: file.name,
+        mimeType: file.type || "application/octet-stream",
+        base64Data: base64,
+      });
+      setPendingPrograms([]);
     };
-    reader.onerror = () => {
-      toast.error("Failed to read file");
-      setUploading(false);
-    };
+    reader.onerror = () => toast.error("Failed to read file");
     reader.readAsDataURL(file);
     event.target.value = "";
   };
@@ -105,7 +141,7 @@ export function AdminCommonFilesTab() {
             Shared file library
           </h2>
           <p className="max-w-xl text-sm" style={{ color: "oklch(0.52 0.015 50)" }}>
-            Group multi-page worksheets, tag them to a program, and turn a PDF or photo into a fillable form.
+            Check a program and everyone enrolled in it sees the file. Group pages into one item, or turn a PDF or photo into a fillable form.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -121,21 +157,47 @@ export function AdminCommonFilesTab() {
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
             className="flex min-h-12 items-center gap-2 rounded-full px-5 text-sm font-bold shadow-sm"
             style={{ background: "oklch(0.72 0.12 75)", color: "white" }}
           >
             <Upload size={16} />
-            {uploading ? "Uploading…" : "Upload to library"}
+            Upload to library
           </button>
         </div>
-        <input ref={fileInputRef} type="file" className="hidden" onChange={handleUpload} accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp,.txt,.csv,.xlsx,.mp3,.mp4" />
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          onChange={handleUpload}
+          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp,.txt,.csv,.xlsx,.mp3,.mp4"
+        />
       </div>
+
+      {pending && (
+        <div className="mb-4 space-y-3 rounded-xl bg-white p-4">
+          <p className="text-sm font-semibold" style={{ color: "oklch(0.20 0.015 50)" }}>{pending.fileName}</p>
+          <ProgramChecks selected={pendingPrograms} onChange={setPendingPrograms} />
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={uploadCommon.isPending}
+              onClick={() => uploadCommon.mutate({ ...pending, programs: pendingPrograms })}
+              className="rounded-full px-4 py-2 text-sm font-bold"
+              style={{ background: "oklch(0.72 0.12 75)", color: "white" }}
+            >
+              {uploadCommon.isPending ? "Saving…" : "Add to library"}
+            </button>
+            <button type="button" onClick={() => setPending(null)} className="px-4 py-2 text-sm" style={{ color: "oklch(0.42 0.015 50)" }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {grouping ? (
         <div className="mb-4 rounded-xl bg-white p-4">
           <p className="mb-2 text-sm font-semibold" style={{ color: "oklch(0.20 0.015 50)" }}>
-            {selectedFiles.length} pages, in the order you selected. Originals stay in the library.
+            {selectedFiles.length} pages, in the order you selected. Originals stay in the library. The checks apply to every page.
           </p>
           <input
             className="mb-3 min-h-12 w-full rounded-xl border px-3"
@@ -143,29 +205,14 @@ export function AdminCommonFilesTab() {
             value={groupTitle}
             onChange={(event) => setGroupTitle(event.target.value)}
           />
-          <div className="mb-3 flex flex-wrap gap-2">
-            {PROGRAM_LIST.map((program) => {
-              const on = groupTags.includes(program.id);
-              return (
-                <button
-                  key={program.id}
-                  type="button"
-                  className="min-h-12 rounded-full px-3 text-xs font-bold"
-                  style={{ background: on ? "oklch(0.38 0.10 148)" : "oklch(0.96 0.02 80)", color: on ? "white" : "oklch(0.20 0.015 50)" }}
-                  onClick={() => setGroupTags((current) => (on ? current.filter((id) => id !== program.id) : [...current, program.id]))}
-                >
-                  {program.label}
-                </button>
-              );
-            })}
-          </div>
-          <div className="flex gap-2">
+          <ProgramChecks selected={groupPrograms} onChange={setGroupPrograms} />
+          <div className="mt-3 flex gap-2">
             <button
               type="button"
               className="min-h-12 rounded-full px-4 text-sm font-bold text-white"
               style={{ background: "oklch(0.38 0.10 148)" }}
               disabled={!groupTitle.trim() || group.isPending}
-              onClick={() => group.mutate({ fileIds: selectedFiles, title: groupTitle.trim(), programTags: groupTags })}
+              onClick={() => group.mutate({ fileIds: selectedFiles, title: groupTitle.trim(), programTags: groupPrograms })}
             >
               Save group
             </button>
@@ -183,7 +230,7 @@ export function AdminCommonFilesTab() {
           {items.map((item) => {
             const pageIds = item.pages.map((page) => page.id);
             return (
-              <div key={item.id} className="rounded-xl bg-white p-4">
+              <div key={item.id} className="space-y-3 rounded-xl bg-white p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex min-w-0 items-start gap-3">
                     {item.kind === "file" ? (
@@ -203,7 +250,6 @@ export function AdminCommonFilesTab() {
                       <p className="truncate text-sm font-semibold" style={{ color: "oklch(0.20 0.015 50)" }}>{item.title}</p>
                       <p className="text-xs" style={{ color: "oklch(0.52 0.015 50)" }}>
                         {item.kind === "group" ? `${item.pages.length} pages` : "Single file"}
-                        {item.programTags.length ? ` · ${item.programTags.join(", ")}` : " · no program yet"}
                       </p>
                     </div>
                   </div>
@@ -243,7 +289,7 @@ export function AdminCommonFilesTab() {
                         className="p-2"
                         style={{ color: "oklch(0.55 0.12 20)" }}
                         onClick={() => {
-                          if (confirm(`Remove "${item.title}" from the library? Clients who already received it keep their copy.`)) {
+                          if (confirm(`Remove "${item.title}" from the library? People who already received a copy keep it.`)) {
                             deleteCommon.mutate({ fileId: item.refId });
                           }
                         }}
@@ -254,32 +300,18 @@ export function AdminCommonFilesTab() {
                   </div>
                 </div>
                 {item.kind === "group" ? (
-                  <ol className="mt-3 space-y-1 pl-8 text-xs" style={{ color: "oklch(0.42 0.015 50)" }}>
+                  <ol className="space-y-1 pl-8 text-xs" style={{ color: "oklch(0.42 0.015 50)" }}>
                     {item.pages.map((page, index) => (
                       <li key={page.id}>{index + 1}. {page.fileName}</li>
                     ))}
                   </ol>
                 ) : null}
-                <div className="mt-3 flex flex-wrap gap-2 pl-8">
-                  {PROGRAM_LIST.map((program) => {
-                    const on = item.programTags.includes(program.id);
-                    return (
-                      <button
-                        key={program.id}
-                        type="button"
-                        className="rounded-full px-3 py-1 text-xs font-bold"
-                        style={{ background: on ? "oklch(0.38 0.10 148)" : "transparent", color: on ? "white" : "oklch(0.42 0.015 50)", border: "1px solid oklch(0.90 0.02 80)" }}
-                        onClick={() => {
-                          const programTags = on
-                            ? item.programTags.filter((id) => id !== program.id)
-                            : [...item.programTags, program.id];
-                          setTags.mutate({ kind: item.kind, id: item.refId, programTags: programTags as ProgramId[] });
-                        }}
-                      >
-                        {program.label}
-                      </button>
-                    );
-                  })}
+                <div className="pl-8">
+                  <ProgramChecks
+                    selected={item.programTags}
+                    disabled={setTags.isPending}
+                    onChange={(next) => setTags.mutate({ kind: item.kind, id: item.refId, programTags: next })}
+                  />
                 </div>
               </div>
             );
@@ -290,12 +322,12 @@ export function AdminCommonFilesTab() {
           <FolderOpen size={32} className="mx-auto mb-3" style={{ color: "oklch(0.72 0.12 75)" }} />
           <p className="mb-1 text-sm font-semibold" style={{ color: "oklch(0.20 0.015 50)" }}>No common files yet</p>
           <p className="mx-auto max-w-sm text-xs" style={{ color: "oklch(0.52 0.015 50)" }}>
-            Upload the worksheet pages. Then group them and make a fillable form.
+            Upload a worksheet, check the programs that should receive it, then group pages or make a fillable form.
           </p>
         </div>
       )}
       <p className="mt-4 flex items-center gap-2 text-xs" style={{ color: "oklch(0.52 0.015 50)" }}>
-        <FileText size={14} /> Share an individual file from a contact, or publish a form to everyone enrolled in the tagged program.
+        <FileText size={14} /> A checked program shows the file to everyone enrolled in it. You can still share one file with one person from their contact.
       </p>
     </div>
   );

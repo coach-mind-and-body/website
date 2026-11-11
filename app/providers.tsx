@@ -50,6 +50,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const isHabitTrackerRoute = pathname?.startsWith("/habit-tracker");
   const isHolidayRoute = pathname === "/holiday" || pathname?.startsWith("/holiday/");
   const isClientIntakeRoute = pathname === "/client-intake" || pathname?.startsWith("/client-intake/");
+  const isProgramIntakeRoute = pathname === "/intake" || pathname?.startsWith("/intake/");
 
   const [trpcClient] = useState(() =>
     trpc.createClient({
@@ -76,7 +77,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             <TooltipProvider>
               {children}
               <Toaster />
-              {!isAdminRoute && !isHabitTrackerRoute && !isHolidayRoute && !isClientIntakeRoute && <ChatWidget />}
+              {!isAdminRoute && !isHabitTrackerRoute && !isHolidayRoute && !isClientIntakeRoute && !isProgramIntakeRoute && <ChatWidget />}
             </TooltipProvider>
           </ChatProvider>
         </ThemeProvider>

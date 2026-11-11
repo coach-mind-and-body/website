@@ -34,6 +34,7 @@ import { coachRouter } from "./routers/coach";
 import { sprintRouter } from "./routers/sprint";
 import { clientIntakeRouter } from "./routers/clientIntake";
 import { formsRouter } from "./routers/forms";
+import { programIntakeRouter } from "./routers/programIntake";
 
 export const appRouter = router({
   system: systemRouter,
@@ -122,6 +123,7 @@ export const appRouter = router({
   sprint: sprintRouter,
   clientIntake: clientIntakeRouter,
   forms: formsRouter,
+  programIntake: programIntakeRouter,
 });
 
 export type AppRouter = typeof appRouter;

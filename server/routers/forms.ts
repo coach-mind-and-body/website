@@ -6,6 +6,7 @@ import { getDb } from "../db";
 import {
   assignmentSubmissions,
   assignments,
+  commonFilePrograms,
   commonFiles,
   enrollments,
   libraryGroups,
@@ -46,7 +47,7 @@ import {
   type LibraryGroup,
   type LibraryItem,
 } from "@shared/libraryGroups";
-import { PROGRAM_IDS } from "@shared/programs";
+import { isProgramId, PROGRAM_IDS } from "@shared/programs";
 
 const programTagSchema = z.array(z.enum(PROGRAM_IDS)).max(PROGRAM_IDS.length);
 
@@ -74,7 +75,7 @@ const fieldInput = z.object({
   allowExtraRows: z.boolean().optional(),
 });
 
-function toLibraryFile(row: typeof commonFiles.$inferSelect): LibraryFile {
+function toLibraryFile(row: typeof commonFiles.$inferSelect, programs: ProgramId[]): LibraryFile {
   return {
     id: row.id,
     fileName: row.fileName,
@@ -83,12 +84,8 @@ function toLibraryFile(row: typeof commonFiles.$inferSelect): LibraryFile {
     fileKey: row.fileKey,
     groupId: row.groupId ?? null,
     pageOrder: row.pageOrder ?? 0,
-    programTags: parseProgramTags(row.programTags),
+    programTags: programs,
   };
-}
-
-function toGroup(row: typeof libraryGroups.$inferSelect): LibraryGroup {
-  return { id: row.id, title: row.title, programTags: parseProgramTags(row.programTags) };
 }
 
 function toTemplate(row: typeof assignments.$inferSelect): FormTemplate {
@@ -203,14 +200,47 @@ async function pagesFor(ids: number[]) {
   });
 }
 
+async function programsByFile(fileIds: number[]) {
+  const db = await dbOrThrow();
+  const map = new Map<number, ProgramId[]>();
+  if (fileIds.length === 0) return map;
+  const rows = await db.select().from(commonFilePrograms).where(inArray(commonFilePrograms.commonFileId, fileIds));
+  for (const row of rows) {
+    if (!isProgramId(row.program)) continue;
+    const list = map.get(row.commonFileId) ?? [];
+    if (!list.includes(row.program)) list.push(row.program);
+    map.set(row.commonFileId, list);
+  }
+  return map;
+}
+
+async function writeFilePrograms(fileId: number, programs: ProgramId[]) {
+  const db = await dbOrThrow();
+  const unique = [...new Set(programs)];
+  await db.delete(commonFilePrograms).where(eq(commonFilePrograms.commonFileId, fileId));
+  if (unique.length > 0) {
+    await db.insert(commonFilePrograms).values(unique.map((program) => ({ commonFileId: fileId, program })));
+  }
+}
+
 async function libraryState() {
   const db = await dbOrThrow();
   const [fileRows, groupRows] = await Promise.all([
     db.select().from(commonFiles).orderBy(desc(commonFiles.id)),
     db.select().from(libraryGroups).orderBy(desc(libraryGroups.id)),
   ]);
-  const files = fileRows.map(toLibraryFile);
-  const groups = groupRows.map(toGroup);
+  const tagged = await programsByFile(fileRows.map((row) => row.id));
+  const files = fileRows.map((row) => toLibraryFile(row, tagged.get(row.id) ?? []));
+  const groups: LibraryGroup[] = groupRows.map((row) => {
+    const programTags: ProgramId[] = [];
+    for (const file of files) {
+      if (file.groupId !== row.id) continue;
+      for (const tag of file.programTags) {
+        if (!programTags.includes(tag)) programTags.push(tag);
+      }
+    }
+    return { id: row.id, title: row.title, programTags };
+  });
   return { files, groups, items: collapseLibrary(files, groups) };
 }
 
@@ -374,8 +404,11 @@ export const formsRouter = router({
       const ext = mime === "image/png" ? "png" : mime === "image/webp" ? "webp" : "jpg";
       const suffix = Math.random().toString(36).slice(2, 10);
       const key = `form-photos/${ctx.user.id}/${Date.now()}-${suffix}.${ext}`;
-      await privateStoragePut(key, buffer, mime);
-      return { key };
+      const stored = await privateStoragePut(key, buffer, mime);
+      if (!stored) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Photo storage is not configured." });
+      }
+      return { key: stored.key };
     }),
 
   adminLibrary: adminProcedure.query(async () => {
@@ -419,10 +452,12 @@ export const formsRouter = router({
         .insert(libraryGroups)
         .values({
           title: input.title.trim(),
-          programTags: JSON.stringify(tags),
           createdByUserId: ctx.user.id,
         })
         .$returningId();
+      for (const fileId of plan.orderedIds) {
+        await writeFilePrograms(fileId, tags);
+      }
       const grouped = applyGroup(files, plan.orderedIds, inserted.id);
       for (const file of grouped) {
         if (!plan.orderedIds.includes(file.id)) continue;
@@ -479,12 +514,13 @@ export const formsRouter = router({
       })
     )
     .mutation(async ({ input }) => {
+      const tags = cleanTags(input.programTags);
       const db = await dbOrThrow();
-      const tags = JSON.stringify(cleanTags(input.programTags));
       if (input.kind === "group") {
-        await db.update(libraryGroups).set({ programTags: tags }).where(eq(libraryGroups.id, input.id));
+        const pages = await db.select({ id: commonFiles.id }).from(commonFiles).where(eq(commonFiles.groupId, input.id));
+        for (const page of pages) await writeFilePrograms(page.id, tags);
       } else {
-        await db.update(commonFiles).set({ programTags: tags }).where(eq(commonFiles.id, input.id));
+        await writeFilePrograms(input.id, tags);
       }
       return { success: true };
     }),
@@ -523,12 +559,8 @@ export const formsRouter = router({
         const message = error instanceof Error ? error.message : "Could not read that worksheet.";
         throw new TRPCError({ code: "BAD_REQUEST", message });
       }
-      const groupIds = [...new Set(ordered.map((row) => row.groupId).filter((id): id is number => id != null))];
-      let tags = cleanTags(ordered.flatMap((row) => parseProgramTags(row.programTags)));
-      if (groupIds.length === 1) {
-        const [group] = await db.select().from(libraryGroups).where(eq(libraryGroups.id, groupIds[0])).limit(1);
-        if (group) tags = parseProgramTags(group.programTags);
-      }
+      const tagged = await programsByFile(ordered.map((row) => row.id));
+      const tags = cleanTags(ordered.flatMap((row) => tagged.get(row.id) ?? []));
       const [inserted] = await db
         .insert(assignments)
         .values({

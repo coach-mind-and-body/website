@@ -28,7 +28,7 @@ export function ClientIntakeShareBox() {
   return (
     <div className="rounded-2xl p-5" style={{ background: "oklch(1 0 0)" }}>
       <p className="text-sm font-semibold" style={{ color: "oklch(0.28 0.015 50)" }}>
-        Share this link
+        Metabolic Coaching link
       </p>
       <p className="mt-2 break-all text-sm" style={{ color: "oklch(0.42 0.015 50)" }}>
         {shareUrl}

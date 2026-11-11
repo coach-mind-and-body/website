@@ -9,6 +9,7 @@ import AdminClientSessions from "../AdminClientSessions";
 import { ClientFormSubmissions } from "../forms/ClientFormSubmissions";
 import AdminModuleAssignment from "../AdminModuleAssignment";
 import AdminClientHabits from "../AdminClientHabits";
+import { AdminClientWorkspace } from "./AdminClientWorkspace";
 import { toast } from "sonner";
 import { differenceInDays, parseISO } from "date-fns";
 import { todayMountainDateStr } from "@/lib/mountainTime";
@@ -787,6 +788,15 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
                     </div>
                   )}
 
+                  {(selectedContact.userId || selectedContact.email) && (
+                    <div className="border-t pt-6" style={{ borderColor: "oklch(0.90 0.015 80)" }}>
+                      <AdminClientWorkspace
+                        userId={selectedContact.userId || undefined}
+                        email={selectedContact.email}
+                      />
+                    </div>
+                  )}
+
                   {selectedContact.enrollmentId && selectedContact.highestStatus !== 'habit-only' && (
                     <div className="border-t pt-6" style={{ borderColor: "oklch(0.90 0.015 80)" }}>
                       <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: "oklch(0.52 0.015 50)" }}>Reclaim Session Management</p>
@@ -794,8 +804,12 @@ export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) 
                         enrollmentId={selectedContact.enrollmentId}
                         gcalConnected={gcalConnected}
                       />
-                      <p className="text-xs font-bold uppercase tracking-widest mt-6 mb-2" style={{ color: "oklch(0.52 0.015 50)" }}>Module Assignment</p>
-                      <AdminModuleAssignment userId={selectedContact.userId} />
+                      {selectedContact.userId ? (
+                        <>
+                          <p className="text-xs font-bold uppercase tracking-widest mt-6 mb-2" style={{ color: "oklch(0.52 0.015 50)" }}>Module Assignment</p>
+                          <AdminModuleAssignment userId={selectedContact.userId} />
+                        </>
+                      ) : null}
                     </div>
                   )}
 

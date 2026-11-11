@@ -53,6 +53,27 @@ export async function storagePut(
   }
 }
 
+/** Read a public-bucket object, such as a library worksheet, so it can be turned into a form. */
+export async function storageRead(
+  relKey: string
+): Promise<{ body: Buffer; contentType: string } | null> {
+  const key = normalizeKey(relKey);
+  const s3 = getS3Client();
+  try {
+    const result = await s3.send(new GetObjectCommand({ Bucket: ENV.r2BucketName, Key: key }));
+    if (!result.Body) return null;
+    const bytes = await result.Body.transformToByteArray();
+    return {
+      body: Buffer.from(bytes),
+      contentType: result.ContentType || "application/octet-stream",
+    };
+  } catch (error) {
+    const name = error && typeof error === "object" && "name" in error ? String(error.name) : "";
+    if (name === "NoSuchKey" || name === "NotFound") return null;
+    throw error;
+  }
+}
+
 export async function storageGet(relKey: string): Promise<{ key: string; url: string; }> {
   const key = normalizeKey(relKey);
   
@@ -71,76 +92,47 @@ export async function storageGet(relKey: string): Promise<{ key: string; url: st
   return { key, url };
 }
 
-/** Read an object with the private R2 credentials. Does not build a public URL. */
-export async function storageRead(
-  relKey: string
-): Promise<{ body: Buffer; contentType: string } | null> {
-  const key = normalizeKey(relKey);
-  const s3 = getS3Client();
-  try {
-    const result = await s3.send(
-      new GetObjectCommand({
-        Bucket: ENV.r2BucketName,
-        Key: key,
-      })
-    );
-    if (!result.Body) return null;
-    const bytes = await result.Body.transformToByteArray();
-    return {
-      body: Buffer.from(bytes),
-      contentType: result.ContentType || "application/octet-stream",
-    };
-  } catch (error) {
-    const name = error && typeof error === "object" && "name" in error ? String(error.name) : "";
-    if (name === "NoSuchKey" || name === "NotFound") return null;
-    throw error;
+function privateEndpoint(): string {
+  return (ENV.r2PrivateEndpoint || ENV.r2Endpoint).trim();
+}
+
+/** True when the private food-log bucket can be used. Never falls back to the public bucket. */
+export function privateFoodLogStorageReady(): boolean {
+  return Boolean(ENV.r2PrivateAccessKeyId && ENV.r2PrivateSecretAccessKey && privateEndpoint());
+}
+
+function getPrivateS3Client() {
+  if (!privateFoodLogStorageReady()) {
+    throw new Error("Private R2 storage is not configured.");
   }
+  return new S3Client({
+    region: "auto",
+    endpoint: privateEndpoint(),
+    credentials: {
+      accessKeyId: ENV.r2PrivateAccessKeyId,
+      secretAccessKey: ENV.r2PrivateSecretAccessKey,
+    },
+  });
 }
 
-function privateBucket() {
-  const hasPrivate = Boolean(
-    ENV.r2PrivateAccessKeyId &&
-      ENV.r2PrivateSecretAccessKey &&
-      ENV.r2PrivateEndpoint &&
-      ENV.r2PrivateBucketName
-  );
-  return {
-    accessKeyId: hasPrivate ? ENV.r2PrivateAccessKeyId : ENV.r2AccessKeyId,
-    secretAccessKey: hasPrivate ? ENV.r2PrivateSecretAccessKey : ENV.r2SecretAccessKey,
-    endpoint: hasPrivate ? ENV.r2PrivateEndpoint : ENV.r2Endpoint,
-    bucket: hasPrivate ? ENV.r2PrivateBucketName : ENV.r2BucketName,
-  };
-}
+const PRIVATE_STORAGE_HINT =
+  "Set R2_PRIVATE_ACCESS_KEY_ID, R2_PRIVATE_SECRET_ACCESS_KEY, and R2_PRIVATE_ENDPOINT (or R2_ENDPOINT). R2_PRIVATE_BUCKET defaults to mbr-private-uploads.";
 
-function privateClient() {
-  const cfg = privateBucket();
-  if (!cfg.accessKeyId || !cfg.secretAccessKey || !cfg.endpoint || !cfg.bucket) {
-    throw new Error("Missing R2 credentials in environment variables.");
-  }
-  return {
-    bucket: cfg.bucket,
-    client: new S3Client({
-      region: "auto",
-      endpoint: cfg.endpoint,
-      credentials: {
-        accessKeyId: cfg.accessKeyId,
-        secretAccessKey: cfg.secretAccessKey,
-      },
-    }),
-  };
-}
-
-/** Store an object in the private bucket. Returns the key only — never a public URL. */
+/** Upload a food-log photo to the private bucket. Returns null when it is not configured. */
 export async function privateStoragePut(
   relKey: string,
   data: Buffer | Uint8Array | string,
   contentType = "application/octet-stream"
-): Promise<{ key: string }> {
-  const { client, bucket } = privateClient();
+): Promise<{ key: string } | null> {
+  if (!privateFoodLogStorageReady()) {
+    console.warn(`[written-food-log] Private photo storage is not configured. ${PRIVATE_STORAGE_HINT} Skipping the page photo.`);
+    return null;
+  }
+  const s3 = getPrivateS3Client();
   const key = normalizeKey(relKey);
-  await client.send(
+  await s3.send(
     new PutObjectCommand({
-      Bucket: bucket,
+      Bucket: ENV.r2PrivateBucket,
       Key: key,
       Body: typeof data === "string" ? Buffer.from(data, "utf-8") : data,
       ContentType: contentType,
@@ -149,14 +141,23 @@ export async function privateStoragePut(
   return { key };
 }
 
-/** Read an object from the private bucket. */
+/** Read a food-log photo from the private bucket. Does not use the public bucket or a public URL. */
 export async function privateStorageRead(
   relKey: string
 ): Promise<{ body: Buffer; contentType: string } | null> {
-  const { client, bucket } = privateClient();
+  if (!privateFoodLogStorageReady()) {
+    console.warn(`[food-log-photo] Private photo storage is not configured. ${PRIVATE_STORAGE_HINT}`);
+    return null;
+  }
   const key = normalizeKey(relKey);
+  const s3 = getPrivateS3Client();
   try {
-    const result = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+    const result = await s3.send(
+      new GetObjectCommand({
+        Bucket: ENV.r2PrivateBucket,
+        Key: key,
+      })
+    );
     if (!result.Body) return null;
     const bytes = await result.Body.transformToByteArray();
     return {
