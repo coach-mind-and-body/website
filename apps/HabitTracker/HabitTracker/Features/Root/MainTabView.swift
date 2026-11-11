@@ -18,6 +18,7 @@ struct MainTabView: View {
     @State private var showSharePrompt = false
     @Environment(\.scenePhase) private var scenePhase
     @State private var showProfile = false
+    @State private var openForm: FormLink?
 
     init(auth: AuthStore, health: HealthKitService) {
         self.auth = auth
@@ -59,6 +60,7 @@ struct MainTabView: View {
                 _ = await NotificationService.requestAuthorization()
             } else {
                 await NotificationService.registerIfAuthorized()
+                await NotificationService.refreshDailyReminders()
             }
             if let token = DeviceTokenStore.current {
                 await auth.uploadDeviceToken(token)
@@ -89,6 +91,23 @@ struct MainTabView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .mbrFoodLogged)) { _ in
             Task { await habits.onFoodLogged() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .mbrNotificationAction)) { _ in
+            Task {
+                await habits.load()
+                await food.loadLogs()
+                await fitness.load()
+            }
+        }
+        .sheet(item: $openForm) { form in
+            NavigationStack {
+                FormFillView(auth: auth, formId: form.id)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Close") { openForm = nil }
+                        }
+                    }
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .mbrDeviceToken)) { note in
             guard let token = note.object as? String else { return }
@@ -150,6 +169,16 @@ struct MainTabView: View {
             tab = .habits
         case .programs:
             tab = .programs
+        case .food, .scan:
+            if !auth.usesAdminChrome { tab = .recipes }
+        case .fitness:
+            if !auth.usesAdminChrome { tab = .fitness }
+        case .form:
+            if !auth.usesAdminChrome { tab = .programs }
+            if let id = DeepLink.pendingFormId {
+                openForm = FormLink(id: id)
+                DeepLink.pendingFormId = nil
+            }
         }
     }
 
@@ -306,7 +335,7 @@ private struct NotifyPromptView: View {
                 Text("Evening check-in")
                     .font(HTTheme.serif)
                     .foregroundStyle(HTTheme.forest)
-                Text("A quiet reminder at 8:00 pm to look at today’s targets — no scoreboard, no streak shame. You can turn this off anytime in You.")
+                Text("A few quiet nudges through the day — water, a walk, food — then an 8:00 pm look at today’s habits. No scoreboard. Turn this off anytime in You.")
                     .foregroundStyle(HTTheme.muted)
                 Spacer()
                 Button("Turn on reminders") {

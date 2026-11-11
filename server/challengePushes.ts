@@ -16,6 +16,7 @@ import {
 } from "@shared/realFoodReset";
 import { getDb } from "./db";
 import { nowMountain, todayMountainDateStr } from "../lib/mountainTime";
+import { NOTIFICATION_CATEGORY } from "./notificationCategories";
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "";
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY ?? "";
@@ -221,6 +222,7 @@ export async function processChallengePushes(options?: { force?: boolean; kind?:
     body: copy.body,
     url: copy.url,
     icon: "/favicon.ico",
+    category: NOTIFICATION_CATEGORY.challenge,
   });
 
   let sent = 0;

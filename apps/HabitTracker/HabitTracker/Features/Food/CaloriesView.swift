@@ -157,6 +157,21 @@ struct CaloriesView: View {
         .sheet(isPresented: $showScan) {
             WrittenLogScanSheet(food: food)
         }
+        .onAppear { openPendingFood() }
+        .onReceive(NotificationCenter.default.publisher(for: .mbrOpenDeepLink)) { _ in
+            openPendingFood()
+        }
+    }
+
+    private func openPendingFood() {
+        guard let pending = FoodIntentStore.pending else { return }
+        FoodIntentStore.pending = nil
+        if pending == "scan" {
+            showScan = true
+        } else if pending == "log" {
+            meal = suggestedMeal
+            showLog = true
+        }
     }
 
     private var suggestedMeal: String {

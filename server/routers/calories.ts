@@ -48,7 +48,7 @@ function checkGuestAiLimit(deviceId: string | undefined, day: string) {
 }
 
 // Helper function to sync daily protein and fiber to the habit tracker
-async function syncMacrosToHabits(db: any, userId: number, dateStr: string) {
+export async function syncMacrosToHabits(db: any, userId: number, dateStr: string) {
   // 1. Calculate totals for the day
   const logs = await db.select().from(calorieLogs)
     .where(and(eq(calorieLogs.userId, userId), eq(calorieLogs.dateStr, dateStr)));
@@ -78,7 +78,7 @@ async function syncMacrosToHabits(db: any, userId: number, dateStr: string) {
 
     if (existing.length > 0) {
       await db.update(userHabitLogs)
-        .set({ numericValue: value, completed })
+        .set({ numericValue: value, completed, skipped: false })
         .where(eq(userHabitLogs.id, existing[0].id));
     } else {
       await db.insert(userHabitLogs).values({
@@ -87,6 +87,7 @@ async function syncMacrosToHabits(db: any, userId: number, dateStr: string) {
         dateStr,
         numericValue: value,
         completed,
+        skipped: false,
       });
     }
   };

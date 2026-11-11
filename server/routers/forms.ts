@@ -48,6 +48,7 @@ import {
   type LibraryItem,
 } from "@shared/libraryGroups";
 import { isProgramId, PROGRAM_IDS } from "@shared/programs";
+import { notifyPublishedForm } from "../notificationPush";
 
 const programTagSchema = z.array(z.enum(PROGRAM_IDS)).max(PROGRAM_IDS.length);
 
@@ -634,7 +635,7 @@ export const formsRouter = router({
   adminPublish: adminProcedure
     .input(z.object({ formId: z.number().int().positive() }))
     .mutation(async ({ input }) => {
-      const { template } = await loadTemplate(input.formId);
+      const { row, template } = await loadTemplate(input.formId);
       const answerable = template.fields.some((field) => field.type !== "info");
       if (template.kind === "fillable" && !answerable) {
         throw new TRPCError({
@@ -653,6 +654,13 @@ export const formsRouter = router({
       }
       const db = await dbOrThrow();
       await db.update(assignments).set({ publishStatus: "published" }).where(eq(assignments.id, input.formId));
+      void notifyPublishedForm({
+        formId: input.formId,
+        title: template.title,
+        moduleId: template.moduleId,
+        programTags: template.programTags,
+        listed: formIsListedForClients(template, row.question),
+      }).catch((err) => console.error("[Push] form assign failed", err));
       return { id: input.formId, publishStatus: "published" as const };
     }),
 

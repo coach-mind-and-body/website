@@ -25,11 +25,20 @@ if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
 const DEFAULT_ADMIN_URL = "/admin?tab=contacts";
 
 // ─── Shared helper: send push to all admins ───────────────────────────────────
-export async function notifyAdmins(payload: {
+export type WebPushPayload = {
   title: string;
   body: string;
   url?: string;
-}) {
+  category?: string;
+  conversationId?: number;
+  threadId?: number;
+  messageId?: number;
+  habitId?: number;
+  formId?: number;
+  sessionUrl?: string;
+};
+
+export async function notifyAdmins(payload: WebPushPayload) {
   try {
     const db = await getDb();
     if (!db) return;
@@ -81,10 +90,7 @@ export async function notifyAdmins(payload: {
 }
 
 /** Push a single signed-in client (habit-tracker PWA). */
-export async function notifyUser(
-  userId: number,
-  payload: { title: string; body: string; url?: string }
-) {
+export async function notifyUser(userId: number, payload: WebPushPayload) {
   try {
     const db = await getDb();
     if (!db) return;
@@ -122,11 +128,7 @@ export async function notifyUser(
 }
 
 // ─── Bulk notify: send to all admin subscriptions ─────────────────────────────
-export async function notifyAllAdmins(payload: {
-  title: string;
-  body: string;
-  url?: string;
-}) {
+export async function notifyAllAdmins(payload: WebPushPayload) {
   try {
     const db = await getDb();
     if (!db) return;

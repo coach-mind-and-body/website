@@ -57,16 +57,21 @@ struct ProfileView: View {
                 }
 
                 Section("Notifications") {
-                    Toggle("Evening habit check-in", isOn: $notifyOn)
+                    Toggle("Daily reminders", isOn: $notifyOn)
                         .onChange(of: notifyOn) { _, on in
                             Task {
                                 if on {
                                     let ok = await NotificationService.requestAuthorization()
                                     if ok { await NotificationService.scheduleEveningNudge() }
                                     notifyOn = ok
+                                } else {
+                                    NotificationService.clearDailyReminders()
                                 }
                             }
                         }
+                    Text("Water, a short walk, food, and an 8:00 pm habit check-in.")
+                        .font(.caption)
+                        .foregroundStyle(HTTheme.muted)
                 }
                 }
 
@@ -158,7 +163,11 @@ struct ProfileView: View {
             }
             .task {
                 await health.refreshToday()
-                notifyOn = await NotificationService.isAuthorized()
+                if UserDefaults.standard.object(forKey: NotificationService.remindersKey) != nil {
+                    notifyOn = UserDefaults.standard.bool(forKey: NotificationService.remindersKey)
+                } else {
+                    notifyOn = await NotificationService.isAuthorized()
+                }
                 if auth.isSignedIn {
                     if let payload: HabitsPayload = try? await auth.client.query(
                         "habit.getUserHabits",

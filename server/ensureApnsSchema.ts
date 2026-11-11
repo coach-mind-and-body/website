@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS \`coach_reply_email_notices\` (
 
 const ADD_NOTICE_KIND = `ALTER TABLE \`coach_reply_email_notices\` ADD \`kind\` varchar(16) NOT NULL DEFAULT 'client'`;
 const ADD_COACH_LAST_READ = `ALTER TABLE \`conversations\` ADD \`coachLastReadAt\` timestamp NULL`;
+const ADD_HABIT_LOG_SKIPPED = `ALTER TABLE \`user_habit_logs\` ADD \`skipped\` boolean NOT NULL DEFAULT false`;
 
 function isAlreadyApplied(err: unknown): boolean {
   const row = err as { code?: string; message?: string; cause?: { code?: string; message?: string } };
@@ -61,6 +62,7 @@ export async function ensureApnsSchema(db: Db): Promise<void> {
       .then(() => db.execute(sql.raw(CREATE_EMAIL_NOTICES)))
       .then(() => runIgnoring(db, ADD_NOTICE_KIND))
       .then(() => runIgnoring(db, ADD_COACH_LAST_READ))
+      .then(() => runIgnoring(db, ADD_HABIT_LOG_SKIPPED))
       .then(() => undefined)
       .catch((err) => {
         ready = null;

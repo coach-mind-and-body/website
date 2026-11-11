@@ -5,7 +5,7 @@ import { fitnessLogs, workoutVideos, userHabits, userHabitLogs, userChallenges, 
 import { eq, and, desc } from "drizzle-orm";
 
 // Helper: sync fitness logs to the "Move Body" habit and any active challenges
-async function syncFitnessToHabits(db: any, userId: number, dateStr: string) {
+export async function syncFitnessToHabits(db: any, userId: number, dateStr: string) {
   // 1. Check if the user has ANY fitness logs for this date
   const logs = await db.select().from(fitnessLogs)
     .where(and(eq(fitnessLogs.userId, userId), eq(fitnessLogs.dateStr, dateStr)));

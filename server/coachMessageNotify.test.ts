@@ -52,7 +52,15 @@ describe("coach reply notifications", () => {
       expect.objectContaining({
         tokens: ["aa".repeat(32)],
         alert: { title: "Lee Anne sent a message", body: "See you Thursday" },
-        data: { tab: "coach", url: "/habit-tracker/coach", conversationId: 3 },
+        data: {
+          tab: "coach",
+          url: "/habit-tracker/coach",
+          category: "coach-message",
+          conversationId: 3,
+          threadId: 3,
+          messageId: 9,
+          mutableContent: true,
+        },
       })
     );
     expect(queueEmail).toHaveBeenCalledTimes(1);
@@ -91,7 +99,14 @@ describe("coach reply notifications", () => {
       expect.objectContaining({
         tokens: ["bb".repeat(32)],
         alert: { title: "New client message", body: "Ava: The evening was loud" },
-        data: { tab: "coach", url: "/admin", conversationId: 11 },
+        data: {
+          tab: "coach",
+          url: "/admin",
+          category: "coach-client-message",
+          conversationId: 11,
+          threadId: 11,
+          mutableContent: true,
+        },
       })
     );
   });

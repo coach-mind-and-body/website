@@ -14,6 +14,7 @@ import { drizzleEnrollmentStore } from "../enrollmentStore";
 import { drizzleIntakeLeadStore, enrollSubmittedIntake } from "../intakeEnrollment";
 import { enrollUserInSequence } from "../sequences";
 import { z } from "zod";
+import { notifyAdminsOfIntake } from "../notificationPush";
 
 const intakeEnrollDeps = {
   sendWelcome: sendWelcomeAndSetPasswordEmail,
@@ -71,6 +72,7 @@ export const clientIntakeRouter = router({
       } catch (err) {
         console.error("[Intake] Coach email failed for", input.email, err);
       }
+      void notifyAdminsOfIntake({ name: input.name });
     }
 
     return { success: true as const, stored: true };

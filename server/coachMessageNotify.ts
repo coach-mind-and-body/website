@@ -1,7 +1,8 @@
 import { and, eq, isNull, lte } from "drizzle-orm";
 import { SITE_URL } from "@shared/brand";
 import { coachReplyEmailNotices, conversations, messages, users } from "../drizzle/schema";
-import { apnsConfigFromEnv, sendApnsAlerts, type ApnsConfig, type ApnsSendResult } from "./apns";
+import { apnsConfigFromEnv, sendApnsAlerts, type ApnsConfig, type ApnsData, type ApnsSendResult } from "./apns";
+import { NOTIFICATION_CATEGORY } from "./notificationCategories";
 import { deleteDeviceTokens, tokensForAdmins, tokensForUser } from "./apnsDevices";
 import { ENV } from "./_core/env";
 import { getDb } from "./db";
@@ -33,7 +34,7 @@ type SendFn = (input: {
   config: ApnsConfig | null;
   tokens: string[];
   alert: { title: string; body: string };
-  data: { tab: string; url: string; conversationId: number };
+  data: ApnsData;
 }) => Promise<ApnsSendResult>;
 
 export function clipPushBody(value: string, max = 140): string {
@@ -438,12 +439,42 @@ export function startCoachReplyEmailPoller() {
   setInterval(tick, 60_000);
 }
 
+export function coachMessagePushData(input: {
+  conversationId: number;
+  messageId?: number;
+}): ApnsData {
+  return {
+    tab: "coach",
+    url: "/habit-tracker/coach",
+    category: NOTIFICATION_CATEGORY.coachMessage,
+    conversationId: input.conversationId,
+    threadId: input.conversationId,
+    ...(input.messageId != null ? { messageId: input.messageId } : {}),
+    mutableContent: true,
+  };
+}
+
+export function clientMessagePushData(input: {
+  conversationId: number;
+  messageId?: number;
+}): ApnsData {
+  return {
+    tab: "coach",
+    url: "/admin",
+    category: NOTIFICATION_CATEGORY.coachClientMessage,
+    conversationId: input.conversationId,
+    threadId: input.conversationId,
+    ...(input.messageId != null ? { messageId: input.messageId } : {}),
+    mutableContent: true,
+  };
+}
+
 async function pushAndForget(
   send: SendFn,
   config: ApnsConfig | null,
   tokens: string[],
   alert: { title: string; body: string },
-  data: { tab: string; url: string; conversationId: number },
+  data: ApnsData,
   forget: (tokens: string[]) => Promise<void>
 ) {
   const result = await send({ config, tokens, alert, data });
@@ -468,7 +499,7 @@ export async function notifyClientOfCoachMessage(
       config,
       tokens,
       { title: "Lee Anne sent a message", body: clipPushBody(input.preview) },
-      { tab: "coach", url: "/habit-tracker/coach", conversationId: input.conversationId },
+      coachMessagePushData(input),
       io?.forgetTokens ?? deleteDeviceTokens
     );
   } catch (err) {
@@ -500,7 +531,7 @@ export async function notifyAdminsOfClientMessage(
       config,
       tokens,
       { title: "New client message", body: clipPushBody(`${who}: ${input.preview}`) },
-      { tab: "coach", url: "/admin", conversationId: input.conversationId },
+      clientMessagePushData(input),
       io?.forgetTokens ?? deleteDeviceTokens
     );
   } catch (err) {

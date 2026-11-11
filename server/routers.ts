@@ -35,6 +35,7 @@ import { sprintRouter } from "./routers/sprint";
 import { clientIntakeRouter } from "./routers/clientIntake";
 import { formsRouter } from "./routers/forms";
 import { programIntakeRouter } from "./routers/programIntake";
+import { notificationActionsRouter } from "./routers/notificationActions";
 
 export const appRouter = router({
   system: systemRouter,
@@ -124,6 +125,7 @@ export const appRouter = router({
   clientIntake: clientIntakeRouter,
   forms: formsRouter,
   programIntake: programIntakeRouter,
+  notificationActions: notificationActionsRouter,
 });
 
 export type AppRouter = typeof appRouter;

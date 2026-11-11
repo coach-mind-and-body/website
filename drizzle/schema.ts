@@ -603,6 +603,8 @@ export const userHabitLogs = mysqlTable("user_habit_logs", {
   userId: int("userId").notNull(),
   dateStr: varchar("dateStr", { length: 10 }).notNull(), // YYYY-MM-DD
   completed: boolean("completed").default(true).notNull(),
+  /** True when the client chose Skip today from a reminder. Not a completed day. */
+  skipped: boolean("skipped").default(false).notNull(),
   numericValue: int("numericValue"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

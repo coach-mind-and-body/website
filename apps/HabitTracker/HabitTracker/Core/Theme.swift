@@ -72,6 +72,16 @@ extension Notification.Name {
     static let mbrFoodLogged = Notification.Name("mbr.foodLogged")
     static let mbrOpenDeepLink = Notification.Name("mbr.openDeepLink")
     static let mbrDeviceToken = Notification.Name("mbr.deviceToken")
+    static let mbrNotificationAction = Notification.Name("mbr.notificationAction")
+}
+
+/// Set just before a food deep link so Today can open Log food or the written-log scanner.
+enum FoodIntentStore {
+    static var pending: String?
+}
+
+struct FormLink: Identifiable, Hashable {
+    let id: Int
 }
 
 enum DeepLink: String {
@@ -79,10 +89,16 @@ enum DeepLink: String {
     case coach
     case habits
     case programs
+    case food
+    case scan
+    case form
+    case fitness
 
     static var pending: DeepLink?
     /// Set when a push names a thread. The coach inbox consumes it.
     static var pendingConversationId: Int?
+    /// Set when a worksheet push names a form. The programs screen opens it.
+    static var pendingFormId: Int?
 
     static func conversationId(from userInfo: [AnyHashable: Any]) -> Int? {
         if let n = userInfo["conversationId"] as? Int { return n }
@@ -92,9 +108,9 @@ enum DeepLink: String {
     }
 
     static func post(_ link: DeepLink) {
+        pending = link
         let conversationId = pendingConversationId
         DispatchQueue.main.async {
-            pending = link
             var info: [String: Any] = ["link": link.rawValue]
             if let conversationId { info["conversationId"] = conversationId }
             NotificationCenter.default.post(
@@ -114,6 +130,11 @@ enum DeepLink: String {
     static func fromNotification(_ userInfo: [AnyHashable: Any]) -> DeepLink? {
         if let id = conversationId(from: userInfo) {
             pendingConversationId = id
+        }
+        if let raw = userInfo["formId"] {
+            if let n = raw as? Int { pendingFormId = n }
+            else if let n = raw as? NSNumber { pendingFormId = n.intValue }
+            else if let s = raw as? String, let n = Int(s) { pendingFormId = n }
         }
         if let raw = userInfo["tab"] as? String, let link = DeepLink(rawValue: raw.lowercased()) {
             return link
