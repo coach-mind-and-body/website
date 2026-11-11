@@ -10,6 +10,7 @@ import {
 import { eq, and, sql } from "drizzle-orm";
 import { todayMountainDateStr, nowMountain } from "../lib/mountainTime";
 import webpush from "web-push";
+import { chooseHabitNudge } from "./notificationCategories";
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "";
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
@@ -195,39 +196,27 @@ export async function processHabitReminders(options?: { force?: boolean }) {
     const victoryOn = prefs?.victoryPromptEnabled !== false;
 
     const completedIds = todayLogsByUser.get(userId) || [];
-    const completedActive = activeIds.filter((id) => completedIds.includes(id));
-    const hasCompletedAny = completedActive.length > 0;
-    const allDone = completedActive.length >= activeIds.length;
     const hasVictory = victoryUserIds.has(userId);
+    const nudge = chooseHabitNudge({
+      eveningOn,
+      victoryOn,
+      activeIds,
+      completedIds,
+      hasVictory,
+      habits: allActiveHabits
+        .filter((habit) => habit.userId === userId)
+        .map((habit) => ({ id: habit.id, title: habit.title, order: habit.order ?? 0 })),
+    });
+    if (!nudge) continue;
 
-    // Branch selection (quiet by default when fully done + victory logged)
-    let payload: string | null = null;
-    if (!hasCompletedAny && eveningOn) {
-      payload = JSON.stringify({
-        title: "Quick habit check-in",
-        body: "Take 30 seconds to log today's habits. Small steps add up.",
-        url: "/habit-tracker",
-        icon: "/favicon.ico",
-      });
-    } else if (hasCompletedAny && !allDone && eveningOn) {
-      const left = activeIds.length - completedActive.length;
-      payload = JSON.stringify({
-        title: "Almost there",
-        body: `${left} habit${left === 1 ? "" : "s"} left today. One more vote for future you.`,
-        url: "/habit-tracker",
-        icon: "/favicon.ico",
-      });
-    } else if (hasCompletedAny && !hasVictory && victoryOn) {
-      payload = JSON.stringify({
-        title: "Capture 3 wins",
-        body: "Before bed: what went right today? Your brain needs evidence.",
-        url: "/habit-tracker?focus=victories",
-        icon: "/favicon.ico",
-      });
-    } else {
-      // All done + victory (or prefs off) → skip (no celebration spam)
-      continue;
-    }
+    const payload = JSON.stringify({
+      title: nudge.title,
+      body: nudge.body,
+      url: nudge.url,
+      icon: "/favicon.ico",
+      category: nudge.category,
+      ...(nudge.habitId != null ? { habitId: nudge.habitId } : {}),
+    });
 
     // One notification per user (first healthy subscription)
     let userSent = false;

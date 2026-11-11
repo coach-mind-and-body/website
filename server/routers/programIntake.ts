@@ -14,6 +14,7 @@ import { getDb } from "../db";
 import { drizzleEnrollmentStore } from "../enrollmentStore";
 import { drizzleIntakeLeadStore, enrollSubmittedIntake } from "../intakeEnrollment";
 import { sendTransactionalEmail, sendWelcomeAndSetPasswordEmail } from "../notifications";
+import { notifyAdminsOfIntake } from "../notificationPush";
 import {
   addProgramQuestion,
   getProgramIntakeSubmission,
@@ -114,6 +115,7 @@ export const programIntakeRouter = router({
       } catch (err) {
         console.error("[Program intake] Coach email failed", err);
       }
+      void notifyAdminsOfIntake({ name: input.name });
     }
 
     return {

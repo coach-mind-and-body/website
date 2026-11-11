@@ -17,6 +17,7 @@ import {
 } from "../crm/contactDesignation";
 import { getMetaPageAccessToken } from "../meta/pageToken";
 import { formatPhoneE164 } from "../../lib/phone";
+import { NOTIFICATION_CATEGORY } from "../notificationCategories";
 
 const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID || "AC_placeholder", process.env.TWILIO_AUTH_TOKEN || "auth_placeholder");
 
@@ -638,6 +639,10 @@ export const messagingRouter = router({
           title: "Lee Anne sent a message",
           body: preview,
           url: "/habit-tracker/coach",
+          category: NOTIFICATION_CATEGORY.coachMessage,
+          conversationId: input.conversationId,
+          threadId: input.conversationId,
+          messageId,
         }).catch((e) => console.error("[Messaging] notifyUser failed", e));
         if (convo.platform === "webchat" && messageId) {
           const { notifyClientOfCoachMessage } = await import("../coachMessageNotify");

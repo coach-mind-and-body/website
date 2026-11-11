@@ -5,6 +5,7 @@ import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { conversations, messages } from "../../drizzle/schema";
 import { notifyAdmins } from "./push";
+import { NOTIFICATION_CATEGORY } from "../notificationCategories";
 import { storagePut } from "../storage";
 
 const COACH_NAME = "Lee Anne";
@@ -184,6 +185,10 @@ export const coachRouter = router({
         title: "New coach message",
         body: `${ctx.user.name || "A client"}: ${(text || "Sent a file").slice(0, 80)}`,
         url: "/admin",
+        category: NOTIFICATION_CATEGORY.coachClientMessage,
+        conversationId: thread.id,
+        threadId: thread.id,
+        messageId,
       }).catch((e) => console.error("[Coach] notifyAdmins failed", e));
 
       const { notifyAdminsOfClientMessage } = await import("../coachMessageNotify");

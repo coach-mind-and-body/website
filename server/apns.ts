@@ -19,11 +19,25 @@ export type ApnsTransport = (
   request: ApnsTransportRequest
 ) => Promise<{ status: number; body: string }>;
 
+export type ApnsData = {
+  tab: string;
+  url: string;
+  category: string;
+  conversationId?: number;
+  threadId?: number;
+  messageId?: number;
+  habitId?: number;
+  formId?: number;
+  sessionUrl?: string;
+  interruptionLevel?: "passive" | "active" | "time-sensitive" | "critical";
+  mutableContent?: boolean;
+};
+
 export type ApnsSendInput = {
   config: ApnsConfig | null;
   tokens: string[];
   alert: { title: string; body: string };
-  data: { tab: string; url: string; conversationId: number };
+  data: ApnsData;
   transport?: ApnsTransport;
   now?: Date;
 };
@@ -92,19 +106,30 @@ function logMissingConfig() {
   );
 }
 
-export function buildApnsBody(
-  alert: { title: string; body: string },
-  data: { tab: string; url: string; conversationId: number }
-): string {
-  return JSON.stringify({
-    aps: {
-      alert: { title: alert.title, body: alert.body },
-      sound: "default",
-    },
+export function buildApnsBody(alert: { title: string; body: string }, data: ApnsData): string {
+  const aps: Record<string, unknown> = {
+    alert: { title: alert.title, body: alert.body },
+    sound: "default",
+    category: data.category,
+  };
+  if (data.mutableContent) aps["mutable-content"] = 1;
+  if (data.interruptionLevel) aps["interruption-level"] = data.interruptionLevel;
+  const thread = data.threadId ?? data.conversationId;
+  if (thread != null) aps["thread-id"] = String(thread);
+
+  const payload: Record<string, unknown> = {
+    aps,
     tab: data.tab,
     url: data.url,
-    conversationId: data.conversationId,
-  });
+    category: data.category,
+  };
+  if (data.conversationId != null) payload.conversationId = data.conversationId;
+  if (thread != null) payload.threadId = thread;
+  if (data.messageId != null) payload.messageId = data.messageId;
+  if (data.habitId != null) payload.habitId = data.habitId;
+  if (data.formId != null) payload.formId = data.formId;
+  if (data.sessionUrl) payload.sessionUrl = data.sessionUrl;
+  return JSON.stringify(payload);
 }
 
 async function providerToken(config: ApnsConfig, now: Date): Promise<string> {
@@ -210,6 +235,9 @@ export async function sendApnsAlerts(input: ApnsSendInput): Promise<ApnsSendResu
             "apns-push-type": "alert",
             "apns-priority": "10",
             "content-type": "application/json",
+            ...(input.data.interruptionLevel
+              ? { "apns-interruption-level": input.data.interruptionLevel }
+              : {}),
           },
           body,
         });

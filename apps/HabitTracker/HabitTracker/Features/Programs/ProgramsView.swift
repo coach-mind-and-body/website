@@ -150,7 +150,8 @@ extension ProgramHub {
                 byId[session.id] = CoachingReminder(
                     id: session.id,
                     scheduledAt: when,
-                    programLabel: program.label
+                    programLabel: program.label,
+                    meetURL: session.joinURL?.absoluteString
                 )
             }
         }

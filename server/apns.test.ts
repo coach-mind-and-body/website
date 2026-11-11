@@ -74,14 +74,28 @@ describe("APNs", () => {
       config: null,
       tokens: ["ab".repeat(32)],
       alert: { title: "Hi", body: "There" },
-      data: { tab: "coach", url: "/habit-tracker/coach", conversationId: 1 },
+      data: {
+        tab: "coach",
+        url: "/habit-tracker/coach",
+        category: "coach-message",
+        conversationId: 1,
+        threadId: 1,
+        mutableContent: true,
+      },
       transport,
     });
     const second = await sendApnsAlerts({
       config: null,
       tokens: ["ab".repeat(32)],
       alert: { title: "Hi", body: "There" },
-      data: { tab: "coach", url: "/habit-tracker/coach", conversationId: 1 },
+      data: {
+        tab: "coach",
+        url: "/habit-tracker/coach",
+        category: "coach-message",
+        conversationId: 1,
+        threadId: 1,
+        mutableContent: true,
+      },
       transport,
     });
     expect(first).toEqual({ sent: 0, failed: 0, removed: [], skipped: true });
@@ -107,10 +121,19 @@ describe("APNs", () => {
       expect(verified.protectedHeader.kid).toBe("KEYID12345");
       expect(verified.protectedHeader.alg).toBe("ES256");
       expect(JSON.parse(request.body)).toEqual({
-        aps: { alert: { title: "Lee Anne sent a message", body: "Thursday" }, sound: "default" },
+        aps: {
+          alert: { title: "Lee Anne sent a message", body: "Thursday" },
+          sound: "default",
+          category: "coach-message",
+          "mutable-content": 1,
+          "thread-id": "42",
+        },
         tab: "coach",
         url: "/habit-tracker/coach",
+        category: "coach-message",
         conversationId: 42,
+        threadId: 42,
+        messageId: 9,
       });
       return { status: 410, body: '{"reason":"Unregistered"}' };
     });
@@ -120,7 +143,15 @@ describe("APNs", () => {
       config: config("sandbox", keys.pem),
       tokens: [token],
       alert: { title: "Lee Anne sent a message", body: "Thursday" },
-      data: { tab: "coach", url: "/habit-tracker/coach", conversationId: 42 },
+      data: {
+        tab: "coach",
+        url: "/habit-tracker/coach",
+        category: "coach-message",
+        conversationId: 42,
+        threadId: 42,
+        messageId: 9,
+        mutableContent: true,
+      },
       transport,
     });
     expect(result).toEqual({ sent: 0, failed: 1, removed: [token], skipped: false });
@@ -138,7 +169,14 @@ describe("APNs", () => {
       config: config("production", keys.pem),
       tokens: [token],
       alert: { title: "Hi", body: "There" },
-      data: { tab: "coach", url: "/admin", conversationId: 3 },
+      data: {
+        tab: "coach",
+        url: "/admin",
+        category: "coach-client-message",
+        conversationId: 3,
+        threadId: 3,
+        mutableContent: true,
+      },
       transport,
     });
     expect(bad.removed).toEqual([token]);
@@ -147,7 +185,14 @@ describe("APNs", () => {
       config: config("production", keys.pem),
       tokens: [token],
       alert: { title: "Hi", body: "There" },
-      data: { tab: "coach", url: "/admin", conversationId: 3 },
+      data: {
+        tab: "coach",
+        url: "/admin",
+        category: "coach-client-message",
+        conversationId: 3,
+        threadId: 3,
+        mutableContent: true,
+      },
       transport: async () => ({ status: 429, body: '{"reason":"TooManyRequests"}' }),
     });
     expect(keep.removed).toEqual([]);
@@ -158,12 +203,43 @@ describe("APNs", () => {
     const body = JSON.parse(
       buildApnsBody(
         { title: "New client message", body: "Ava: hi" },
-        { tab: "coach", url: "/admin", conversationId: 9 }
+        {
+          tab: "coach",
+          url: "/admin",
+          category: "coach-client-message",
+          conversationId: 9,
+          threadId: 9,
+          mutableContent: true,
+        }
       )
     );
     expect(body.conversationId).toBe(9);
+    expect(body.threadId).toBe(9);
     expect(body.tab).toBe("coach");
+    expect(body.category).toBe("coach-client-message");
+    expect(body.aps.category).toBe("coach-client-message");
+    expect(body.aps["thread-id"]).toBe("9");
+    expect(body.aps["mutable-content"]).toBe(1);
     expect(body.aps.sound).toBe("default");
+  });
+
+  it("marks a session reminder time-sensitive and keeps the meet link", () => {
+    const body = JSON.parse(
+      buildApnsBody(
+        { title: "Next session", body: "Your Reclaim session starts in about 15 minutes." },
+        {
+          tab: "programs",
+          url: "/habit-tracker",
+          category: "session-reminder",
+          sessionUrl: "https://meet.google.com/abc-defg-hij",
+          interruptionLevel: "time-sensitive",
+        }
+      )
+    );
+    expect(body.aps.category).toBe("session-reminder");
+    expect(body.aps["interruption-level"]).toBe("time-sensitive");
+    expect(body.sessionUrl).toBe("https://meet.google.com/abc-defg-hij");
+    expect(body.aps["mutable-content"]).toBeUndefined();
   });
 
   it("stores one token per device and moves it when a different user signs in", async () => {

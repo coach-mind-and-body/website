@@ -161,9 +161,14 @@ export const habitRouter = router({
           )
         ).limit(1);
 
+      const patch = {
+        completed: input.completed,
+        numericValue: input.numericValue,
+        ...(input.completed ? { skipped: false as const } : {}),
+      };
       if (existing.length > 0) {
         await db.update(userHabitLogs)
-          .set({ completed: input.completed, numericValue: input.numericValue })
+          .set(patch)
           .where(eq(userHabitLogs.id, existing[0].id));
       } else {
         await db.insert(userHabitLogs).values({
@@ -172,6 +177,7 @@ export const habitRouter = router({
           dateStr: input.dateStr,
           completed: input.completed,
           numericValue: input.numericValue,
+          skipped: false,
         });
       }
       return { success: true };
