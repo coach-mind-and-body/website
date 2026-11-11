@@ -88,7 +88,7 @@ final class FitnessViewModel {
         do {
             videos = try await auth.client.query("fitness.getVideos")
         } catch {
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
         }
     }
 
@@ -108,7 +108,7 @@ final class FitnessViewModel {
                 await health.saveWorkout(named: trimmed, minutes: minutes, on: dateStr)
                 await load()
             } catch {
-                errorMessage = error.localizedDescription
+                if !error.isCancellation { errorMessage = error.localizedDescription }
             }
             return
         }

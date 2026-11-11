@@ -49,7 +49,7 @@ struct LoginView: View {
                             if auth.isSignedIn { dismiss() }
                         }
                     case .failure(let error):
-                        auth.errorMessage = error.localizedDescription
+                        if !error.isCancellation { auth.errorMessage = error.localizedDescription }
                     }
                 }
                 .signInWithAppleButtonStyle(.black)
@@ -64,7 +64,7 @@ struct LoginView: View {
                             await auth.applyTokenOnly(token)
                         } catch {
                             // Session can report cancel while habittracker:// still delivers the token.
-                            if !auth.isSignedIn {
+                            if !auth.isSignedIn, !error.isCancellation {
                                 auth.errorMessage = Self.googleErrorMessage(error)
                             }
                         }

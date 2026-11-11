@@ -49,7 +49,7 @@ final class CoachViewModel {
             }
             unread = 0
         } catch {
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
         }
     }
 
@@ -94,7 +94,7 @@ final class CoachViewModel {
             }
             draft = text
             replyingTo = reply
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
             return false
         }
     }
@@ -142,7 +142,7 @@ final class CoachViewModel {
             )
             recipeHits = hits
         } catch {
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
         }
     }
 
@@ -174,7 +174,7 @@ final class CoachViewModel {
             )
             await send(mediaUrl: result.url)
         } catch {
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
         }
     }
 }

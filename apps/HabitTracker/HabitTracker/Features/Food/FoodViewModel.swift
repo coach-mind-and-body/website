@@ -46,7 +46,7 @@ final class FoodViewModel {
             recipes = try await auth.client.query("food.listRecipes", input: input)
             errorMessage = nil
         } catch {
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
         }
     }
 
@@ -74,7 +74,7 @@ final class FoodViewModel {
                 )
                 errorMessage = nil
             } catch {
-                errorMessage = error.localizedDescription
+                if !error.isCancellation { errorMessage = error.localizedDescription }
             }
         }
         mealPlan = try? await auth.client.query("food.getMealPlan", input: IdInput(id: id))
@@ -88,7 +88,7 @@ final class FoodViewModel {
         do {
             shop = try await auth.client.query("food.getShoppingList")
         } catch {
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
         }
     }
 
@@ -97,7 +97,7 @@ final class FoodViewModel {
             do {
                 logs = try await auth.client.query("calories.getLogs", input: DateStrInput(dateStr: dateStr))
             } catch {
-                errorMessage = error.localizedDescription
+                if !error.isCancellation { errorMessage = error.localizedDescription }
             }
             return
         }
@@ -140,7 +140,7 @@ final class FoodViewModel {
                 await loadLogs()
                 NotificationCenter.default.post(name: .mbrFoodLogged, object: nil)
             } catch {
-                errorMessage = error.localizedDescription
+                if !error.isCancellation { errorMessage = error.localizedDescription }
             }
             return
         }
@@ -178,7 +178,7 @@ final class FoodViewModel {
             errorMessage = nil
             return true
         } catch {
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
             return false
         }
     }
@@ -191,7 +191,7 @@ final class FoodViewModel {
             )
             await loadShop()
         } catch {
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
         }
     }
 
@@ -203,7 +203,7 @@ final class FoodViewModel {
             )
             await loadShop()
         } catch {
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
         }
     }
 
@@ -215,7 +215,7 @@ final class FoodViewModel {
             )
             await loadShop()
         } catch {
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
         }
     }
 
@@ -224,7 +224,7 @@ final class FoodViewModel {
             let _: SuccessFlag = try await auth.client.mutateEmpty("food.clearCheckedShopping")
             await loadShop()
         } catch {
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
         }
     }
 
@@ -257,7 +257,7 @@ final class FoodViewModel {
                 await loadLogs()
                 NotificationCenter.default.post(name: .mbrFoodLogged, object: nil)
             } catch {
-                errorMessage = error.localizedDescription
+                if !error.isCancellation { errorMessage = error.localizedDescription }
             }
             return
         }
@@ -330,7 +330,7 @@ final class FoodViewModel {
                 errorMessage = nil
                 NotificationCenter.default.post(name: .mbrFoodLogged, object: nil)
             } catch {
-                errorMessage = error.localizedDescription
+                if !error.isCancellation { errorMessage = error.localizedDescription }
             }
             return
         }
@@ -375,6 +375,7 @@ final class FoodViewModel {
             fatSecretHits = payload.foods
             errorMessage = nil
         } catch {
+            if error.isCancellation { return }
             errorMessage = error.localizedDescription
             fatSecretHits = []
         }
@@ -393,7 +394,7 @@ final class FoodViewModel {
             errorMessage = nil
             return result
         } catch {
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
             return nil
         }
     }
@@ -414,7 +415,7 @@ final class FoodViewModel {
             errorMessage = nil
             return result
         } catch {
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
             return nil
         }
     }
@@ -441,7 +442,7 @@ final class FoodViewModel {
             errorMessage = nil
             return true
         } catch {
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
             return false
         }
     }
@@ -457,7 +458,7 @@ final class FoodViewModel {
             errorMessage = nil
             return result
         } catch {
-            errorMessage = error.localizedDescription
+            if !error.isCancellation { errorMessage = error.localizedDescription }
             return nil
         }
     }

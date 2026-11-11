@@ -21,3 +21,18 @@ enum APIError: LocalizedError {
         }
     }
 }
+
+extension Error {
+    /// Task or URLSession cancellation (a refresh superseded by another, a date change, `.task` restart).
+    /// Not a failure to show. Leaves any real message already on screen alone.
+    var isCancellation: Bool {
+        if self is CancellationError { return true }
+        if (self as? URLError)?.code == .cancelled { return true }
+        if let api = self as? APIError, case .network(let inner) = api {
+            return inner.isCancellation
+        }
+        let ns = self as NSError
+        // NSURLErrorCancelled is -999.
+        return ns.domain == NSURLErrorDomain && ns.code == NSURLErrorCancelled
+    }
+}
