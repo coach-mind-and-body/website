@@ -15,6 +15,7 @@ import {
   users,
 } from "../drizzle/schema";
 import type { getDb } from "./db";
+import { clientModuleSession, nextCoachingSession, type ClientModuleSession, type HubNextSession } from "./coachingSessionHub";
 import {
   coachMaySeeFoodLogs,
   enrollmentGrantsContent,
@@ -197,7 +198,7 @@ export async function loadClientHub(db: Db, user: HubUser, options?: { programs?
       .sort((a, b) => a.order - b.order || a.id - b.id)
       .map((mod) => {
         const progress = progressRows.find((row) => row.moduleId === mod.id) ?? null;
-        const session =
+        const sessionRow =
           program === "reclaim" && enrollment
             ? sessionRows.find(
                 (row) => row.enrollmentId === enrollment.id && row.sessionNumber === mod.order
@@ -207,7 +208,7 @@ export async function loadClientHub(db: Db, user: HubUser, options?: { programs?
           ...mod,
           isUnlocked: isAdmin || progress?.unlockedAt != null,
           progress,
-          session,
+          session: sessionRow ? clientModuleSession(sessionRow) : null,
         };
       });
 
@@ -255,6 +256,9 @@ export async function loadClientHub(db: Db, user: HubUser, options?: { programs?
       label: PROGRAMS[program].label,
       enrollment,
       modules: visibleModules,
+      // The next session's module is often still locked. It unlocks when the
+      // session is marked complete, so the card cannot depend on visible modules.
+      nextSession: enrollment ? nextCoachingSession(sessionRows, enrollment.id) : null,
       assignments: assignmentRows.filter((row) => assignmentIds.has(row.id)),
       submissions: submissionRows.filter((row) => submissionIds.has(row.id)),
       files,
@@ -285,9 +289,15 @@ export type ClientProgramBundle = {
     typeof programModules.$inferSelect & {
       isUnlocked: boolean;
       progress: typeof moduleProgress.$inferSelect | null;
-      session: typeof coachingSessions.$inferSelect | null;
+      /** Public session fields only. Missing or null on older responses. */
+      session: ClientModuleSession | null;
     }
   >;
+  /**
+   * Soonest joinable coaching session for this program.
+   * Null when there isn't one. Older apps ignore it.
+   */
+  nextSession: HubNextSession | null;
   assignments: (typeof assignments.$inferSelect)[];
   submissions: (typeof assignmentSubmissions.$inferSelect)[];
   files: HubFile[];

@@ -1,6 +1,7 @@
 import Foundation
 import PhotosUI
 import SwiftUI
+import UIKit
 import UniformTypeIdentifiers
 
 struct ProgramHub: Decodable {
@@ -16,6 +17,8 @@ struct ProgramBundle: Decodable, Identifiable {
     var submissions: [ProgramSubmission]
     var files: [ProgramFile]
     var forms: [ProgramFormCard]?
+    /// Soonest joinable session. Missing on older servers; module `session` is the fallback.
+    var nextSession: ProgramSession?
     var id: String { program }
 }
 
@@ -32,6 +35,120 @@ struct ProgramModule: Decodable, Identifiable {
     var pdfUrl: String?
     var order: Int
     var isUnlocked: Bool
+    /// Present on Reclaim modules. Older responses omit it.
+    var session: ProgramSession?
+}
+
+/// One coaching session from the hub. Extra server fields are ignored.
+struct ProgramSession: Decodable, Equatable {
+    /// Still offer Join for an hour after the start.
+    static let upcomingGrace: TimeInterval = 60 * 60
+
+    var id: Int
+    var sessionNumber: Int?
+    var status: String
+    var scheduledAt: Date?
+    var googleMeetLink: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case id, sessionNumber, status, scheduledAt, googleMeetLink
+    }
+
+    init(id: Int, sessionNumber: Int? = nil, status: String, scheduledAt: Date? = nil, googleMeetLink: String? = nil) {
+        self.id = id
+        self.sessionNumber = sessionNumber
+        self.status = status
+        self.scheduledAt = scheduledAt
+        self.googleMeetLink = googleMeetLink
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = Self.value(c, .id) ?? 0
+        sessionNumber = Self.value(c, .sessionNumber)
+        status = Self.value(c, .status) ?? ""
+        googleMeetLink = Self.value(c, .googleMeetLink)
+        scheduledAt = Self.date(c)
+    }
+
+    var joinURL: URL? {
+        let raw = googleMeetLink?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !raw.isEmpty, let url = URL(string: raw) else { return nil }
+        let scheme = url.scheme?.lowercased()
+        guard scheme == "https" || scheme == "http" else { return nil }
+        return url
+    }
+
+    func isUpcoming(at now: Date = Date()) -> Bool {
+        guard status == "scheduled", let scheduledAt else { return false }
+        return scheduledAt.timeIntervalSince(now) > -Self.upcomingGrace
+    }
+
+    private static func value<T: Decodable>(_ c: KeyedDecodingContainer<CodingKeys>, _ key: CodingKeys) -> T? {
+        do {
+            return try c.decodeIfPresent(T.self, forKey: key)
+        } catch {
+            return nil
+        }
+    }
+
+    private static func date(_ c: KeyedDecodingContainer<CodingKeys>) -> Date? {
+        if let date: Date = value(c, .scheduledAt) { return date }
+        if let raw: String = value(c, .scheduledAt) { return parseDate(raw) }
+        return nil
+    }
+
+    private static func parseDate(_ raw: String) -> Date? {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        let withFraction = ISO8601DateFormatter()
+        withFraction.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = withFraction.date(from: trimmed) { return date }
+        let plain = ISO8601DateFormatter()
+        plain.formatOptions = [.withInternetDateTime]
+        return plain.date(from: trimmed)
+    }
+}
+
+extension ProgramBundle {
+    /// Joinable sessions we know about, soonest first. The same session can arrive
+    /// both as `nextSession` and on a module; the id keeps one copy.
+    func upcomingSessions(now: Date = Date()) -> [ProgramSession] {
+        var byId: [Int: ProgramSession] = [:]
+        var unkeyed: [ProgramSession] = []
+        for session in [nextSession].compactMap({ $0 }) + modules.compactMap(\.session) {
+            guard session.isUpcoming(at: now) else { continue }
+            if session.id > 0 {
+                byId[session.id] = session
+            } else {
+                unkeyed.append(session)
+            }
+        }
+        return (Array(byId.values) + unkeyed).sorted {
+            ($0.scheduledAt ?? .distantFuture) < ($1.scheduledAt ?? .distantFuture)
+        }
+    }
+
+    func nextUpcomingSession(now: Date = Date()) -> ProgramSession? {
+        upcomingSessions(now: now).first
+    }
+}
+
+extension ProgramHub {
+    func coachingReminders(now: Date = Date()) -> [CoachingReminder] {
+        var byId: [Int: CoachingReminder] = [:]
+        for program in programs {
+            for session in program.upcomingSessions(now: now) {
+                guard session.id > 0, let when = session.scheduledAt else { continue }
+                byId[session.id] = CoachingReminder(
+                    id: session.id,
+                    scheduledAt: when,
+                    programLabel: program.label
+                )
+            }
+        }
+        return Array(byId.values)
+    }
 }
 
 struct ProgramAssignment: Decodable, Identifiable {
@@ -113,10 +230,13 @@ final class ProgramsModel {
     func load(bypassCache: Bool = true) async {
         guard auth.isSignedIn else {
             hub = nil
+            let token = await CoachingReminderCoordinator.shared.begin()
+            await CoachingReminderCoordinator.shared.apply(token: token, reminders: [])
             return
         }
         loadGeneration += 1
         let generation = loadGeneration
+        let reminderToken = await CoachingReminderCoordinator.shared.begin()
         loading = hub == nil
         defer {
             if generation == loadGeneration { loading = false }
@@ -124,12 +244,13 @@ final class ProgramsModel {
         do {
             let policy: URLRequest.CachePolicy = bypassCache ? .reloadIgnoringLocalCacheData : .useProtocolCachePolicy
             let next: ProgramHub = try await auth.client.query("reclaimHub.myHub", cachePolicy: policy)
-            guard generation == loadGeneration else { return }
+            guard generation == loadGeneration, auth.isSignedIn else { return }
             hub = next
             if selectedProgram == nil {
                 selectedProgram = next.programs.first?.program
             }
             errorMessage = nil
+            await CoachingReminderCoordinator.shared.apply(token: reminderToken, reminders: next.coachingReminders())
         } catch {
             guard generation == loadGeneration else { return }
             errorMessage = error.localizedDescription
@@ -281,6 +402,10 @@ struct ProgramsView: View {
                     .font(HTTheme.title)
                     .foregroundStyle(HTTheme.forest)
 
+                if let session = current.nextUpcomingSession(), let when = session.scheduledAt {
+                    NextSessionCard(when: when, joinURL: session.joinURL)
+                }
+
                 if let notice = model.notice {
                     Text(notice).font(.footnote).foregroundStyle(HTTheme.forest)
                 }
@@ -394,6 +519,38 @@ struct ProgramsView: View {
     private func openFile(_ file: ProgramFile) {
         guard let url = URL(string: file.fileUrl) else { return }
         preview = ProgramFilePreview(id: file.listId, url: url, name: file.fileName)
+    }
+}
+
+/// Date and time use the device calendar and time zone.
+private struct NextSessionCard: View {
+    var when: Date
+    var joinURL: URL?
+
+    var body: some View {
+        HTCard {
+            Text("Next session")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(HTTheme.gold)
+            Text(when.formatted(.dateTime.weekday(.wide).month(.wide).day().year().hour().minute()))
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(HTTheme.forest)
+                .fixedSize(horizontal: false, vertical: true)
+            if let joinURL {
+                Button("Join") {
+                    UIApplication.shared.open(joinURL)
+                }
+                .font(.subheadline.weight(.bold))
+                .padding(.horizontal, 18)
+                .padding(.vertical, 8)
+                .background(HTTheme.gold)
+                .foregroundStyle(Color.white)
+                .clipShape(Capsule())
+                .buttonStyle(.plain)
+                .accessibilityHint("Opens the meeting link")
+            }
+        }
+        .accessibilityElement(children: .contain)
     }
 }
 
