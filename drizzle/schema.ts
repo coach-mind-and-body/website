@@ -196,8 +196,6 @@ export type InsertClientFile = typeof clientFiles.$inferInsert;
 export const libraryGroups = mysqlTable("library_groups", {
   id: int("id").autoincrement().primaryKey(),
   title: varchar("title", { length: 500 }).notNull(),
-  /** JSON array of program ids. Clients enrolled in one of these see the group. */
-  programTags: text("programTags"),
   createdByUserId: int("createdByUserId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
@@ -216,8 +214,6 @@ export const commonFiles = mysqlTable("common_files", {
   /** Set while this page belongs to a library group. Ungroup clears it; the file stays. */
   groupId: int("groupId"),
   pageOrder: int("pageOrder").default(0).notNull(),
-  /** JSON array of program ids. Used when the file is not in a group. */
-  programTags: text("programTags"),
 });
 
 export type CommonFile = typeof commonFiles.$inferSelect;

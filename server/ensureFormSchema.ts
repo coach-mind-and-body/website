@@ -5,6 +5,10 @@ type Db = NonNullable<Awaited<ReturnType<typeof getDb>>>;
 
 /**
  * Idempotent columns for fillable forms and grouped library pages.
+ * Runs after ensureProgramEnrollmentSchema. Does not create or alter
+ * common_file_programs, program_modules.program, or the intake tables.
+ * Library program checks live only in common_file_programs.
+ * Assignment programTags is the form audience, which is separate.
  * Safe to run on every boot. Duplicate column and duplicate key errors are ignored.
  */
 
@@ -12,7 +16,6 @@ const CREATE_LIBRARY_GROUPS = `
 CREATE TABLE IF NOT EXISTS \`library_groups\` (
   \`id\` int AUTO_INCREMENT NOT NULL,
   \`title\` varchar(500) NOT NULL,
-  \`programTags\` text,
   \`createdByUserId\` int NOT NULL,
   \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT \`library_groups_id\` PRIMARY KEY(\`id\`)
@@ -30,14 +33,12 @@ CREATE TABLE IF NOT EXISTS \`common_files\` (
   \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   \`groupId\` int NULL,
   \`pageOrder\` int NOT NULL DEFAULT 0,
-  \`programTags\` text,
   CONSTRAINT \`common_files_id\` PRIMARY KEY(\`id\`)
 )
 `;
 
 const ADD_COMMON_GROUP = `ALTER TABLE \`common_files\` ADD COLUMN \`groupId\` int NULL`;
 const ADD_COMMON_PAGE = `ALTER TABLE \`common_files\` ADD COLUMN \`pageOrder\` int NOT NULL DEFAULT 0`;
-const ADD_COMMON_TAGS = `ALTER TABLE \`common_files\` ADD COLUMN \`programTags\` text NULL`;
 
 const NULLABLE_MODULE = `ALTER TABLE \`assignments\` MODIFY COLUMN \`moduleId\` int NULL`;
 const ADD_TITLE = `ALTER TABLE \`assignments\` ADD COLUMN \`title\` varchar(500) NULL`;
@@ -98,7 +99,6 @@ export async function applyFormSchema(db: Db): Promise<void> {
   await db.execute(sql.raw(CREATE_COMMON_FILES));
   await runIgnoring(db, ADD_COMMON_GROUP);
   await runIgnoring(db, ADD_COMMON_PAGE);
-  await runIgnoring(db, ADD_COMMON_TAGS);
   await runIgnoring(db, NULLABLE_MODULE);
   await runIgnoring(db, ADD_TITLE);
   await runIgnoring(db, ADD_INSTRUCTIONS);
