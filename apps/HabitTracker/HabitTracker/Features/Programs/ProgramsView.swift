@@ -15,6 +15,7 @@ struct ProgramBundle: Decodable, Identifiable {
     var assignments: [ProgramAssignment]
     var submissions: [ProgramSubmission]
     var files: [ProgramFile]
+    var forms: [ProgramFormCard]?
     var id: String { program }
 }
 
@@ -53,7 +54,20 @@ struct ProgramFile: Decodable, Identifiable {
     var fileName: String
     var fileUrl: String
     var source: String
+    var libraryFileId: Int?
     var listId: String { "\(source)-\(id)" }
+}
+
+struct ProgramFormCard: Decodable, Identifiable, Hashable {
+    var id: Int
+    var title: String
+    var kind: String
+    var label: String
+    var status: String
+    var moduleId: Int?
+    var sourceFileIds: [Int]
+
+    var isDone: Bool { status == "submitted" || status == "reviewed" }
 }
 
 struct ProgramUploadResult: Decodable {
@@ -83,6 +97,7 @@ final class ProgramsModel {
     var loading = false
     var sendingAssignmentId: Int?
     private let auth: AuthStore
+    private var loadGeneration = 0
 
     init(auth: AuthStore) { self.auth = auth }
 
@@ -94,21 +109,29 @@ final class ProgramsModel {
         return hub.programs.first
     }
 
-    func load() async {
+    /// Hub reads always skip the URL cache. Pull-to-refresh and foreground use the same path.
+    func load(bypassCache: Bool = true) async {
         guard auth.isSignedIn else {
             hub = nil
             return
         }
+        loadGeneration += 1
+        let generation = loadGeneration
         loading = hub == nil
-        defer { loading = false }
+        defer {
+            if generation == loadGeneration { loading = false }
+        }
         do {
-            let next: ProgramHub = try await auth.client.query("reclaimHub.myHub")
+            let policy: URLRequest.CachePolicy = bypassCache ? .reloadIgnoringLocalCacheData : .useProtocolCachePolicy
+            let next: ProgramHub = try await auth.client.query("reclaimHub.myHub", cachePolicy: policy)
+            guard generation == loadGeneration else { return }
             hub = next
             if selectedProgram == nil {
                 selectedProgram = next.programs.first?.program
             }
             errorMessage = nil
         } catch {
+            guard generation == loadGeneration else { return }
             errorMessage = error.localizedDescription
         }
     }
@@ -155,6 +178,8 @@ final class ProgramsModel {
 struct ProgramsView: View {
     var auth: AuthStore
     @State private var model: ProgramsModel
+    @State private var preview: ProgramFilePreview?
+    @Environment(\.scenePhase) private var scenePhase
 
     init(auth: AuthStore) {
         self.auth = auth
@@ -184,7 +209,14 @@ struct ProgramsView: View {
                     ProfileAvatarButton(auth: auth)
                 }
             }
-            .task(id: auth.isSignedIn) { await model.load() }
+            .task(id: auth.isSignedIn) { await model.load(bypassCache: true) }
+            .onChange(of: scenePhase) { _, phase in
+                guard phase == .active, auth.isSignedIn else { return }
+                Task { await model.load(bypassCache: true) }
+            }
+            .sheet(item: $preview) { item in
+                InAppFilePreview(remote: item.url, name: item.name)
+            }
         }
     }
 
@@ -202,20 +234,28 @@ struct ProgramsView: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 12) {
-            Text("Nothing here yet")
-                .font(HTTheme.title)
-                .foregroundStyle(HTTheme.forest)
-            Text(model.errorMessage ?? "When you join a program, it will show up in this quiet little list.")
-                .font(.body)
-                .foregroundStyle(HTTheme.muted)
-                .multilineTextAlignment(.center)
+        ScrollView {
+            VStack(spacing: 12) {
+                Text("Nothing here yet")
+                    .font(HTTheme.title)
+                    .foregroundStyle(HTTheme.forest)
+                Text(model.errorMessage ?? "When you join a program, it will show up in this quiet little list.")
+                    .font(.body)
+                    .foregroundStyle(HTTheme.muted)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(28)
+            .frame(maxWidth: .infinity)
         }
-        .padding(28)
+        .refreshable { await model.load(bypassCache: true) }
+        .dockScrollClearance()
+        .keyboardTyping()
     }
 
     private func programList(_ current: ProgramBundle) -> some View {
-        ScrollView {
+        let forms = current.forms ?? []
+        let files = shownFiles(in: current)
+        return ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 if (model.hub?.programs.count ?? 0) > 1 {
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -233,6 +273,8 @@ struct ProgramsView: View {
                             }
                         }
                     }
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxHeight: 48)
                 }
 
                 Text(current.label)
@@ -253,7 +295,7 @@ struct ProgramsView: View {
 
                 ForEach(current.modules) { module in
                     NavigationLink {
-                        ProgramModuleView(moduleId: module.id, model: model)
+                        ProgramModuleView(moduleId: module.id, model: model, auth: auth)
                     } label: {
                         HTCard {
                             Text("Module \(module.order)")
@@ -273,12 +315,29 @@ struct ProgramsView: View {
                     .buttonStyle(.plain)
                 }
 
-                if !current.files.isEmpty {
+                if !forms.isEmpty {
+                    Text("Assignments & forms")
+                        .font(.headline)
+                        .foregroundStyle(HTTheme.forest)
+                    ForEach(forms) { form in
+                        NavigationLink {
+                            FormFillView(auth: auth, formId: form.id)
+                                .onDisappear { Task { await model.load(bypassCache: true) } }
+                        } label: {
+                            formCard(form)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
+                if !files.isEmpty {
                     Text("Files")
                         .font(.headline)
                         .foregroundStyle(HTTheme.forest)
-                    ForEach(current.files, id: \.listId) { file in
-                        Link(destination: URL(string: file.fileUrl) ?? URL(string: "https://mindandbodyresetcoach.com")!) {
+                    ForEach(files, id: \.listId) { file in
+                        Button {
+                            openFile(file)
+                        } label: {
                             HTCard(spacing: 4) {
                                 Text(file.fileName)
                                     .font(.subheadline.weight(.semibold))
@@ -288,19 +347,63 @@ struct ProgramsView: View {
                                     .foregroundStyle(HTTheme.muted)
                             }
                         }
+                        .buttonStyle(.plain)
                     }
                 }
             }
             .padding(20)
-            .dockScrollClearance()
         }
+        .dockScrollClearance()
+        .keyboardTyping()
+        .refreshable { await model.load(bypassCache: true) }
+    }
+
+    private func formCard(_ form: ProgramFormCard) -> some View {
+        HTCard {
+            HStack {
+                Text(form.label.isEmpty ? (form.kind == "handout" ? "Assignment" : "Form") : form.label)
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(HTTheme.gold)
+                Spacer()
+                if form.isDone {
+                    Text("Done")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(HTTheme.forest)
+                } else if form.status == "draft" {
+                    Text("Draft")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(HTTheme.muted)
+                }
+            }
+            Text(form.title)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(HTTheme.forest)
+        }
+    }
+
+    private func shownFiles(in bundle: ProgramBundle) -> [ProgramFile] {
+        let replaced = Set((bundle.forms ?? []).flatMap(\.sourceFileIds))
+        guard !replaced.isEmpty else { return bundle.files }
+        return bundle.files.filter { file in
+            if let libraryId = file.libraryFileId, replaced.contains(libraryId) { return false }
+            if file.source == "library", replaced.contains(file.id) { return false }
+            return true
+        }
+    }
+
+    private func openFile(_ file: ProgramFile) {
+        guard let url = URL(string: file.fileUrl) else { return }
+        preview = ProgramFilePreview(id: file.listId, url: url, name: file.fileName)
     }
 }
 
 private struct ProgramModuleView: View {
     var moduleId: Int
     @Bindable var model: ProgramsModel
+    var auth: AuthStore
     @State private var drafts: [Int: String] = [:]
+    @State private var preview: ProgramFilePreview?
+    @State private var video: IdentifiedURL?
 
     private var bundle: ProgramBundle? { model.current }
     private var module: ProgramModule? { bundle?.modules.first { $0.id == moduleId } }
@@ -313,25 +416,52 @@ private struct ProgramModuleView: View {
                         .font(HTTheme.title)
                         .foregroundStyle(HTTheme.forest)
                     if let description = module.description, !description.isEmpty {
-                        Text(description).foregroundStyle(HTTheme.muted)
+                        Text(description)
+                            .foregroundStyle(HTTheme.muted)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
-                    if let plain = plainText(module.content), !plain.isEmpty {
-                        Text(plain).foregroundStyle(HTTheme.forest)
+                    if let content = module.content, !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        ProgramRichText(source: content)
                     }
                     if let videoUrl = module.videoUrl, let url = URL(string: videoUrl) {
-                        Link("Watch the lesson", destination: url)
+                        Button("Watch the lesson") { video = IdentifiedURL(url: url) }
                             .font(.subheadline.weight(.bold))
                             .foregroundStyle(HTTheme.gold)
                     }
                     if let pdfUrl = module.pdfUrl, let url = URL(string: pdfUrl) {
-                        Link("Open the worksheet", destination: url)
-                            .font(.subheadline.weight(.bold))
-                            .foregroundStyle(HTTheme.gold)
+                        Button("Open the worksheet") {
+                            let name = url.lastPathComponent.isEmpty ? "Worksheet" : (url.lastPathComponent.removingPercentEncoding ?? url.lastPathComponent)
+                            preview = ProgramFilePreview(id: "pdf-\(module.id)", url: url, name: name)
+                        }
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(HTTheme.gold)
                     }
                     if let bundle {
                         let tasks = bundle.assignments.filter { $0.moduleId == module.id }.sorted { $0.order < $1.order }
                         ForEach(tasks) { task in
-                            AssignmentComposer(task: task, bundle: bundle, model: model, drafts: $drafts)
+                            if let form = (bundle.forms ?? []).first(where: { $0.id == task.id }) {
+                                NavigationLink {
+                                    FormFillView(auth: auth, formId: form.id)
+                                        .onDisappear { Task { await model.load(bypassCache: true) } }
+                                } label: {
+                                    HTCard {
+                                        Text(form.label)
+                                            .font(.caption.weight(.bold))
+                                            .foregroundStyle(HTTheme.gold)
+                                        Text(form.title)
+                                            .font(.body.weight(.semibold))
+                                            .foregroundStyle(HTTheme.forest)
+                                        if form.isDone {
+                                            Text("Done")
+                                                .font(.caption.weight(.bold))
+                                                .foregroundStyle(HTTheme.forest)
+                                        }
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                            } else {
+                                AssignmentComposer(task: task, bundle: bundle, model: model, drafts: $drafts)
+                            }
                         }
                     }
                 } else {
@@ -340,13 +470,21 @@ private struct ProgramModuleView: View {
                 }
             }
             .padding(20)
-            .dockScrollClearance()
         }
+        .dockScrollClearance()
+        .keyboardTyping()
+        .refreshable { await model.load(bypassCache: true) }
         .background(HTTheme.cream)
         .navigationTitle(module.map { "Module \($0.order)" } ?? "Module")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear(perform: fillDrafts)
         .onChange(of: bundle?.submissions.count) { _, _ in fillDrafts() }
+        .sheet(item: $preview) { item in
+            InAppFilePreview(remote: item.url, name: item.name)
+        }
+        .sheet(item: $video) { item in
+            InAppSafari(url: item.url)
+        }
     }
 
     private func fillDrafts() {
@@ -356,16 +494,6 @@ private struct ProgramModuleView: View {
                 drafts[task.id] = bundle.submissions.first { $0.assignmentId == task.id }?.answer ?? ""
             }
         }
-    }
-
-    private func plainText(_ html: String?) -> String? {
-        guard let html, !html.isEmpty else { return nil }
-        let stripped = html.replacingOccurrences(of: "<[^>]+>", with: " ", options: .regularExpression)
-        return stripped
-            .replacingOccurrences(of: "&nbsp;", with: " ")
-            .replacingOccurrences(of: "&amp;", with: "&")
-            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
 

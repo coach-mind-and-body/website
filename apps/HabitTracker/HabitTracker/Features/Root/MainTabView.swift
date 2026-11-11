@@ -260,7 +260,7 @@ struct MainTabView: View {
 struct RecipesHubView: View {
     @Bindable var food: FoodViewModel
     @Bindable var auth: AuthStore
-    @State private var page = 1
+    @State private var page = 0
 
     var body: some View {
         NavigationStack {
@@ -432,6 +432,7 @@ struct RootView: View {
                 MainTabView(auth: auth, health: health)
             }
         }
+        .installKeyboardDismissTap()
         .task { await auth.restore() }
     }
 }

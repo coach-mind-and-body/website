@@ -7,7 +7,9 @@ import {
   mergeStoredAnswers,
   missingRequired,
   normalizeDraft,
+  normalizeField,
   sanitizeAnswers,
+  scaleBounds,
   type FormField,
   type FormVisibilityInput,
 } from "@shared/forms";
@@ -308,5 +310,28 @@ describe("editing a published form that already has answers", () => {
       )
     ).toBe(true);
     expect(edited.map((field) => field.label)).toEqual(["Date", "Name"]);
+  });
+});
+
+describe("scale questions", () => {
+  it("keeps 1 to 10 when a saved field has no ends or labels", () => {
+    const field = normalizeField({ id: "energy", type: "scale", label: "Energy" }, 0);
+    expect(scaleBounds(field!)).toEqual({ min: 1, max: 10 });
+    expect(field?.scaleLow).toBe("");
+    expect(field?.scaleHigh).toBe("");
+    const saved = sanitizeAnswers([field!], { energy: { scale: 4 } }, 7);
+    expect(saved.energy?.scale).toBe(4);
+    expect(sanitizeAnswers([field!], { energy: { scale: 11 } }, 7).energy?.scale).toBeNull();
+  });
+
+  it("uses the field's low and high ends", () => {
+    const field = normalizeField(
+      { id: "ease", type: "scale", label: "Ease", scaleMin: 0, scaleMax: 5, scaleLow: "Hard", scaleHigh: "Easy" },
+      0
+    );
+    expect(field).toMatchObject({ scaleMin: 0, scaleMax: 5, scaleLow: "Hard", scaleHigh: "Easy" });
+    expect(scaleBounds(field!)).toEqual({ min: 0, max: 5 });
+    expect(sanitizeAnswers([field!], { ease: { scale: 0 } }, 3).ease?.scale).toBe(0);
+    expect(sanitizeAnswers([field!], { ease: { scale: 6 } }, 3).ease?.scale).toBeNull();
   });
 });

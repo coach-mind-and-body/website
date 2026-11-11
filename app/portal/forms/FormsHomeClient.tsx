@@ -31,7 +31,7 @@ export default function FormsHomeClient() {
           Worksheets
         </h1>
         <p className="mt-2 text-base" style={{ color: "#5a6b5a" }}>
-          Forms and pages for the programs you are enrolled in with {BRAND.coachName}.
+          Worksheets for your programs with {BRAND.coachName}. A published form replaces its original file.
         </p>
         <div className="mt-6 space-y-3">
           {(forms.data ?? []).map((form) => (
@@ -42,12 +42,15 @@ export default function FormsHomeClient() {
               </p>
             </Link>
           ))}
-          {(library.data ?? []).map((item) => (
+          {(library.data ?? [])
+            .filter((item) => {
+              const covered = new Set((forms.data ?? []).flatMap((form) => form.sourceFileIds ?? []));
+              return !item.pages.some((page) => covered.has(page.id));
+            })
+            .map((item) => (
             <Link key={item.id} href={`/portal/library/${item.kind}/${item.refId}`} className="block rounded-2xl bg-white p-4" style={{ border: "1px solid #f0e8e4" }}>
               <p className="text-lg font-semibold" style={{ color: "#2d3b2d" }}>{item.title}</p>
-              <p className="mt-1 text-sm" style={{ color: "#8a9a8a" }}>
-                {item.pages.length} {item.pages.length === 1 ? "page" : "pages"} · swipe to read
-              </p>
+              <p className="mt-1 text-sm" style={{ color: "#8a9a8a" }}>Original file</p>
             </Link>
           ))}
           {forms.data && library.data && forms.data.length === 0 && library.data.length === 0 ? (

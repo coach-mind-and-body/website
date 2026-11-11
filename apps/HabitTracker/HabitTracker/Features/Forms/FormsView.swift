@@ -8,6 +8,7 @@ struct ClientFormSummary: Codable, Identifiable {
     var kind: String
     var status: String
     var programTags: [String]
+    var sourceFileIds: [Int]?
 }
 
 struct FormFieldModel: Codable, Identifiable, Hashable {
@@ -21,6 +22,10 @@ struct FormFieldModel: Codable, Identifiable, Hashable {
     var columns: [String]
     var content: String
     var allowExtraRows: Bool
+    var scaleMin: Int?
+    var scaleMax: Int?
+    var scaleLow: String?
+    var scaleHigh: String?
 }
 
 struct FormAnswerModel: Codable, Hashable {
@@ -115,15 +120,15 @@ struct FormsListView: View {
                     }
                 }
             }
-            if !library.isEmpty {
-                Section("Pages") {
-                    ForEach(library) { item in
+            if !visibleLibrary.isEmpty {
+                Section("Files") {
+                    ForEach(visibleLibrary) { item in
                         NavigationLink {
                             LibraryPagesView(title: item.title, pages: item.pages)
                         } label: {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(item.title).foregroundStyle(HTTheme.forest)
-                                Text("\(item.pages.count) \(item.pages.count == 1 ? "page" : "pages")")
+                                Text("Original file")
                                     .font(.caption)
                                     .foregroundStyle(HTTheme.muted)
                             }
@@ -134,9 +139,18 @@ struct FormsListView: View {
             }
         }
         .dockScrollClearance()
+        .keyboardTyping()
         .navigationTitle("Worksheets")
         .task { await load() }
         .refreshable { await load() }
+    }
+
+    private var visibleLibrary: [LibraryListItemModel] {
+        let covered = Set(forms.flatMap { $0.sourceFileIds ?? [] })
+        guard !covered.isEmpty else { return library }
+        return library.filter { item in
+            !item.pages.contains { covered.contains($0.id) }
+        }
     }
 
     private func load() async {
@@ -161,10 +175,16 @@ struct FormFillView: View {
     @State private var ready = false
     @State private var submitting = false
     @State private var saveTask: Task<Void, Never>?
+    @State private var preview: ProgramFilePreview?
+
+    private var canSubmit: Bool {
+        guard let detail else { return false }
+        return detail.form.kind != "handout" && detail.submission?.status != "reviewed"
+    }
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 16) {
                 if let errorMessage {
                     Text(errorMessage).foregroundStyle(.red)
                 }
@@ -173,14 +193,23 @@ struct FormFillView: View {
                         .font(.subheadline.weight(.bold))
                         .foregroundStyle(HTTheme.gold)
                     if !detail.form.instructions.isEmpty {
-                        Text(detail.form.instructions).foregroundStyle(HTTheme.muted)
+                        Text(detail.form.instructions)
+                            .font(.body)
+                            .foregroundStyle(HTTheme.muted)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
-                    if !detail.pages.isEmpty {
-                        LibraryPagesView(title: "Original pages", pages: detail.pages)
+                    if let page = detail.pages.first, let url = URL(string: page.fileUrl) {
+                        Button("View original PDF") {
+                            preview = ProgramFilePreview(id: "form-\(formId)-\(page.id)", url: url, name: page.fileName)
+                        }
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(HTTheme.gold)
                     }
                     if detail.form.kind == "handout" {
                         Text(detail.form.content)
+                            .font(.body)
                             .foregroundStyle(HTTheme.forest)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                     ForEach(detail.form.fields) { field in
                         fieldView(field, locked: detail.submission?.status == "reviewed")
@@ -191,29 +220,41 @@ struct FormFillView: View {
                             Text(feedback).foregroundStyle(HTTheme.forest)
                         }
                     }
-                    if detail.form.kind != "handout" && detail.submission?.status != "reviewed" {
-                        Button {
-                            Task { await submit() }
-                        } label: {
-                            Text(submitting ? "Submitting…" : "Submit")
-                                .font(.headline)
-                                .frame(maxWidth: .infinity)
-                                .frame(minHeight: 52)
-                                .background(HTTheme.gold)
-                                .foregroundStyle(.white)
-                                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                        }
-                        .disabled(submitting)
-                    }
                 } else {
                     ProgressView()
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 40)
                 }
             }
             .padding(16)
         }
+        .keyboardTyping()
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if canSubmit {
+                Button {
+                    Task { await submit() }
+                } label: {
+                    Text(submitting ? "Submitting…" : "Submit")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .frame(minHeight: 52)
+                        .background(HTTheme.gold)
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                }
+                .disabled(submitting)
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 56)
+                .background(HTTheme.cream)
+            }
+        }
         .background(HTTheme.cream)
         .navigationTitle(detail?.form.title ?? "Worksheet")
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(item: $preview) { item in
+            InAppFilePreview(remote: item.url, name: item.name)
+        }
         .task { await load() }
     }
 
@@ -227,10 +268,11 @@ struct FormFillView: View {
                 }
             }
         } else {
-            VStack(alignment: .leading, spacing: 8) {
+            HTCard(spacing: 10) {
                 Text(field.label + (field.required ? " *" : ""))
-                    .font(.headline)
+                    .font(.system(.title3, design: .serif).weight(.semibold))
                     .foregroundStyle(HTTheme.forest)
+                    .fixedSize(horizontal: false, vertical: true)
                 if !field.help.isEmpty {
                     Text(field.help).font(.caption).foregroundStyle(HTTheme.muted)
                 }
@@ -244,7 +286,7 @@ struct FormFillView: View {
         let answer = answers[field.id] ?? FormAnswerModel()
         switch field.type {
         case "short_text":
-            TextField(field.label.isEmpty ? "Type here" : field.label, text: textBinding(field.id))
+            TextField("Type here", text: textBinding(field.id))
                 .textFieldStyle(.roundedBorder)
                 .frame(minHeight: 48)
                 .disabled(locked)
@@ -302,23 +344,11 @@ struct FormFillView: View {
             }
             .disabled(locked)
         case "scale":
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 5), spacing: 8) {
-                ForEach(1...10, id: \.self) { n in
-                    Button {
-                        var next = answer
-                        next.scale = n
-                        answers[field.id] = next
-                        scheduleSave()
-                    } label: {
-                        Text("\(n)")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity, minHeight: 48)
-                            .background(answer.scale == n ? HTTheme.gold : Color.white)
-                            .foregroundStyle(answer.scale == n ? Color.white : HTTheme.forest)
-                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    }
-                    .disabled(locked)
-                }
+            ScaleRating(field: field, value: answer.scale, locked: locked) { picked in
+                var next = answer
+                next.scale = picked
+                answers[field.id] = next
+                scheduleSave()
             }
         case "signature":
             TextField("Type your full name", text: textBinding(field.id))
@@ -336,7 +366,7 @@ struct FormFillView: View {
         case "table":
             table(field, answer: answer, locked: locked)
         default:
-            TextField(field.label, text: textBinding(field.id))
+            TextField("Type here", text: textBinding(field.id))
                 .textFieldStyle(.roundedBorder)
                 .frame(minHeight: 48)
                 .disabled(locked)
@@ -512,9 +542,59 @@ struct FormFillView: View {
     }
 }
 
+private struct ScaleRating: View {
+    var field: FormFieldModel
+    var value: Int?
+    var locked: Bool
+    var onPick: (Int) -> Void
+
+    private var minValue: Int { field.scaleMin ?? 1 }
+    private var maxValue: Int {
+        let raw = field.scaleMax ?? 10
+        return raw > minValue ? raw : minValue + 1
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(value.map(String.init) ?? "Tap to rate")
+                .font(value == nil ? .subheadline.weight(.semibold) : .system(size: 40, weight: .bold, design: .serif))
+                .foregroundStyle(value == nil ? HTTheme.muted : HTTheme.forest)
+                .frame(maxWidth: .infinity)
+            Slider(
+                value: Binding(
+                    get: { Double(value ?? minValue) },
+                    set: { next in
+                        let rounded = min(max(Int(next.rounded()), minValue), maxValue)
+                        guard rounded != value else { return }
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        onPick(rounded)
+                    }
+                ),
+                in: Double(minValue)...Double(maxValue),
+                step: 1
+            )
+            .tint(HTTheme.gold)
+            .disabled(locked)
+            HStack {
+                Text(endLabel(field.scaleLow, fallback: minValue))
+                Spacer()
+                Text(endLabel(field.scaleHigh, fallback: maxValue))
+            }
+            .font(.caption.weight(.bold))
+            .foregroundStyle(HTTheme.gold)
+        }
+    }
+
+    private func endLabel(_ custom: String?, fallback: Int) -> String {
+        let trimmed = custom?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? "\(fallback)" : trimmed
+    }
+}
+
 struct LibraryPagesView: View {
     var title: String
     var pages: [FormPageModel]
+    @State private var preview: ProgramFilePreview?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -528,8 +608,12 @@ struct LibraryPagesView: View {
                             } placeholder: {
                                 ProgressView()
                             }
-                        } else {
-                            Link(page.fileName, destination: URL(string: page.fileUrl) ?? AppConfig.apiRoot)
+                        } else if let url = URL(string: page.fileUrl) {
+                            Button(page.fileName) {
+                                preview = ProgramFilePreview(id: "page-\(page.id)", url: url, name: page.fileName)
+                            }
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(HTTheme.forest)
                         }
                     }
                     .padding(8)
@@ -542,6 +626,9 @@ struct LibraryPagesView: View {
             Text("Swipe for the next page")
                 .font(.caption)
                 .foregroundStyle(HTTheme.muted)
+        }
+        .sheet(item: $preview) { item in
+            InAppFilePreview(remote: item.url, name: item.name)
         }
     }
 }

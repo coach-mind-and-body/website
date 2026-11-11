@@ -88,6 +88,7 @@ struct CaloriesView: View {
             .padding(16)
         }
         .dockScrollClearance()
+        .keyboardTyping()
         .background(HTTheme.cream.ignoresSafeArea())
         .task(id: food.sessionEpoch) {
             await food.loadLogs()
@@ -372,6 +373,7 @@ private struct LogFoodSheet: View {
                 }
                 .padding(20)
             }
+            .keyboardTyping()
             .background(HTTheme.cream.ignoresSafeArea())
             .navigationTitle("Log food")
             .navigationBarTitleDisplayMode(.inline)
@@ -590,6 +592,7 @@ private struct WrittenLogScanSheet: View {
                 }
                 .padding(20)
             }
+            .keyboardTyping()
             .background(HTTheme.cream.ignoresSafeArea())
             .navigationTitle("Written log")
             .navigationBarTitleDisplayMode(.inline)

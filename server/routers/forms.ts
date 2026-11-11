@@ -73,6 +73,10 @@ const fieldInput = z.object({
   columns: z.array(z.string()).optional(),
   content: z.string().optional(),
   allowExtraRows: z.boolean().optional(),
+  scaleMin: z.number().optional(),
+  scaleMax: z.number().optional(),
+  scaleLow: z.string().optional(),
+  scaleHigh: z.string().optional(),
 });
 
 function toLibraryFile(row: typeof commonFiles.$inferSelect, programs: ProgramId[]): LibraryFile {
@@ -307,6 +311,7 @@ export const formsRouter = router({
           title: template.title,
           kind: template.kind,
           programTags: template.programTags,
+          sourceFileIds: template.sourceFileIds,
           status: clientFormStatus(sub?.status),
         },
       ];
@@ -426,6 +431,7 @@ export const formsRouter = router({
       return {
         ...itemPayload(item),
         linkedFormId: linked?.id ?? null,
+        linkedFormTitle: linked?.title?.trim() || linked?.question || null,
         linkedPublishStatus: linked?.publishStatus ?? null,
         convertible: (item.kind === "group" ? item.pages : [item.file]).some((page) =>
           Boolean(convertibleMime(page.mimeType, page.fileName))

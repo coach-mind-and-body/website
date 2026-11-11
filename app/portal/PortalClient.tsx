@@ -8,6 +8,7 @@ import { getLoginUrl } from "@/lib/const";
 import { CheckCircle2, Clock, Lock, Video, Upload, FileText, Calendar, ChevronDown, ChevronUp, X, CreditCard, DollarSign, AlertCircle, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { BRAND } from "@shared/brand";
+import { hubFileIsHiddenByForm } from "@shared/forms";
 import Link from 'next/link';
 ;
 
@@ -599,7 +600,7 @@ export default function Portal() {
                   </Link>
                 </div>
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-sm font-semibold" style={{ color: "#5a6b5a" }}>Files</p>
+                  <p className="text-sm font-semibold" style={{ color: "#5a6b5a" }}>Files and forms</p>
                   {program.enrollment?.id ? (
                     <button
                       type="button"
@@ -616,11 +617,30 @@ export default function Portal() {
                     </button>
                   ) : null}
                 </div>
-                {program.files.length === 0 ? (
+                {program.files.filter((file) => !hubFileIsHiddenByForm(file, program.forms ?? [])).length === 0 &&
+                (program.forms ?? []).filter((form) => form.sourceFileIds.length > 0).length === 0 ? (
                   <p className="text-sm" style={{ color: "#8a9a8a" }}>No files for this program yet.</p>
                 ) : (
                   <div className="space-y-2">
-                    {program.files.map((file) => (
+                    {(program.forms ?? [])
+                      .filter((form) => form.sourceFileIds.length > 0)
+                      .map((form) => (
+                        <Link
+                          key={`form-${form.id}`}
+                          href={`/portal/forms/${form.id}`}
+                          className="flex items-center justify-between p-3 rounded-xl"
+                          style={{ background: "#faf5f5" }}
+                        >
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold truncate" style={{ color: "#2d3b2d" }}>{form.title}</p>
+                            <p className="text-xs" style={{ color: "#8a9a8a" }}>Form</p>
+                          </div>
+                          <span className="text-xs font-bold px-3 py-1.5 rounded-full shrink-0" style={{ background: "#fbeee9", color: "#c9a96e" }}>
+                            Open
+                          </span>
+                        </Link>
+                      ))}
+                    {program.files.filter((file) => !hubFileIsHiddenByForm(file, program.forms ?? [])).map((file) => (
                       <div key={`${file.source}-${file.id}`} className="flex items-center justify-between p-3 rounded-xl" style={{ background: "#faf5f5" }}>
                         <div className="flex items-center gap-3 min-w-0">
                           <FileText size={16} style={{ color: "#c9a96e" }} />

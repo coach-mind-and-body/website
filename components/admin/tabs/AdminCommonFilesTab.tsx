@@ -4,7 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { Upload, FileText, Trash2, ExternalLink, FolderOpen, Layers } from "lucide-react";
+import { Upload, FileText, Trash2, FolderOpen, Layers } from "lucide-react";
 import { PROGRAM_LIST, type ProgramId } from "@shared/programs";
 
 function ProgramChecks({
@@ -141,7 +141,7 @@ export function AdminCommonFilesTab() {
             Shared file library
           </h2>
           <p className="max-w-xl text-sm" style={{ color: "oklch(0.52 0.015 50)" }}>
-            Check a program and everyone enrolled in it sees the file. Group pages into one item, or turn a PDF or photo into a fillable form.
+            Check a program and everyone enrolled sees it. Clients see the form once it is published. Until then they see the original file.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -249,14 +249,21 @@ export function AdminCommonFilesTab() {
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold" style={{ color: "oklch(0.20 0.015 50)" }}>{item.title}</p>
                       <p className="text-xs" style={{ color: "oklch(0.52 0.015 50)" }}>
-                        {item.kind === "group" ? `${item.pages.length} pages` : "Single file"}
+                        {item.kind === "group"
+                          ? `Original pages · ${item.pages.length}`
+                          : "Original file"}
+                        {item.linkedPublishStatus === "published"
+                          ? " · clients see the form"
+                          : item.linkedFormId
+                            ? " · form is still a draft"
+                            : ""}
                       </p>
                     </div>
                   </div>
                   <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
                     {item.linkedFormId ? (
                       <Link href={`/admin/forms/${item.linkedFormId}`} className="rounded-full px-3 py-2 text-xs font-bold" style={{ background: "oklch(0.96 0.02 80)", color: "oklch(0.30 0.02 50)" }}>
-                        Edit form
+                        {item.linkedPublishStatus === "published" ? "Edit the form" : "Edit the draft form"}
                       </Link>
                     ) : (
                       <button
@@ -266,7 +273,7 @@ export function AdminCommonFilesTab() {
                         style={{ background: "oklch(0.72 0.12 75)" }}
                         onClick={() => draft.mutate({ fileIds: pageIds })}
                       >
-                        {draft.isPending ? "Reading…" : "Make fillable form"}
+                        {draft.isPending ? "Reading…" : "Turn this file into a form"}
                       </button>
                     )}
                     {item.kind === "group" ? (
@@ -276,11 +283,11 @@ export function AdminCommonFilesTab() {
                         style={{ background: "oklch(0.96 0.02 80)" }}
                         onClick={() => ungroup.mutate({ groupId: item.refId })}
                       >
-                        Ungroup
+                        Split the original pages
                       </button>
                     ) : (
-                      <a href={item.pages[0]?.fileUrl} target="_blank" rel="noopener noreferrer" className="p-2" style={{ color: "oklch(0.72 0.12 75)" }} title="Open">
-                        <ExternalLink size={16} />
+                      <a href={item.pages[0]?.fileUrl} target="_blank" rel="noopener noreferrer" className="rounded-full px-3 py-2 text-xs font-bold" style={{ color: "#5a6b5a" }}>
+                        Open the original file
                       </a>
                     )}
                     {item.kind === "file" ? (
@@ -322,12 +329,12 @@ export function AdminCommonFilesTab() {
           <FolderOpen size={32} className="mx-auto mb-3" style={{ color: "oklch(0.72 0.12 75)" }} />
           <p className="mb-1 text-sm font-semibold" style={{ color: "oklch(0.20 0.015 50)" }}>No common files yet</p>
           <p className="mx-auto max-w-sm text-xs" style={{ color: "oklch(0.52 0.015 50)" }}>
-            Upload a worksheet, check the programs that should receive it, then group pages or make a fillable form.
+            Upload a worksheet, check the programs that should see it, then turn it into a form if you want clients to fill it in here.
           </p>
         </div>
       )}
       <p className="mt-4 flex items-center gap-2 text-xs" style={{ color: "oklch(0.52 0.015 50)" }}>
-        <FileText size={14} /> A checked program shows the file to everyone enrolled in it. You can still share one file with one person from their contact.
+        <FileText size={14} /> A checked program shows either the published form or the original file. You can still share one file with one person from their contact.
       </p>
     </div>
   );

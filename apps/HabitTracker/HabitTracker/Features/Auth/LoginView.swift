@@ -161,6 +161,7 @@ struct LoginView: View {
             }
             .padding(.vertical, 28)
         }
+        .keyboardTyping()
         .background(HTTheme.cream.ignoresSafeArea())
         .onChange(of: auth.isSignedIn) { _, signedIn in
             if signedIn { dismiss() }

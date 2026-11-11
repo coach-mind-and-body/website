@@ -21,6 +21,7 @@ struct ChallengeExperience: View {
             .padding(.top, 4)
             .padding(.bottom, 28)
         }
+        .dockScrollClearance()
         .sensoryFeedback(.selection, trigger: model.selectedChallengeDate)
         .sheet(isPresented: $showJournal) { journalSheet }
         .sheet(isPresented: $showResources) { resourcesSheet }
@@ -523,6 +524,7 @@ struct ChallengeExperience: View {
                 }
                 .padding(20)
             }
+            .keyboardTyping()
             .background(HTTheme.cream.ignoresSafeArea())
             .navigationTitle("Daily note")
             .navigationBarTitleDisplayMode(.inline)

@@ -52,6 +52,7 @@ struct RecipesView: View {
                 .padding(16)
             }
             .dockScrollClearance()
+            .keyboardTyping()
             .background(HTTheme.cream)
             .task(id: food.sessionEpoch) { await food.loadRecipes() }
             .refreshable { await food.loadRecipes() }
@@ -180,6 +181,7 @@ struct RecipeDetailView: View {
             }
         }
         .dockScrollClearance()
+            .keyboardTyping()
         .background(HTTheme.cream.ignoresSafeArea())
         .task { recipe = await food.recipe(slug: slug) }
     }

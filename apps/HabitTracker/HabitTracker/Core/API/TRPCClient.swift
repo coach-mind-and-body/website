@@ -7,28 +7,46 @@ actor TRPCClient {
         self.token = token
     }
 
-    func query<T: Decodable>(_ path: String) async throws -> T {
-        try await send(path: path, body: try SuperJSON.encodeEmptyInput(), decode: T.self, method: "GET")
+    func query<T: Decodable>(
+        _ path: String,
+        cachePolicy: URLRequest.CachePolicy = .useProtocolCachePolicy
+    ) async throws -> T {
+        try await send(path: path, body: try SuperJSON.encodeEmptyInput(), decode: T.self, method: "GET", cachePolicy: cachePolicy)
     }
 
-    func query<T: Decodable, I: Encodable>(_ path: String, input: I) async throws -> T {
-        try await send(path: path, body: try SuperJSON.encodeInput(input), decode: T.self, method: "GET")
+    func query<T: Decodable, I: Encodable>(
+        _ path: String,
+        input: I,
+        cachePolicy: URLRequest.CachePolicy = .useProtocolCachePolicy
+    ) async throws -> T {
+        try await send(path: path, body: try SuperJSON.encodeInput(input), decode: T.self, method: "GET", cachePolicy: cachePolicy)
     }
 
     func mutate<T: Decodable, I: Encodable>(_ path: String, input: I) async throws -> T {
-        try await send(path: path, body: try SuperJSON.encodeInput(input), decode: T.self, method: "POST")
+        try await send(path: path, body: try SuperJSON.encodeInput(input), decode: T.self, method: "POST", cachePolicy: .useProtocolCachePolicy)
     }
 
     func mutateEmpty<T: Decodable>(_ path: String) async throws -> T {
-        try await send(path: path, body: try SuperJSON.encodeEmptyInput(), decode: T.self, method: "POST")
+        try await send(path: path, body: try SuperJSON.encodeEmptyInput(), decode: T.self, method: "POST", cachePolicy: .useProtocolCachePolicy)
     }
 
-    private func send<T: Decodable>(path: String, body: Data, decode: T.Type, method: String) async throws -> T {
+    private func send<T: Decodable>(
+        path: String,
+        body: Data,
+        decode: T.Type,
+        method: String,
+        cachePolicy: URLRequest.CachePolicy
+    ) async throws -> T {
         let base = AppConfig.trpcURL.appending(path: path)
         var request = URLRequest(url: base)
         request.httpMethod = method
+        request.cachePolicy = cachePolicy
         if let token, !token.isEmpty {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        if cachePolicy == .reloadIgnoringLocalCacheData {
+            request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
+            request.setValue("no-cache", forHTTPHeaderField: "Pragma")
         }
         if method == "GET" {
             var comps = URLComponents(url: base, resolvingAgainstBaseURL: false)
@@ -42,6 +60,9 @@ actor TRPCClient {
         } else {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             request.httpBody = body
+        }
+        if cachePolicy == .reloadIgnoringLocalCacheData {
+            URLCache.shared.removeCachedResponse(for: request)
         }
 
         let (data, response) = try await URLSession.shared.data(for: request)

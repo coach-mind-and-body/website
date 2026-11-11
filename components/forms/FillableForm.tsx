@@ -164,23 +164,38 @@ function FieldControl({
     );
   }
   if (field.type === "scale") {
+    const min = field.scaleMin ?? 1;
+    const max = Math.max(min + 1, field.scaleMax ?? 10);
+    const selected = typeof answer.scale === "number" ? answer.scale : null;
+    const low = field.scaleLow?.trim() || String(min);
+    const high = field.scaleHigh?.trim() || String(max);
     return (
-      <div className="grid grid-cols-5 gap-2">
-        {Array.from({ length: 10 }, (_, index) => index + 1).map((n) => {
-          const on = answer.scale === n;
-          return (
-            <button
-              key={n}
-              type="button"
-              disabled={disabled}
-              className="min-h-12 rounded-xl text-lg font-bold"
-              style={{ background: on ? "#c9a96e" : "white", color: on ? "white" : "#2d3b2d", border: "1px solid #f0e8e4" }}
-              onClick={() => onChange({ scale: n })}
-            >
-              {n}
-            </button>
-          );
-        })}
+      <div className="space-y-2">
+        <p
+          className="text-center font-bold"
+          style={{
+            fontFamily: selected == null ? "inherit" : "'Cormorant Garamond', serif",
+            fontSize: selected == null ? "0.95rem" : "2.5rem",
+            color: selected == null ? "#8a9a8a" : "#2d3b2d",
+          }}
+        >
+          {selected == null ? "Tap to rate" : selected}
+        </p>
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={1}
+          aria-label={field.label}
+          disabled={disabled}
+          value={selected ?? min}
+          className="min-h-12 w-full accent-[#c9a96e]"
+          onChange={(event) => onChange({ scale: Number(event.target.value) })}
+        />
+        <div className="flex justify-between text-xs font-bold" style={{ color: "#c9a96e" }}>
+          <span>{low}</span>
+          <span>{high}</span>
+        </div>
       </div>
     );
   }

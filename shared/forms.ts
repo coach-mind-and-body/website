@@ -30,6 +30,12 @@ export type FormField = {
   columns: string[];
   content: string;
   allowExtraRows: boolean;
+  /** Inclusive ends of a scale. Missing values mean 1 and 10. */
+  scaleMin?: number;
+  scaleMax?: number;
+  /** End captions. Empty means the number itself. */
+  scaleLow?: string;
+  scaleHigh?: string;
 };
 
 export type FormAnswer = {
@@ -155,7 +161,24 @@ export function normalizeField(raw: unknown, index: number): FormField | null {
     columns: typeName === "table" ? asStringList(row.columns, 12, 80) : [],
     content: asString(row.content, 20000),
     allowExtraRows: typeName === "table" && row.allowExtraRows !== false,
+    scaleMin: typeName === "scale" ? scaleBound(row.scaleMin, 1) : undefined,
+    scaleMax: typeName === "scale" ? scaleBound(row.scaleMax, 10) : undefined,
+    scaleLow: typeName === "scale" ? asString(row.scaleLow, 40) : undefined,
+    scaleHigh: typeName === "scale" ? asString(row.scaleHigh, 40) : undefined,
   };
+}
+
+export function scaleBounds(field: { scaleMin?: number | null; scaleMax?: number | null }): { min: number; max: number } {
+  const min = scaleBound(field.scaleMin, 1);
+  let max = scaleBound(field.scaleMax, 10);
+  if (max <= min) max = Math.min(100, min + 1);
+  return { min, max };
+}
+
+function scaleBound(value: unknown, fallback: number): number {
+  const number = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.min(100, Math.max(0, Math.round(number)));
 }
 
 export function normalizeFields(raw: unknown): FormField[] {
@@ -403,7 +426,8 @@ export function sanitizeAnswers(fields: FormField[], raw: FormAnswers, userId: n
     } else if (field.type === "checkbox") {
       out[field.id] = { checked: answer.checked === true };
     } else if (field.type === "scale") {
-      const scale = typeof answer.scale === "number" && answer.scale >= 1 && answer.scale <= 10 ? Math.round(answer.scale) : null;
+      const { min, max } = scaleBounds(field);
+      const scale = typeof answer.scale === "number" && answer.scale >= min && answer.scale <= max ? Math.round(answer.scale) : null;
       out[field.id] = { scale };
     } else if (field.type === "table") {
       out[field.id] = { table: clampTable(answer.table) };
@@ -463,6 +487,128 @@ export function summarizeAnswers(fields: FormField[], answers: FormAnswers): str
     lines.push(`${field.label}: ${value}`);
   }
   return lines.join("\n").slice(0, 20000);
+}
+
+export type HubFormInput = {
+  id: number;
+  moduleId: number | null;
+  /** Program that owns the module, when this form is attached to one. */
+  moduleProgram: ProgramId | null;
+  question: string;
+  title: string | null;
+  instructions: string | null;
+  fieldsJson: string | null;
+  programTags: string | null;
+  publishStatus: string | null;
+  kind: string | null;
+  content: string | null;
+  sourceFileIds: string | null;
+  order: number;
+};
+
+export type HubFormCard = {
+  id: number;
+  title: string;
+  kind: FormKind;
+  /** Gold eyebrow on the program list. */
+  label: "Form" | "Assignment";
+  status: ClientFormStatus;
+  moduleId: number | null;
+  sourceFileIds: number[];
+};
+
+/** Library forms follow programTags plus the source file's common_file_programs tags. Module forms stay on their module. */
+export function hubFormPrograms(
+  form: {
+    moduleId: number | null;
+    moduleProgram: ProgramId | null;
+    programTags: readonly ProgramId[];
+    sourceFileIds: readonly number[];
+  },
+  filePrograms: ReadonlyMap<number, readonly ProgramId[]>
+): ProgramId[] {
+  if (form.moduleId != null) return form.moduleProgram ? [form.moduleProgram] : [];
+  const tags: ProgramId[] = [];
+  for (const tag of form.programTags) {
+    if (!tags.includes(tag)) tags.push(tag);
+  }
+  for (const fileId of form.sourceFileIds) {
+    for (const program of filePrograms.get(fileId) ?? []) {
+      if (!tags.includes(program)) tags.push(program);
+    }
+  }
+  return tags;
+}
+
+/**
+ * Published fillable forms and handouts for one program.
+ * A draft stays out, so the library PDF remains until Lee Anne hits Publish.
+ * Legacy module questions with no fields stay out, so older app builds keep their written-answer tasks.
+ * The files array is unchanged; clients hide a PDF when its library id is in sourceFileIds.
+ */
+export function selectHubForms(input: {
+  program: ProgramId;
+  visibleModuleIds: ReadonlySet<number>;
+  rows: readonly HubFormInput[];
+  filePrograms: ReadonlyMap<number, readonly ProgramId[]>;
+  statusByFormId: ReadonlyMap<number, string | null | undefined>;
+}): HubFormCard[] {
+  const cards: HubFormCard[] = [];
+  for (const row of input.rows) {
+    if (row.publishStatus === "draft") continue;
+    const kind: FormKind = row.kind === "handout" ? "handout" : "fillable";
+    const publishStatus: PublishStatus = "published";
+    const template: FormTemplate = {
+      id: row.id,
+      title: row.title?.trim() || row.question,
+      instructions: row.instructions ?? "",
+      kind,
+      content: row.content ?? "",
+      fields: parseFields(row.fieldsJson),
+      programTags: parseProgramTags(row.programTags),
+      publishStatus,
+      moduleId: row.moduleId,
+      sourceFileIds: parseIdList(row.sourceFileIds),
+    };
+    if (!formIsListedForClients(template, row.question)) continue;
+    const programs = hubFormPrograms(
+      {
+        moduleId: template.moduleId,
+        moduleProgram: row.moduleProgram,
+        programTags: template.programTags,
+        sourceFileIds: template.sourceFileIds,
+      },
+      input.filePrograms
+    );
+    if (!programs.includes(input.program)) continue;
+    if (template.moduleId != null && !input.visibleModuleIds.has(template.moduleId)) continue;
+    cards.push({
+      id: template.id,
+      title: template.title,
+      kind: template.kind,
+      label: template.kind === "handout" ? "Assignment" : "Form",
+      status: clientFormStatus(input.statusByFormId.get(row.id)),
+      moduleId: template.moduleId,
+      sourceFileIds: template.sourceFileIds,
+    });
+  }
+  cards.sort((a, b) => {
+    const ao = input.rows.find((row) => row.id === a.id)?.order ?? 0;
+    const bo = input.rows.find((row) => row.id === b.id)?.order ?? 0;
+    return ao - bo || a.id - b.id;
+  });
+  return cards;
+}
+
+/** True when this hub file is the PDF a digitized form replaced. Uploads that share the library id are included. */
+export function hubFileIsHiddenByForm(
+  file: { id: number; source: "upload" | "library"; libraryFileId: number | null },
+  forms: readonly { sourceFileIds: readonly number[] }[]
+): boolean {
+  const replaced = new Set(forms.flatMap((form) => form.sourceFileIds));
+  if (replaced.size === 0) return false;
+  if (file.libraryFileId != null && replaced.has(file.libraryFileId)) return true;
+  return file.source === "library" && replaced.has(file.id);
 }
 
 export function parseAnswers(value: unknown): FormAnswers {

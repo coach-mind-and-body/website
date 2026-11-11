@@ -346,6 +346,7 @@ struct CycleLogSheet: View {
                 }
                 .padding(20)
             }
+            .keyboardTyping()
             .background(HTTheme.cream.ignoresSafeArea())
             .navigationTitle("Cycle")
             .navigationBarTitleDisplayMode(.inline)
