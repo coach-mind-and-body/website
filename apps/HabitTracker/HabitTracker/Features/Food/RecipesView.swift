@@ -3,10 +3,12 @@ import SwiftUI
 struct RecipesView: View {
     @Bindable var food: FoodViewModel
     @Bindable var auth: AuthStore
+    var pane: FoodPaneBridge? = nil
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.duoPosture) private var posture
 
     var body: some View {
-        DuoPanes(style: .augment) {
+        DuoNested(style: .augment) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     TextField("Search recipes", text: $food.query)
@@ -44,10 +46,26 @@ struct RecipesView: View {
 
                     LazyVGrid(columns: DuoLayout.cardColumns(horizontalSizeClass), spacing: 12) {
                         ForEach(food.recipes) { recipe in
-                            NavigationLink(value: recipe.slug) {
-                                recipeCard(recipe)
+                            if posture.isOpenDisplay, let pane {
+                                Button {
+                                    pane.log = nil
+                                    pane.recipeSlug = recipe.slug
+                                } label: {
+                                    recipeCard(recipe)
+                                }
+                                .buttonStyle(.plain)
+                                .overlay {
+                                    if pane.recipeSlug == recipe.slug {
+                                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                            .stroke(HTTheme.gold, lineWidth: 2)
+                                    }
+                                }
+                            } else {
+                                NavigationLink(value: recipe.slug) {
+                                    recipeCard(recipe)
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
                         }
                     }
                 }
@@ -126,9 +144,38 @@ struct RecipeDetailView: View {
     @State private var servings = 1
     @State private var meal = "lunch"
     @State private var logged = false
+    var embedded = false
 
     var body: some View {
-        DuoPanes(style: .augment) {
+        Group {
+            if embedded {
+                recipePage
+            } else {
+                DuoPanes(style: .augment) {
+                    recipePage
+                } controls: {
+                    if let recipe {
+                        Button(logged ? "Logged" : "Log this meal") {
+                            Task {
+                                await food.logRecipe(recipe, meal: meal, servings: servings)
+                                logged = true
+                            }
+                        }
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, minHeight: 56)
+                        .background(HTTheme.forest)
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .buttonStyle(.plain)
+                        .disabled(logged)
+                        .padding(16)
+                    }
+                }
+            }
+        }
+    }
+
+    private var recipePage: some View {
         ScrollView {
             if let recipe {
                 VStack(alignment: .leading, spacing: 14) {
@@ -206,24 +253,6 @@ struct RecipeDetailView: View {
             .keyboardTyping()
         .background(HTTheme.cream.ignoresSafeArea())
         .task { recipe = await food.recipe(slug: slug) }
-        } controls: {
-            if let recipe {
-                Button(logged ? "Logged" : "Log this meal") {
-                    Task {
-                        await food.logRecipe(recipe, meal: meal, servings: servings)
-                        logged = true
-                    }
-                }
-                .font(.headline)
-                .frame(maxWidth: .infinity, minHeight: 56)
-                .background(HTTheme.forest)
-                .foregroundStyle(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .buttonStyle(.plain)
-                .disabled(logged)
-                .padding(16)
-            }
-        }
     }
 
     private func macro(_ label: String, _ value: Int?) -> some View {

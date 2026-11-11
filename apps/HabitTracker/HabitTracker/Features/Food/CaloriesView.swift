@@ -2,9 +2,18 @@ import PhotosUI
 import SwiftUI
 import UIKit
 
+@MainActor
+@Observable
+final class FoodPaneBridge {
+    var log: CalorieLog?
+    var recipeSlug: String?
+}
+
 struct CaloriesView: View {
     @Bindable var food: FoodViewModel
     @Bindable var auth: AuthStore
+    var pane: FoodPaneBridge? = nil
+    @Environment(\.duoPosture) private var posture
     @State private var showLog = false
     @State private var showScan = false
     @State private var meal = "lunch"
@@ -12,7 +21,7 @@ struct CaloriesView: View {
     private let meals = ["breakfast", "lunch", "dinner", "snack", "drink"]
 
     var body: some View {
-        DuoPanes(style: .augment) {
+        DuoNested(style: .augment) {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 dateRow
@@ -80,7 +89,28 @@ struct CaloriesView: View {
                                 .foregroundStyle(HTTheme.gold)
                                 .padding(.top, 4)
                             ForEach(items) { log in
-                                logRow(log)
+                                if posture.isOpenDisplay, let pane {
+                                    HStack(alignment: .top, spacing: 8) {
+                                        Button {
+                                            pane.recipeSlug = nil
+                                            pane.log = log
+                                        } label: {
+                                            logSummary(log)
+                                        }
+                                        .buttonStyle(.plain)
+                                        deleteLog(log)
+                                    }
+                                    .padding(16)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .background(pane.log?.id == log.id ? HTTheme.gold.opacity(0.16) : Color.white)
+                                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                            .stroke(pane.log?.id == log.id ? HTTheme.gold : HTTheme.roseBorder, lineWidth: 1)
+                                    )
+                                } else {
+                                    logRow(log)
+                                }
                             }
                         }
                     }
@@ -160,26 +190,37 @@ struct CaloriesView: View {
     private func logRow(_ log: CalorieLog) -> some View {
         HTCard {
             HStack {
-                if let key = log.imageUrl, key.hasPrefix("food-logs/") {
-                    FoodLogPhoto(key: key, token: auth.token)
-                        .frame(width: 44, height: 44)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                }
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(log.foodName)
-                        .font(.headline)
-                        .foregroundStyle(HTTheme.forest)
-                    Text("\(log.protein)g protein · \(log.carbs)g carbs · \(log.fiber)g fiber · \(log.calories) cal")
-                        .font(.subheadline)
-                        .foregroundStyle(HTTheme.muted)
-                }
+                logSummary(log)
                 Spacer()
-                Button(role: .destructive) {
-                    Task { await food.deleteLog(log) }
-                } label: {
-                    Image(systemName: "trash")
-                }
+                deleteLog(log)
             }
+        }
+    }
+
+    private func logSummary(_ log: CalorieLog) -> some View {
+        HStack {
+            if let key = log.imageUrl, key.hasPrefix("food-logs/") {
+                FoodLogPhoto(key: key, token: auth.token)
+                    .frame(width: 44, height: 44)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                Text(log.foodName)
+                    .font(.headline)
+                    .foregroundStyle(HTTheme.forest)
+                Text("\(log.protein)g protein · \(log.carbs)g carbs · \(log.fiber)g fiber · \(log.calories) cal")
+                    .font(.subheadline)
+                    .foregroundStyle(HTTheme.muted)
+            }
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func deleteLog(_ log: CalorieLog) -> some View {
+        Button(role: .destructive) {
+            Task { await food.deleteLog(log) }
+        } label: {
+            Image(systemName: "trash")
         }
     }
 
@@ -200,7 +241,132 @@ struct CaloriesView: View {
     }
 }
 
-private struct LogFoodSheet: View {
+/// Right pane for the Food tab on the open inner display.
+struct FoodOpenPane: View {
+    @Bindable var food: FoodViewModel
+    @Bindable var auth: AuthStore
+    var pane: FoodPaneBridge
+    @State private var meal = "lunch"
+    @State private var showLog = false
+    @State private var showScan = false
+
+    var body: some View {
+        VStack(spacing: 0) {
+            if pane.recipeSlug != nil || pane.log != nil {
+                HStack {
+                    Button {
+                        pane.log = nil
+                        pane.recipeSlug = nil
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.backward")
+                                .font(.caption.weight(.bold))
+                            Text("Close")
+                                .font(.subheadline.weight(.semibold))
+                        }
+                        .foregroundStyle(HTTheme.forest)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(HTTheme.gold.opacity(0.2))
+                        .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 10)
+            }
+            if let slug = pane.recipeSlug {
+                RecipeDetailView(slug: slug, food: food, auth: auth, embedded: true)
+            } else if let log = pane.log {
+                ScrollView {
+                    HTCard {
+                        Text(log.mealType.capitalized)
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(HTTheme.gold)
+                        Text(log.foodName)
+                            .font(HTTheme.title)
+                            .foregroundStyle(HTTheme.forest)
+                        Text("\(log.protein)g protein · \(log.carbs)g carbs · \(log.fiber)g fiber · \(log.calories) cal")
+                            .foregroundStyle(HTTheme.muted)
+                    }
+                    .padding(16)
+                }
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 14) {
+                        Button {
+                            showLog = true
+                        } label: {
+                            Text("Log food")
+                                .font(.title3.weight(.bold))
+                                .frame(maxWidth: .infinity, minHeight: 64)
+                                .background(HTTheme.forest)
+                                .foregroundStyle(.white)
+                                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                        Button {
+                            showScan = true
+                        } label: {
+                            Text("Scan my written log")
+                                .font(.title3.weight(.bold))
+                                .frame(maxWidth: .infinity, minHeight: 64)
+                                .background(Color.white)
+                                .foregroundStyle(HTTheme.forest)
+                                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                                .overlay(RoundedRectangle(cornerRadius: 18).stroke(HTTheme.roseBorder))
+                        }
+                        .buttonStyle(.plain)
+                        macroBar("Protein", food.proteinTotal, 100, "g")
+                        macroBar("Carbs", food.carbsTotal, 200, "g")
+                        macroBar("Fiber", food.fiberTotal, 30, "g")
+                        macroBar("Calories", food.calorieTotal, 2000, "")
+                    }
+                    .padding(16)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(HTTheme.cream)
+        .task { await food.loadLogs() }
+        .sheet(isPresented: $showLog) {
+            LogFoodSheet(food: food, meal: $meal)
+        }
+        .sheet(isPresented: $showScan) {
+            WrittenLogScanSheet(food: food)
+        }
+    }
+
+    private func macroBar(_ title: String, _ value: Int, _ goal: Int, _ unit: String) -> some View {
+        let fill = min(1, Double(value) / Double(max(goal, 1)))
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(HTTheme.forest)
+                Spacer()
+                Text("\(value)\(unit) / \(goal)\(unit)")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(HTTheme.muted)
+            }
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(HTTheme.roseBorder)
+                    Capsule()
+                        .fill(HTTheme.gold)
+                        .frame(width: max(8, geo.size.width * fill))
+                }
+            }
+            .frame(height: 10)
+        }
+        .padding(12)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+}
+
+struct LogFoodSheet: View {
     @Bindable var food: FoodViewModel
     @Binding var meal: String
     @Environment(\.dismiss) private var dismiss
@@ -556,7 +722,7 @@ private struct WrittenDraft: Identifiable {
     var imageUrl: String?
 }
 
-private struct WrittenLogScanSheet: View {
+struct WrittenLogScanSheet: View {
     @Bindable var food: FoodViewModel
     @Environment(\.dismiss) private var dismiss
 
