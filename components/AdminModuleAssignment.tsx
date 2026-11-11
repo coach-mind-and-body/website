@@ -5,6 +5,13 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
+import { PROGRAMS, type ProgramId } from "@shared/programs";
+
+function moduleLabel(module: { title: string; program?: string | null }) {
+  const program = module.program as ProgramId | undefined;
+  const name = program && PROGRAMS[program] ? PROGRAMS[program].label : null;
+  return name ? `${name}: ${module.title}` : module.title;
+}
 
 export default function AdminModuleAssignment({ userId }: { userId: number }) {
   const utils = trpc.useUtils();
@@ -56,7 +63,7 @@ export default function AdminModuleAssignment({ userId }: { userId: number }) {
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm"
                 style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.015 80)", color: "oklch(0.20 0.015 50)" }}
               >
-                {m.title}
+                {moduleLabel(m)}
                 {idx !== 0 && ( // Don't allow unassigning the first module if it's auto-unlocked
                   <button 
                     onClick={() => {
@@ -82,12 +89,12 @@ export default function AdminModuleAssignment({ userId }: { userId: number }) {
           <select 
             value={selectedModule} 
             onChange={e => setSelectedModule(e.target.value ? Number(e.target.value) : "")}
-            className="text-xs rounded-lg px-2 py-1.5 flex-1 max-w-[200px]"
+            className="text-xs rounded-lg px-2 py-1.5 flex-1 max-w-xs"
             style={{ background: "oklch(0.985 0.008 80)", color: "oklch(0.20 0.015 50)", border: "1px solid oklch(0.52 0.015 50)" }}
           >
             <option value="">Select a Module to Assign...</option>
             {unassignedModules.map(m => (
-              <option key={m.id} value={m.id}>{m.title}</option>
+              <option key={m.id} value={m.id}>{moduleLabel(m)}</option>
             ))}
           </select>
           <Button 

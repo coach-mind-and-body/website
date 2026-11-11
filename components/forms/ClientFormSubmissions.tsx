@@ -21,8 +21,8 @@ export function ClientFormSubmissions({ userId }: { userId: number }) {
         <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "oklch(0.52 0.015 50)" }}>
           Forms
         </p>
-        <Link href="/admin?tab=filelibrary" className="text-xs font-bold" style={{ color: "oklch(0.45 0.10 148)" }}>
-          File library
+        <Link href="/admin?tab=library&section=files" className="text-xs font-bold" style={{ color: "oklch(0.45 0.10 148)" }}>
+          Library
         </Link>
       </div>
       {submissions.isLoading ? (

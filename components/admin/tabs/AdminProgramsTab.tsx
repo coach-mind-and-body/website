@@ -9,6 +9,19 @@ import { isProgramId, PROGRAM_LIST, PROGRAMS, type ProgramId } from "@shared/pro
 import { METABOLIC_INTAKE_ALIAS, programIntakePath, programIntakeUrl } from "@shared/programIntake";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CoachClientView } from "@/components/admin/CoachClientView";
+import { AdminPillNav } from "@/components/admin/AdminPillNav";
+import { AdminFpuCoachingTab } from "@/components/admin/tabs/AdminFpuCoachingTab";
+import { AdminFpuGroupTab } from "@/components/admin/tabs/AdminFpuGroupTab";
+import { AdminRealFoodResetTab } from "@/components/admin/tabs/AdminRealFoodResetTab";
+import PageEditorTab from "@/components/PageEditorTab";
+import ProgramBuilderTab from "@/components/ProgramBuilderTab";
+import {
+  normalizeProgramSection,
+  PROGRAM_SECTION_LABELS,
+  programSectionIds,
+  resolvedAdminParams,
+  type ProgramSectionId,
+} from "@/lib/adminNav";
 
 const ink = "oklch(0.20 0.015 50)";
 const muted = "oklch(0.52 0.015 50)";
@@ -45,8 +58,11 @@ export function AdminProgramsTab({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const programParam = searchParams.get("program");
+  const params = resolvedAdminParams(searchParams.toString());
+  const programParam = params.get("program");
   const program = programParam && isProgramId(programParam) ? programParam : null;
+  const section = program ? normalizeProgramSection(program, params.get("section")) : "roster";
+  const preview = process.env.NODE_ENV !== "production" && searchParams.get("preview") === "1";
   const [client, setClient] = useState<{
     userId: number;
     email: string;
@@ -56,12 +72,26 @@ export function AdminProgramsTab({
   const [draftQuestion, setDraftQuestion] = useState("");
 
   function openProgram(next: ProgramId | null) {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("tab", "programs");
-    if (next) params.set("program", next);
-    else params.delete("program");
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.set("tab", "programs");
+    if (next) {
+      nextParams.set("program", next);
+      nextParams.set("section", "roster");
+    } else {
+      nextParams.delete("program");
+      nextParams.delete("section");
+    }
     setClient(null);
-    router.push(`${pathname}?${params.toString()}`);
+    router.push(`${pathname}?${nextParams.toString()}`);
+  }
+
+  function openSection(next: ProgramSectionId) {
+    if (!program) return;
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.set("tab", "programs");
+    nextParams.set("program", program);
+    nextParams.set("section", next);
+    router.push(`${pathname}?${nextParams.toString()}`);
   }
 
   if (!program) {
@@ -107,7 +137,7 @@ export function AdminProgramsTab({
                     className="rounded-full px-3 py-1.5 text-xs font-bold"
                     style={{ background: gold, color: "white" }}
                   >
-                    Open roster
+                    Open
                   </button>
                 </div>
               </article>
@@ -123,6 +153,9 @@ export function AdminProgramsTab({
       program={program}
       onBack={() => openProgram(null)}
       onEnroll={() => onEnroll(program)}
+      section={section}
+      onSection={openSection}
+      preview={preview}
       onOpenClient={setClient}
       client={client}
       onCloseClient={() => setClient(null)}
@@ -134,6 +167,9 @@ export function AdminProgramsTab({
 
 function ProgramRoster({
   program,
+  section,
+  onSection,
+  preview,
   onBack,
   onEnroll,
   onOpenClient,
@@ -143,6 +179,9 @@ function ProgramRoster({
   setDraftQuestion,
 }: {
   program: ProgramId;
+  section: ProgramSectionId;
+  onSection: (section: ProgramSectionId) => void;
+  preview: boolean;
   onBack: () => void;
   onEnroll: () => void;
   onOpenClient: (client: { userId: number; email: string; name: string; shareHabitsWithCoach: boolean }) => void;
@@ -151,13 +190,15 @@ function ProgramRoster({
   draftQuestion: string;
   setDraftQuestion: (value: string) => void;
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
   const utils = trpc.useUtils();
   const definition = PROGRAMS[program];
   const url = programIntakeUrl(program);
-  const roster = trpc.enrollment.adminProgramRoster.useQuery({ program });
+  const roster = trpc.enrollment.adminProgramRoster.useQuery({ program }, { enabled: !preview && section === "roster" });
   const questions = trpc.programIntake.adminQuestions.useQuery(
     { program },
-    { enabled: program !== "metabolic" }
+    { enabled: !preview && program !== "metabolic" && section === "settings" }
   );
   const addQuestion = trpc.programIntake.addQuestion.useMutation({
     onSuccess: () => {
@@ -181,6 +222,7 @@ function ProgramRoster({
     },
     onError: (error) => toast.error(error.message),
   });
+  const rows = section === "roster" ? (preview ? previewRoster(program) : (roster.data ?? [])) : [];
 
   return (
     <div>
@@ -222,7 +264,41 @@ function ProgramRoster({
         </div>
       </div>
 
-      {program !== "metabolic" && (
+      <div className="mb-6">
+        <AdminPillNav
+          size="sm"
+          label={`${definition.label} sections`}
+          activeId={section}
+          onSelect={(id) => onSection(id as ProgramSectionId)}
+          items={programSectionIds(program).map((id) => ({ id, label: PROGRAM_SECTION_LABELS[id] }))}
+        />
+      </div>
+
+      {section === "signups" && <ProgramSignups program={program} onEnroll={onEnroll} />}
+      {section === "content" && <ProgramContent program={program} />}
+      {section === "coaching" && program === "fpu" && <AdminFpuCoachingTab />}
+      {section === "page" && program === "fpu" && <PageEditorTab />}
+
+      {section === "settings" && program === "metabolic" && (
+        <section className="rounded-xl p-5" style={{ background: paper, border: `1px solid ${line}` }}>
+          <h3 className="font-bold" style={{ color: ink }}>
+            Intake questions
+          </h3>
+          <p className="text-sm mt-1" style={{ color: muted }}>
+            Metabolic Coaching uses the full client intake. Read answers, or fill one out, from People.
+          </p>
+          <button
+            type="button"
+            onClick={() => router.push(`${pathname}?tab=people&source=intakes&screen=intakes`)}
+            className="mt-4 rounded-full px-4 py-2 text-sm font-bold"
+            style={{ background: gold, color: "white" }}
+          >
+            Open intakes
+          </button>
+        </section>
+      )}
+
+      {section === "settings" && program !== "metabolic" && (
         <section className="rounded-xl p-5 mb-6" style={{ background: paper, border: `1px solid ${line}` }}>
           <h3 className="font-bold" style={{ color: ink }}>
             Extra questions
@@ -282,88 +358,29 @@ function ProgramRoster({
         </section>
       )}
 
-      {roster.isLoading ? (
+      {section === "roster" && rows.length > 0 ? (
+        <RosterTable
+          rows={rows}
+          definitionLabel={definition.label}
+          unenrollPending={unenroll.isPending}
+          onOpenClient={onOpenClient}
+          onUnenroll={(row) => unenroll.mutate({ enrollmentId: row.enrollmentId })}
+        />
+      ) : section === "roster" && !preview && roster.isLoading ? (
         <p className="text-sm" style={{ color: muted }}>
           Loading clients…
         </p>
-      ) : roster.error ? (
+      ) : section === "roster" && roster.error ? (
         <p className="text-sm" style={{ color: "oklch(0.45 0.14 25)" }}>
           {roster.error.message}
         </p>
-      ) : roster.data && roster.data.length > 0 ? (
-        <div className="overflow-x-auto rounded-xl" style={{ border: `1px solid ${line}` }}>
-          <table className="w-full text-sm" style={{ background: paper }}>
-            <thead>
-              <tr style={{ color: muted }}>
-                {["Name", "Enrolled", "Last activity", "Assignments", "Forms", "Food this week", "Uploads", ""].map(
-                  (heading) => (
-                    <th key={heading} className="text-left font-semibold px-3 py-2 whitespace-nowrap">
-                      {heading}
-                    </th>
-                  )
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {roster.data.map((row) => (
-                <tr key={row.enrollmentId} style={{ borderTop: `1px solid ${line}` }}>
-                  <td className="px-3 py-3">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        onOpenClient({
-                          userId: row.userId,
-                          email: row.email,
-                          name: row.name,
-                          shareHabitsWithCoach: row.shareHabitsWithCoach,
-                        })
-                      }
-                      className="text-left"
-                    >
-                      <span className="font-semibold block" style={{ color: ink }}>
-                        {row.name}
-                      </span>
-                      <span className="text-xs" style={{ color: muted }}>
-                        {row.email}
-                      </span>
-                    </button>
-                  </td>
-                  <td className="px-3 py-3 whitespace-nowrap" style={{ color: ink }}>
-                    {formatWhen(row.enrolledAt)}
-                  </td>
-                  <td className="px-3 py-3 whitespace-nowrap" style={{ color: ink }}>
-                    {formatWhen(row.lastActivityAt)}
-                  </td>
-                  <td className="px-3 py-3">{row.assignmentsSubmitted}</td>
-                  <td className="px-3 py-3">{row.formsSubmitted}</td>
-                  <td className="px-3 py-3">{row.foodLogsThisWeek}</td>
-                  <td className="px-3 py-3">{row.uploads}</td>
-                  <td className="px-3 py-3">
-                    <button
-                      type="button"
-                      disabled={unenroll.isPending}
-                      onClick={() => {
-                        if (confirm(`Remove ${row.name} from ${definition.label}? Their account stays.`)) {
-                          unenroll.mutate({ enrollmentId: row.enrollmentId });
-                        }
-                      }}
-                      className="text-xs font-semibold"
-                      style={{ color: "oklch(0.45 0.12 25)" }}
-                    >
-                      Unenroll
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
+      ) : section === "roster" ? (
         <p className="text-sm" style={{ color: muted }}>
           No one is enrolled in {definition.label} yet.
         </p>
-      )}
+      ) : null}
 
+      {section === "roster" && (
       <Dialog open={!!client} onOpenChange={(open) => !open && onCloseClient()}>
         <DialogContent
           aria-describedby={undefined}
@@ -384,6 +401,173 @@ function ProgramRoster({
           )}
         </DialogContent>
       </Dialog>
+      )}
     </div>
   );
+}
+
+type RosterRow = {
+  enrollmentId: number;
+  userId: number;
+  name: string;
+  email: string;
+  shareHabitsWithCoach: boolean;
+  enrolledAt: Date | string;
+  lastActivityAt: Date | string | null;
+  assignmentsSubmitted: number;
+  formsSubmitted: number;
+  foodLogsThisWeek: number;
+  uploads: number;
+};
+
+function previewRoster(program: ProgramId): RosterRow[] {
+  const samples: Record<ProgramId, RosterRow> = {
+    reclaim: sample("Ava Collins", "ava@example.com"),
+    fpu: sample("Elena Park", "elena@example.com"),
+    challenge: sample("Gina Moss", "gina@example.com"),
+    holiday: sample("Holly Grant", "holly@example.com"),
+    metabolic: sample("Camila Ortiz", "camila@example.com"),
+  };
+  return [samples[program]];
+}
+
+function sample(name: string, email: string): RosterRow {
+  return {
+    enrollmentId: 1,
+    userId: 1,
+    name,
+    email,
+    shareHabitsWithCoach: true,
+    enrolledAt: new Date("2026-10-02T18:00:00Z"),
+    lastActivityAt: new Date("2026-11-08T18:00:00Z"),
+    assignmentsSubmitted: 2,
+    formsSubmitted: 1,
+    foodLogsThisWeek: 4,
+    uploads: 1,
+  };
+}
+
+function RosterTable({
+  rows,
+  definitionLabel,
+  unenrollPending,
+  onOpenClient,
+  onUnenroll,
+}: {
+  rows: RosterRow[];
+  definitionLabel: string;
+  unenrollPending: boolean;
+  onOpenClient: (client: { userId: number; email: string; name: string; shareHabitsWithCoach: boolean }) => void;
+  onUnenroll: (row: RosterRow) => void;
+}) {
+  return (
+    <div className="overflow-x-auto rounded-xl" style={{ border: `1px solid ${line}` }}>
+      <table className="w-full text-sm" style={{ background: paper }}>
+        <thead>
+          <tr style={{ color: muted }}>
+            {["Name", "Enrolled", "Last activity", "Assignments", "Forms", "Food this week", "Uploads", ""].map(
+              (heading) => (
+                <th key={heading} className="text-left font-semibold px-3 py-2 whitespace-nowrap">
+                  {heading}
+                </th>
+              )
+            )}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.enrollmentId} style={{ borderTop: `1px solid ${line}` }}>
+              <td className="px-3 py-3">
+                <button
+                  type="button"
+                  onClick={() =>
+                    onOpenClient({
+                      userId: row.userId,
+                      email: row.email,
+                      name: row.name,
+                      shareHabitsWithCoach: row.shareHabitsWithCoach,
+                    })
+                  }
+                  className="text-left"
+                >
+                  <span className="font-semibold block" style={{ color: ink }}>
+                    {row.name}
+                  </span>
+                  <span className="text-xs" style={{ color: muted }}>
+                    {row.email}
+                  </span>
+                </button>
+              </td>
+              <td className="px-3 py-3 whitespace-nowrap" style={{ color: ink }}>
+                {formatWhen(row.enrolledAt)}
+              </td>
+              <td className="px-3 py-3 whitespace-nowrap" style={{ color: ink }}>
+                {formatWhen(row.lastActivityAt)}
+              </td>
+              <td className="px-3 py-3">{row.assignmentsSubmitted}</td>
+              <td className="px-3 py-3">{row.formsSubmitted}</td>
+              <td className="px-3 py-3">{row.foodLogsThisWeek}</td>
+              <td className="px-3 py-3">{row.uploads}</td>
+              <td className="px-3 py-3">
+                <button
+                  type="button"
+                  disabled={unenrollPending}
+                  onClick={() => {
+                    if (confirm(`Remove ${row.name} from ${definitionLabel}? Their account stays.`)) {
+                      onUnenroll(row);
+                    }
+                  }}
+                  className="text-xs font-semibold"
+                  style={{ color: "oklch(0.45 0.12 25)" }}
+                >
+                  Unenroll
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function ProgramSignups({ program, onEnroll }: { program: ProgramId; onEnroll: () => void }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  if (program === "fpu") return <AdminFpuGroupTab />;
+  if (program === "challenge") return <AdminRealFoodResetTab />;
+  const peopleSource = program === "metabolic" ? "intakes" : "contacts";
+  return (
+    <section className="rounded-xl p-5" style={{ background: paper, border: `1px solid ${line}` }}>
+      <h3 className="font-bold text-lg" style={{ fontFamily: "'Cormorant Garamond', serif", color: ink }}>
+        Sign-ups
+      </h3>
+      <p className="text-sm mt-2 max-w-xl" style={{ color: muted }}>
+        {PROGRAMS[program].label} does not have its own sign-up list. New people land in People, and you can enroll
+        them from here.
+      </p>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={onEnroll}
+          className="rounded-full px-4 py-2 text-sm font-bold"
+          style={{ background: gold, color: "white" }}
+        >
+          Enroll someone
+        </button>
+        <button
+          type="button"
+          onClick={() => router.push(`${pathname}?tab=people&source=${peopleSource}`)}
+          className="rounded-full px-4 py-2 text-sm font-bold"
+          style={{ background: paper, color: ink, border: `1px solid ${line}` }}
+        >
+          Open People
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function ProgramContent({ program }: { program: ProgramId }) {
+  return <ProgramBuilderTab program={program} />;
 }

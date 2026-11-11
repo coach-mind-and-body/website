@@ -45,7 +45,7 @@ export function CoachClientView({
 
       {program === "metabolic" ? (
         <p className="text-sm" style={{ color: "oklch(0.42 0.015 50)" }}>
-          Their full intake answers are on the Client intakes tab.
+          Their full intake answers are in People, under Intakes.
         </p>
       ) : submission.data?.answers?.length ? (
         <div>

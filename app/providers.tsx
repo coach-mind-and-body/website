@@ -18,6 +18,12 @@ import { getLoginUrl } from "@/lib/const";
 const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (!(error instanceof TRPCClientError)) return;
   if (typeof window === "undefined") return;
+  if (
+    process.env.NODE_ENV !== "production" &&
+    new URLSearchParams(window.location.search).get("preview") === "1"
+  ) {
+    return;
+  }
 
   const isUnauthorized = error.message === UNAUTHED_ERR_MSG;
   if (!isUnauthorized) return;

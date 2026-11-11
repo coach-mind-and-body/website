@@ -16,11 +16,21 @@ import { todayMountainDateStr } from "@/lib/mountainTime";
 
 const PAGE_SIZE = 25;
 
-export function AdminContactsTab({ gcalConnected }: { gcalConnected: boolean }) {
-  const [search, setSearch] = useState("");
+export function AdminContactsTab({
+  gcalConnected,
+  initialSearch = "",
+}: {
+  gcalConnected: boolean;
+  initialSearch?: string;
+}) {
+  const [search, setSearch] = useState(initialSearch);
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
   const [filter, setFilter] = useState<"all" | "reclaim" | "habit" | "leads">("all");
+
+  useEffect(() => {
+    if (initialSearch) setSearch(initialSearch);
+  }, [initialSearch]);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search.trim()), 300);

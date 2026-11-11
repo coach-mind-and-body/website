@@ -70,8 +70,8 @@ export default function FormEditorClient() {
     <main className="min-h-screen px-4 py-6 sm:px-8" style={{ background: "#faf5f5" }}>
       <div className="mx-auto max-w-6xl">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <Link href="/admin?tab=filelibrary" className="text-sm font-bold" style={{ color: "#c9a96e" }}>
-            ← File library
+          <Link href="/admin?tab=library&section=files" className="text-sm font-bold" style={{ color: "#c9a96e" }}>
+            ← Library
           </Link>
           <div className="flex gap-2">
             <button type="button" className="min-h-12 rounded-full px-4 text-sm font-bold" style={{ background: tab === "edit" ? "#2d3b2d" : "white", color: tab === "edit" ? "white" : "#2d3b2d" }} onClick={() => setTab("edit")}>

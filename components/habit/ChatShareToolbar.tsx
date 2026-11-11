@@ -149,7 +149,7 @@ export function ChatShareToolbar({
           )}
           {!filesLoading && (files?.length ?? 0) === 0 && (
             <p className="text-[11px] text-gray-400 text-center py-2">
-              Upload files under Admin → File library
+              Upload files under Admin → Library
             </p>
           )}
         </div>
