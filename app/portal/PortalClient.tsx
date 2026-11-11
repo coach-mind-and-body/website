@@ -8,6 +8,7 @@ import { getLoginUrl } from "@/lib/const";
 import { CheckCircle2, Clock, Lock, Video, Upload, FileText, Calendar, ChevronDown, ChevronUp, X, CreditCard, DollarSign, AlertCircle, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { BRAND } from "@shared/brand";
+import { formatMountainStamp } from "@/lib/mountainTime";
 import { hubFileIsHiddenByForm } from "@shared/forms";
 import Link from 'next/link';
 ;
@@ -309,10 +310,7 @@ export default function Portal() {
                         : ""}
                     </p>
                     <p className="text-xs mt-0.5" style={{ color: "#8a9a8a" }}>
-                      {new Date(nextScheduled.scheduledAt).toLocaleString("en-US", {
-                        dateStyle: "medium",
-                        timeStyle: "short",
-                      })}
+                      {formatMountainStamp(nextScheduled.scheduledAt)}
                     </p>
                   </div>
                   {nextScheduled.googleMeetLink && (
@@ -371,7 +369,8 @@ export default function Portal() {
                         {event.summary}
                       </p>
                       <p className="text-xs mt-0.5 font-semibold" style={{ color: "#8a9a8a" }}>
-                        {new Date(event.startTime).toLocaleString()} — {new Date(event.endTime).toLocaleTimeString()}
+                        {formatMountainStamp(event.startTime)}
+                        {event.endTime ? ` – ${new Date(event.endTime).toLocaleTimeString("en-US", { timeZone: "America/Denver", timeStyle: "short" })} MT` : ""}
                       </p>
                     </div>
                   </div>

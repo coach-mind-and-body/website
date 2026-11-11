@@ -21,6 +21,8 @@ export type HubNextSession = {
   status: "scheduled";
   scheduledAt: Date;
   googleMeetLink: string | null;
+  /** Set when this card came from a calendar event that is not a numbered session. */
+  title?: string | null;
 };
 
 export type CoachingSessionSnapshot = {

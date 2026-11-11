@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/use-auth";
@@ -13,6 +13,8 @@ import { toast } from "sonner";
 import { BRAND } from "@shared/brand";
 import { isProgramId, type ProgramId } from "@shared/programs";
 import { hubFileIsHiddenByForm } from "@shared/forms";
+import { MODULE_HOMEWORK_TITLE, splitHomeworkSection } from "@shared/moduleHomework";
+import { formatMountainStamp } from "@/lib/mountainTime";
 import Link from 'next/link';
 import {
   Carousel,
@@ -108,6 +110,7 @@ export default function ReclaimHub() {
         submissions: selectedProgram.submissions,
         files: selectedProgram.files,
         forms: selectedProgram.forms,
+        nextSession: selectedProgram.nextSession,
         label: selectedProgram.label,
         program: selectedProgram.program,
       }
@@ -119,23 +122,36 @@ export default function ReclaimHub() {
 
   const selectedModule = modules.find(m => m.id === selectedModuleId);
   const selectedAssignments = assignments.filter(a => a.moduleId === selectedModuleId);
+  const homeworkTask = selectedAssignments.find((assignment) => assignment.title === MODULE_HOMEWORK_TITLE)
+    ?? null;
+  const homeworkInline = Boolean(selectedModule?.content && splitHomeworkSection(selectedModule.content).prompt && homeworkTask);
+  const listedAssignments = homeworkInline
+    ? selectedAssignments.filter((assignment) => assignment.id !== homeworkTask?.id)
+    : selectedAssignments;
 
-  // Initialize answers from existing submissions when a module is selected
+  // Fill saved answers once. Later refetches must not wipe what the client is typing.
   useEffect(() => {
-    if (selectedModuleId && data) {
-      const newAnswers: Record<number, string> = {};
-      const newFileUrls: Record<number, string> = {};
-      selectedAssignments.forEach(a => {
-        const sub = submissions.find(s => s.assignmentId === a.id);
-        if (sub) {
-          if (sub.answer) newAnswers[a.id] = sub.answer;
-          if (sub.fileUrl) newFileUrls[a.id] = sub.fileUrl;
-        }
-      });
-      setAnswers(newAnswers);
-      setFileUrls(newFileUrls);
-    }
-  }, [selectedModuleId, data]);
+    if (!selectedModuleId) return;
+    const mine = assignments.filter((assignment) => assignment.moduleId === selectedModuleId);
+    setAnswers((prev) => {
+      const next = { ...prev };
+      for (const assignment of mine) {
+        if (Object.prototype.hasOwnProperty.call(next, assignment.id)) continue;
+        const saved = submissions.find((submission) => submission.assignmentId === assignment.id)?.answer;
+        if (saved) next[assignment.id] = saved;
+      }
+      return next;
+    });
+    setFileUrls((prev) => {
+      const next = { ...prev };
+      for (const assignment of mine) {
+        if (Object.prototype.hasOwnProperty.call(next, assignment.id)) continue;
+        const saved = submissions.find((submission) => submission.assignmentId === assignment.id)?.fileUrl;
+        if (saved) next[assignment.id] = saved;
+      }
+      return next;
+    });
+  }, [selectedModuleId, assignments, submissions]);
 
   if (loading || isLoading) {
     return (
@@ -369,42 +385,37 @@ export default function ReclaimHub() {
                 </div>
               )}
 
-              {/* Next Upcoming Session Banner */}
-              {(() => {
-                const upcomingSession = modules
-                  .map(m => m.session)
-                  .filter(s => s && s.status === "scheduled")
-                  .sort((a, b) => new Date(a!.scheduledAt!).getTime() - new Date(b!.scheduledAt!).getTime())[0];
-                
-                if (!upcomingSession) return null;
-                
-                return (
-                  <div className="flex items-center justify-between gap-4 p-6 rounded-3xl shadow-md mb-6 transition-transform hover:scale-[1.01]" style={{ background: "#2d3b2d", border: "1px solid #1a231a" }}>
+              {/* Next session, including a calendar booking whose module is still locked. */}
+              {data?.nextSession?.scheduledAt && (
+                  <div className="flex items-center justify-between gap-4 p-6 rounded-3xl shadow-md mb-6" style={{ background: "#2d3b2d", border: "1px solid #1a231a" }}>
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold shrink-0" style={{ background: "#c9a96e" }}>
                         <Calendar size={20} />
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-white">Next Upcoming Coaching Session</p>
+                        <p className="text-sm font-bold text-white">Next session</p>
                         <p className="text-xs font-semibold mt-1" style={{ color: "#a8b8a8" }}>
-                          Session {upcomingSession.sessionNumber} • {new Date(upcomingSession.scheduledAt!).toLocaleString("en-US", { dateStyle: "long", timeStyle: "short" })}
+                          {data.nextSession.sessionNumber > 0
+                            ? `Session ${data.nextSession.sessionNumber}`
+                            : (data.nextSession.title || "Coaching appointment")}
+                          {" • "}
+                          {formatMountainStamp(data.nextSession.scheduledAt)}
                         </p>
                       </div>
                     </div>
-                    {upcomingSession.googleMeetLink && (
+                    {data.nextSession.googleMeetLink && (
                       <a 
-                        href={upcomingSession.googleMeetLink} 
+                        href={data.nextSession.googleMeetLink} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="px-5 py-2.5 rounded-full font-bold text-sm shadow-sm transition-transform hover:scale-105 shrink-0"
+                        className="px-5 py-2.5 rounded-full font-bold text-sm shadow-sm shrink-0"
                         style={{ background: "#c9a96e", color: "white" }}
                       >
                         Join Meet
                       </a>
                     )}
                   </div>
-                );
-              })()}
+              )}
 
               {/* Free Habit Tracker Banner */}
               <Link href="/habit-tracker" className="block mb-12">
@@ -549,7 +560,7 @@ export default function ReclaimHub() {
                       <div className="flex-1">
                         <p className="text-sm font-bold" style={{ color: "#2d3b2d" }}>Upcoming Coaching Session</p>
                         <p className="text-xs font-semibold mt-1" style={{ color: "#8a9a8a" }}>
-                          {new Date(selectedModule.session.scheduledAt!).toLocaleString("en-US", { dateStyle: "long", timeStyle: "short" })}
+                          {formatMountainStamp(selectedModule.session.scheduledAt!)}
                         </p>
                       </div>
                       {selectedModule.session.googleMeetLink && (
@@ -585,32 +596,27 @@ export default function ReclaimHub() {
                 )}
 
                 {selectedModule.content && (
-                  (() => {
-                    const slides = selectedModule.content.split(/<hr\s*\/?>/i);
-                    if (slides.length <= 1) {
-                      return <div className="prose prose-lg prose-stone max-w-none mb-12" dangerouslySetInnerHTML={{ __html: selectedModule.content }} />;
+                  <LessonHtml
+                    html={selectedModule.content}
+                    homework={
+                      homeworkInline && homeworkTask ? (
+                        <HomeworkAnswer
+                          value={answers[homeworkTask.id] || ""}
+                          onChange={(text) => handleAnswerChange(homeworkTask.id, text)}
+                          onSave={() =>
+                            submitAssignment.mutate({
+                              assignmentId: homeworkTask.id,
+                              answer: answers[homeworkTask.id] || "",
+                              fileUrl: fileUrls[homeworkTask.id] || "",
+                            })
+                          }
+                          saving={submitAssignment.isPending}
+                          savedAt={submissions.find((submission) => submission.assignmentId === homeworkTask.id)?.submittedAt}
+                          feedback={submissions.find((submission) => submission.assignmentId === homeworkTask.id)?.feedback}
+                        />
+                      ) : null
                     }
-                    return (
-                      <div className="mb-12 relative px-8 sm:px-12">
-                        <Carousel className="w-full">
-                          <CarouselContent>
-                            {slides.map((slideHtml: string, index: number) => (
-                              <CarouselItem key={index}>
-                                <div className="p-2 md:p-6">
-                                  <div className="prose prose-lg prose-stone max-w-none" dangerouslySetInnerHTML={{ __html: slideHtml }} />
-                                </div>
-                              </CarouselItem>
-                            ))}
-                          </CarouselContent>
-                          <CarouselPrevious className="hidden sm:flex" />
-                          <CarouselNext className="hidden sm:flex" />
-                        </Carousel>
-                        <div className="text-center mt-6 text-sm font-bold uppercase tracking-widest flex items-center justify-center gap-2" style={{ color: "#c9a96e" }}>
-                          <ArrowLeft size={14} /> Swipe to navigate <ArrowLeft size={14} className="rotate-180" />
-                        </div>
-                      </div>
-                    );
-                  })()
+                  />
                 )}
 
                 {selectedModule.pdfUrl && (
@@ -677,14 +683,14 @@ export default function ReclaimHub() {
                   </div>
                 )}
 
-                {selectedAssignments.length > 0 && (
+                {listedAssignments.length > 0 && (
                   <div className="mt-16 pt-12 border-t" style={{ borderColor: "#f0e8e4" }}>
                     <h2 className="text-2xl md:text-3xl font-bold mb-8" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2d3b2d" }}>
                       Reflection & Assignments
                     </h2>
                     
                     <div className="space-y-10">
-                      {selectedAssignments.map((assignment, idx) => {
+                      {listedAssignments.map((assignment, idx) => {
                         const submission = submissions.find(s => s.assignmentId === assignment.id);
                         
                         return (
@@ -850,6 +856,101 @@ export default function ReclaimHub() {
           )}
         </AnimatePresence>
       </main>
+    </div>
+  );
+}
+
+function LessonHtml({ html, homework }: { html: string; homework: ReactNode }) {
+  const slides = html.split(/<hr\s*\/?>/i);
+  const renderSlice = (slice: string) => {
+    const parts = splitHomeworkSection(slice);
+    if (!parts.prompt) {
+      return <div className="prose prose-lg prose-stone max-w-none" dangerouslySetInnerHTML={{ __html: slice }} />;
+    }
+    return (
+      <div>
+        {parts.before.trim() ? (
+          <div className="prose prose-lg prose-stone max-w-none" dangerouslySetInnerHTML={{ __html: parts.before }} />
+        ) : null}
+        <div className="prose prose-lg prose-stone max-w-none" dangerouslySetInnerHTML={{ __html: parts.homeworkHtml }} />
+        {homework}
+        {parts.after.trim() ? (
+          <div className="prose prose-lg prose-stone max-w-none mt-8" dangerouslySetInnerHTML={{ __html: parts.after }} />
+        ) : null}
+      </div>
+    );
+  };
+  if (slides.length <= 1) {
+    return <div className="mb-12">{renderSlice(html)}</div>;
+  }
+  return (
+    <div className="mb-12 relative px-8 sm:px-12">
+      <Carousel className="w-full">
+        <CarouselContent>
+          {slides.map((slideHtml, index) => (
+            <CarouselItem key={index}>
+              <div className="p-2 md:p-6">{renderSlice(slideHtml)}</div>
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+        <CarouselPrevious className="hidden sm:flex" />
+        <CarouselNext className="hidden sm:flex" />
+      </Carousel>
+      <div className="text-center mt-6 text-sm font-bold uppercase tracking-widest flex items-center justify-center gap-2" style={{ color: "#c9a96e" }}>
+        <ArrowLeft size={14} /> Swipe to navigate <ArrowLeft size={14} className="rotate-180" />
+      </div>
+    </div>
+  );
+}
+
+function HomeworkAnswer({
+  value,
+  onChange,
+  onSave,
+  saving,
+  savedAt,
+  feedback,
+}: {
+  value: string;
+  onChange: (text: string) => void;
+  onSave: () => void;
+  saving: boolean;
+  savedAt?: Date | string | null;
+  feedback?: string | null;
+}) {
+  return (
+    <div className="mt-4 mb-2 rounded-2xl border p-4" style={{ borderColor: "#e8c99a", background: "#fffdf9" }}>
+      <label className="text-sm font-bold" style={{ color: "#2d3b2d" }}>Your answer</label>
+      <Textarea
+        rows={5}
+        placeholder="Type your answer here"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-2 text-base resize-y p-4 rounded-xl border"
+        style={{ borderColor: "#f0e8e4", color: "#2d3b2d" }}
+      />
+      <div className="mt-3 flex items-center justify-between gap-3">
+        <p className="text-xs" style={{ color: "#8a9a8a" }}>
+          {savedAt
+            ? `Saved ${new Date(savedAt).toLocaleDateString("en-US", { timeZone: "America/Denver" })}. Lee Anne can read it in Submissions.`
+            : "Lee Anne reads this in Submissions."}
+        </p>
+        <Button
+          type="button"
+          onClick={onSave}
+          disabled={!value.trim() || saving}
+          className="rounded-full px-6 font-bold"
+          style={{ background: "#c9a96e", color: "white" }}
+        >
+          {saving ? "Saving..." : savedAt ? "Update" : "Save"}
+        </Button>
+      </div>
+      {feedback ? (
+        <div className="mt-4 p-4 rounded-xl border-l-4" style={{ background: "#fbf6ee", borderColor: "#c9a96e" }}>
+          <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "#c9a96e" }}>From Lee Anne</p>
+          <p className="text-sm whitespace-pre-wrap" style={{ color: "#2d3b2d" }}>{feedback}</p>
+        </div>
+      ) : null}
     </div>
   );
 }

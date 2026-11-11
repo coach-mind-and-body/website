@@ -15,6 +15,7 @@ import { PROGRAM_IDS, PROGRAMS, isProgramId } from "@shared/programs";
 import { buildAssignmentFeedbackMessage } from "../assignmentFeedback";
 import { sendTransactionalEmail } from "../notifications";
 import { loadClientHub, loadCoachClientWorkspace } from "../programHubData";
+import { ensureModuleHomeworkAssignments, setHomeworkAnswerBox, syncHomeworkQuestion } from "../moduleHomework";
 
 function adminOnly(role: string | undefined) {
   if (role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Admins only" });
@@ -36,7 +37,7 @@ export const reclaimHubRouter = router({
   myHub: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
     if (!db) return { programs: [] };
-    return loadClientHub(db, { id: ctx.user!.id, role: ctx.user!.role });
+    return loadClientHub(db, { id: ctx.user!.id, role: ctx.user!.role, email: ctx.user!.email });
   }),
 
   // Reclaim-only shape kept so older portal calls still resolve.
@@ -45,7 +46,7 @@ export const reclaimHubRouter = router({
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-    const hub = await loadClientHub(db, { id: ctx.user!.id, role: ctx.user!.role }, { programs: ["reclaim"] });
+    const hub = await loadClientHub(db, { id: ctx.user!.id, role: ctx.user!.role, email: ctx.user!.email }, { programs: ["reclaim"] });
     const reclaim = hub.programs.find((program) => program.program === "reclaim");
     if (!reclaim) {
       throw new TRPCError({ code: "FORBIDDEN", message: "Not actively enrolled in Reclaim." });
@@ -54,6 +55,7 @@ export const reclaimHubRouter = router({
     return {
       enrollment: reclaim.enrollment,
       modules: reclaim.modules,
+      nextSession: reclaim.nextSession,
       assignments: reclaim.assignments,
       submissions: reclaim.submissions,
     };
@@ -73,7 +75,7 @@ export const reclaimHubRouter = router({
         throw new TRPCError({ code: "BAD_REQUEST", message: "Provide either an answer or a file upload." });
       }
 
-      const hub = await loadClientHub(db, { id: ctx.user!.id, role: ctx.user!.role });
+      const hub = await loadClientHub(db, { id: ctx.user!.id, role: ctx.user!.role, email: ctx.user!.email });
       const openToUser = hub.programs.some((program) =>
         program.assignments.some((assignment) => assignment.id === input.assignmentId)
       );
@@ -118,7 +120,7 @@ export const reclaimHubRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      const hub = await loadClientHub(db, { id: ctx.user!.id, role: ctx.user!.role });
+      const hub = await loadClientHub(db, { id: ctx.user!.id, role: ctx.user!.role, email: ctx.user!.email });
       const openToUser = hub.programs.some((program) =>
         program.modules.some((mod) => mod.id === input.moduleId)
       );
@@ -216,6 +218,9 @@ export const reclaimHubRouter = router({
 
       const { id, ...data } = input;
       await db.update(programModules).set(data).where(eq(programModules.id, id));
+      if (data.content !== undefined) {
+        await syncHomeworkQuestion(db, id, data.content);
+      }
       return { success: true };
     }),
 
@@ -302,11 +307,41 @@ export const reclaimHubRouter = router({
       adminOnly(ctx.user?.role);
       const db = await getDb();
       if (!db) return [];
-      return db
+      const [mod] = await db.select().from(programModules).where(eq(programModules.id, input.moduleId)).limit(1);
+      let rows = await db
         .select()
         .from(assignments)
         .where(eq(assignments.moduleId, input.moduleId))
         .orderBy(asc(assignments.order));
+      if (mod) {
+        const added = await ensureModuleHomeworkAssignments(db, [mod], rows);
+        if (added) {
+          rows = await db
+            .select()
+            .from(assignments)
+            .where(eq(assignments.moduleId, input.moduleId))
+            .orderBy(asc(assignments.order));
+        }
+      }
+      return rows;
+    }),
+
+  /** Show or hide the typed answer under a module's Homework section. */
+  adminSetHomeworkAnswerBox: protectedProcedure
+    .input(z.object({ moduleId: z.number(), enabled: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      adminOnly(ctx.user?.role);
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        return await setHomeworkAnswerBox(db, input.moduleId, input.enabled);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Could not update the answer box.";
+        throw new TRPCError({
+          code: message.includes("gone") ? "NOT_FOUND" : "BAD_REQUEST",
+          message,
+        });
+      }
     }),
 
   adminCreateAssignment: protectedProcedure

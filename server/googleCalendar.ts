@@ -4,7 +4,16 @@
  */
 import { getDb } from "./db";
 import { googleTokens } from "../drizzle/schema";
-import { and, eq, like, or } from "drizzle-orm";
+import { and, eq, like, or, sql } from "drizzle-orm";
+import {
+  appointmentsForClient,
+  calendarGuestEmails,
+  coachingEventIsJoinable,
+  googleEventInstant,
+  meetLinkFromEvent,
+  pickSessionForCalendarEvent,
+  type ClientCalendarEvent,
+} from "./calendarAppointments";
 import { ENV } from "./_core/env";
 import { sdk } from "./_core/sdk";
 import { type Request } from "express";
@@ -142,7 +151,37 @@ export async function createCalendarEventWithMeet(params: CreateEventParams): Pr
   }
 }
 
-export async function getUpcomingEventsForEmail(email: string) {
+const upcomingCache = new Map<string, { at: number; events: Awaited<ReturnType<typeof loadUpcomingForEmail>> }>();
+const UPCOMING_TTL_MS = 60_000;
+
+async function listPrimaryEvents(accessToken: string, timeMin: string, timeMax: string): Promise<GCalEvent[]> {
+  const events: GCalEvent[] = [];
+  let pageToken: string | undefined;
+  for (let page = 0; page < 4; page++) {
+    const params = new URLSearchParams({
+      timeMin,
+      timeMax,
+      singleEvents: "true",
+      orderBy: "startTime",
+      maxResults: "250",
+    });
+    if (pageToken) params.set("pageToken", pageToken);
+    const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const data = (await res.json()) as { items?: GCalEvent[]; nextPageToken?: string; error?: { message?: string } };
+    if (!res.ok || data.error) {
+      console.error("[GCal] list events failed:", data.error?.message ?? res.status);
+      break;
+    }
+    events.push(...(data.items ?? []));
+    if (!data.nextPageToken) break;
+    pageToken = data.nextPageToken;
+  }
+  return events;
+}
+
+async function loadUpcomingForEmail(email: string) {
   const db = await getDb();
   if (!db) return [];
 
@@ -152,43 +191,34 @@ export async function getUpcomingEventsForEmail(email: string) {
   const accessToken = await getValidAccessToken(adminToken.userId);
   if (!accessToken) return [];
 
-  const timeMin = new Date().toISOString();
-  // Fetch next 30 days
+  // Include a call that already started within the join window. timeMin is the event end, so this is early enough.
+  const timeMin = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
   const timeMax = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-  // `q` parameter searches the event summary, description, attendees, etc.
-  const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}&singleEvents=true&orderBy=startTime&q=${encodeURIComponent(email)}`;
+  const items = await listPrimaryEvents(accessToken, timeMin, timeMax);
+  return appointmentsForClient(items, email).map((event) => {
+    const raw = items.find((item) => item.id === event.id);
+    return {
+      id: event.id,
+      summary: event.summary,
+      startTime: event.startTime,
+      endTime: event.endTime,
+      meetLink: event.meetLink,
+      htmlLink: raw?.htmlLink ?? "",
+    };
+  });
+}
 
+export async function getUpcomingEventsForEmail(email: string) {
+  const key = email.trim().toLowerCase();
+  if (!key) return [];
+  const cached = upcomingCache.get(key);
+  if (cached && Date.now() - cached.at < UPCOMING_TTL_MS) return cached.events;
   try {
-    const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-    const data = await res.json() as any;
-    if (!data.items) return [];
-
-    const events = data.items
-      .filter((event: any) => event.status !== "cancelled" && event.start?.dateTime)
-      .filter((event: any) => {
-        // Ensure the email is actually an attendee or in the description/summary
-        const attendeeEmails = (event.attendees ?? []).map((a: any) => a.email.toLowerCase());
-        return attendeeEmails.includes(email.toLowerCase()) || 
-               event.summary?.toLowerCase().includes(email.toLowerCase()) ||
-               event.description?.toLowerCase().includes(email.toLowerCase());
-      })
-      .map((event: any) => {
-        const meetEntry = event.conferenceData?.entryPoints?.find((e: any) => e.entryPointType === "video");
-        return {
-          id: event.id,
-          summary: event.summary,
-          startTime: new Date(event.start.dateTime),
-          endTime: new Date(event.end.dateTime),
-          meetLink: meetEntry?.uri ?? "",
-          htmlLink: event.htmlLink ?? "",
-        };
-      });
-
+    const events = await loadUpcomingForEmail(key);
+    upcomingCache.set(key, { at: Date.now(), events });
     return events;
   } catch (err) {
-    console.error("getUpcomingEventsForEmail error:", err);
+    console.error("getUpcomingEventsForEmail error:", err instanceof Error ? err.message : "failed");
     return [];
   }
 }
@@ -212,23 +242,18 @@ import {
 const SNACK_HACK_SEQUENCE_ID = "snack_hack_nurture";
 const FOOD_QUIZ_SEQUENCE_ID = "food_quiz_nurture";
 
-type GCalEvent = {
-  id: string;
+type GCalEvent = ClientCalendarEvent & {
   summary?: string;
   description?: string;
-  start?: { dateTime?: string };
-  end?: { dateTime?: string };
+  htmlLink?: string;
+  creator?: { email?: string };
+  organizer?: { email?: string; displayName?: string };
   attendees?: Array<{
     email?: string;
     displayName?: string;
     self?: boolean;
     organizer?: boolean;
   }>;
-  conferenceData?: { entryPoints?: Array<{ entryPointType: string; uri: string }> };
-  status?: string;
-  htmlLink?: string;
-  creator?: { email?: string };
-  organizer?: { email?: string; displayName?: string };
 };
 
 function extractPhoneFromText(text: string): string | undefined {
@@ -328,17 +353,13 @@ export async function listAdminCalendarEvents(opts?: {
     for (const event of data.items ?? []) {
       if (event.status === "cancelled") continue;
       // Include timed events; all-day optional skip for cleaner list
-      const startIso = event.start?.dateTime;
-      if (!startIso) continue;
+      const start = googleEventInstant(event.start);
+      if (!start) continue;
+      const end = googleEventInstant(event.end);
 
       const description = event.description ?? "";
       const summary = event.summary?.trim() || "(No title)";
-      const meetEntry = event.conferenceData?.entryPoints?.find(
-        (e) => e.entryPointType === "video"
-      );
-      // Meet link sometimes lives in description / hangoutLink-style fields
-      const meetFromDesc =
-        description.match(/https:\/\/meet\.google\.com\/[a-z0-9-]+/i)?.[0] ?? null;
+      const meetFromDesc = meetLinkFromEvent(event) || null;
 
       const guests = (event.attendees ?? [])
         .filter((a) => {
@@ -358,10 +379,10 @@ export async function listAdminCalendarEvents(opts?: {
         id: event.id,
         summary,
         description: description || null,
-        startTime: startIso,
-        endTime: event.end?.dateTime ?? null,
+        startTime: start.toISOString(),
+        endTime: end ? end.toISOString() : null,
         htmlLink: event.htmlLink ?? null,
-        meetLink: meetEntry?.uri ?? meetFromDesc,
+        meetLink: meetFromDesc,
         status: event.status ?? "confirmed",
         kind: classifyEventKind(summary, description),
         guests,
@@ -583,51 +604,30 @@ export async function syncRecentCalendarEvents() {
 
   const timeMin = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const timeMax = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString();
-  const url =
-    `https://www.googleapis.com/calendar/v3/calendars/primary/events` +
-    `?timeMin=${encodeURIComponent(timeMin)}` +
-    `&timeMax=${encodeURIComponent(timeMax)}` +
-    `&singleEvents=true&orderBy=startTime&maxResults=100`;
-
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-  const data = (await res.json()) as { items?: GCalEvent[]; error?: unknown };
-  if (!data.items) {
-    if (data.error) console.error("[GCal Sync] API error:", data.error);
-    return;
-  }
+  const items = await listPrimaryEvents(accessToken, timeMin, timeMax);
+  if (items.length === 0) return;
 
   const adminEmail = adminToken.email?.toLowerCase();
 
-  for (const event of data.items) {
+  for (const event of items) {
     if (event.status === "cancelled") continue;
-    if (!event.start?.dateTime) continue;
+    const scheduledAt = googleEventInstant(event.start);
+    if (!scheduledAt || !event.id) continue;
 
-    const attendeeEmails = (event.attendees ?? [])
-      .map((a) => a.email?.toLowerCase())
-      .filter((e): e is string => !!e);
-    if (attendeeEmails.length === 0) continue;
-
-    const meetEntry = event.conferenceData?.entryPoints?.find(
-      (e) => e.entryPointType === "video"
-    );
-    const meetLink = meetEntry?.uri ?? "";
+    const guestEmails = calendarGuestEmails(event, adminEmail);
+    const meetLink = meetLinkFromEvent(event);
 
     let matchedCoachingSession = false;
 
-    // Find a client by attendee email
-    for (const email of attendeeEmails) {
-      if (adminEmail && email === adminEmail) continue;
-
+    // Match the booker even when their email is only in the description, and ignore case.
+    for (const email of guestEmails) {
       const [matchedUser] = await db
         .select()
         .from(users)
-        .where(eq(users.email, email))
+        .where(sql`lower(${users.email}) = ${email}`)
         .limit(1);
       if (!matchedUser) continue;
 
-      // Find their active enrollment
       const [enrollment] = await db
         .select()
         .from(enrollments)
@@ -635,41 +635,33 @@ export async function syncRecentCalendarEvents() {
         .limit(1);
       if (!enrollment) continue;
 
-      // Find the next unscheduled session for this enrollment
-      const unscheduledSessions = await db
+      // A coaching client is not a new discovery lead, even when this event is already over.
+      matchedCoachingSession = true;
+
+      // Past events stay off the next open slot. They used to consume it, so tonight never linked.
+      if (!coachingEventIsJoinable(scheduledAt)) break;
+
+      const sessionRows = await db
         .select()
         .from(coachingSessions)
         .where(eq(coachingSessions.enrollmentId, enrollment.id));
 
-      const nextSession = unscheduledSessions
-        .filter((s) => s.status === "not_scheduled")
-        .sort((a, b) => a.sessionNumber - b.sessionNumber)[0];
+      const nextSession = pickSessionForCalendarEvent(sessionRows, event.id, scheduledAt);
+      if (!nextSession) break;
 
-      if (!nextSession) continue;
-
-      // Check if this event is already linked to a session
-      const alreadyLinked = unscheduledSessions.some((s) => s.googleEventId === event.id);
-      if (alreadyLinked) {
-        matchedCoachingSession = true;
-        break;
-      }
-
-      // Update the session with the scheduled time and meet link
-      const scheduledAt = new Date(event.start.dateTime);
       await db
         .update(coachingSessions)
         .set({
           status: "scheduled",
           scheduledAt,
           googleEventId: event.id,
-          googleMeetLink: meetLink || null,
+          googleMeetLink: meetLink || nextSession.googleMeetLink || null,
         })
         .where(eq(coachingSessions.id, nextSession.id));
 
       console.log(
-        `[GCal Sync] Auto-scheduled Session ${nextSession.sessionNumber} for user ${matchedUser.email} at ${event.start.dateTime}`
+        `[GCal Sync] Auto-scheduled Session ${nextSession.sessionNumber} at ${scheduledAt.toISOString()}`
       );
-      matchedCoachingSession = true;
       break;
     }
 
