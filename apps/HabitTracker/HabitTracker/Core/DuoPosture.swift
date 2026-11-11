@@ -42,7 +42,7 @@ struct DuoPanes<Primary: View, Secondary: View>: View {
     @ViewBuilder var controls: () -> Secondary
     @Environment(\.duoPosture) private var posture
 
-    init(style: DuoPaneStyle = .augment, @ViewBuilder primary: () -> Primary, @ViewBuilder controls: () -> Secondary) {
+    init(style: DuoPaneStyle = .augment, @ViewBuilder primary: @escaping () -> Primary, @ViewBuilder controls: @escaping () -> Secondary) {
         self.style = style
         self.primary = primary
         self.controls = controls
