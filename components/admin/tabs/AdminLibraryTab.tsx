@@ -23,7 +23,7 @@ export function AdminLibraryTab() {
   return (
     <div>
       <p className="text-sm mb-4 max-w-xl" style={{ color: "oklch(0.52 0.015 50)" }}>
-        Files you share with clients, and the recipes in the food vault.
+        Files you share with clients, grouped pages, fillable forms, and the recipes in the food vault.
       </p>
       <div className="mb-6">
         <AdminPillNav

@@ -569,15 +569,5 @@ function ProgramSignups({ program, onEnroll }: { program: ProgramId; onEnroll: (
 }
 
 function ProgramContent({ program }: { program: ProgramId }) {
-  return (
-    <div>
-      {program !== "reclaim" && (
-        <p className="text-sm mb-4 max-w-xl" style={{ color: muted }}>
-          These modules are the shared R.E.C.L.A.I.M. hub. A change here shows up for that hub, not as a separate
-          library for {PROGRAMS[program].label}.
-        </p>
-      )}
-      <ProgramBuilderTab />
-    </div>
-  );
+  return <ProgramBuilderTab program={program} />;
 }

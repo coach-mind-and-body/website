@@ -10,8 +10,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { PROGRAM_LIST, type ProgramId } from "@shared/programs";
 
-export default function ProgramBuilderTab() {
-  const [program, setProgram] = useState<ProgramId>("reclaim");
+export default function ProgramBuilderTab({ program: lockedProgram }: { program?: ProgramId } = {}) {
+  const [picked, setPicked] = useState<ProgramId>(lockedProgram ?? "reclaim");
+  const program = lockedProgram ?? picked;
   const { data: modules, refetch: refetchModules } = trpc.reclaimHub.adminListModules.useQuery({ program });
   const { data: submissions, refetch: refetchSubmissions } = trpc.reclaimHub.adminListSubmissions.useQuery();
   
@@ -56,13 +57,16 @@ export default function ProgramBuilderTab() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="font-bold text-2xl" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.20 0.015 50)" }}>Program content</h2>
+          <h2 className="font-bold text-2xl" style={{ fontFamily: "'Cormorant Garamond', serif", color: "oklch(0.20 0.015 50)" }}>
+            {lockedProgram ? `${PROGRAM_LIST.find((item) => item.id === program)?.label ?? "Program"} content` : "Program content"}
+          </h2>
+          {!lockedProgram && (
           <div className="flex flex-wrap gap-2 mt-3">
             {PROGRAM_LIST.map((item) => (
               <button
                 key={item.id}
                 type="button"
-                onClick={() => { setProgram(item.id); setEditingModule(null); }}
+                onClick={() => { setPicked(item.id); setEditingModule(null); }}
                 className="px-3 py-1.5 rounded-full text-xs font-bold"
                 style={{
                   background: program === item.id ? "oklch(0.72 0.12 75)" : "transparent",
@@ -74,6 +78,7 @@ export default function ProgramBuilderTab() {
               </button>
             ))}
           </div>
+          )}
         </div>
         <div className="flex gap-2">
           <Button 
