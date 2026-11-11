@@ -117,7 +117,8 @@ final class FoodViewModel {
             carbs: Int(Double(recipe.carbs ?? 0) * scale),
             fat: Int(Double(recipe.fat ?? 0) * scale),
             fiber: Int(Double(recipe.fiber ?? 0) * scale),
-            recipeId: recipe.id
+            recipeId: recipe.id,
+            createdAt: Date()
         )
         if auth.isSignedIn {
             do {
@@ -271,7 +272,8 @@ final class FoodViewModel {
                 protein: protein,
                 carbs: carbs,
                 fat: fat,
-                fiber: fiber
+                fiber: fiber,
+                createdAt: Date()
             ),
             at: 0
         )
@@ -293,6 +295,57 @@ final class FoodViewModel {
         let all = GuestLocalStore.loadCalories().filter { $0.id != log.id }
         GuestLocalStore.saveCalories(all)
         logs = all.filter { $0.dateStr == dateStr }
+        NotificationCenter.default.post(name: .mbrFoodLogged, object: nil)
+    }
+
+    func updateLog(
+        _ log: CalorieLog,
+        name: String,
+        meal: String,
+        calories: Int,
+        protein: Int,
+        carbs: Int,
+        fat: Int,
+        fiber: Int
+    ) async {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        if auth.isSignedIn {
+            do {
+                let _: SuccessFlag = try await auth.client.mutate(
+                    "calories.updateLog",
+                    input: UpdateCalorieInput(
+                        id: log.id,
+                        dateStr: dateStr,
+                        mealType: meal,
+                        foodName: trimmed,
+                        calories: calories,
+                        protein: protein,
+                        carbs: carbs,
+                        fat: fat,
+                        fiber: fiber
+                    )
+                )
+                await loadLogs()
+                errorMessage = nil
+                NotificationCenter.default.post(name: .mbrFoodLogged, object: nil)
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            return
+        }
+        var all = GuestLocalStore.loadCalories()
+        guard let index = all.firstIndex(where: { $0.id == log.id }) else { return }
+        all[index].mealType = meal
+        all[index].foodName = trimmed
+        all[index].calories = calories
+        all[index].protein = protein
+        all[index].carbs = carbs
+        all[index].fat = fat
+        all[index].fiber = fiber
+        GuestLocalStore.saveCalories(all)
+        logs = all.filter { $0.dateStr == dateStr }
+        errorMessage = nil
         NotificationCenter.default.post(name: .mbrFoodLogged, object: nil)
     }
 

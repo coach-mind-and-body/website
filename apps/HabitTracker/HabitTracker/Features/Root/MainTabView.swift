@@ -286,7 +286,11 @@ struct RecipesHubView: View {
                 foodPane.recipeSlug = nil
             }
             } controls: {
-                FoodOpenPane(food: food, auth: auth, pane: foodPane)
+                if page == 0 {
+                    FoodTodayOpenPane(food: food, auth: auth, pane: foodPane)
+                } else {
+                    FoodOpenPane(food: food, auth: auth, pane: foodPane)
+                }
             }
         }
     }

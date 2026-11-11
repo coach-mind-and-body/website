@@ -22,6 +22,9 @@ struct CaloriesView: View {
 
     var body: some View {
         DuoNested(style: .augment) {
+        if posture.isOpenDisplay {
+            openTodayLog
+        } else {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 dateRow
@@ -119,6 +122,7 @@ struct CaloriesView: View {
             .padding(16)
         }
         .dockScrollClearance()
+        }
         } controls: {
             DuoControlWell {
                 Text("\(food.proteinTotal)g protein · \(food.calorieTotal) cal")
@@ -163,6 +167,95 @@ struct CaloriesView: View {
         case 15..<21: return "dinner"
         default: return "snack"
         }
+    }
+
+    /// Open inner display only. Tabs stay in the food hub. This pane is the day and the log.
+    private var openTodayLog: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                openDateRow
+                if let err = food.errorMessage {
+                    Text(err).font(.subheadline).foregroundStyle(.red)
+                }
+                if food.logs.isEmpty {
+                    Text("Nothing logged yet. Tap Log food or Scan to start.")
+                        .font(.subheadline)
+                        .foregroundStyle(HTTheme.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    ForEach(FoodMealGrouping.sections(food.logs)) { section in
+                        Text(section.title)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(HTTheme.gold)
+                            .padding(.top, 4)
+                        ForEach(section.items) { log in
+                            openLogRow(log)
+                        }
+                    }
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .dockScrollClearance()
+    }
+
+    private var openDateRow: some View {
+        HStack {
+            Button("←") { shiftOpenDay(-1) }
+            Spacer()
+            Text(food.dateStr == MountainDate.today() ? "Today" : MountainDate.friendly(food.dateStr))
+                .font(.title3.weight(.semibold))
+            Spacer()
+            Button("→") { shiftOpenDay(1) }
+        }
+        .foregroundStyle(HTTheme.gold)
+    }
+
+    private func shiftOpenDay(_ days: Int) {
+        pane?.log = nil
+        Task {
+            food.dateStr = MountainDate.shift(food.dateStr, days: days)
+            await food.loadLogs()
+        }
+    }
+
+    private func openLogRow(_ log: CalorieLog) -> some View {
+        let selected = pane?.log?.id == log.id
+        return HStack(alignment: .top, spacing: 8) {
+            Button {
+                pane?.recipeSlug = nil
+                pane?.log = log
+            } label: {
+                HStack {
+                    if let key = log.imageUrl, key.hasPrefix("food-logs/") {
+                        FoodLogPhoto(key: key, token: auth.token)
+                            .frame(width: 44, height: 44)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                    }
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(log.foodName)
+                            .font(.headline)
+                            .foregroundStyle(HTTheme.forest)
+                            .multilineTextAlignment(.leading)
+                        Text("\(log.protein)g protein")
+                            .font(.subheadline)
+                            .foregroundStyle(HTTheme.muted)
+                    }
+                    Spacer(minLength: 0)
+                }
+            }
+            .buttonStyle(.plain)
+            deleteLog(log)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(selected ? HTTheme.gold.opacity(0.16) : Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(selected ? HTTheme.gold : HTTheme.roseBorder, lineWidth: 1)
+        )
     }
 
     private var dateRow: some View {
@@ -366,9 +459,267 @@ struct FoodOpenPane: View {
     }
 }
 
+/// Right pane for Food → Today on the open inner display.
+/// Totals and the log form live here once. Recipes, Week, and Shop keep `FoodOpenPane`.
+struct FoodTodayOpenPane: View {
+    @Bindable var food: FoodViewModel
+    @Bindable var auth: AuthStore
+    var pane: FoodPaneBridge
+    @State private var meal = "lunch"
+    @State private var showLog = false
+    @State private var showScan = false
+    @State private var proteinGoal = 100
+    @State private var fiberGoal = 25
+
+    var body: some View {
+        Group {
+            if let log = pane.log {
+                editPane(log)
+            } else {
+                totals
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(HTTheme.cream)
+        .task(id: food.sessionEpoch) { await loadGoals() }
+        .onChange(of: food.logs.map(\.id)) { _, ids in
+            if let id = pane.log?.id, !ids.contains(id) {
+                pane.log = nil
+            }
+        }
+        .sheet(isPresented: $showLog) {
+            LogFoodSheet(food: food, meal: $meal)
+        }
+        .sheet(isPresented: $showScan) {
+            WrittenLogScanSheet(food: food)
+        }
+    }
+
+    private var totals: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                proteinCard
+                VStack(alignment: .leading, spacing: 14) {
+                    smallBar("Carbs", food.carbsTotal, "g", scale: 200)
+                    smallBar("Fiber", food.fiberTotal, "g", scale: fiberGoal)
+                    smallBar("Calories", food.calorieTotal, "", scale: 2000)
+                }
+                .padding(14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.white)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(HTTheme.roseBorder))
+
+                Button {
+                    meal = suggestedMeal
+                    showLog = true
+                } label: {
+                    Text("Log food")
+                        .font(.title3.weight(.bold))
+                        .frame(maxWidth: .infinity, minHeight: 64)
+                        .background(HTTheme.forest)
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    showScan = true
+                } label: {
+                    Text("Scan my written log")
+                        .font(.title3.weight(.bold))
+                        .frame(maxWidth: .infinity, minHeight: 64)
+                        .background(Color.white)
+                        .foregroundStyle(HTTheme.forest)
+                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(HTTheme.roseBorder))
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(16)
+        }
+    }
+
+    private var proteinCard: some View {
+        let goal = max(proteinGoal, 1)
+        let fill = min(1, Double(food.proteinTotal) / Double(goal))
+        let percent = Int((fill * 100).rounded())
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("PROTEIN")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(HTTheme.muted)
+                Spacer()
+                Text("\(percent)%")
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(fill >= 1 ? HTTheme.forest : HTTheme.gold)
+            }
+            HStack(alignment: .firstTextBaseline, spacing: 0) {
+                Text("\(food.proteinTotal)g")
+                    .font(.largeTitle.weight(.bold))
+                    .foregroundStyle(HTTheme.forest)
+                Text(" / \(proteinGoal)g")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(HTTheme.muted)
+            }
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(HTTheme.roseBorder)
+                    Capsule()
+                        .fill(fill >= 1 ? HTTheme.forest : HTTheme.gold)
+                        .frame(width: food.proteinTotal == 0 ? 0 : max(8, geo.size.width * fill))
+                }
+            }
+            .frame(height: 18)
+            .accessibilityLabel("Protein \(food.proteinTotal) of \(proteinGoal) grams")
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(HTTheme.roseBorder))
+    }
+
+    private func smallBar(_ title: String, _ value: Int, _ unit: String, scale: Int) -> some View {
+        let fill = min(1, Double(value) / Double(max(scale, 1)))
+        return VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(title)
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(HTTheme.muted)
+                Spacer()
+                Text(unit.isEmpty ? "\(value)" : "\(value)\(unit)")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(HTTheme.forest)
+            }
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(HTTheme.roseBorder)
+                    Capsule()
+                        .fill(HTTheme.gold)
+                        .frame(width: value == 0 ? 0 : max(6, geo.size.width * fill))
+                }
+            }
+            .frame(height: 6)
+        }
+    }
+
+    private func editPane(_ log: CalorieLog) -> some View {
+        VStack(spacing: 0) {
+            HStack {
+                Button {
+                    pane.log = nil
+                } label: {
+                    Image(systemName: "chevron.backward")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(HTTheme.forest)
+                        .frame(width: 44, height: 44)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Back to totals")
+                Spacer()
+            }
+            .padding(.leading, 8)
+            LogFoodSheet(
+                food: food,
+                meal: $meal,
+                existing: log,
+                embedded: true,
+                onFinished: { pane.log = nil }
+            )
+            .id(log.id)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+
+    private var suggestedMeal: String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        switch hour {
+        case 0..<10: return "breakfast"
+        case 10..<15: return "lunch"
+        case 15..<21: return "dinner"
+        default: return "snack"
+        }
+    }
+
+    private func loadGoals() async {
+        let habits: [Habit]
+        if auth.isSignedIn {
+            let payload: HabitsPayload? = try? await auth.client.query(
+                "habit.getUserHabits",
+                input: FromDateInput(fromDate: food.dateStr)
+            )
+            habits = payload?.habits.filter { $0.isActive != false } ?? []
+        } else {
+            habits = GuestLocalStore.loadHabits()
+        }
+        let protein = habits.first { $0.isNumeric && $0.title.lowercased().contains("protein") }?.targetValue ?? 0
+        proteinGoal = protein > 0 ? protein : 100
+        let fiber = habits.first { $0.isNumeric && $0.title.lowercased().contains("fiber") }?.targetValue ?? 0
+        fiberGoal = fiber > 0 ? fiber : 25
+    }
+}
+
+/// Breakfast, Lunch, Dinner, Snacks. `mealType` wins when it is one of the known meals.
+/// Otherwise Mountain time: before 11:00 breakfast, 11:00–16:00 lunch, 16:00–21:00 dinner, else snacks.
+enum FoodMealGrouping {
+    struct Section: Identifiable {
+        var title: String
+        var items: [CalorieLog]
+        var id: String { title }
+    }
+
+    static func sections(_ logs: [CalorieLog]) -> [Section] {
+        let order: [(key: String, title: String)] = [
+            ("breakfast", "Breakfast"),
+            ("lunch", "Lunch"),
+            ("dinner", "Dinner"),
+            ("snack", "Snacks"),
+            ("drink", "Drink"),
+        ]
+        var buckets: [String: [CalorieLog]] = [:]
+        for log in logs {
+            buckets[bucket(for: log), default: []].append(log)
+        }
+        return order.compactMap { pair in
+            guard let items = buckets[pair.key], !items.isEmpty else { return nil }
+            return Section(title: pair.title, items: items)
+        }
+    }
+
+    private static func bucket(for log: CalorieLog) -> String {
+        let raw = log.mealType.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        switch raw {
+        case "breakfast", "lunch", "dinner", "snack", "drink":
+            return raw
+        case "snacks":
+            return "snack"
+        default:
+            return bucketByTime(log.createdAt)
+        }
+    }
+
+    private static func bucketByTime(_ date: Date?) -> String {
+        guard let date else { return "snack" }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = AppConfig.mountainTimeZone
+        let hour = calendar.component(.hour, from: date)
+        switch hour {
+        case ..<11: return "breakfast"
+        case 11..<16: return "lunch"
+        case 16..<21: return "dinner"
+        default: return "snack"
+        }
+    }
+}
+
 struct LogFoodSheet: View {
     @Bindable var food: FoodViewModel
     @Binding var meal: String
+    var existing: CalorieLog? = nil
+    var embedded: Bool = false
+    var onFinished: (() -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
     @FocusState private var focused: Bool
 
@@ -385,12 +736,33 @@ struct LogFoodSheet: View {
     @State private var photoItem: PhotosPickerItem?
     @State private var showCamera = false
     @State private var showPackaged = false
+    @State private var didPrefill = false
 
     private let meals = ["breakfast", "lunch", "dinner", "snack", "drink"]
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
+        if embedded {
+            editor
+        } else {
+            NavigationStack {
+                editor
+                    .navigationTitle("Log food")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Cancel") { dismiss() }
+                        }
+                        ToolbarItemGroup(placement: .keyboard) {
+                            Spacer()
+                            Button("Done") { focused = false }
+                        }
+                    }
+            }
+        }
+    }
+
+    private var editor: some View {
+        ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Which meal?")
@@ -534,19 +906,24 @@ struct LogFoodSheet: View {
                         FatSecretBadge()
                     }
 
-                    Button {
-                        Task {
-                            await food.addManual(
-                                name: name,
-                                meal: meal,
-                                calories: calories,
-                                protein: protein,
-                                carbs: carbs,
-                                fat: fat,
-                                fiber: fiber
-                            )
-                            dismiss()
+                    if embedded, let existing {
+                        Button(role: .destructive) {
+                            Task {
+                                await food.deleteLog(existing)
+                                onFinished?()
+                            }
+                        } label: {
+                            Text("Remove")
+                                .font(.headline)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .foregroundStyle(.red)
                         }
+                        .buttonStyle(.plain)
+                    }
+
+                    Button {
+                        Task { await save() }
                     } label: {
                         Text("Save \(meal)")
                             .font(.headline)
@@ -563,17 +940,6 @@ struct LogFoodSheet: View {
             }
             .keyboardTyping()
             .background(HTTheme.cream.ignoresSafeArea())
-            .navigationTitle("Log food")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button("Done") { focused = false }
-                }
-            }
             .sheet(isPresented: $showCamera) {
                 CameraPicker { image in
                     showCamera = false
@@ -590,7 +956,54 @@ struct LogFoodSheet: View {
                     photoItem = nil
                 }
             }
+            .onAppear(perform: prefill)
+    }
+
+    private func save() async {
+        if let existing {
+            await food.updateLog(
+                existing,
+                name: name,
+                meal: meal,
+                calories: calories,
+                protein: protein,
+                carbs: carbs,
+                fat: fat,
+                fiber: fiber
+            )
+            guard food.errorMessage == nil else { return }
+        } else {
+            await food.addManual(
+                name: name,
+                meal: meal,
+                calories: calories,
+                protein: protein,
+                carbs: carbs,
+                fat: fat,
+                fiber: fiber
+            )
         }
+        if let onFinished {
+            onFinished()
+        } else {
+            dismiss()
+        }
+    }
+
+    private func prefill() {
+        guard embedded, let existing, !didPrefill else { return }
+        didPrefill = true
+        name = existing.foodName
+        if meals.contains(existing.mealType) {
+            meal = existing.mealType
+        }
+        calories = existing.calories
+        protein = existing.protein
+        proteinText = "\(existing.protein)"
+        carbs = existing.carbs
+        fat = existing.fat
+        fiber = existing.fiber
+        showFullMacros = existing.calories > 0 || existing.carbs > 0 || existing.fat > 0 || existing.fiber > 0
     }
 
     private func actionButton(title: String, system: String, action: @escaping () -> Void) -> some View {
