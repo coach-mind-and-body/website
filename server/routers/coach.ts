@@ -9,14 +9,27 @@ import { storagePut } from "../storage";
 
 const COACH_NAME = "Lee Anne";
 
-async function getOrCreateThread(userId: number, email: string | null, name: string | null) {
+async function getOrCreateThread(
+  userId: number,
+  email: string | null,
+  name: string | null
+) {
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
 
   const [existing] = await db
     .select()
     .from(conversations)
-    .where(and(eq(conversations.userId, userId), eq(conversations.platform, "webchat")))
+    .where(
+      and(
+        eq(conversations.userId, userId),
+        eq(conversations.platform, "webchat")
+      )
+    )
     .orderBy(desc(conversations.lastMessageAt))
     .limit(1);
 
@@ -39,14 +52,17 @@ async function getOrCreateThread(userId: number, email: string | null, name: str
     .from(conversations)
     .where(eq(conversations.id, inserted.id))
     .limit(1);
-  if (!row) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Could not open coach thread" });
+  if (!row)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Could not open coach thread",
+    });
 
   await db.insert(messages).values({
     conversationId: row.id,
     direction: "system",
     senderName: COACH_NAME,
-    content:
-      `Hi${name ? ` ${name.split(" ")[0]}` : ""} — this is your private thread with ${COACH_NAME}. Ask about your week, a recipe, or what's feeling loud. She'll see it in her inbox.`,
+    content: `Hi${name ? ` ${name.split(" ")[0]}` : ""} — this is your private thread with ${COACH_NAME}. Ask about your week, a recipe, or what's feeling loud. She'll see it in her inbox.`,
     status: "received",
     isAutomated: true,
   });
@@ -61,7 +77,12 @@ export const coachRouter = router({
     const [thread] = await db
       .select()
       .from(conversations)
-      .where(and(eq(conversations.userId, ctx.user.id), eq(conversations.platform, "webchat")))
+      .where(
+        and(
+          eq(conversations.userId, ctx.user.id),
+          eq(conversations.platform, "webchat")
+        )
+      )
       .limit(1);
     if (!thread) return { count: 0 };
 
@@ -78,14 +99,25 @@ export const coachRouter = router({
           eq(messages.direction, "outbound"),
           eq(messages.isInternal, false)
         );
-    const unread = await db.select({ id: messages.id }).from(messages).where(unreadWhere);
+    const unread = await db
+      .select({ id: messages.id })
+      .from(messages)
+      .where(unreadWhere);
     return { count: unread.length };
   }),
 
   getThread: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-    const thread = await getOrCreateThread(ctx.user.id, ctx.user.email ?? null, ctx.user.name ?? null);
+    if (!db)
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Database not available",
+      });
+    const thread = await getOrCreateThread(
+      ctx.user.id,
+      ctx.user.email ?? null,
+      ctx.user.name ?? null
+    );
     const history = await db
       .select()
       .from(messages)
@@ -103,7 +135,7 @@ export const coachRouter = router({
     return {
       conversationId: thread.id,
       coachName: COACH_NAME,
-      messages: attachReplyPreviews(chronological).map((m) => ({
+      messages: attachReplyPreviews(chronological).map(m => ({
         id: m.id,
         direction: m.direction,
         senderName: m.senderName,
@@ -131,9 +163,17 @@ export const coachRouter = router({
         throw new TRPCError({ code: "BAD_REQUEST", message: "Empty image" });
       }
       if (buffer.length > 6 * 1024 * 1024) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Photo must be under 6 MB" });
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Photo must be under 6 MB",
+        });
       }
-      const ext = input.mimeType === "image/png" ? "png" : input.mimeType === "image/webp" ? "webp" : "jpg";
+      const ext =
+        input.mimeType === "image/png"
+          ? "png"
+          : input.mimeType === "image/webp"
+            ? "webp"
+            : "jpg";
       const { url } = await storagePut(
         `coach-chat/${ctx.user.id}/${Date.now()}.${ext}`,
         buffer,
@@ -152,23 +192,38 @@ export const coachRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-      const thread = await getOrCreateThread(ctx.user.id, ctx.user.email ?? null, ctx.user.name ?? null);
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
+      const thread = await getOrCreateThread(
+        ctx.user.id,
+        ctx.user.email ?? null,
+        ctx.user.name ?? null
+      );
       const text = (input.content ?? "").trim();
       if (!text && !input.mediaUrl) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Message is empty" });
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Message is empty",
+        });
       }
 
-      await db.insert(messages).values({
-        conversationId: thread.id,
-        direction: "inbound",
-        senderName: ctx.user.name || ctx.user.email || "Client",
-        content: text || null,
-        mediaUrl: input.mediaUrl ?? null,
-        status: "received",
-        isAutomated: false,
-        replyToId: input.replyToId ?? null,
-      });
+      const inserted = await db
+        .insert(messages)
+        .values({
+          conversationId: thread.id,
+          direction: "inbound",
+          senderName: ctx.user.name || ctx.user.email || "Client",
+          content: text || null,
+          mediaUrl: input.mediaUrl ?? null,
+          status: "received",
+          isAutomated: false,
+          replyToId: input.replyToId ?? null,
+        })
+        .$returningId();
+      const messageId = inserted[0]?.id;
 
       await db
         .update(conversations)
@@ -183,17 +238,25 @@ export const coachRouter = router({
         title: "New coach message",
         body: `${ctx.user.name || "A client"}: ${(text || "Sent a file").slice(0, 80)}`,
         url: "/admin",
-      }).catch((e) => console.error("[Coach] notifyAdmins failed", e));
+      }).catch(e => console.error("[Coach] notifyAdmins failed", e));
 
-      const { notifyAdminsOfClientMessage } = await import("../coachMessageNotify");
+      const { notifyAdminsOfClientMessage } = await import(
+        "../coachMessageNotify"
+      );
       void notifyAdminsOfClientMessage({
         conversationId: thread.id,
         preview: text || "Sent a file",
         clientName: ctx.user.name || "A client",
+        messageId,
+        userId: ctx.user.id,
       });
 
       const { publishCoachEvent } = await import("../coachEvents");
-      publishCoachEvent({ type: "message", conversationId: thread.id, who: "client" });
+      publishCoachEvent({
+        type: "message",
+        conversationId: thread.id,
+        who: "client",
+      });
 
       return { success: true };
     }),
@@ -204,7 +267,12 @@ export const coachRouter = router({
     const [thread] = await db
       .select({ id: conversations.id })
       .from(conversations)
-      .where(and(eq(conversations.userId, ctx.user.id), eq(conversations.platform, "webchat")))
+      .where(
+        and(
+          eq(conversations.userId, ctx.user.id),
+          eq(conversations.platform, "webchat")
+        )
+      )
       .limit(1);
     if (!thread) return { success: true };
     await db
@@ -212,7 +280,11 @@ export const coachRouter = router({
       .set({ clientTypingAt: new Date() })
       .where(eq(conversations.id, thread.id));
     const { publishCoachEvent } = await import("../coachEvents");
-    publishCoachEvent({ type: "typing", conversationId: thread.id, who: "client" });
+    publishCoachEvent({
+      type: "typing",
+      conversationId: thread.id,
+      who: "client",
+    });
     return { success: true };
   }),
 
@@ -222,10 +294,17 @@ export const coachRouter = router({
     const [thread] = await db
       .select({ coachTypingAt: conversations.coachTypingAt })
       .from(conversations)
-      .where(and(eq(conversations.userId, ctx.user.id), eq(conversations.platform, "webchat")))
+      .where(
+        and(
+          eq(conversations.userId, ctx.user.id),
+          eq(conversations.platform, "webchat")
+        )
+      )
       .limit(1);
     const at = thread?.coachTypingAt;
-    const coachTyping = Boolean(at && Date.now() - new Date(at).getTime() < 3000);
+    const coachTyping = Boolean(
+      at && Date.now() - new Date(at).getTime() < 3000
+    );
     return { coachTyping };
   }),
 
@@ -235,7 +314,12 @@ export const coachRouter = router({
     await db
       .update(conversations)
       .set({ clientLastReadAt: new Date() })
-      .where(and(eq(conversations.userId, ctx.user.id), eq(conversations.platform, "webchat")));
+      .where(
+        and(
+          eq(conversations.userId, ctx.user.id),
+          eq(conversations.platform, "webchat")
+        )
+      );
     return { success: true };
   }),
 });

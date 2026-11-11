@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS \`coach_reply_email_notices\` (
   \`conversationId\` int NOT NULL,
   \`userId\` int NOT NULL,
   \`preview\` varchar(500) NOT NULL DEFAULT '',
+  \`kind\` varchar(16) NOT NULL DEFAULT 'client',
   \`dueAt\` timestamp NOT NULL,
   \`sentAt\` timestamp NULL,
   \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -32,16 +33,44 @@ CREATE TABLE IF NOT EXISTS \`coach_reply_email_notices\` (
 )
 `;
 
+const ADD_NOTICE_KIND = `ALTER TABLE \`coach_reply_email_notices\` ADD \`kind\` varchar(16) NOT NULL DEFAULT 'client'`;
+const ADD_COACH_LAST_READ = `ALTER TABLE \`conversations\` ADD \`coachLastReadAt\` timestamp NULL`;
+
+function isAlreadyApplied(err: unknown): boolean {
+  const row = err as {
+    code?: string;
+    message?: string;
+    cause?: { code?: string; message?: string };
+  };
+  const text = `${row?.code ?? ""} ${row?.message ?? ""} ${row?.cause?.code ?? ""} ${row?.cause?.message ?? ""} ${String(err)}`;
+  return (
+    text.includes("ER_DUP_FIELDNAME") ||
+    text.includes("Duplicate column") ||
+    text.includes("1060")
+  );
+}
+
+async function runIgnoring(db: Db, statement: string): Promise<void> {
+  try {
+    await db.execute(sql.raw(statement));
+  } catch (err) {
+    if (isAlreadyApplied(err)) return;
+    throw err;
+  }
+}
+
 let ready: Promise<void> | null = null;
 
-/** Idempotent tables for APNs device tokens and the unread coach-reply email. Safe on every boot. */
+/** Idempotent tables for APNs tokens and unread message emails. Safe on every boot. */
 export async function ensureApnsSchema(db: Db): Promise<void> {
   if (!ready) {
     ready = db
       .execute(sql.raw(CREATE_DEVICE_TOKENS))
       .then(() => db.execute(sql.raw(CREATE_EMAIL_NOTICES)))
+      .then(() => runIgnoring(db, ADD_NOTICE_KIND))
+      .then(() => runIgnoring(db, ADD_COACH_LAST_READ))
       .then(() => undefined)
-      .catch((err) => {
+      .catch(err => {
         ready = null;
         throw err;
       });

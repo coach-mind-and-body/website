@@ -1,7 +1,15 @@
 import { adminProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import { getDb } from "../db";
-import { conversations, messages, users, leads, callLogs, messageTemplates, enrollments } from "../../drizzle/schema";
+import {
+  conversations,
+  messages,
+  users,
+  leads,
+  callLogs,
+  messageTemplates,
+  enrollments,
+} from "../../drizzle/schema";
 import { eq, desc, and, sql, like, or, inArray, gt, isNull } from "drizzle-orm";
 import { ENV } from "../_core/env";
 import twilio from "twilio";
@@ -18,7 +26,10 @@ import {
 import { getMetaPageAccessToken } from "../meta/pageToken";
 import { formatPhoneE164 } from "../../lib/phone";
 
-const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID || "AC_placeholder", process.env.TWILIO_AUTH_TOKEN || "auth_placeholder");
+const twilioClient = twilio(
+  process.env.TWILIO_ACCOUNT_SID || "AC_placeholder",
+  process.env.TWILIO_AUTH_TOKEN || "auth_placeholder"
+);
 
 type ConversationRow = typeof conversations.$inferSelect;
 
@@ -42,26 +53,35 @@ export const messagingRouter = router({
 
     const { reclaimUserIds, fpuEmails } = await loadDesignationContext(db);
 
-    const raw = await db.select({
-      conv: conversations,
-      matchedUserId: users.id,
-      userName: users.name,
-      userEmail: users.email,
-      userRole: users.role,
-      leadName: leads.name,
-      leadStatus: leads.status,
-    })
+    const raw = await db
+      .select({
+        conv: conversations,
+        matchedUserId: users.id,
+        userName: users.name,
+        userEmail: users.email,
+        userRole: users.role,
+        leadName: leads.name,
+        leadStatus: leads.status,
+      })
       .from(conversations)
-      .leftJoin(users, or(eq(conversations.userId, users.id), userPhoneMatchSql))
+      .leftJoin(
+        users,
+        or(eq(conversations.userId, users.id), userPhoneMatchSql)
+      )
       .leftJoin(leads, phoneMatchSql)
       .orderBy(desc(conversations.lastMessageAt));
-    
+
     // De-duplicate if a phone number matches multiple leads, just group them
     const uniqueMap = new Map<string, InboxConversationRow>();
     raw.forEach(r => {
       let key = `id_${r.conv.id}`;
-      if (r.conv.contactPhone && (r.conv.platform === "sms" || r.conv.platform === "whatsapp")) {
-        const cleanPhone = r.conv.contactPhone.replace(/\D/g, "").replace(/^1/, "");
+      if (
+        r.conv.contactPhone &&
+        (r.conv.platform === "sms" || r.conv.platform === "whatsapp")
+      ) {
+        const cleanPhone = r.conv.contactPhone
+          .replace(/\D/g, "")
+          .replace(/^1/, "");
         if (cleanPhone.length >= 10) {
           key = `phone_${cleanPhone}`;
         }
@@ -78,7 +98,7 @@ export const messagingRouter = router({
       });
 
       if (!uniqueMap.has(key)) {
-        uniqueMap.set(key, { 
+        uniqueMap.set(key, {
           ...r.conv,
           userId: resolvedUserId,
           contactEmail: r.conv.contactEmail || r.userEmail,
@@ -88,30 +108,45 @@ export const messagingRouter = router({
         });
       } else {
         const existing = uniqueMap.get(key)!;
-        const combinedUnread = (existing.unreadCount || 0) + (r.conv.unreadCount || 0);
-        const mergedDesignation = mergeDesignations(existing.designation, designation);
-        if (new Date(r.conv.lastMessageAt || 0).getTime() > new Date(existing.lastMessageAt || 0).getTime()) {
-           uniqueMap.set(key, { 
+        const combinedUnread =
+          (existing.unreadCount || 0) + (r.conv.unreadCount || 0);
+        const mergedDesignation = mergeDesignations(
+          existing.designation,
+          designation
+        );
+        if (
+          new Date(r.conv.lastMessageAt || 0).getTime() >
+          new Date(existing.lastMessageAt || 0).getTime()
+        ) {
+          uniqueMap.set(key, {
             ...r.conv,
             userId: resolvedUserId ?? existing.userId,
-            contactEmail: r.conv.contactEmail || r.userEmail || existing.contactEmail,
+            contactEmail:
+              r.conv.contactEmail || r.userEmail || existing.contactEmail,
             userName: r.userName || r.leadName || existing.userName,
             designation: mergedDesignation,
             designationLabel: designationLabel(mergedDesignation),
-            unreadCount: combinedUnread
+            unreadCount: combinedUnread,
           });
         } else {
-           existing.unreadCount = combinedUnread;
-           if (!existing.userId && resolvedUserId) existing.userId = resolvedUserId;
-           if (!existing.contactEmail) existing.contactEmail = r.conv.contactEmail || r.userEmail;
-           if (!existing.userName) existing.userName = r.userName || r.leadName;
-           existing.designation = mergeDesignations(existing.designation, designation);
-           existing.designationLabel = designationLabel(existing.designation);
+          existing.unreadCount = combinedUnread;
+          if (!existing.userId && resolvedUserId)
+            existing.userId = resolvedUserId;
+          if (!existing.contactEmail)
+            existing.contactEmail = r.conv.contactEmail || r.userEmail;
+          if (!existing.userName) existing.userName = r.userName || r.leadName;
+          existing.designation = mergeDesignations(
+            existing.designation,
+            designation
+          );
+          existing.designationLabel = designationLabel(existing.designation);
         }
       }
     });
     const results = Array.from(uniqueMap.values()).sort(
-      (a, b) => new Date(b.lastMessageAt || 0).getTime() - new Date(a.lastMessageAt || 0).getTime()
+      (a, b) =>
+        new Date(b.lastMessageAt || 0).getTime() -
+        new Date(a.lastMessageAt || 0).getTime()
     );
 
     const convIds = results.map(c => c.id);
@@ -131,7 +166,8 @@ export const messagingRouter = router({
       for (const m of latestMessages) {
         if (previewMap.has(m.conversationId)) continue;
         let preview = m.content?.trim() || (m.mediaUrl ? "📷 Image" : "");
-        if (!preview) preview = m.direction === "inbound" ? "New message" : "Sent";
+        if (!preview)
+          preview = m.direction === "inbound" ? "New message" : "Sent";
         previewMap.set(m.conversationId, preview.slice(0, 120));
       }
     }
@@ -150,33 +186,39 @@ export const messagingRouter = router({
       return db
         .select()
         .from(messages)
-        .where(and(
-          eq(messages.conversationId, input.conversationId),
-          eq(messages.status, "queued"),
-          gt(messages.scheduledAt, new Date())
-        ))
+        .where(
+          and(
+            eq(messages.conversationId, input.conversationId),
+            eq(messages.status, "queued"),
+            gt(messages.scheduledAt, new Date())
+          )
+        )
         .orderBy(messages.scheduledAt);
     }),
 
   listRemindersForContact: adminProcedure
-    .input(z.object({
-      userId: z.number().optional(),
-      phone: z.string().optional(),
-      email: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        userId: z.number().optional(),
+        phone: z.string().optional(),
+        email: z.string().optional(),
+      })
+    )
     .query(async ({ input }) => {
       const db = await getDb();
       if (!db) return [];
 
-      const reminders: { label: string; date: Date | null; type: string }[] = [];
+      const reminders: { label: string; date: Date | null; type: string }[] =
+        [];
 
-      const leadWhere = input.phone && input.email
-        ? or(eq(leads.phone, input.phone), eq(leads.email, input.email))
-        : input.phone
-          ? eq(leads.phone, input.phone)
-          : input.email
-            ? eq(leads.email, input.email)
-            : undefined;
+      const leadWhere =
+        input.phone && input.email
+          ? or(eq(leads.phone, input.phone), eq(leads.email, input.email))
+          : input.phone
+            ? eq(leads.phone, input.phone)
+            : input.email
+              ? eq(leads.email, input.email)
+              : undefined;
 
       if (leadWhere) {
         const leadResults = await db
@@ -234,15 +276,22 @@ export const messagingRouter = router({
     }),
 
   listPaymentsForContact: adminProcedure
-    .input(z.object({
-      userId: z.number().optional(),
-      email: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        userId: z.number().optional(),
+        email: z.string().optional(),
+      })
+    )
     .query(async ({ input }) => {
       const db = await getDb();
       if (!db) return [];
 
-      const payments: { label: string; amount: string | null; date: Date; status: string }[] = [];
+      const payments: {
+        label: string;
+        amount: string | null;
+        date: Date;
+        status: string;
+      }[] = [];
 
       if (input.userId) {
         // Look up enrollments for this user
@@ -281,20 +330,20 @@ export const messagingRouter = router({
       if (!normalizedPhone) {
         throw new Error("Please enter a valid 10-digit US phone number");
       }
-      
+
       const phoneMatchSql = sql`REPLACE(REPLACE(REPLACE(REPLACE(${conversations.contactPhone}, '-', ''), ' ', ''), '(', ''), ')', '') LIKE CONCAT('%', RIGHT(${normalizedPhone}, 10))`;
       const convRows = await db
         .select()
         .from(conversations)
         .where(phoneMatchSql)
         .limit(1);
-        
+
       if (convRows[0]) return { conversationId: convRows[0].id };
 
       const [result] = await db.insert(conversations).values({
         contactPhone: normalizedPhone,
-        status: 'open',
-        platform: 'sms'
+        status: "open",
+        platform: "sms",
       });
       return { conversationId: result.insertId };
     }),
@@ -307,21 +356,32 @@ export const messagingRouter = router({
       if (!db) throw new Error("Database not available");
       const { reclaimUserIds, fpuEmails } = await loadDesignationContext(db);
 
-      const convoRaw = await db.select({
-        conv: conversations,
-        matchedUserId: users.id,
-        userName: users.name,
-        userEmail: users.email,
-        userRole: users.role,
-        leadName: leads.name,
-        leadStatus: leads.status,
-      }).from(conversations)
-      .leftJoin(users, or(eq(conversations.userId, users.id), sql`REPLACE(REPLACE(REPLACE(REPLACE(${users.phone}, '-', ''), ' ', ''), '(', ''), ')', '') LIKE CONCAT('%', RIGHT(${conversations.contactPhone}, 10))`))
-      .leftJoin(leads, sql`REPLACE(REPLACE(REPLACE(REPLACE(${leads.phone}, '-', ''), ' ', ''), '(', ''), ')', '') LIKE CONCAT('%', RIGHT(${conversations.contactPhone}, 10))`)
-      .where(eq(conversations.id, input.id))
-      .orderBy(desc(sql`false`), desc(leads.createdAt))
-      .limit(1);
-      
+      const convoRaw = await db
+        .select({
+          conv: conversations,
+          matchedUserId: users.id,
+          userName: users.name,
+          userEmail: users.email,
+          userRole: users.role,
+          leadName: leads.name,
+          leadStatus: leads.status,
+        })
+        .from(conversations)
+        .leftJoin(
+          users,
+          or(
+            eq(conversations.userId, users.id),
+            sql`REPLACE(REPLACE(REPLACE(REPLACE(${users.phone}, '-', ''), ' ', ''), '(', ''), ')', '') LIKE CONCAT('%', RIGHT(${conversations.contactPhone}, 10))`
+          )
+        )
+        .leftJoin(
+          leads,
+          sql`REPLACE(REPLACE(REPLACE(REPLACE(${leads.phone}, '-', ''), ' ', ''), '(', ''), ')', '') LIKE CONCAT('%', RIGHT(${conversations.contactPhone}, 10))`
+        )
+        .where(eq(conversations.id, input.id))
+        .orderBy(desc(sql`false`), desc(leads.createdAt))
+        .limit(1);
+
       const convo = convoRaw[0];
       const resolvedUserId = convo?.conv.userId ?? convo?.matchedUserId ?? null;
 
@@ -329,26 +389,33 @@ export const messagingRouter = router({
         await db
           .update(conversations)
           .set({ userId: convo.matchedUserId })
-          .where(and(eq(conversations.id, input.id), isNull(conversations.userId)));
+          .where(
+            and(eq(conversations.id, input.id), isNull(conversations.userId))
+          );
       }
 
       let allConvIds = [input.id];
-      if (convo?.conv?.contactPhone && (convo.conv.platform === 'sms' || convo.conv.platform === 'whatsapp')) {
-        const cleanPhone = convo.conv.contactPhone.replace(/\D/g, "").replace(/^1/, "");
+      if (
+        convo?.conv?.contactPhone &&
+        (convo.conv.platform === "sms" || convo.conv.platform === "whatsapp")
+      ) {
+        const cleanPhone = convo.conv.contactPhone
+          .replace(/\D/g, "")
+          .replace(/^1/, "");
         if (cleanPhone.length >= 10) {
-          const matches = await db.select({ id: conversations.id }).from(conversations).where(
-              like(conversations.contactPhone, `%${cleanPhone}%`)
-          );
+          const matches = await db
+            .select({ id: conversations.id })
+            .from(conversations)
+            .where(like(conversations.contactPhone, `%${cleanPhone}%`));
           allConvIds = matches.map(m => m.id);
         }
       }
 
-      const history = await db.select()
+      const history = await db
+        .select()
         .from(messages)
         .where(inArray(messages.conversationId, allConvIds))
         .orderBy(desc(messages.createdAt)); // Or asc based on UI needs
-        
-
 
       let callsHistory: any[] = [];
       if (convo?.conv?.contactPhone) {
@@ -356,12 +423,15 @@ export const messagingRouter = router({
         // Match last 10 digits
         const cleanPhone = phone.replace(/\D/g, "").replace(/^1/, "");
         if (cleanPhone.length >= 10) {
-          callsHistory = await db.select()
+          callsHistory = await db
+            .select()
             .from(callLogs)
-            .where(or(
-              like(callLogs.fromNumber, `%${cleanPhone}%`),
-              like(callLogs.toNumber, `%${cleanPhone}%`)
-            ));
+            .where(
+              or(
+                like(callLogs.fromNumber, `%${cleanPhone}%`),
+                like(callLogs.toNumber, `%${cleanPhone}%`)
+              )
+            );
         }
       }
 
@@ -371,20 +441,26 @@ export const messagingRouter = router({
 
       const combined = [
         ...withReplies.map(m => ({ ...m, type: "message" as const })),
-        ...callsHistory.map(c => ({ 
-          type: "call" as const, 
+        ...callsHistory.map(c => ({
+          type: "call" as const,
           id: c.id + 1000000, // offset id so react keys don't collide
-          createdAt: c.createdAt, 
-          direction: c.direction, 
-          status: c.status, 
-          durationSeconds: c.durationSeconds, 
-          content: [
-            c.aiSummary ? `**AI Summary:**\n${c.aiSummary}` : null,
-            c.transcript ? `**Transcript:**\n${c.transcript}` : null
-          ].filter(Boolean).join("\n\n") || null,
-          isAutomated: true // Calls are typically AI interactions here
-        }))
-      ].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+          createdAt: c.createdAt,
+          direction: c.direction,
+          status: c.status,
+          durationSeconds: c.durationSeconds,
+          content:
+            [
+              c.aiSummary ? `**AI Summary:**\n${c.aiSummary}` : null,
+              c.transcript ? `**Transcript:**\n${c.transcript}` : null,
+            ]
+              .filter(Boolean)
+              .join("\n\n") || null,
+          isAutomated: true, // Calls are typically AI interactions here
+        })),
+      ].sort(
+        (a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      );
 
       const designation = resolveDesignation({
         userId: resolvedUserId,
@@ -410,18 +486,20 @@ export const messagingRouter = router({
 
   // Upsert a client lead contact
   updateContact: adminProcedure
-    .input(z.object({
-      conversationId: z.number().optional(),
-      phone: z.string(),
-      name: z.string(),
-      email: z.string().optional()
-    }))
+    .input(
+      z.object({
+        conversationId: z.number().optional(),
+        phone: z.string(),
+        name: z.string(),
+        email: z.string().optional(),
+      })
+    )
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
-      
+
       const phoneMatchSql = sql`REPLACE(REPLACE(REPLACE(REPLACE(${leads.phone}, '-', ''), ' ', ''), '(', ''), ')', '') LIKE CONCAT('%', RIGHT(${input.phone}, 10))`;
-      
+
       const existingRows = await db
         .select()
         .from(leads)
@@ -431,7 +509,8 @@ export const messagingRouter = router({
       const existing = existingRows[0] ?? null;
 
       if (existing) {
-        await db.update(leads)
+        await db
+          .update(leads)
           .set({ name: input.name, email: input.email, phone: input.phone })
           .where(eq(leads.id, existing.id));
       } else {
@@ -439,7 +518,7 @@ export const messagingRouter = router({
           phone: input.phone,
           name: input.name,
           email: input.email || "",
-          status: "new"
+          status: "new",
         });
       }
 
@@ -455,19 +534,27 @@ export const messagingRouter = router({
         let userId = existingUser?.id;
         if (!userId) {
           const [uRes] = await db.insert(users).values({
-            openId: `sms-${input.phone.replace(/\D/g, '')}`,
+            openId: `sms-${input.phone.replace(/\D/g, "")}`,
             name: input.name,
             email: input.email,
             phone: input.phone,
-            role: "user"
+            role: "user",
           });
           userId = uRes.insertId;
         } else {
-           await db.update(users).set({ name: input.name, email: input.email }).where(eq(users.id, userId));
+          await db
+            .update(users)
+            .set({ name: input.name, email: input.email })
+            .where(eq(users.id, userId));
         }
 
-        await db.update(conversations)
-          .set({ contactPhone: input.phone, contactEmail: input.email, userId: userId })
+        await db
+          .update(conversations)
+          .set({
+            contactPhone: input.phone,
+            contactEmail: input.email,
+            userId: userId,
+          })
           .where(eq(conversations.id, input.conversationId));
       }
 
@@ -480,18 +567,22 @@ export const messagingRouter = router({
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
-      
-      await db.update(conversations)
-        .set({ status: 'closed' })
+
+      await db
+        .update(conversations)
+        .set({ status: "closed" })
         .where(eq(conversations.id, input.id));
-        
+
       return { success: true };
     }),
 
   listAdmins: adminProcedure.query(async () => {
     const db = await getDb();
     if (!db) throw new Error("Database not available");
-    return db.select({ id: users.id, name: users.name, email: users.email }).from(users).where(eq(users.role, "admin"));
+    return db
+      .select({ id: users.id, name: users.name, email: users.email })
+      .from(users)
+      .where(eq(users.role, "admin"));
   }),
 
   listTemplates: adminProcedure.query(async () => {
@@ -501,33 +592,42 @@ export const messagingRouter = router({
   }),
 
   assignConversation: adminProcedure
-    .input(z.object({ conversationId: z.number(), adminId: z.number().nullable() }))
+    .input(
+      z.object({ conversationId: z.number(), adminId: z.number().nullable() })
+    )
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
-      
-      await db.update(conversations)
+
+      await db
+        .update(conversations)
         .set({ assignedToId: input.adminId })
         .where(eq(conversations.id, input.conversationId));
-        
+
       return { success: true };
     }),
 
   // Send outbound message (handles Meta Graph API for FB/IG, mocks for SMS)
   mockSendSms: adminProcedure
-    .input(z.object({
-      conversationId: z.number(),
-      content: z.string().optional(),
-      mediaUrl: z.string().optional(),
-      isInternal: z.boolean().optional(),
-      scheduledAt: z.string().optional(), // ISO string
-      replyToId: z.number().int().positive().optional(),
-    }))
+    .input(
+      z.object({
+        conversationId: z.number(),
+        content: z.string().optional(),
+        mediaUrl: z.string().optional(),
+        isInternal: z.boolean().optional(),
+        scheduledAt: z.string().optional(), // ISO string
+        replyToId: z.number().int().positive().optional(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
-      
-      const convos = await db.select().from(conversations).where(eq(conversations.id, input.conversationId)).limit(1);
+
+      const convos = await db
+        .select()
+        .from(conversations)
+        .where(eq(conversations.id, input.conversationId))
+        .limit(1);
       const convo = convos[0];
       if (!convo) throw new Error("Conversation not found");
 
@@ -535,40 +635,64 @@ export const messagingRouter = router({
         throw new Error("Must provide either content or mediaUrl");
       }
 
-      let finalContent = input.content ? input.content.replace(/\(\(review_link\)\)/g, "https://coachmindandbody.com/reviews").replace(/\(\(payment_link\)\)/g, "https://coachmindandbody.com/premium") : "";
+      let finalContent = input.content
+        ? input.content
+            .replace(
+              /\(\(review_link\)\)/g,
+              "https://coachmindandbody.com/reviews"
+            )
+            .replace(
+              /\(\(payment_link\)\)/g,
+              "https://coachmindandbody.com/premium"
+            )
+        : "";
       let storedContent = finalContent;
       if (input.replyToId && convo.platform !== "webchat") {
-        const [parent] = await db.select().from(messages).where(eq(messages.id, input.replyToId)).limit(1);
+        const [parent] = await db
+          .select()
+          .from(messages)
+          .where(eq(messages.id, input.replyToId))
+          .limit(1);
         const { smsQuotePrefix } = await import("../chatReply");
         const prefix = smsQuotePrefix(parent);
-        if (prefix) finalContent = storedContent ? `${prefix}\n${storedContent}` : prefix;
+        if (prefix)
+          finalContent = storedContent ? `${prefix}\n${storedContent}` : prefix;
       }
 
       const { shortenLinksInText } = await import("../crm/automations");
       finalContent = await shortenLinksInText(finalContent);
 
-      const isScheduled = !!input.scheduledAt && new Date(input.scheduledAt).getTime() > Date.now();
+      const isScheduled =
+        !!input.scheduledAt &&
+        new Date(input.scheduledAt).getTime() > Date.now();
       const isInternal = !!input.isInternal;
 
       // Only send immediately if it's not internal and not scheduled
       let twilioSidToSave: string | null = null;
-      let messageStatus: "queued" | "sent" | "failed" = isScheduled && !isInternal ? "queued" : "sent";
-      
+      let messageStatus: "queued" | "sent" | "failed" =
+        isScheduled && !isInternal ? "queued" : "sent";
+
       if (!isInternal && !isScheduled) {
         // If it's a Meta channel, actually send it to Facebook/Instagram Graph API
-        if ((convo.platform === "facebook" || convo.platform === "instagram") && convo.contactPhone) {
+        if (
+          (convo.platform === "facebook" || convo.platform === "instagram") &&
+          convo.contactPhone
+        ) {
           try {
             const metaToken = await getMetaPageAccessToken();
             if (!metaToken) throw new Error("Meta Page is not connected");
-            const metaRes = await fetch(`https://graph.facebook.com/v20.0/me/messages?access_token=${encodeURIComponent(metaToken)}`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                recipient: { id: convo.contactPhone },
-                message: { text: finalContent }
-              })
-            });
-            
+            const metaRes = await fetch(
+              `https://graph.facebook.com/v20.0/me/messages?access_token=${encodeURIComponent(metaToken)}`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  recipient: { id: convo.contactPhone },
+                  message: { text: finalContent },
+                }),
+              }
+            );
+
             if (!metaRes.ok) {
               const errData = await metaRes.text();
               console.error("[Meta Graph API Error]", errData);
@@ -579,53 +703,58 @@ export const messagingRouter = router({
             throw e;
           }
         } else if (process.env.TWILIO_ACCOUNT_SID && convo.contactPhone) {
-           let clean = convo.contactPhone.replace(/\D/g, "");
-           if (clean.length === 10) clean = "1" + clean;
-           if (!clean.startsWith("+")) clean = "+" + clean;
-           let toTarget = clean;
-           if (convo.platform === "whatsapp") toTarget = `whatsapp:${clean}`;
-           
-           try {
-              const msgOpts: any = {
-                body: finalContent,
-                to: toTarget,
-              };
-              if (process.env.TWILIO_MESSAGING_SERVICE_SID) {
-                msgOpts.messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
-              } else {
-                msgOpts.from = process.env.TWILIO_PHONE_NUMBER;
-              }
-              
-              if (input.mediaUrl) {
-                msgOpts.mediaUrl = [input.mediaUrl];
-              }
-              const twilioMsg = await twilioClient.messages.create(msgOpts);
-              twilioSidToSave = twilioMsg.sid;
-           } catch (e) {
-              console.error("[Twilio SMS Error]", e);
-              messageStatus = "failed";
-           }
+          let clean = convo.contactPhone.replace(/\D/g, "");
+          if (clean.length === 10) clean = "1" + clean;
+          if (!clean.startsWith("+")) clean = "+" + clean;
+          let toTarget = clean;
+          if (convo.platform === "whatsapp") toTarget = `whatsapp:${clean}`;
+
+          try {
+            const msgOpts: any = {
+              body: finalContent,
+              to: toTarget,
+            };
+            if (process.env.TWILIO_MESSAGING_SERVICE_SID) {
+              msgOpts.messagingServiceSid =
+                process.env.TWILIO_MESSAGING_SERVICE_SID;
+            } else {
+              msgOpts.from = process.env.TWILIO_PHONE_NUMBER;
+            }
+
+            if (input.mediaUrl) {
+              msgOpts.mediaUrl = [input.mediaUrl];
+            }
+            const twilioMsg = await twilioClient.messages.create(msgOpts);
+            twilioSidToSave = twilioMsg.sid;
+          } catch (e) {
+            console.error("[Twilio SMS Error]", e);
+            messageStatus = "failed";
+          }
         }
       }
 
       // Save outbound message to DB
-      const inserted = await db.insert(messages).values({
-        conversationId: input.conversationId,
-        direction: "outbound",
-        content: storedContent || null,
-        mediaUrl: input.mediaUrl || null,
-        twilioSid: twilioSidToSave,
-        senderName: "Admin",
-        status: messageStatus,
-        isAutomated: false,
-        isInternal: isInternal,
-        scheduledAt: isScheduled ? new Date(input.scheduledAt!) : null,
-        replyToId: input.replyToId ?? null,
-      }).$returningId();
+      const inserted = await db
+        .insert(messages)
+        .values({
+          conversationId: input.conversationId,
+          direction: "outbound",
+          content: storedContent || null,
+          mediaUrl: input.mediaUrl || null,
+          twilioSid: twilioSidToSave,
+          senderName: "Admin",
+          status: messageStatus,
+          isAutomated: false,
+          isInternal: isInternal,
+          scheduledAt: isScheduled ? new Date(input.scheduledAt!) : null,
+          replyToId: input.replyToId ?? null,
+        })
+        .$returningId();
       const messageId = inserted[0]?.id;
 
       // Update conversation's last active time
-      await db.update(conversations)
+      await db
+        .update(conversations)
         .set({ lastMessageAt: new Date() })
         .where(eq(conversations.id, input.conversationId));
 
@@ -638,9 +767,11 @@ export const messagingRouter = router({
           title: "Lee Anne sent a message",
           body: preview,
           url: "/habit-tracker/coach",
-        }).catch((e) => console.error("[Messaging] notifyUser failed", e));
+        }).catch(e => console.error("[Messaging] notifyUser failed", e));
         if (convo.platform === "webchat" && messageId) {
-          const { notifyClientOfCoachMessage } = await import("../coachMessageNotify");
+          const { notifyClientOfCoachMessage } = await import(
+            "../coachMessageNotify"
+          );
           void notifyClientOfCoachMessage({
             userId: convo.userId,
             conversationId: input.conversationId,
@@ -673,7 +804,11 @@ export const messagingRouter = router({
           .where(eq(conversations.id, input.conversationId));
       }
       const { publishCoachEvent } = await import("../coachEvents");
-      publishCoachEvent({ type: "typing", conversationId: input.conversationId, who: "coach" });
+      publishCoachEvent({
+        type: "typing",
+        conversationId: input.conversationId,
+        who: "coach",
+      });
       return { success: true };
     }),
 
@@ -688,43 +823,53 @@ export const messagingRouter = router({
         .where(eq(conversations.id, input.conversationId))
         .limit(1);
       const at = row?.clientTypingAt;
-      const clientTyping = Boolean(at && Date.now() - new Date(at).getTime() < 3000);
+      const clientTyping = Boolean(
+        at && Date.now() - new Date(at).getTime() < 3000
+      );
       return { clientTyping };
     }),
 
   // Start a new outbound conversation
   sendNewMessage: adminProcedure
-    .input(z.object({
-      phone: z.string(),
-      content: z.string().optional(),
-      mediaUrl: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        phone: z.string(),
+        content: z.string().optional(),
+        mediaUrl: z.string().optional(),
+      })
+    )
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
-      
+
       const phoneMatchSql = sql`REPLACE(REPLACE(REPLACE(REPLACE(${conversations.contactPhone}, '-', ''), ' ', ''), '(', ''), ')', '') LIKE CONCAT('%', RIGHT(${input.phone}, 10))`;
-      
+
       const convRows = await db
         .select()
         .from(conversations)
         .where(phoneMatchSql)
         .limit(1);
-      let conv: typeof convRows[0] | undefined = convRows[0];
+      let conv: (typeof convRows)[0] | undefined = convRows[0];
 
       if (!conv) {
         const [result] = await db.insert(conversations).values({
           contactPhone: input.phone,
-          status: 'open',
-          platform: 'sms'
+          status: "open",
+          platform: "sms",
         });
         conv = { id: result.insertId } as any;
       }
 
       let finalContent = input.content
         ? input.content
-            .replace(/\(\(review_link\)\)/g, "https://coachmindandbody.com/reviews")
-            .replace(/\(\(payment_link\)\)/g, "https://coachmindandbody.com/premium")
+            .replace(
+              /\(\(review_link\)\)/g,
+              "https://coachmindandbody.com/reviews"
+            )
+            .replace(
+              /\(\(payment_link\)\)/g,
+              "https://coachmindandbody.com/premium"
+            )
         : "";
 
       const { shortenLinksInText } = await import("../crm/automations");
@@ -744,7 +889,8 @@ export const messagingRouter = router({
             to: clean,
           };
           if (process.env.TWILIO_MESSAGING_SERVICE_SID) {
-            msgOpts.messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
+            msgOpts.messagingServiceSid =
+              process.env.TWILIO_MESSAGING_SERVICE_SID;
           } else {
             msgOpts.from = process.env.TWILIO_PHONE_NUMBER;
           }
@@ -771,7 +917,8 @@ export const messagingRouter = router({
         twilioSid: twilioSidToSave,
       });
 
-      await db.update(conversations)
+      await db
+        .update(conversations)
         .set({ lastMessageAt: new Date() })
         .where(eq(conversations.id, conv!.id));
 
@@ -780,7 +927,11 @@ export const messagingRouter = router({
       }
 
       const { publishCoachEvent } = await import("../coachEvents");
-      publishCoachEvent({ type: "message", conversationId: conv!.id, who: "coach" });
+      publishCoachEvent({
+        type: "message",
+        conversationId: conv!.id,
+        who: "coach",
+      });
 
       return { success: true, conversationId: conv!.id };
     }),
@@ -791,15 +942,26 @@ export const messagingRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      const msgRows = await db.select().from(messages).where(eq(messages.id, input.messageId)).limit(1);
+      const msgRows = await db
+        .select()
+        .from(messages)
+        .where(eq(messages.id, input.messageId))
+        .limit(1);
       const msg = msgRows[0];
       if (!msg) throw new Error("Message not found");
-      if (msg.direction !== "outbound") throw new Error("Only outbound messages can be retried");
-      if (msg.status !== "failed") throw new Error("Only failed messages can be retried");
+      if (msg.direction !== "outbound")
+        throw new Error("Only outbound messages can be retried");
+      if (msg.status !== "failed")
+        throw new Error("Only failed messages can be retried");
 
-      const convos = await db.select().from(conversations).where(eq(conversations.id, msg.conversationId)).limit(1);
+      const convos = await db
+        .select()
+        .from(conversations)
+        .where(eq(conversations.id, msg.conversationId))
+        .limit(1);
       const convo = convos[0];
-      if (!convo?.contactPhone) throw new Error("No phone number for this conversation");
+      if (!convo?.contactPhone)
+        throw new Error("No phone number for this conversation");
 
       let twilioSidToSave: string | null = msg.twilioSid;
       let messageStatus: "sent" | "failed" = "sent";
@@ -817,7 +979,8 @@ export const messagingRouter = router({
             to: toTarget,
           };
           if (process.env.TWILIO_MESSAGING_SERVICE_SID) {
-            msgOpts.messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
+            msgOpts.messagingServiceSid =
+              process.env.TWILIO_MESSAGING_SERVICE_SID;
           } else {
             msgOpts.from = process.env.TWILIO_PHONE_NUMBER;
           }
@@ -834,7 +997,8 @@ export const messagingRouter = router({
         messageStatus = "failed";
       }
 
-      await db.update(messages)
+      await db
+        .update(messages)
         .set({ status: messageStatus, twilioSid: twilioSidToSave })
         .where(eq(messages.id, input.messageId));
 
@@ -842,7 +1006,8 @@ export const messagingRouter = router({
         throw new Error("Retry failed — check Twilio logs");
       }
 
-      await db.update(conversations)
+      await db
+        .update(conversations)
         .set({ lastMessageAt: new Date() })
         .where(eq(conversations.id, msg.conversationId));
 
@@ -854,26 +1019,37 @@ export const messagingRouter = router({
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
-      
-      const convos = await db.select().from(conversations).where(eq(conversations.id, input.conversationId)).limit(1);
+
+      const convos = await db
+        .select()
+        .from(conversations)
+        .where(eq(conversations.id, input.conversationId))
+        .limit(1);
       const convo = convos[0];
       if (!convo) return { success: false };
 
       let allConvIds = [input.conversationId];
-      if (convo.contactPhone && (convo.platform === 'sms' || convo.platform === 'whatsapp')) {
-        const cleanPhone = convo.contactPhone.replace(/\D/g, "").replace(/^1/, "");
+      if (
+        convo.contactPhone &&
+        (convo.platform === "sms" || convo.platform === "whatsapp")
+      ) {
+        const cleanPhone = convo.contactPhone
+          .replace(/\D/g, "")
+          .replace(/^1/, "");
         if (cleanPhone.length >= 10) {
-          const matches = await db.select({ id: conversations.id }).from(conversations).where(
-              like(conversations.contactPhone, `%${cleanPhone}%`)
-          );
+          const matches = await db
+            .select({ id: conversations.id })
+            .from(conversations)
+            .where(like(conversations.contactPhone, `%${cleanPhone}%`));
           allConvIds = matches.map(m => m.id);
         }
       }
 
-      await db.update(conversations)
-        .set({ unreadCount: 0 })
+      await db
+        .update(conversations)
+        .set({ unreadCount: 0, coachLastReadAt: new Date() })
         .where(inArray(conversations.id, allConvIds));
-        
+
       return { success: true };
     }),
 
@@ -882,7 +1058,8 @@ export const messagingRouter = router({
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
-      await db.update(conversations)
+      await db
+        .update(conversations)
         .set({ botActive: input.botActive })
         .where(eq(conversations.id, input.conversationId));
       return { success: true };
@@ -907,27 +1084,29 @@ export const messagingRouter = router({
     if (!db) throw new Error("Database not available");
 
     // Get recent messages
-    const recentMessages = await db.select({
-      id: messages.id,
-      content: messages.content,
-      direction: messages.direction,
-      createdAt: messages.createdAt,
-      contactPhone: conversations.contactPhone,
-      userId: conversations.userId,
-    })
+    const recentMessages = await db
+      .select({
+        id: messages.id,
+        content: messages.content,
+        direction: messages.direction,
+        createdAt: messages.createdAt,
+        contactPhone: conversations.contactPhone,
+        userId: conversations.userId,
+      })
       .from(messages)
       .innerJoin(conversations, eq(messages.conversationId, conversations.id))
       .orderBy(desc(messages.createdAt))
       .limit(50);
 
     // Get recent leads
-    const recentLeads = await db.select({
-      id: leads.id,
-      name: leads.name,
-      phone: leads.phone,
-      createdAt: leads.createdAt,
-      notes: leads.notes
-    })
+    const recentLeads = await db
+      .select({
+        id: leads.id,
+        name: leads.name,
+        phone: leads.phone,
+        createdAt: leads.createdAt,
+        notes: leads.notes,
+      })
       .from(leads)
       .orderBy(desc(leads.createdAt))
       .limit(50);
@@ -936,7 +1115,7 @@ export const messagingRouter = router({
     const phonesToResolve = recentMessages
       .map(m => m.contactPhone)
       .filter((p): p is string => !!p);
-    
+
     const { resolveContactsByPhones } = await import("../crm/contactResolver");
     const contactMap = await resolveContactsByPhones(db, phonesToResolve);
 
@@ -951,7 +1130,7 @@ export const messagingRouter = router({
         date: m.createdAt,
         name: resolved?.name || m.contactPhone || "Unknown",
         phone: m.contactPhone || "",
-        content: m.content || ""
+        content: m.content || "",
       });
     });
 
@@ -963,14 +1142,15 @@ export const messagingRouter = router({
         date: l.createdAt,
         name: l.name,
         phone: l.phone || "",
-        content: l.notes || "Discovery call request"
+        content: l.notes || "Discovery call request",
       });
     });
 
     // Sort combined by date descending
-    activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    activities.sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
 
     return activities.slice(0, 50);
   }),
 });
-
