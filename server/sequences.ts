@@ -206,6 +206,204 @@ async function sendSequenceStep(
   return result.ok;
 }
 
+type Database = NonNullable<Awaited<ReturnType<typeof getDb>>>;
+
+/** mysql2 hands back `[ResultSetHeader, fields]`. A plain header is accepted too. */
+function affectedRows(result: unknown): number {
+  const header = Array.isArray(result) ? result[0] : result;
+  if (header && typeof header === "object" && "affectedRows" in header) {
+    const count = (header as { affectedRows?: unknown }).affectedRows;
+    return typeof count === "number" ? count : 0;
+  }
+  return 0;
+}
+
+/**
+ * Advance one step only if it is still the step we just decided to send.
+ * A second caller (the poller, or a repeated enroll) loses the swap and
+ * does not send that step again.
+ */
+async function claimEnrollmentStep(
+  db: Database,
+  enrollmentId: number,
+  fromStep: number,
+  toStep: number,
+  status: "active" | "completed"
+): Promise<boolean> {
+  const result = await db
+    .update(sequenceEnrollments)
+    .set({
+      currentStepId: toStep,
+      status,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(sequenceEnrollments.id, enrollmentId),
+        eq(sequenceEnrollments.currentStepId, fromStep),
+        eq(sequenceEnrollments.status, "active")
+      )
+    );
+  return affectedRows(result) > 0;
+}
+
+/** Put a step back so a later poller pass can retry a failed send. */
+async function restoreEnrollmentStep(
+  db: Database,
+  enrollmentId: number,
+  claimedStep: number,
+  restoreStep: number,
+  updatedAt: Date
+): Promise<void> {
+  await db
+    .update(sequenceEnrollments)
+    .set({
+      currentStepId: restoreStep,
+      status: "active",
+      updatedAt,
+    })
+    .where(
+      and(
+        eq(sequenceEnrollments.id, enrollmentId),
+        eq(sequenceEnrollments.currentStepId, claimedStep)
+      )
+    );
+}
+
+/**
+ * Send every step that is already due for one enrollment, then advance it.
+ * The 4-hour poller calls this for each active enrollment. A new enrollment
+ * calls it once so a day-0 note (absolute offset 0) does not wait.
+ */
+export async function sendDueStepsForEnrollment(
+  enrollmentId: number
+): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+
+  let emailsSent = 0;
+  let passes = 0;
+
+  // One pass per step, plus a spare. Stops a stuck row from spinning.
+  while (passes < 25) {
+    passes += 1;
+    const [enrollment] = await db
+      .select()
+      .from(sequenceEnrollments)
+      .where(eq(sequenceEnrollments.id, enrollmentId))
+      .limit(1);
+
+    if (!enrollment || enrollment.status !== "active") break;
+
+    const config = getSequenceConfig(enrollment.sequenceId);
+    if (!config) {
+      console.warn(`[Sequences] Unknown sequence: ${enrollment.sequenceId}`);
+      break;
+    }
+
+    if (enrollment.currentStepId >= config.emails.length) break;
+
+    if (enrollment.userId == null) break;
+
+    const [subscriber] = await db
+      .select()
+      .from(subscribers)
+      .where(eq(subscribers.id, enrollment.userId))
+      .limit(1);
+
+    if (!subscriber) break;
+
+    if (isEmailOptedOut(subscriber.segments)) {
+      await db
+        .update(sequenceEnrollments)
+        .set({ status: "cancelled", updatedAt: new Date() })
+        .where(
+          and(
+            eq(sequenceEnrollments.id, enrollment.id),
+            eq(sequenceEnrollments.status, "active")
+          )
+        );
+      break;
+    }
+
+    const fromStep = enrollment.currentStepId;
+    const nextStep = fromStep + 1;
+    const nextStatus: "active" | "completed" =
+      nextStep >= config.emails.length ? "completed" : "active";
+
+    if (config.type === "calendar_dates") {
+      const sendDate = config.dates[fromStep];
+      const today = todayMountainDateStr();
+      if (!sendDate || today < sendDate) break;
+      if (today > sendDate) {
+        const skipped = await claimEnrollmentStep(
+          db,
+          enrollment.id,
+          fromStep,
+          nextStep,
+          nextStatus
+        );
+        if (!skipped) break;
+        continue;
+      }
+    } else if (!isEnrollmentDue(enrollment, config)) {
+      break;
+    }
+
+    const previousUpdatedAt =
+      enrollment.updatedAt != null
+        ? new Date(enrollment.updatedAt)
+        : new Date();
+
+    const claimed = await claimEnrollmentStep(
+      db,
+      enrollment.id,
+      fromStep,
+      nextStep,
+      nextStatus
+    );
+    if (!claimed) break;
+
+    let success = false;
+    let failure: unknown;
+    try {
+      success = await sendSequenceStep(
+        { ...enrollment, currentStepId: fromStep },
+        subscriber,
+        config
+      );
+    } catch (err) {
+      failure = err;
+    }
+
+    if (!success) {
+      console.error(
+        `[Sequences] Enrollment ${enrollmentId} step ${fromStep + 1} did not send; the poller will retry.`,
+        ...(failure === undefined ? [] : [failure])
+      );
+      try {
+        await restoreEnrollmentStep(
+          db,
+          enrollment.id,
+          nextStep,
+          fromStep,
+          previousUpdatedAt
+        );
+      } catch (restoreErr) {
+        console.error(
+          `[Sequences] Could not rewind enrollment ${enrollmentId} after a failed send:`,
+          restoreErr
+        );
+      }
+      break;
+    }
+
+    emailsSent++;
+  }
+
+  return emailsSent;
+}
+
 export async function processEmailSequences() {
   console.log("[Sequences] Starting sequence processor...");
   let emailsSent = 0;
@@ -214,85 +412,15 @@ export async function processEmailSequences() {
   if (!db) return { success: false, error: "DB unavailable" };
 
   const activeEnrollments = await db
-    .select({
-      enrollment: sequenceEnrollments,
-      subscriber: subscribers,
-    })
+    .select({ id: sequenceEnrollments.id })
     .from(sequenceEnrollments)
-    .innerJoin(subscribers, eq(sequenceEnrollments.userId, subscribers.id))
     .where(eq(sequenceEnrollments.status, "active"));
 
-  for (const { enrollment, subscriber } of activeEnrollments) {
-    const config = getSequenceConfig(enrollment.sequenceId);
-    if (!config) {
-      console.warn(`[Sequences] Unknown sequence: ${enrollment.sequenceId}`);
-      continue;
-    }
-
-    // Honor marketing opt-out (Resend + local segment)
-    if (isEmailOptedOut(subscriber.segments)) {
-      await db
-        .update(sequenceEnrollments)
-        .set({ status: "cancelled", updatedAt: new Date() })
-        .where(eq(sequenceEnrollments.id, enrollment.id));
-      continue;
-    }
-
-    let currentEnrollment = enrollment;
-
-    // Catch up on any overdue steps (e.g. backfilled leads who missed Day 3 and Day 7).
-    while (currentEnrollment.currentStepId < config.emails.length) {
-      if (config.type === "calendar_dates") {
-        const sendDate = config.dates[currentEnrollment.currentStepId];
-        const today = todayMountainDateStr();
-        if (!sendDate || today < sendDate) break;
-        if (today > sendDate) {
-          const nextStep = currentEnrollment.currentStepId + 1;
-          const isComplete = nextStep >= config.emails.length;
-          await db
-            .update(sequenceEnrollments)
-            .set({
-              currentStepId: nextStep,
-              status: isComplete ? "completed" : "active",
-              updatedAt: new Date(),
-            })
-            .where(eq(sequenceEnrollments.id, currentEnrollment.id));
-          currentEnrollment = {
-            ...currentEnrollment,
-            currentStepId: nextStep,
-            status: isComplete ? "completed" : "active",
-          };
-          continue;
-        }
-      } else if (!isEnrollmentDue(currentEnrollment, config)) {
-        break;
-      }
-
-      const success = await sendSequenceStep(
-        currentEnrollment,
-        subscriber,
-        config
-      );
-      if (!success) break;
-
-      emailsSent++;
-      const nextStep = currentEnrollment.currentStepId + 1;
-      const isComplete = nextStep >= config.emails.length;
-
-      await db
-        .update(sequenceEnrollments)
-        .set({
-          currentStepId: nextStep,
-          status: isComplete ? "completed" : "active",
-          updatedAt: new Date(),
-        })
-        .where(eq(sequenceEnrollments.id, currentEnrollment.id));
-
-      currentEnrollment = {
-        ...currentEnrollment,
-        currentStepId: nextStep,
-        status: isComplete ? "completed" : "active",
-      };
+  for (const { id } of activeEnrollments) {
+    try {
+      emailsSent += await sendDueStepsForEnrollment(id);
+    } catch (err) {
+      console.error(`[Sequences] Enrollment ${id} failed:`, err);
     }
   }
 
@@ -355,14 +483,31 @@ export async function enrollUserInSequence(
         currentStepId = idx;
       }
     }
-    await db.insert(sequenceEnrollments).values({
-      userId,
-      sequenceId,
-      status,
-      currentStepId,
-      ...(opts?.anchorDate ? { createdAt: opts.anchorDate } : {}),
-    });
+    const inserted = await db
+      .insert(sequenceEnrollments)
+      .values({
+        userId,
+        sequenceId,
+        status,
+        currentStepId,
+        // App clock, so an offset of 0 is already due on this request.
+        createdAt: opts?.anchorDate ?? new Date(),
+      })
+      .$returningId();
     console.log(`[Sequences] Enrolled ${email} in sequence: ${sequenceId}`);
+
+    const enrollmentId = inserted[0]?.id;
+    if (enrollmentId != null && status === "active") {
+      // Due steps only (day 0 for absolute-day series). Later days stay on the poller.
+      try {
+        await sendDueStepsForEnrollment(enrollmentId);
+      } catch (err) {
+        console.error(
+          `[Sequences] Immediate send failed for ${email} (${sequenceId}); the poller will retry:`,
+          err
+        );
+      }
+    }
   }
 
   return true;

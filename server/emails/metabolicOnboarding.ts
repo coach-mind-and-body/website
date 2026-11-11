@@ -13,7 +13,7 @@ import {
 
 export type OnboardingStep = {
   key: string;
-  /** Days after Lee Anne enrolls them. Day 0 sends on the next pass. */
+  /** Days after Lee Anne enrolls them. Day 0 sends as soon as they are enrolled. */
   day: number;
   subject: string;
   previewText: string;
