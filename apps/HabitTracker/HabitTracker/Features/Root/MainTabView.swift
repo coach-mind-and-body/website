@@ -79,6 +79,7 @@ struct MainTabView: View {
             await habits.load()
             applyDeepLink(DeepLink.consumePending())
             await coach.refreshUnread()
+            await refreshSessionReminders()
             promptNextOnboarding()
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(30))
@@ -105,9 +106,15 @@ struct MainTabView: View {
             let raw = note.userInfo?["link"] as? String
             applyDeepLink(raw.flatMap(DeepLink.init(rawValue:)) ?? DeepLink.consumePending())
         }
+        .onChange(of: auth.isSignedIn) { _, _ in
+            Task { await refreshSessionReminders() }
+        }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 Task {
+                    if tab != .programs {
+                        await refreshSessionReminders()
+                    }
                     if tab == .coach {
                         await coach.load(announce: false)
                     } else {
@@ -116,7 +123,10 @@ struct MainTabView: View {
                 }
             }
         }
-        .sheet(isPresented: $showNotifyPrompt, onDismiss: { promptNextOnboarding() }) {
+        .sheet(isPresented: $showNotifyPrompt, onDismiss: {
+            promptNextOnboarding()
+            Task { await refreshSessionReminders() }
+        }) {
             NotifyPromptView(isPresented: $showNotifyPrompt)
         }
         .sheet(isPresented: $showSharePrompt, onDismiss: { promptNextOnboarding() }) {
@@ -141,6 +151,33 @@ struct MainTabView: View {
             tab = .coach
         case .habits:
             tab = .habits
+        case .programs:
+            tab = .programs
+        }
+    }
+
+    /// Schedules coaching reminders after the hub loads, even if My Programs isn't open.
+    /// My Programs loads the same hub itself, so this skips that tab to avoid a second fetch.
+    private func refreshSessionReminders() async {
+        guard auth.isSignedIn, !auth.usesAdminChrome else {
+            if !auth.isSignedIn {
+                let token = await CoachingReminderCoordinator.shared.begin()
+                await CoachingReminderCoordinator.shared.apply(token: token, reminders: [])
+            }
+            return
+        }
+        if tab == .programs { return }
+        guard await NotificationService.isAuthorized() else { return }
+        let token = await CoachingReminderCoordinator.shared.begin()
+        do {
+            let hub: ProgramHub = try await auth.client.query(
+                "reclaimHub.myHub",
+                cachePolicy: .reloadIgnoringLocalCacheData
+            )
+            guard auth.isSignedIn, !auth.usesAdminChrome else { return }
+            await CoachingReminderCoordinator.shared.apply(token: token, reminders: hub.coachingReminders())
+        } catch {
+            return
         }
     }
 

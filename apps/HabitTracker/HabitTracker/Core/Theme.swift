@@ -77,6 +77,7 @@ enum DeepLink: String {
     case challenge
     case coach
     case habits
+    case programs
 
     static var pending: DeepLink?
 
@@ -102,6 +103,7 @@ enum DeepLink: String {
             return link
         }
         let url = (userInfo["url"] as? String ?? "").lowercased()
+        if url.contains("program") { return .programs }
         if url.contains("challenge") { return .challenge }
         if url.contains("coach") { return .coach }
         if url.contains("habit") { return .habits }
@@ -113,6 +115,7 @@ enum DeepLink: String {
         if host == "auth" { return nil }
         if let link = DeepLink(rawValue: host) { return link }
         let path = url.path.lowercased()
+        if path.contains("program") { return .programs }
         if path.contains("challenge") { return .challenge }
         if path.contains("coach") { return .coach }
         return nil
