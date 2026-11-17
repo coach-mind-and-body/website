@@ -248,7 +248,7 @@ struct MainTabView: View {
                     .tabItem { Label("My Programs", systemImage: "book.closed") }
                     .tag(AppTab.programs)
                 RecipesHubView(food: food, auth: auth)
-                    .tabItem { Label("Recipes", systemImage: "frying.pan") }
+                    .tabItem { Label("Food", systemImage: "frying.pan") }
                     .tag(AppTab.recipes)
                 FitnessView(model: fitness, auth: auth)
                     .tabItem { Label("Fitness", systemImage: "figure.strengthtraining.traditional") }
