@@ -117,6 +117,18 @@ struct MealPlan: Codable, Identifiable, Hashable {
     var slots: [MealPlanSlot]?
 }
 
+struct FastingDay: Codable, Equatable {
+    var dateStr: String
+    var didFast: Bool
+    var hours: Double?
+    var notes: String?
+    var recorded: Bool
+
+    static func empty(dateStr: String) -> FastingDay {
+        FastingDay(dateStr: dateStr, didFast: false, hours: nil, notes: nil, recorded: false)
+    }
+}
+
 struct CalorieLog: Codable, Identifiable, Hashable {
     var id: Int
     var dateStr: String

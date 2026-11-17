@@ -7,6 +7,7 @@ import { Flame, Plus, Pencil, Trash2, Calendar, Loader2 } from "lucide-react";
 import { format, subDays, parseISO } from "date-fns";
 import { todayMountainDateStr } from "@/lib/mountainTime";
 import { privateFoodLogPhotoSrc } from "@/lib/foodLogPhoto";
+import { ClientFastingLogs } from "@/components/admin/ClientFastingLogs";
 
 export default function AdminClientHabits({ userId }: { userId: number }) {
   const utils = trpc.useUtils();
@@ -36,7 +37,7 @@ export default function AdminClientHabits({ userId }: { userId: number }) {
   if (error) return <div className="text-xs py-4 text-gray-500">Client has not shared habit progress.</div>;
   if (!data) return null;
 
-  const { habits, logs, notes, calorieLogs, fitnessLogs, stats, victories, insight, challengeProgress } = data as any;
+  const { habits, logs, notes, calorieLogs, fastingLogs, fitnessLogs, stats, victories, insight, challengeProgress } = data as any;
   const activeHabits = habits.filter((h: any) => h.isActive);
 
   // 30 day heatmap
@@ -284,9 +285,12 @@ export default function AdminClientHabits({ userId }: { userId: number }) {
         </div>
       </div>
 
-      {(calorieLogs?.length > 0 || fitnessLogs?.length > 0) && (
+      {(calorieLogs?.length > 0 || fitnessLogs?.length > 0 || (fastingLogs?.length ?? 0) > 0) && (
         <div className="pt-4 border-t border-gray-100">
           <p className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-3">Health & Fitness Check-ins</p>
+          <div className="mb-4">
+            <ClientFastingLogs rows={fastingLogs || []} />
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Calories */}
             <div>

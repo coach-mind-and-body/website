@@ -28,6 +28,7 @@ import FoodHubNav from "@/components/habit/FoodHubNav";
 import FatSecretAttribution from "@/components/habit/FatSecretAttribution";
 import { FOOD_LOG_HINTS } from "@shared/food";
 import WrittenLogScan from "./WrittenLogScan";
+import FastingToday from "./FastingToday";
 import { privateFoodLogPhotoSrc } from "@/lib/foodLogPhoto";
 
 type SelectedRecipe = {
@@ -548,6 +549,8 @@ export default function CalorieTrackerClient() {
             →
           </Button>
         </div>
+
+        <FastingToday dateStr={dateStr} isAuthenticated={isAuthenticated} />
 
         {/* Protein-first summary */}
         <div

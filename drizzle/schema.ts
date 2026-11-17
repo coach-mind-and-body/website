@@ -8,6 +8,7 @@ import {
   boolean,
   bigint,
   date,
+  double,
   uniqueIndex,
 } from "drizzle-orm/mysql-core";
 
@@ -916,6 +917,25 @@ export const calorieLogs = mysqlTable("calorie_logs", {
 
 export type CalorieLog = typeof calorieLogs.$inferSelect;
 export type InsertCalorieLog = typeof calorieLogs.$inferInsert;
+
+/** One fasting answer per client per day. Hours are whole numbers or halves. */
+export const fastingLogs = mysqlTable(
+  "fasting_logs",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    dateStr: varchar("dateStr", { length: 10 }).notNull(),
+    didFast: boolean("didFast").default(false).notNull(),
+    hours: double("hours"),
+    notes: text("notes"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => [uniqueIndex("fasting_logs_user_day").on(table.userId, table.dateStr)]
+);
+
+export type FastingLog = typeof fastingLogs.$inferSelect;
+export type InsertFastingLog = typeof fastingLogs.$inferInsert;
 
 export const fitnessLogs = mysqlTable("fitness_logs", {
   id: int("id").autoincrement().primaryKey(),

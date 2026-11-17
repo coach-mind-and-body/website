@@ -20,6 +20,7 @@ import {
   enrollments,
   fitnessLogs,
 } from "../../drizzle/schema";
+import { listFastingDays } from "../fasting";
 import { eq, and, gte, desc, sql } from "drizzle-orm";
 import { calculateUserHabitStats } from "../habitHelpers";
 import { computeWeeklyInsight } from "../habitInsights";
@@ -441,12 +442,14 @@ export const habitRouter = router({
       }
 
       const cLogs = await db.select().from(calorieLogs).where(eq(calorieLogs.userId, input.userId));
+      const fastingRows = foodLogAccess.allowed ? await listFastingDays(db, input.userId) : [];
       if (!shared) {
         return {
           habits: [],
           logs: [],
           notes: [],
           calorieLogs: cLogs,
+          fastingLogs: fastingRows,
           fitnessLogs: [],
           stats: null,
           victories: [],
@@ -504,6 +507,7 @@ export const habitRouter = router({
         logs,
         notes,
         calorieLogs: cLogs,
+        fastingLogs: fastingRows,
         fitnessLogs: fLogs,
         stats,
         victories,

@@ -19,6 +19,7 @@ import { clientModuleSession, nextCoachingSession, type ClientModuleSession, typ
 import { soonestJoinableSession } from "./calendarAppointments";
 import { getUpcomingEventsForEmail } from "./googleCalendar";
 import { ensureModuleHomeworkAssignments } from "./moduleHomework";
+import { listFastingDays } from "./fasting";
 import {
   coachMaySeeFoodLogs,
   enrollmentGrantsContent,
@@ -389,6 +390,7 @@ export async function loadCoachClientWorkspace(db: Db, lookup: { userId?: number
         .orderBy(desc(calorieLogs.createdAt))
         .limit(60)
     : [];
+  const fastingLogs = foodLogAccess.allowed ? await listFastingDays(db, user.id) : [];
 
   const progressRows = await db.select().from(moduleProgress).where(eq(moduleProgress.userId, user.id));
   const moduleRows = await db.select().from(programModules).orderBy(asc(programModules.order));
@@ -427,6 +429,7 @@ export async function loadCoachClientWorkspace(db: Db, lookup: { userId?: number
     },
     foodLogAccess,
     foodLogs,
+    fastingLogs,
     programs: enrollmentRows
       .filter((row) => isProgramId(row.program))
       .map((row) => ({

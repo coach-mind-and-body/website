@@ -14,6 +14,7 @@ describe("real food reset sequences", () => {
     const day1 = REAL_FOOD_RESET_DAY_EMAILS[6]("Sarah");
     expect(day1.html).toContain("NOTICE");
     expect(day1.html).toContain("SWAP ONE");
+    expect(day1.html).toContain("focus=challenge");
     const day5 = REAL_FOOD_RESET_DAY_EMAILS[REAL_FOOD_RESET_DAY_EMAILS.length - 1]("Sarah");
     expect(day5.html).toContain("/book");
     expect(day5.html).toContain("reclaim-invite");

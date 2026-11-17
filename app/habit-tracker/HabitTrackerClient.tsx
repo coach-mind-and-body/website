@@ -194,6 +194,7 @@ export default function HabitTrackerClient() {
 
   const importFitness = trpc.fitness.importGuestLogs.useMutation();
   const importCalories = trpc.calories.importGuestLogs.useMutation();
+  const importFasting = trpc.calories.importGuestFasting.useMutation();
 
   // Offer to import local data after login (habits + fitness + meals)
   useEffect(() => {
@@ -202,16 +203,19 @@ export default function HabitTrackerClient() {
     const hasLocalLogs = !!localStorage.getItem("mbr_habit_logs");
     let hasFitness = false;
     let hasMeals = false;
+    let hasFasting = false;
     try {
       const f = JSON.parse(localStorage.getItem("mbr_fitness_logs") || "[]");
       const m = JSON.parse(localStorage.getItem("mbr_calorie_logs") || "[]");
+      const fast = JSON.parse(localStorage.getItem("mbr_fasting_logs") || "[]");
       hasFitness = Array.isArray(f) && f.length > 0;
       hasMeals = Array.isArray(m) && m.length > 0;
+      hasFasting = Array.isArray(fast) && fast.length > 0;
     } catch {
       /* ignore */
     }
     const dismissed = localStorage.getItem("mbr_import_dismissed");
-    if ((hasLocalHabits || hasLocalLogs || hasFitness || hasMeals) && !dismissed) {
+    if ((hasLocalHabits || hasLocalLogs || hasFitness || hasMeals || hasFasting) && !dismissed) {
       setShowImportPrompt(true);
     }
   }, [isAuthenticated, userSyncData]);
@@ -307,6 +311,26 @@ export default function HabitTrackerClient() {
         /* ignore */
       }
 
+      let fastingCount = 0;
+      try {
+        const fastingLogs = JSON.parse(localStorage.getItem("mbr_fasting_logs") || "[]");
+        if (Array.isArray(fastingLogs) && fastingLogs.length > 0) {
+          const payload = fastingLogs.map((row: { dateStr?: string; didFast?: boolean; hours?: number | null; notes?: string | null }) => ({
+            dateStr: String(row.dateStr || ""),
+            didFast: Boolean(row.didFast),
+            hours: row.hours ?? null,
+            notes: row.notes ?? null,
+          })).filter((row: { dateStr: string }) => /^\d{4}-\d{2}-\d{2}$/.test(row.dateStr));
+          if (payload.length > 0) {
+            const res = await importFasting.mutateAsync({ entries: payload });
+            fastingCount = res.imported;
+            localStorage.removeItem("mbr_fasting_logs");
+          }
+        }
+      } catch {
+        /* ignore */
+      }
+
       localStorage.removeItem("mbr_habits");
       localStorage.removeItem("mbr_habit_logs");
       localStorage.setItem("mbr_import_dismissed", "1");
@@ -314,6 +338,7 @@ export default function HabitTrackerClient() {
       const bits = ["habits"];
       if (fitnessCount) bits.push(`${fitnessCount} workouts`);
       if (mealCount) bits.push(`${mealCount} meals`);
+      if (fastingCount) bits.push(`${fastingCount} fasting days`);
       toast.success(`Imported ${bits.join(" · ")} to your account`);
       refetchUserSync();
     } catch (e: unknown) {

@@ -20,6 +20,7 @@ import {
   prepareWrittenLogImages,
   readWrittenFoodLog,
 } from "../writtenFoodLog";
+import { importFastingDays, readFastingDay, saveFastingDay } from "../fasting";
 
 /** Soft guest AI limits: deviceId → { day, count } (in-process; resets on deploy) */
 const guestAiUsage = new Map<string, { day: string; count: number }>();
@@ -410,6 +411,45 @@ export const caloriesRouter = router({
       }
 
       return { success: true, saved: rows.length };
+    }),
+
+  getFasting: protectedProcedure
+    .input(z.object({
+      dateStr: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      return readFastingDay(db, ctx.user.id, input.dateStr);
+    }),
+
+  saveFasting: protectedProcedure
+    .input(z.object({
+      dateStr: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      didFast: z.boolean(),
+      hours: z.number().min(0).max(72).nullable().optional(),
+      notes: z.string().max(2000).nullable().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      return saveFastingDay(db, ctx.user.id, input);
+    }),
+
+  importGuestFasting: protectedProcedure
+    .input(z.object({
+      entries: z.array(z.object({
+        dateStr: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        didFast: z.boolean(),
+        hours: z.number().min(0).max(72).nullable().optional(),
+        notes: z.string().max(2000).nullable().optional(),
+      })).max(500),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const imported = await importFastingDays(db, ctx.user.id, input.entries);
+      return { imported };
     }),
 });
 

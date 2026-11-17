@@ -55,7 +55,8 @@ export function middleware(request: NextRequest) {
     path === "/robots.txt" ||
     path === "/sitemap.xml" ||
     path === "/feed.xml" ||
-    path === "/llms.txt";
+    path === "/llms.txt" ||
+    path === "/.well-known/apple-app-site-association";
 
   if (isBot || isSeoAsset) {
     return NextResponse.next();

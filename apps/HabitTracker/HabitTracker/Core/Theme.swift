@@ -147,7 +147,24 @@ enum DeepLink: String {
         return nil
     }
 
+    /// Custom scheme keeps token handling in the caller. https links map onto the same cases.
+    static func open(_ url: URL, applyToken: (String) -> Void) {
+        if (url.scheme ?? "").lowercased() == "habittracker",
+           let token = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+            .queryItems?.first(where: { $0.name == "token" })?.value,
+           !token.isEmpty {
+            applyToken(token)
+        }
+        if let link = fromURL(url) {
+            post(link)
+        }
+    }
+
     static func fromURL(_ url: URL) -> DeepLink? {
+        let scheme = (url.scheme ?? "").lowercased()
+        if scheme == "https" || scheme == "http" {
+            return fromWebURL(url)
+        }
         let host = (url.host ?? "").lowercased()
         if host == "auth" { return nil }
         if let link = DeepLink(rawValue: host) { return link }
@@ -156,6 +173,51 @@ enum DeepLink: String {
         if path.contains("challenge") { return .challenge }
         if path.contains("coach") { return .coach }
         return nil
+    }
+
+    /// https://mindandbodyresetcoach.com paths that the apple-app-site-association file claims.
+    private static func fromWebURL(_ url: URL) -> DeepLink? {
+        let host = (url.host ?? "").lowercased()
+        guard host == "mindandbodyresetcoach.com" || host == "www.mindandbodyresetcoach.com" else {
+            return nil
+        }
+        let parts = url.path.split(separator: "/").map { $0.lowercased() }
+        guard let root = parts.first else { return nil }
+        if root == "portal" {
+            if parts.count >= 2, parts[1] == "forms" {
+                if parts.count >= 3, let id = Int(parts[2]), id > 0 {
+                    pendingFormId = id
+                } else {
+                    pendingFormId = nil
+                }
+                return .form
+            }
+            return .programs
+        }
+        guard root == "habit-tracker" else { return nil }
+        let focus = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+            .queryItems?
+            .first(where: { $0.name == "focus" })?
+            .value?
+            .lowercased()
+        if focus == "challenge" || parts.dropFirst().contains("challenge") {
+            return .challenge
+        }
+        if parts.count >= 2 {
+            switch parts[1] {
+            case "coach":
+                return .coach
+            case "calories", "food":
+                return .food
+            case "fitness":
+                return .fitness
+            case "programs":
+                return .programs
+            default:
+                break
+            }
+        }
+        return .habits
     }
 }
 

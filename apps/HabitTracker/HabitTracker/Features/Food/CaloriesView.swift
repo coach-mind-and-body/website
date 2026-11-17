@@ -28,6 +28,7 @@ struct CaloriesView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 dateRow
+                FastingTodayCard(food: food)
 
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     macroChip("Protein", "\(food.proteinTotal)g")
@@ -189,6 +190,7 @@ struct CaloriesView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 openDateRow
+                FastingTodayCard(food: food)
                 if let err = food.errorMessage {
                     Text(err).font(.subheadline).foregroundStyle(.red)
                 }
@@ -271,6 +273,96 @@ struct CaloriesView: View {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .stroke(selected ? HTTheme.gold : HTTheme.roseBorder, lineWidth: 1)
         )
+    }
+
+    private struct FastingTodayCard: View {
+        @Bindable var food: FoodViewModel
+        @State private var answered = false
+        @State private var didFast = false
+        @State private var hours = ""
+        @State private var notes = ""
+        @State private var notice: String?
+
+        var body: some View {
+            HTCard {
+                Text("Did you fast today?")
+                    .font(.headline)
+                    .foregroundStyle(HTTheme.forest)
+                HStack(spacing: 8) {
+                    choice("Yes", selected: answered && didFast) {
+                        answered = true
+                        didFast = true
+                    }
+                    choice("No", selected: answered && !didFast) {
+                        answered = true
+                        didFast = false
+                        hours = ""
+                    }
+                }
+                if answered && didFast {
+                    TextField("Hours fasted", text: $hours)
+                        .keyboardType(.decimalPad)
+                        .textFieldStyle(.roundedBorder)
+                }
+                TextField("Fasting notes", text: $notes, axis: .vertical)
+                    .lineLimit(2...4)
+                    .textFieldStyle(.roundedBorder)
+                if let notice {
+                    Text(notice)
+                        .font(.caption)
+                        .foregroundStyle(notice == "Saved" ? HTTheme.muted : .red)
+                }
+                Button("Save fasting") {
+                    Task {
+                        let error = await food.saveFasting(didFast: didFast, hoursText: hours, notes: notes)
+                        notice = error ?? "Saved"
+                    }
+                }
+                .font(.headline)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(HTTheme.gold)
+                .foregroundStyle(Color.white)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .buttonStyle(.plain)
+                .disabled(!answered)
+            }
+            .onAppear(perform: pull)
+            .onChange(of: food.dateStr) { _, _ in
+                answered = false
+                didFast = false
+                hours = ""
+                notes = ""
+                notice = nil
+            }
+            .onChange(of: food.fasting) { _, next in
+                guard next.dateStr == food.dateStr else { return }
+                pull()
+            }
+        }
+
+        private func pull() {
+            answered = food.fasting.recorded
+            didFast = food.fasting.didFast
+            if let value = food.fasting.hours {
+                hours = value.truncatingRemainder(dividingBy: 1) == 0 ? String(Int(value)) : String(value)
+            } else {
+                hours = ""
+            }
+            notes = food.fasting.notes ?? ""
+        }
+
+        private func choice(_ title: String, selected: Bool, action: @escaping () -> Void) -> some View {
+            Button(title, action: action)
+                .font(.subheadline.weight(.semibold))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(selected ? HTTheme.forest : Color.white)
+                .foregroundStyle(selected ? Color.white : HTTheme.forest)
+                .clipShape(Capsule())
+                .overlay(Capsule().stroke(HTTheme.roseBorder))
+                .buttonStyle(.plain)
+        }
     }
 
     private var dateRow: some View {

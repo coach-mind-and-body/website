@@ -18,6 +18,10 @@ enum GuestLocalStore {
     static func loadCalories() -> [CalorieLog] { decode(caloriesKey, as: [CalorieLog].self) ?? [] }
     static func saveCalories(_ v: [CalorieLog]) { encode(caloriesKey, v) }
 
+    private static let fastingKey = "guest.fastingLogs.v1"
+    static func loadFasting() -> [FastingDay] { decode(fastingKey, as: [FastingDay].self) ?? [] }
+    static func saveFasting(_ v: [FastingDay]) { encode(fastingKey, v) }
+
     private static let fitnessKey = "guest.fitnessLogs.v1"
     static func loadFitness() -> [FitnessLog] { decode(fitnessKey, as: [FitnessLog].self) ?? [] }
     static func saveFitness(_ v: [FitnessLog]) { encode(fitnessKey, v) }
