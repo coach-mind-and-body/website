@@ -277,28 +277,106 @@ struct CaloriesView: View {
 
     private struct FastingTodayCard: View {
         @Bindable var food: FoodViewModel
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
         @State private var answered = false
         @State private var didFast = false
         @State private var hours = ""
         @State private var notes = ""
         @State private var notice: String?
+        @State private var expanded = false
+
+        private var rowAnimation: Animation? {
+            if reduceMotion { return nil }
+            return .easeInOut(duration: 0.28)
+        }
+
+        /// A saved answer for the day that is on screen. A previous day must not fill this row.
+        private var savedToday: Bool {
+            food.fasting.recorded && food.fasting.dateStr == food.dateStr
+        }
+
+        private var summary: String {
+            if food.fasting.didFast {
+                if let value = food.fasting.hours {
+                    return "Fasted \(hoursLabel(value)) hrs"
+                }
+                return "Fasted"
+            }
+            return "Didn't fast"
+        }
 
         var body: some View {
-            HTCard {
-                Text("Did you fast today?")
-                    .font(.headline)
-                    .foregroundStyle(HTTheme.forest)
-                HStack(spacing: 8) {
-                    choice("Yes", selected: answered && didFast) {
-                        answered = true
-                        didFast = true
+            HTCard(spacing: expanded ? 10 : 0) {
+                if savedToday && !expanded {
+                    Button {
+                        pull()
+                        expanded = true
+                    } label: {
+                        HStack(spacing: 8) {
+                            Text(summary)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(HTTheme.forest)
+                                .lineLimit(1)
+                            Spacer(minLength: 8)
+                            Image(systemName: "chevron.down")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(HTTheme.gold)
+                                .accessibilityHidden(true)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
                     }
-                    choice("No", selected: answered && !didFast) {
-                        answered = true
-                        didFast = false
-                        hours = ""
+                    .buttonStyle(.plain)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityHint("Edits today's fast")
+                } else {
+                    HStack(spacing: 8) {
+                        Text("Did you fast today?")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(HTTheme.forest)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
+                        Spacer(minLength: 8)
+                        choice("Yes", selected: answered && didFast) { choose(true) }
+                        choice("No", selected: answered && !didFast) { choose(false) }
+                        if expanded {
+                            Button {
+                                collapse()
+                            } label: {
+                                Image(systemName: "chevron.up")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(HTTheme.gold)
+                                    .frame(width: 28, height: 28)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Close")
+                        }
                     }
                 }
+                if expanded {
+                    editor
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                }
+            }
+            .animation(rowAnimation, value: expanded)
+            .animation(rowAnimation, value: didFast)
+            .onAppear(perform: pull)
+            .onChange(of: food.dateStr) { _, _ in
+                answered = false
+                didFast = false
+                hours = ""
+                notes = ""
+                notice = nil
+                expanded = false
+            }
+            .onChange(of: food.fasting) { _, next in
+                guard next.dateStr == food.dateStr else { return }
+                pull()
+            }
+        }
+
+        private var editor: some View {
+            VStack(alignment: .leading, spacing: 10) {
                 if answered && didFast {
                     TextField("Hours fasted", text: $hours)
                         .keyboardType(.decimalPad)
@@ -310,12 +388,17 @@ struct CaloriesView: View {
                 if let notice {
                     Text(notice)
                         .font(.caption)
-                        .foregroundStyle(notice == "Saved" ? HTTheme.muted : .red)
+                        .foregroundStyle(.red)
                 }
                 Button("Save fasting") {
                     Task {
                         let error = await food.saveFasting(didFast: didFast, hoursText: hours, notes: notes)
-                        notice = error ?? "Saved"
+                        if let error {
+                            notice = error
+                        } else {
+                            notice = nil
+                            expanded = false
+                        }
                     }
                 }
                 .font(.headline)
@@ -327,25 +410,31 @@ struct CaloriesView: View {
                 .buttonStyle(.plain)
                 .disabled(!answered)
             }
-            .onAppear(perform: pull)
-            .onChange(of: food.dateStr) { _, _ in
-                answered = false
-                didFast = false
-                hours = ""
-                notes = ""
-                notice = nil
-            }
-            .onChange(of: food.fasting) { _, next in
-                guard next.dateStr == food.dateStr else { return }
-                pull()
-            }
+        }
+
+        private func choose(_ fasting: Bool) {
+            answered = true
+            didFast = fasting
+            if !fasting { hours = "" }
+            notice = nil
+            expanded = true
+        }
+
+        private func collapse() {
+            notice = nil
+            expanded = false
+            pull()
+        }
+
+        private func hoursLabel(_ value: Double) -> String {
+            value.truncatingRemainder(dividingBy: 1) == 0 ? String(Int(value)) : String(value)
         }
 
         private func pull() {
             answered = food.fasting.recorded
             didFast = food.fasting.didFast
             if let value = food.fasting.hours {
-                hours = value.truncatingRemainder(dividingBy: 1) == 0 ? String(Int(value)) : String(value)
+                hours = hoursLabel(value)
             } else {
                 hours = ""
             }

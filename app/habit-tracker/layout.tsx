@@ -43,7 +43,7 @@ export default function HabitTrackerLayout({
       exact: false,
     },
     {
-      name: "Recipes",
+      name: "Food",
       href: "/habit-tracker/recipes",
       icon: ChefHat,
       exact: false,
@@ -69,7 +69,7 @@ export default function HabitTrackerLayout({
 
   const isActive = (item: (typeof navItems)[number]) => {
     if (!pathname) return false;
-    // Recipes hub: vault, this-week meal plan, and shop share one tab
+    // Food tab: vault, this-week meal plan, and shop share one tab
     if (item.href === "/habit-tracker/recipes") {
       return (
         pathname.startsWith("/habit-tracker/recipes") ||
