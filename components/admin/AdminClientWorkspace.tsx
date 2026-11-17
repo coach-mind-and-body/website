@@ -5,6 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { PROGRAMS, type ProgramId } from "@shared/programs";
 import { coachFoodLogPhotoSrc } from "@/lib/foodLogPhoto";
+import { ClientFastingLogs } from "@/components/admin/ClientFastingLogs";
 
 const ink = "oklch(0.20 0.015 50)";
 const muted = "oklch(0.52 0.015 50)";
@@ -243,6 +244,9 @@ export function AdminClientWorkspace({ userId, email }: { userId?: number; email
                 Visible because they are in a program. Habit sharing is still off.
               </p>
             )}
+            <div className="mb-3">
+              <ClientFastingLogs rows={data.fastingLogs} />
+            </div>
             {data.foodLogs.length === 0 ? (
               <p className="text-sm" style={{ color: muted }}>No food logged yet.</p>
             ) : (

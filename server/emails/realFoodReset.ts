@@ -1,9 +1,9 @@
 import { BRAND, SITE_URL } from "@shared/brand";
+import { challengeAppUrl } from "@shared/appLinks";
 import { REAL_FOOD_RESET } from "@shared/realFoodReset";
 import { buildNewsletterHtml } from "./newsletterShell";
 
 const LANDING = `${SITE_URL}${REAL_FOOD_RESET.path}`;
-const APP = `${SITE_URL}/habit-tracker`;
 const BOOK = `${SITE_URL}/book`;
 const NAME = REAL_FOOD_RESET.name;
 
@@ -340,7 +340,7 @@ export const REAL_FOOD_RESET_EMAILS: RealFoodResetEmailDraft[] = [
       p(`The goal isn't more food rules. ${REAL_FOOD_RESET.philosophy}`),
     ]),
     ctaLabel: "Open the app",
-    ctaUrl: APP,
+    ctaUrl: challengeAppUrl(),
     audienceGroup: "real_food_reset",
     suggestedSendAt: "2026-09-22T10:00:00",
   },
@@ -360,7 +360,7 @@ export const REAL_FOOD_RESET_EMAILS: RealFoodResetEmailDraft[] = [
       p("We start September 28."),
     ]),
     ctaLabel: "Open the app",
-    ctaUrl: APP,
+    ctaUrl: challengeAppUrl(),
     audienceGroup: "real_food_reset",
     suggestedSendAt: "2026-09-23T10:00:00",
   },
@@ -383,7 +383,7 @@ export const REAL_FOOD_RESET_EMAILS: RealFoodResetEmailDraft[] = [
       p("The same list lives in the app under Challenge. Jot down a few whole or minimally processed foods you'll want on hand. That's it."),
     ]),
     ctaLabel: "Open the app",
-    ctaUrl: APP,
+    ctaUrl: challengeAppUrl(),
     audienceGroup: "real_food_reset",
     suggestedSendAt: "2026-09-24T10:00:00",
   },
@@ -402,7 +402,7 @@ export const REAL_FOOD_RESET_EMAILS: RealFoodResetEmailDraft[] = [
       p("Tonight, also notice what happens after dinner. Looking for something sweet? Wandering back into the kitchen? “I've been good all day...” You don't have to fix it. Just get curious."),
     ]),
     ctaLabel: "Open the app",
-    ctaUrl: APP,
+    ctaUrl: challengeAppUrl(),
     audienceGroup: "real_food_reset",
     suggestedSendAt: "2026-09-25T10:00:00",
   },
@@ -424,7 +424,7 @@ export const REAL_FOOD_RESET_EMAILS: RealFoodResetEmailDraft[] = [
       p("These pictures are in the app too — Challenge tab — so you don't have to hunt through email while you're standing in the kitchen."),
     ]),
     ctaLabel: "Open the habit tracker",
-    ctaUrl: APP,
+    ctaUrl: challengeAppUrl(),
     audienceGroup: "real_food_reset",
     suggestedSendAt: "2026-09-26T10:00:00",
   },
@@ -450,7 +450,7 @@ export const REAL_FOOD_RESET_EMAILS: RealFoodResetEmailDraft[] = [
       p("Tomorrow we start seeing what we're actually eating. I can't wait."),
     ]),
     ctaLabel: "Open the habit tracker",
-    ctaUrl: APP,
+    ctaUrl: challengeAppUrl(),
     audienceGroup: "real_food_reset",
     suggestedSendAt: "2026-09-27T08:30:00",
   },
@@ -481,7 +481,7 @@ export const REAL_FOOD_RESET_EMAILS: RealFoodResetEmailDraft[] = [
       p(REAL_FOOD_RESET.philosophy),
     ]),
     ctaLabel: "Open the app",
-    ctaUrl: APP,
+    ctaUrl: challengeAppUrl(),
     audienceGroup: "real_food_reset",
     suggestedSendAt: "2026-09-28T08:30:00",
   },
@@ -507,7 +507,7 @@ export const REAL_FOOD_RESET_EMAILS: RealFoodResetEmailDraft[] = [
       p("Don't judge it. Just notice it. That's part of what I call <strong>food noise</strong> — and we're going to talk about why knowing what to eat isn't always enough."),
     ]),
     ctaLabel: "Open today's lesson",
-    ctaUrl: APP,
+    ctaUrl: challengeAppUrl(),
     audienceGroup: "real_food_reset",
     suggestedSendAt: "2026-09-29T08:30:00",
   },
@@ -534,7 +534,7 @@ export const REAL_FOOD_RESET_EMAILS: RealFoodResetEmailDraft[] = [
       p("More rules aren't the goal of this week — and they aren't the goal of the work I do after it, either. That's why the next step I built is called <strong>6 Habits in 6 Weeks to Quiet Food Noise</strong>. Not another list. Habits. We'll talk more about that when we get to real life on Friday. Today: be a detective, not a judge."),
     ]),
     ctaLabel: "Open the app",
-    ctaUrl: APP,
+    ctaUrl: challengeAppUrl(),
     audienceGroup: "real_food_reset",
     suggestedSendAt: "2026-09-30T08:30:00",
   },
@@ -565,7 +565,7 @@ export const REAL_FOOD_RESET_EMAILS: RealFoodResetEmailDraft[] = [
       p("Tomorrow, during our final live session, I'll show you what that looks like and how you can continue working with me if you're ready for support. Whether you join me or not, don't miss tomorrow. We're answering: <strong>Great... but how do I keep doing this when life isn't perfect?</strong>"),
     ]),
     ctaLabel: "Open today's lesson",
-    ctaUrl: APP,
+    ctaUrl: challengeAppUrl(),
     audienceGroup: "real_food_reset",
     suggestedSendAt: "2026-10-01T08:30:00",
   },
@@ -620,7 +620,7 @@ export function getRealFoodResetConfirmationEmail(
 } {
   const name = firstName.trim() || "friend";
   const subject = `You're in: ${NAME} starts September 28`;
-  const appUrl = claimToken ? `${APP}?claim=${encodeURIComponent(claimToken)}` : APP;
+  const appUrl = challengeAppUrl(claimToken);
   const bodyHtml = joinHtml([
     p(`You're officially IN. Welcome to the FREE <strong>${NAME}</strong>. We start <strong>Monday, September 28</strong>.`),
     p("And before you start cleaning out your pantry and throwing everything into the trash... <strong>don't.</strong> That's not what we're doing here."),

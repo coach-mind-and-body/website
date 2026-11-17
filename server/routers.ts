@@ -84,6 +84,7 @@ export const appRouter = router({
       await db.delete(schema.userHabits).where(eq(schema.userHabits.userId, uid));
       await db.delete(schema.userDailyNotes).where(eq(schema.userDailyNotes.userId, uid));
       await db.delete(schema.calorieLogs).where(eq(schema.calorieLogs.userId, uid));
+      await db.delete(schema.fastingLogs).where(eq(schema.fastingLogs.userId, uid));
       await db.delete(schema.fitnessLogs).where(eq(schema.fitnessLogs.userId, uid));
       await db.delete(schema.userVictoryLists).where(eq(schema.userVictoryLists.userId, uid));
       await db.delete(schema.userChallenges).where(eq(schema.userChallenges.userId, uid));

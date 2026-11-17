@@ -19,6 +19,17 @@ final class PushAppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
         print("[Push] remote registration failed: \(error.localizedDescription)")
     }
+
+    func application(
+        _ application: UIApplication,
+        continue userActivity: NSUserActivity,
+        restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void
+    ) -> Bool {
+        guard userActivity.activityType == NSUserActivityTypeBrowsingWeb,
+              let url = userActivity.webpageURL else { return false }
+        DeepLink.open(url, applyToken: { _ in })
+        return true
+    }
 }
 
 @main
@@ -36,14 +47,13 @@ struct HabitTrackerApp: App {
             RootView(auth: auth, health: health)
                 .preferredColorScheme(.light)
                 .onOpenURL { url in
-                    guard url.scheme == "habittracker" else { return }
-                    if let token = URLComponents(url: url, resolvingAgainstBaseURL: false)?
-                        .queryItems?.first(where: { $0.name == "token" })?.value {
+                    DeepLink.open(url) { token in
                         Task { await auth.applyTokenOnly(token) }
                     }
-                    if let link = DeepLink.fromURL(url) {
-                        DeepLink.post(link)
-                    }
+                }
+                .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
+                    guard let url = activity.webpageURL else { return }
+                    DeepLink.open(url, applyToken: { _ in })
                 }
         }
     }

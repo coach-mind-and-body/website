@@ -383,9 +383,19 @@ enum NotificationService {
         try? await UNUserNotificationCenter.current().add(req)
     }
 
+    /// Must run before `didFinishLaunching` returns so a cold-start tap is delivered.
     static func installDelegate() {
         registerCategories()
-        UNUserNotificationCenter.current().delegate = NotificationTapDelegate.shared
+        let assign = {
+            MainActor.assumeIsolated {
+                UNUserNotificationCenter.current().delegate = NotificationTapDelegate.shared
+            }
+        }
+        if Thread.isMainThread {
+            assign()
+        } else {
+            DispatchQueue.main.sync(execute: assign)
+        }
     }
 }
 
@@ -530,29 +540,37 @@ actor CoachingReminderCoordinator {
     }
 }
 
+/// TestFlight 1.0.4 (24) cold-launch taps abort on a background thread inside
+/// `completionHandler()`. UIKit saves the scene snapshot from that handler, so it
+/// has to run on the main thread. The async delegate variants still enter through
+/// this completion-handler thunk, which is why the hop is explicit.
+@MainActor
 final class NotificationTapDelegate: NSObject, UNUserNotificationCenterDelegate {
     static let shared = NotificationTapDelegate()
 
-    func userNotificationCenter(
+    nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
         let info = notification.request.content.userInfo
-        let tab = (info["tab"] as? String)?.lowercased()
-        let url = (info["url"] as? String)?.lowercased() ?? ""
-        if !notification.request.identifier.hasPrefix("coach-"), tab == "coach" || url.contains("coach") {
-            NotificationService.noteRemoteCoachDelivery()
+        let identifier = notification.request.identifier
+        Task { @MainActor in
+            let tab = (info["tab"] as? String)?.lowercased()
+            let url = (info["url"] as? String)?.lowercased() ?? ""
+            if !identifier.hasPrefix("coach-"), tab == "coach" || url.contains("coach") {
+                NotificationService.noteRemoteCoachDelivery()
+            }
+            completionHandler([.banner, .sound, .list])
         }
-        completionHandler([.banner, .sound, .list])
     }
 
-    func userNotificationCenter(
+    nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
-        Task {
+        Task { @MainActor in
             await NotificationActionCenter.handle(response)
             completionHandler()
         }
@@ -590,13 +608,13 @@ enum NotificationActionCenter {
         case NotificationAction.sessionRemind:
             await remindBeforeSession(content)
         case NotificationAction.formOpen:
-            openForm(info)
+            await openForm(info)
         case NotificationAction.formTonight:
             await remindTonight(content)
         case NotificationAction.foodLog:
-            openFood("log")
+            await openFood("log")
         case NotificationAction.foodScan:
-            openFood("scan")
+            await openFood("scan")
         case NotificationAction.adminReply:
             await replyAsCoach(text(from: response), info: info)
         case NotificationAction.adminRead:
@@ -801,16 +819,21 @@ enum NotificationActionCenter {
         }
     }
 
-    private static func openForm(_ info: [AnyHashable: Any]) {
-        if let id = intValue(info, key: "formId") {
-            DeepLink.pendingFormId = id
+    private static func openForm(_ info: [AnyHashable: Any]) async {
+        let id = intValue(info, key: "formId")
+        await MainActor.run {
+            if let id {
+                DeepLink.pendingFormId = id
+            }
+            DeepLink.post(.form)
         }
-        DeepLink.post(.form)
     }
 
-    private static func openFood(_ intent: String) {
-        FoodIntentStore.pending = intent
-        DeepLink.post(intent == "scan" ? .scan : .food)
+    private static func openFood(_ intent: String) async {
+        await MainActor.run {
+            FoodIntentStore.pending = intent
+            DeepLink.post(intent == "scan" ? .scan : .food)
+        }
     }
 
     private static func openAdmin(_ info: [AnyHashable: Any]) async {
@@ -826,7 +849,7 @@ enum NotificationActionCenter {
             return
         }
         if category == NotificationCategory.homeworkForm || intValue(info, key: "formId") != nil {
-            openForm(info)
+            await openForm(info)
             return
         }
         if category == NotificationCategory.foodLog || (info["tab"] as? String) == "food" {

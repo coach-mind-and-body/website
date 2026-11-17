@@ -1,4 +1,5 @@
 import { PROGRAM, SITE_URL } from "@shared/brand";
+import { challengeAppUrl } from "@shared/appLinks";
 import { REAL_FOOD_RESET } from "@shared/realFoodReset";
 import { buildNewsletterHtml } from "./newsletterShell";
 
@@ -6,7 +7,7 @@ const NAME = REAL_FOOD_RESET.name;
 const PROGRAM_NAME = REAL_FOOD_RESET.paidProgram;
 const PRICE = REAL_FOOD_RESET.paidPrice;
 const CTA = `${SITE_URL}${REAL_FOOD_RESET.paidProgramPath}`;
-const APP = `${SITE_URL}/habit-tracker`;
+const APP = challengeAppUrl();
 const BOOK = `${SITE_URL}/book`;
 
 function bookLine(copy: string): string {

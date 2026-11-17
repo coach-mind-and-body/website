@@ -12,6 +12,7 @@ final class FoodViewModel {
     var shopBusy = false
     var shopNote: String?
     var logs: [CalorieLog] = []
+    var fasting = FastingDay.empty(dateStr: MountainDate.today())
     var dateStr = MountainDate.today()
     var isLoading = false
     var errorMessage: String?
@@ -99,9 +100,67 @@ final class FoodViewModel {
             } catch {
                 if !error.isCancellation { errorMessage = error.localizedDescription }
             }
+            do {
+                fasting = try await auth.client.query("calories.getFasting", input: DateStrInput(dateStr: dateStr))
+            } catch {
+                if !error.isCancellation { errorMessage = error.localizedDescription }
+            }
             return
         }
         logs = GuestLocalStore.loadCalories().filter { $0.dateStr == dateStr }
+        fasting = GuestLocalStore.loadFasting().first { $0.dateStr == dateStr } ?? .empty(dateStr: dateStr)
+    }
+
+    /// Saves the one fasting answer for the open day. Guest answers stay on the device, same as meals.
+    func saveFasting(didFast: Bool, hoursText: String, notes: String) async -> String? {
+        let trimmedHours = hoursText.trimmingCharacters(in: .whitespacesAndNewlines)
+        var hours: Double?
+        if didFast, !trimmedHours.isEmpty {
+            guard let value = Double(trimmedHours), value >= 0, value <= 72 else {
+                return "Use whole hours or halves, like 16 or 18.5."
+            }
+            let halves = (value * 2).rounded()
+            if abs(value * 2 - halves) > 0.001 {
+                return "Use whole hours or halves, like 16 or 18.5."
+            }
+            hours = halves / 2
+        }
+        let trimmedNotes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
+        let entry = FastingDay(
+            dateStr: dateStr,
+            didFast: didFast,
+            hours: hours,
+            notes: trimmedNotes.isEmpty ? nil : String(trimmedNotes.prefix(2000)),
+            recorded: true
+        )
+        if auth.isSignedIn {
+            do {
+                let saved: FastingDay = try await auth.client.mutate(
+                    "calories.saveFasting",
+                    input: SaveFastingInput(
+                        dateStr: entry.dateStr,
+                        didFast: entry.didFast,
+                        hours: entry.hours,
+                        notes: entry.notes
+                    )
+                )
+                fasting = saved
+                errorMessage = nil
+                return nil
+            } catch {
+                if error.isCancellation { return nil }
+                return error.localizedDescription
+            }
+        }
+        var all = GuestLocalStore.loadFasting()
+        if let index = all.firstIndex(where: { $0.dateStr == dateStr }) {
+            all[index] = entry
+        } else {
+            all.insert(entry, at: 0)
+        }
+        GuestLocalStore.saveFasting(all)
+        fasting = entry
+        return nil
     }
 
     func logRecipe(_ recipe: Recipe, meal: String, servings: Int) async {
@@ -471,4 +530,11 @@ final class FoodViewModel {
         ) as FavoriteResult
         await loadRecipes()
     }
+}
+
+private struct SaveFastingInput: Encodable {
+    var dateStr: String
+    var didFast: Bool
+    var hours: Double?
+    var notes: String?
 }
