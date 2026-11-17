@@ -108,9 +108,11 @@ enum DeepLink: String {
     }
 
     static func post(_ link: DeepLink) {
-        pending = link
         let conversationId = pendingConversationId
-        DispatchQueue.main.async {
+        let store = {
+            pending = link
+        }
+        let announce = {
             var info: [String: Any] = ["link": link.rawValue]
             if let conversationId { info["conversationId"] = conversationId }
             NotificationCenter.default.post(
@@ -118,6 +120,15 @@ enum DeepLink: String {
                 object: nil,
                 userInfo: info
             )
+        }
+        if Thread.isMainThread {
+            store()
+            DispatchQueue.main.async(execute: announce)
+        } else {
+            DispatchQueue.main.async {
+                store()
+                announce()
+            }
         }
     }
 

@@ -540,31 +540,40 @@ actor CoachingReminderCoordinator {
     }
 }
 
-/// iOS 18 treats these callbacks as main-actor. The old completion-handler
-/// methods called `completionHandler()` from a detached `Task`, which traps
-/// with `dispatch_assert_queue_fail` on every tap and every action.
+/// TestFlight 1.0.4 (24) cold-launch taps abort on a background thread inside
+/// `completionHandler()`. UIKit saves the scene snapshot from that handler, so it
+/// has to run on the main thread. The async delegate variants still enter through
+/// this completion-handler thunk, which is why the hop is explicit.
 @MainActor
 final class NotificationTapDelegate: NSObject, UNUserNotificationCenterDelegate {
     static let shared = NotificationTapDelegate()
 
-    func userNotificationCenter(
+    nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
-        willPresent notification: UNNotification
-    ) async -> UNNotificationPresentationOptions {
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
         let info = notification.request.content.userInfo
-        let tab = (info["tab"] as? String)?.lowercased()
-        let url = (info["url"] as? String)?.lowercased() ?? ""
-        if !notification.request.identifier.hasPrefix("coach-"), tab == "coach" || url.contains("coach") {
-            NotificationService.noteRemoteCoachDelivery()
+        let identifier = notification.request.identifier
+        Task { @MainActor in
+            let tab = (info["tab"] as? String)?.lowercased()
+            let url = (info["url"] as? String)?.lowercased() ?? ""
+            if !identifier.hasPrefix("coach-"), tab == "coach" || url.contains("coach") {
+                NotificationService.noteRemoteCoachDelivery()
+            }
+            completionHandler([.banner, .sound, .list])
         }
-        return [.banner, .sound, .list]
     }
 
-    func userNotificationCenter(
+    nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
-        didReceive response: UNNotificationResponse
-    ) async {
-        await NotificationActionCenter.handle(response)
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        Task { @MainActor in
+            await NotificationActionCenter.handle(response)
+            completionHandler()
+        }
     }
 }
 
