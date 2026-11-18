@@ -1,5 +1,7 @@
-import { BRAND, SITE_URL } from "@shared/brand";
+import { PORTAL_APP_URL, PORTAL_HUB_URL } from "@shared/appLinks";
+import { BRAND } from "@shared/brand";
 import { escapeHtml } from "../../lib/htmlEscape";
+import { appStoreFallbackLine, APP_STORE_URL } from "./appStoreFallback";
 import { buildNewsletterHtml } from "./newsletterShell";
 import {
   HOLIDAY_EMAIL_LOGO_BAR,
@@ -8,8 +10,8 @@ import {
   USE_HOLIDAY_EMAIL_LOGO,
 } from "./holidayLogo";
 
-export const PORTAL_URL = `${SITE_URL}/portal`;
-export const APP_STORE_URL = BRAND.appStoreUrl;
+export { APP_STORE_URL };
+export const PORTAL_URL = PORTAL_APP_URL;
 export const APP_NAME = BRAND.appStoreName;
 
 const appNameHtml = escapeHtml(APP_NAME);
@@ -27,10 +29,15 @@ export function foodLogWays(): string {
 </ul>`;
 }
 
-/** App, website portal, and Google sign-in, so each note stands alone. */
-export function whereToLook(): string {
+/**
+ * App, website portal, and Google sign-in, so each note stands alone.
+ * `appUrl` is a site path the iOS app opens. Program notes use the hub.
+ * The food-log note passes the food log.
+ */
+export function whereToLook(appUrl: string = PORTAL_HUB_URL): string {
+  const appHref = escapeHtml(appUrl);
   return p(
-    `Your program, assignments, food log, and files are in the <a href="${APP_STORE_URL}">${appNameHtml} app</a>. On the website, open <a href="${PORTAL_URL}">mindandbodyresetcoach.com/portal</a>. Sign in with this same account, or choose <strong>Continue with Google</strong>.`
+    `Your program, assignments, food log, and files are in the <a href="${appHref}">${appNameHtml} app</a>. On the website, open <a href="${PORTAL_URL}">mindandbodyresetcoach.com/portal</a>. Sign in with this same account, or choose <strong>Continue with Google</strong>.`
   );
 }
 
@@ -40,6 +47,8 @@ export type LetterInput = {
   bodyHtml: string;
   ctaLabel?: string;
   ctaUrl?: string;
+  /** Small App Store line under a button that now opens the app through the site. */
+  appStoreFallback?: boolean;
   /**
    * Omit to follow USE_HOLIDAY_EMAIL_LOGO.
    * Pass false to render the regular wide logo (the January switch).
@@ -59,6 +68,7 @@ export function renderOnboardingLetter(input: LetterInput): string {
     bodyHtml: input.bodyHtml,
     ctaLabel: input.ctaLabel,
     ctaUrl: input.ctaUrl,
+    ctaNoteHtml: input.appStoreFallback ? appStoreFallbackLine() : undefined,
     ...(seasonal
       ? {
           logoUrl: HOLIDAY_EMAIL_LOGO_URL,

@@ -3,9 +3,9 @@
  * Copy follows shared/holidayCoaching.ts. The five-week practicum,
  * the Keto-Mojo meter, and the mentor review belong to Metabolic Coaching.
  */
+import { FOOD_APP_URL, PORTAL_HUB_URL } from "@shared/appLinks";
 import { HOLIDAY_COPY } from "@shared/holidayCoaching";
 import {
-  APP_STORE_URL,
   foodLogWays,
   p,
   renderOnboardingLetter,
@@ -21,6 +21,7 @@ export type HolidayOnboardingStep = {
   bodyHtml: string;
   ctaLabel?: string;
   ctaUrl?: string;
+  appStoreFallback?: boolean;
 };
 
 export const HOLIDAY_ONBOARDING_STEPS: HolidayOnboardingStep[] = [
@@ -30,8 +31,9 @@ export const HOLIDAY_ONBOARDING_STEPS: HolidayOnboardingStep[] = [
     subject: HOLIDAY_COPY.headline,
     previewText: "No waiting until January. Your program is in the app.",
     gist: "Welcome to the holiday program, with the app and the website portal.",
-    ctaLabel: "Download the iPhone app",
-    ctaUrl: APP_STORE_URL,
+    ctaLabel: "Open your program",
+    ctaUrl: PORTAL_HUB_URL,
+    appStoreFallback: true,
     bodyHtml: [
       p("You're in the holiday program. I'm glad you're here."),
       p(HOLIDAY_COPY.subhead),
@@ -49,13 +51,14 @@ export const HOLIDAY_ONBOARDING_STEPS: HolidayOnboardingStep[] = [
     previewText:
       "Type it, photograph the plate, or photograph the page you wrote.",
     gist: "How to log food, including a photo of a written page, holiday meal included.",
-    ctaLabel: "Download the iPhone app",
-    ctaUrl: APP_STORE_URL,
+    ctaLabel: "Open your food log",
+    ctaUrl: FOOD_APP_URL,
+    appStoreFallback: true,
     bodyHtml: [
       p("Keep your food log in the app. A holiday meal can go in there too."),
       foodLogWays(),
       p("The point is to see the day, not to start over on Monday."),
-      whereToLook(),
+      whereToLook(FOOD_APP_URL),
     ].join("\n"),
   },
   {
@@ -87,6 +90,7 @@ export const HOLIDAY_ONBOARDING_EMAILS = HOLIDAY_ONBOARDING_STEPS.map(
       bodyHtml: step.bodyHtml,
       ctaLabel: step.ctaLabel,
       ctaUrl: step.ctaUrl,
+      appStoreFallback: step.appStoreFallback,
     }),
   })
 );

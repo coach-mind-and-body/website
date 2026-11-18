@@ -21,8 +21,25 @@ describe("newsletterShell", () => {
     expect(html).toContain("Stay consistent.");
     expect(html).toContain("Learn more");
     expect(html).toContain("logo-horizontal.jpg");
+    expect(html).not.toContain("Don't have the app yet?");
     expect(html).toContain("<!--UNSUB_FOOTER-->");
     expect(html).toContain("Lee Anne");
+  });
+
+  it("renders a note under the button when one is passed", () => {
+    const html = buildNewsletterHtml({
+      firstName: "Sarah",
+      bodyHtml: "<p>Stay consistent.</p>",
+      ctaLabel: "Open your program",
+      ctaUrl: "https://mindandbodyresetcoach.com/portal/hub",
+      ctaNoteHtml:
+        '<p>Don\'t have the app yet? <a href="https://apps.apple.com/app/mind-body-reset/id6809038480">Get it on the App Store.</a></p>',
+    });
+    const buttonAt = html.indexOf("Open your program");
+    const noteAt = html.indexOf("Don't have the app yet?");
+    expect(buttonAt).toBeGreaterThan(-1);
+    expect(noteAt).toBeGreaterThan(buttonAt);
+    expect(html).toContain("https://mindandbodyresetcoach.com/portal/hub");
   });
 
   it("supports custom greeting and sign-off", () => {
