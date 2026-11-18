@@ -3,8 +3,8 @@
  * The six emails in metabolicPracticum.ts are recruitment for a closed
  * application window. They are not this series.
  */
+import { FOOD_APP_URL, PORTAL_HUB_URL } from "@shared/appLinks";
 import {
-  APP_STORE_URL,
   foodLogWays,
   p,
   renderOnboardingLetter,
@@ -22,6 +22,7 @@ export type OnboardingStep = {
   bodyHtml: string;
   ctaLabel?: string;
   ctaUrl?: string;
+  appStoreFallback?: boolean;
 };
 
 export const METABOLIC_ONBOARDING_STEPS: OnboardingStep[] = [
@@ -31,8 +32,9 @@ export const METABOLIC_ONBOARDING_STEPS: OnboardingStep[] = [
     subject: "You're in. Let's start these five weeks",
     previewText: "Five weeks. One hour a week. You and me.",
     gist: "Welcome, the shape of the five weeks, and an invite to the app and the portal.",
-    ctaLabel: "Download the iPhone app",
-    ctaUrl: APP_STORE_URL,
+    ctaLabel: "Open your program",
+    ctaUrl: PORTAL_HUB_URL,
+    appStoreFallback: true,
     bodyHtml: [
       p("You're in Metabolic Coaching. I'm glad."),
       p(
@@ -57,15 +59,16 @@ export const METABOLIC_ONBOARDING_STEPS: OnboardingStep[] = [
     previewText:
       "Type it, photograph the plate, or photograph the page you wrote.",
     gist: "How to log a meal, including a photo of a food log already written on paper.",
-    ctaLabel: "Download the iPhone app",
-    ctaUrl: APP_STORE_URL,
+    ctaLabel: "Open your food log",
+    ctaUrl: FOOD_APP_URL,
+    appStoreFallback: true,
     bodyHtml: [
       p("Your food log lives in the app. Use whichever way is easiest:"),
       foodLogWays(),
       p(
         "It doesn't have to be perfect. A few honest lines are enough for our next call."
       ),
-      whereToLook(),
+      whereToLook(FOOD_APP_URL),
     ].join("\n"),
   },
   {
@@ -163,6 +166,7 @@ export const METABOLIC_ONBOARDING_EMAILS = METABOLIC_ONBOARDING_STEPS.map(
       bodyHtml: step.bodyHtml,
       ctaLabel: step.ctaLabel,
       ctaUrl: step.ctaUrl,
+      appStoreFallback: step.appStoreFallback,
     }),
   })
 );

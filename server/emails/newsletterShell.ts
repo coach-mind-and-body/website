@@ -61,6 +61,8 @@ export type NewsletterShellInput = {
   bodyHtml: string;
   ctaLabel?: string | null;
   ctaUrl?: string | null;
+  /** Trusted HTML rendered under the button. Onboarding passes the App Store fallback line. */
+  ctaNoteHtml?: string | null;
   previewMode?: boolean;
   /** Header image. Defaults to the wide wordmark. */
   logoUrl?: string | null;
@@ -172,10 +174,14 @@ function buildSignOff(input: NewsletterShellInput): string {
     </p>`;
 }
 
-function ctaBlock(label: string, href: string): string {
+function ctaBlock(label: string, href: string, noteHtml?: string | null): string {
+  const note = noteHtml?.trim()
+    ? `<div style="margin-top:14px;">${noteHtml.trim()}</div>`
+    : "";
   return `
     <div style="text-align:center;margin:28px 0;">
       <a href="${escapeHtml(href)}" style="${shell.cta}">${escapeHtml(label)}</a>
+      ${note}
     </div>`;
 }
 
@@ -269,7 +275,7 @@ export function buildNewsletterHtml(input: NewsletterShellInput): string {
 
   const cta =
     input.ctaLabel?.trim() && input.ctaUrl?.trim()
-      ? ctaBlock(input.ctaLabel.trim(), input.ctaUrl.trim())
+      ? ctaBlock(input.ctaLabel.trim(), input.ctaUrl.trim(), input.ctaNoteHtml)
       : "";
 
   const preheader = input.previewText?.trim()

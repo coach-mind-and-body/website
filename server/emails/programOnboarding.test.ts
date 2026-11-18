@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { FOOD_APP_URL, PORTAL_HUB_URL } from "@shared/appLinks";
 import { BRAND } from "@shared/brand";
 import { HOLIDAY_COPY } from "@shared/holidayCoaching";
 import {
@@ -25,7 +26,19 @@ import {
   renderOnboardingLetter,
 } from "./onboardingLetter";
 
-const APP_URL = "https://apps.apple.com/app/mind-body-reset/id6809038480";
+const FALLBACK = "Don't have the app yet?";
+const FALLBACK_LINK = "Get it on the App Store.";
+
+function expectStoreFallback(html: string) {
+  const buttonAt = html.indexOf('style="display:inline-block;background:#c9a96e;');
+  const fallbackAt = html.indexOf(FALLBACK);
+  expect(buttonAt).toBeGreaterThan(-1);
+  expect(fallbackAt).toBeGreaterThan(buttonAt);
+  expect(html).toContain(FALLBACK_LINK);
+  expect(html).toContain(`href="${APP_STORE_URL}"`);
+  expect(APP_STORE_URL).toBe(BRAND.appStoreUrl);
+  expect(html).not.toContain("Download the iPhone app");
+}
 
 function rendered(
   emails: ((name: string) => { subject: string; html: string })[]
@@ -70,10 +83,15 @@ describe("metabolic onboarding", () => {
     expect(notes[1].html).toContain("wrote it on paper");
     expect(notes[1].html).toContain("photo of your plate");
 
+    expect(notes[0].html).toContain("Open your program");
+    expect(notes[0].html).toContain(`href="${PORTAL_HUB_URL}"`);
+    expectStoreFallback(notes[0].html);
+    expect(notes[1].html).toContain("Open your food log");
+    expect(notes[1].html).toContain(`href="${FOOD_APP_URL}"`);
+    expect(notes[1].html).not.toContain(PORTAL_HUB_URL);
+    expectStoreFallback(notes[1].html);
+
     for (const note of notes) {
-      expect(note.html).toContain(APP_URL);
-      expect(note.html).toContain(APP_STORE_URL);
-      expect(APP_STORE_URL).toBe(BRAND.appStoreUrl);
       expect(note.html).toContain(PORTAL_URL);
       expect(note.html).toContain("Continue with Google");
       expect(note.html).toContain("Better Than Perfect,");
@@ -84,6 +102,13 @@ describe("metabolic onboarding", () => {
       expect(note.html.toLowerCase()).not.toContain("guaranteed");
       expect(note.html.toLowerCase()).not.toContain("cure");
       expect(note.html.toLowerCase()).not.toContain("lose weight");
+    }
+
+    for (const note of notes.slice(2)) {
+      expect(note.html).toContain(`href="${PORTAL_HUB_URL}"`);
+      expect(note.html).not.toContain(FALLBACK);
+      expect(note.html).not.toContain(APP_STORE_URL);
+      expect(note.html).not.toContain("Download the iPhone app");
     }
   });
 
@@ -126,15 +151,25 @@ describe("holiday onboarding", () => {
     expect(notes[1].html).toContain("wrote it on paper");
     expect(notes[2].html).toContain("January");
 
+    expect(notes[0].html).toContain("Open your program");
+    expect(notes[0].html).toContain(`href="${PORTAL_HUB_URL}"`);
+    expectStoreFallback(notes[0].html);
+    expect(notes[1].html).toContain("Open your food log");
+    expect(notes[1].html).toContain(`href="${FOOD_APP_URL}"`);
+    expectStoreFallback(notes[1].html);
+    expect(notes[2].html).toContain(`href="${PORTAL_HUB_URL}"`);
+    expect(notes[2].html).not.toContain(FALLBACK);
+    expect(notes[2].html).not.toContain(APP_STORE_URL);
+
     for (const note of notes) {
       expect(note.html).toContain("Hi Karen,");
       expect(note.html).toContain(HOLIDAY_EMAIL_LOGO_URL);
       expect(note.html).not.toContain("logo-horizontal");
-      expect(note.html).toContain(APP_URL);
       expect(note.html).toContain(PORTAL_URL);
       expect(note.html).toContain("Continue with Google");
       expect(note.html).toContain("<!--UNSUB_FOOTER-->");
       expect(note.html).not.toContain("Keto-Mojo");
+      expect(note.html).not.toContain("Download the iPhone app");
       expect(note.html.toLowerCase()).not.toContain("guaranteed");
     }
   });
@@ -148,6 +183,7 @@ describe("holiday onboarding", () => {
     });
     expect(html).toContain("logo-horizontal");
     expect(html).not.toContain("logo-holiday");
+    expect(html).not.toContain(FALLBACK);
     expect(HOLIDAY_EMAIL_LOGO_URL).toBe(
       "https://mindandbodyresetcoach.com/logo-holiday.jpg"
     );
