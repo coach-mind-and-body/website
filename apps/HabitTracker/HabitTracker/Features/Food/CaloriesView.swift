@@ -1732,17 +1732,7 @@ private func blankToNil(_ value: String) -> String? {
 }
 
 private func scanJpegDataUrl(from image: UIImage) -> String? {
-    let maxSide: CGFloat = 1600
-    let size = image.size
-    guard size.width > 0, size.height > 0 else { return nil }
-    let scale = min(1, maxSide / max(size.width, size.height))
-    let target = CGSize(width: max(1, size.width * scale), height: max(1, size.height * scale))
-    let format = UIGraphicsImageRendererFormat.default()
-    format.scale = 1
-    let renderer = UIGraphicsImageRenderer(size: target, format: format)
-    let rendered = renderer.image { _ in
-        image.draw(in: CGRect(origin: .zero, size: target))
-    }
+    guard let rendered = ImageJPEG.downscaled(image) else { return nil }
     var quality: CGFloat = 0.65
     var data = rendered.jpegData(compressionQuality: quality)
     while let current = data, current.count > 3_500_000, quality > 0.35 {

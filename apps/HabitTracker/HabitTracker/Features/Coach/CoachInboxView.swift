@@ -91,6 +91,11 @@ final class CoachInboxViewModel {
     }
 
     func open(_ row: InboxConversation) async {
+        if selected?.id != row.id {
+            cancelStagedPhotos()
+            draft = ""
+            replyingTo = nil
+        }
         selected = row
         await loadThread()
         listenLoop()
@@ -101,6 +106,7 @@ final class CoachInboxViewModel {
         messages = []
         draft = ""
         replyingTo = nil
+        cancelStagedPhotos()
     }
 
     func openConversation(id: Int) async {
@@ -149,10 +155,14 @@ final class CoachInboxViewModel {
                 )
             }
             if !pending.isEmpty {
-                let existing = Set(messages.compactMap(\.content))
+                let serverText = Set(messages.compactMap(\.content))
+                let serverMedia = Set(messages.compactMap(\.mediaUrl))
                 messages.append(contentsOf: pending.filter { msg in
+                    if let media = msg.mediaUrl, !media.isEmpty {
+                        return !serverMedia.contains(media)
+                    }
                     guard let content = msg.content, !content.isEmpty else { return true }
-                    return !existing.contains(content)
+                    return !serverText.contains(content)
                 })
             }
             let _: SuccessFlag = try await auth.client.mutate(
@@ -211,18 +221,82 @@ final class CoachInboxViewModel {
         }
     }
 
-    func sendPhoto(_ image: UIImage) async {
-        guard let data = image.jpegData(compressionQuality: 0.7) else { return }
+    var stagedPhotos: [StagedChatPhoto] = []
+    var isReadingPhotos = false
+    private var photoStageToken = 0
+
+    func stagePhotos(_ items: [PhotosPickerItem]) async {
+        guard let conversationId = selected?.id else { return }
+        guard !items.isEmpty, !isReadingPhotos, !uploading else { return }
+        photoStageToken += 1
+        let token = photoStageToken
+        isReadingPhotos = true
+        defer {
+            if photoStageToken == token { isReadingPhotos = false }
+        }
+        let batch = await ChatPhotoStaging.append(items, to: stagedPhotos)
+        guard photoStageToken == token, selected?.id == conversationId else { return }
+        stagedPhotos = batch.photos
+        if let error = batch.error {
+            errorMessage = error
+        }
+    }
+
+    private func cancelStagedPhotos() {
+        photoStageToken += 1
+        stagedPhotos = []
+        isReadingPhotos = false
+    }
+
+    func removeStagedPhoto(id: UUID) {
+        guard !uploading, !isReadingPhotos else { return }
+        stagedPhotos.removeAll { $0.id == id }
+    }
+
+    /// Sends staged photos in order, with any typed text on the first one. A failed photo stays staged.
+    @discardableResult
+    func sendComposer() async -> Bool {
+        let caption = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        let photos = stagedPhotos
+        guard !caption.isEmpty || !photos.isEmpty else { return false }
+        guard !uploading, !isSending, !isReadingPhotos else { return false }
+        guard let conversationId = selected?.id else { return false }
+        if photos.isEmpty {
+            return await send()
+        }
         uploading = true
         defer { uploading = false }
-        do {
-            let result: CoachPhotoResult = try await auth.client.mutate(
-                "coach.uploadPhoto",
-                input: CoachPhotoInput(mimeType: "image/jpeg", base64Data: data.base64EncodedString())
-            )
-            await send(mediaUrl: result.url)
-        } catch {
-            if !error.isCancellation { errorMessage = error.localizedDescription }
+        errorMessage = nil
+        draft = ""
+        let result = await StagedChatSender.send(
+            photos: photos,
+            caption: caption,
+            upload: { encoded in
+                let uploaded: CoachPhotoResult = try await self.auth.client.mutate(
+                    "coach.uploadPhoto",
+                    input: CoachPhotoInput(mimeType: "image/jpeg", base64Data: encoded)
+                )
+                return uploaded.url
+            },
+            deliver: { text, mediaURL in
+                guard self.selected?.id == conversationId else { return false }
+                return await self.send(content: text, mediaUrl: mediaURL)
+            },
+            onProgress: { remaining in
+                guard self.selected?.id == conversationId else { return }
+                self.stagedPhotos = remaining
+            }
+        )
+        guard selected?.id == conversationId else { return false }
+        switch result {
+        case .success:
+            stagedPhotos = []
+            return true
+        case .failure(let remaining, let captionLeft, let message):
+            stagedPhotos = remaining
+            draft = captionLeft
+            if let message { errorMessage = message }
+            return false
         }
     }
 
@@ -277,7 +351,8 @@ struct CoachInboxView: View {
     @Bindable var auth: AuthStore
     var showsModePicker = true
     @State private var model: CoachInboxViewModel
-    @State private var photoItem: PhotosPickerItem?
+    @State private var photoItems: [PhotosPickerItem] = []
+    @State private var expandedPhoto: ChatPhotoLink?
     @State private var sendNote: String?
 
     init(coach: CoachViewModel, auth: AuthStore, showsModePicker: Bool = true) {
@@ -318,7 +393,11 @@ struct CoachInboxView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     if model.selected != nil {
-                        Button("Inbox") { model.closeThread() }
+                        Button("Inbox") {
+                            photoItems = []
+                            expandedPhoto = nil
+                            model.closeThread()
+                        }
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
@@ -441,14 +520,15 @@ struct CoachInboxView: View {
         .sheet(isPresented: $model.showLibrary) {
             librarySheet
         }
-        .onChange(of: photoItem) { _, item in
-            guard let item else { return }
+        .fullScreenCover(item: $expandedPhoto) { link in
+            ChatImageViewer(url: link.url)
+        }
+        .onChange(of: photoItems) { _, items in
+            guard !items.isEmpty else { return }
             Task {
-                if let data = try? await item.loadTransferable(type: Data.self),
-                   let image = UIImage(data: data) {
-                    await model.sendPhoto(image)
-                }
-                photoItem = nil
+                let picked = items
+                photoItems = []
+                await model.stagePhotos(picked)
             }
         }
     }
@@ -511,13 +591,22 @@ struct CoachInboxView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
             HStack(spacing: 10) {
-                let uploading = model.uploading
-                PhotosPicker(selection: $photoItem, matching: .images) {
-                    Image(systemName: uploading ? "arrow.triangle.2.circlepath" : "photo")
-                        .font(.title3)
-                        .foregroundStyle(HTTheme.forest)
+                PhotosPicker(
+                    selection: $photoItems,
+                    maxSelectionCount: max(1, photoSlotsLeft),
+                    matching: .images
+                ) {
+                    if model.uploading || model.isReadingPhotos {
+                        ProgressView()
+                            .frame(width: 24, height: 24)
+                    } else {
+                        Image(systemName: "photo")
+                            .font(.title3)
+                            .foregroundStyle(HTTheme.forest)
+                    }
                 }
-                .disabled(uploading)
+                .disabled(composerBusy || photoSlotsLeft == 0)
+                .accessibilityLabel("Photo")
 
                 Button {
                     model.showLibrary = true
@@ -529,11 +618,17 @@ struct CoachInboxView: View {
                 }
             }
 
-            if model.isSending || sendNote != nil {
-                Text(model.isSending ? "Sending…" : (sendNote ?? ""))
+            if model.isSending || model.uploading || sendNote != nil {
+                Text(model.isSending || model.uploading ? "Sending…" : (sendNote ?? ""))
                     .font(.caption.weight(.bold))
                     .foregroundStyle(HTTheme.forest)
                     .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            if !model.stagedPhotos.isEmpty {
+                StagedChatPhotoStrip(photos: model.stagedPhotos, canRemove: !composerBusy) { id in
+                    model.removeStagedPhoto(id: id)
+                }
             }
 
             HStack(alignment: .bottom) {
@@ -542,6 +637,7 @@ struct CoachInboxView: View {
                     .padding(10)
                     .background(Color.white)
                     .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .disabled(model.uploading || model.isReadingPhotos)
                     .onChange(of: model.draft) { _, next in
                         if !next.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                             sendNote = nil
@@ -549,11 +645,11 @@ struct CoachInboxView: View {
                     }
                 Button {
                     Task {
-                        let ok = await model.send()
+                        let ok = await model.sendComposer()
                         sendNote = ok ? "Sent." : nil
                     }
                 } label: {
-                    if model.isSending {
+                    if model.isSending || model.uploading {
                         ProgressView()
                             .frame(width: 32, height: 32)
                     } else {
@@ -562,7 +658,8 @@ struct CoachInboxView: View {
                             .foregroundStyle(channelColor(model.selected?.platform))
                     }
                 }
-                .disabled(model.draft.trimmingCharacters(in: .whitespaces).isEmpty || model.uploading || model.isSending)
+                .disabled(!canSend || composerBusy)
+                .accessibilityLabel("Send")
             }
         }
         .padding(.horizontal, 12)
@@ -597,17 +694,9 @@ struct CoachInboxView: View {
                     }
                     if let urlStr = msg.mediaUrl, let url = URL(string: urlStr) {
                         if isImageURL(urlStr) {
-                            AsyncImage(url: url) { phase in
-                                if case .success(let img) = phase {
-                                    img.resizable().scaledToFill()
-                                } else {
-                                    ProgressView()
-                                }
+                            ChatImageThumbnail(url: url) {
+                                expandedPhoto = ChatPhotoLink(url: url)
                             }
-                            .aspectRatio(4.0 / 3.0, contentMode: .fill)
-                            .frame(maxWidth: .infinity)
-                            .clipped()
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
                         } else {
                             Link(msg.content ?? "Open file", destination: url)
                                 .font(.caption.weight(.bold))
@@ -627,6 +716,18 @@ struct CoachInboxView: View {
             }
             if !msg.isMine { Spacer(minLength: 40) }
         }
+    }
+
+    private var photoSlotsLeft: Int {
+        max(0, ChatPhotoStaging.maxCount - model.stagedPhotos.count)
+    }
+
+    private var composerBusy: Bool {
+        model.isSending || model.uploading || model.isReadingPhotos
+    }
+
+    private var canSend: Bool {
+        !model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !model.stagedPhotos.isEmpty
     }
 
     private var habitsAdmin: some View {
