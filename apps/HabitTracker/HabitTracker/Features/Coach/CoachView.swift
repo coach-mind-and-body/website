@@ -33,8 +33,13 @@ final class CoachViewModel {
             let pending = thread?.messages.filter { $0.pending == true } ?? []
             thread = try await auth.client.query("coach.getThread")
             if !pending.isEmpty {
-                let serverText = Set((thread?.messages ?? []).compactMap(\.content))
+                let serverMessages = thread?.messages ?? []
+                let serverText = Set(serverMessages.compactMap(\.content))
+                let serverMedia = Set(serverMessages.compactMap(\.mediaUrl))
                 let stillFlying = pending.filter { msg in
+                    if let media = msg.mediaUrl, !media.isEmpty {
+                        return !serverMedia.contains(media)
+                    }
                     guard let content = msg.content, !content.isEmpty else { return true }
                     return !serverText.contains(content)
                 }
@@ -163,18 +168,65 @@ final class CoachViewModel {
         return notifyEnabled
     }
 
-    func sendPhoto(_ image: UIImage) async {
-        guard let data = image.jpegData(compressionQuality: 0.7) else { return }
+    var stagedPhotos: [StagedChatPhoto] = []
+    var isReadingPhotos = false
+
+    func stagePhotos(_ items: [PhotosPickerItem]) async {
+        guard !items.isEmpty, !isReadingPhotos, !uploading else { return }
+        isReadingPhotos = true
+        defer { isReadingPhotos = false }
+        let batch = await ChatPhotoStaging.append(items, to: stagedPhotos)
+        stagedPhotos = batch.photos
+        if let error = batch.error {
+            errorMessage = error
+        }
+    }
+
+    func removeStagedPhoto(id: UUID) {
+        guard !uploading, !isReadingPhotos else { return }
+        stagedPhotos.removeAll { $0.id == id }
+    }
+
+    /// Sends staged photos in order, with any typed text on the first one. A failed photo stays staged.
+    @discardableResult
+    func sendComposer() async -> Bool {
+        let caption = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        let photos = stagedPhotos
+        guard !caption.isEmpty || !photos.isEmpty else { return false }
+        guard !uploading, !isSending, !isReadingPhotos else { return false }
+        if photos.isEmpty {
+            return await send()
+        }
         uploading = true
         defer { uploading = false }
-        do {
-            let result: CoachPhotoResult = try await auth.client.mutate(
-                "coach.uploadPhoto",
-                input: CoachPhotoInput(mimeType: "image/jpeg", base64Data: data.base64EncodedString())
-            )
-            await send(mediaUrl: result.url)
-        } catch {
-            if !error.isCancellation { errorMessage = error.localizedDescription }
+        errorMessage = nil
+        draft = ""
+        let result = await StagedChatSender.send(
+            photos: photos,
+            caption: caption,
+            upload: { encoded in
+                let uploaded: CoachPhotoResult = try await self.auth.client.mutate(
+                    "coach.uploadPhoto",
+                    input: CoachPhotoInput(mimeType: "image/jpeg", base64Data: encoded)
+                )
+                return uploaded.url
+            },
+            deliver: { text, mediaURL in
+                await self.send(content: text, mediaUrl: mediaURL)
+            },
+            onProgress: { remaining in
+                self.stagedPhotos = remaining
+            }
+        )
+        switch result {
+        case .success:
+            stagedPhotos = []
+            return true
+        case .failure(let remaining, let captionLeft, let message):
+            stagedPhotos = remaining
+            draft = captionLeft
+            if let message { errorMessage = message }
+            return false
         }
     }
 }
@@ -189,7 +241,8 @@ private struct SharedCoachItem: Identifiable {
 struct CoachView: View {
     @Bindable var model: CoachViewModel
     @Bindable var auth: AuthStore
-    @State private var photoItem: PhotosPickerItem?
+    @State private var photoItems: [PhotosPickerItem] = []
+    @State private var expandedPhoto: ChatPhotoLink?
     @State private var notifyNote: String?
     @State private var sendNote: String?
     @State private var sharedFile: ProgramFilePreview?
@@ -256,14 +309,15 @@ struct CoachView: View {
             .sheet(isPresented: $model.showRecipePicker) {
                 recipePicker
             }
-            .onChange(of: photoItem) { _, item in
-                guard let item else { return }
+            .fullScreenCover(item: $expandedPhoto) { link in
+                ChatImageViewer(url: link.url)
+            }
+            .onChange(of: photoItems) { _, items in
+                guard !items.isEmpty else { return }
                 Task {
-                    if let data = try? await item.loadTransferable(type: Data.self),
-                       let image = UIImage(data: data) {
-                        await model.sendPhoto(image)
-                    }
-                    photoItem = nil
+                    let picked = items
+                    photoItems = []
+                    await model.stagePhotos(picked)
                 }
             }
         }
@@ -488,9 +542,12 @@ struct CoachView: View {
                 }
                 .foregroundStyle(HTTheme.forest)
 
-                let uploading = model.uploading
-                PhotosPicker(selection: $photoItem, matching: .images) {
-                    Label(uploading ? "Sending…" : "Photo", systemImage: "photo")
+                PhotosPicker(
+                    selection: $photoItems,
+                    maxSelectionCount: max(1, photoSlotsLeft),
+                    matching: .images
+                ) {
+                    Label(photoButtonTitle, systemImage: "photo")
                         .font(.caption.weight(.bold))
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
@@ -498,7 +555,7 @@ struct CoachView: View {
                         .clipShape(Capsule())
                         .overlay(Capsule().stroke(HTTheme.roseBorder))
                 }
-                .disabled(uploading)
+                .disabled(composerBusy || photoSlotsLeft == 0)
                 .foregroundStyle(HTTheme.forest)
             }
 
@@ -535,11 +592,17 @@ struct CoachView: View {
                 }
             }
 
-            if model.isSending || sendNote != nil {
-                Text(model.isSending ? "Sending…" : (sendNote ?? ""))
+            if model.isSending || model.uploading || sendNote != nil {
+                Text(model.isSending || model.uploading ? "Sending…" : (sendNote ?? ""))
                     .font(.caption.weight(.bold))
                     .foregroundStyle(HTTheme.forest)
                     .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            if !model.stagedPhotos.isEmpty {
+                StagedChatPhotoStrip(photos: model.stagedPhotos, canRemove: !composerBusy) { id in
+                    model.removeStagedPhoto(id: id)
+                }
             }
 
             HStack(alignment: .bottom) {
@@ -548,6 +611,7 @@ struct CoachView: View {
                     .padding(10)
                     .background(Color.white)
                     .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .disabled(model.uploading || model.isReadingPhotos)
                     .onChange(of: model.draft) { _, next in
                         if !next.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                             sendNote = nil
@@ -555,11 +619,11 @@ struct CoachView: View {
                     }
                 Button {
                     Task {
-                        let ok = await model.send()
+                        let ok = await model.sendComposer()
                         sendNote = ok ? "Sent. Lee Anne has it." : nil
                     }
                 } label: {
-                    if model.isSending {
+                    if model.isSending || model.uploading {
                         ProgressView()
                             .frame(width: 32, height: 32)
                     } else {
@@ -568,7 +632,8 @@ struct CoachView: View {
                             .foregroundStyle(HTTheme.forest)
                     }
                 }
-                .disabled(model.draft.trimmingCharacters(in: .whitespaces).isEmpty || model.isSending)
+                .disabled(!canSend || composerBusy)
+                .accessibilityLabel("Send")
             }
         }
         .padding(.horizontal, 12)
@@ -640,17 +705,9 @@ struct CoachView: View {
                     }
                     if let urlStr = msg.mediaUrl, let url = URL(string: urlStr) {
                         if msg.isImageAttachment {
-                            AsyncImage(url: url) { phase in
-                                if case .success(let img) = phase {
-                                    img.resizable().scaledToFill()
-                                } else {
-                                    ProgressView()
-                                }
+                            ChatImageThumbnail(url: url) {
+                                expandedPhoto = ChatPhotoLink(url: url)
                             }
-                            .aspectRatio(4.0 / 3.0, contentMode: .fill)
-                            .frame(maxWidth: .infinity)
-                            .clipped()
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
                         } else {
                             Link("Open file", destination: url)
                                 .font(.caption.weight(.bold))
@@ -690,6 +747,24 @@ struct CoachView: View {
 
     private func isLastMine(_ msg: CoachMessage) -> Bool {
         model.thread?.messages.last(where: { $0.isMine })?.id == msg.id
+    }
+
+    private var photoSlotsLeft: Int {
+        max(0, ChatPhotoStaging.maxCount - model.stagedPhotos.count)
+    }
+
+    private var composerBusy: Bool {
+        model.isSending || model.uploading || model.isReadingPhotos
+    }
+
+    private var canSend: Bool {
+        !model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !model.stagedPhotos.isEmpty
+    }
+
+    private var photoButtonTitle: String {
+        if model.uploading { return "Sending…" }
+        if model.isReadingPhotos { return "Adding…" }
+        return "Photo"
     }
 }
 
