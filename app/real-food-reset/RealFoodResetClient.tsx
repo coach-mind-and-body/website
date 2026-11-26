@@ -14,9 +14,6 @@ export default function RealFoodResetClient() {
 
       <main className="px-4 pb-16">
         <div className="max-w-xl mx-auto">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] mb-4" style={{ color: "#c9a96e" }}>
-            {REAL_FOOD_RESET.startLabel} – {REAL_FOOD_RESET.endLabel}
-          </p>
           <h1
             className="font-bold leading-[1.1] mb-4"
             style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(2.4rem, 6vw, 3.8rem)" }}
