@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { REAL_FOOD_RESET } from "@shared/realFoodReset";
 import RealFoodResetClient from "./RealFoodResetClient";
 
-const title = REAL_FOOD_RESET.name;
+const title = "The 5-Day No Processed Food Challenge (Closed)";
 const description =
-  "Free 5-Day No Processed Food Challenge for women 40+. Learn labels, added sugar, and how to build satisfying meals — progress, not perfection. Lives Mon/Wed/Fri at 1:00 pm Mountain.";
+  "The free 5-Day No Processed Food Challenge from Mind and Body Reset has ended. Explore the health and wellness blog and podcast for women over 40.";
 
 export const metadata: Metadata = {
   title,
