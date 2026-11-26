@@ -75,14 +75,32 @@ export default function About() {
       <section className="py-20 text-center" style={{ background: "linear-gradient(135deg, oklch(0.93 0.06 75) 0%, oklch(0.97 0.008 10) 60%)" }}>
         <div className="container max-w-3xl mx-auto">
           <span className="badge-forest mb-4 inline-block">About Us</span>
-          <h1 className="font-bold mb-4" style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(2rem, 4vw, 3rem)", lineHeight: 1.15 }}>
-            <span className="block mb-2" style={{ color: "oklch(0.22 0.02 160)" }}>
+          <h1
+            className="font-bold mb-4"
+            style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: "clamp(2rem, 4vw, 3rem)",
+              lineHeight: 1.15,
+              color: "oklch(0.22 0.02 160)",
+            }}
+          >
+            About Lee Anne Chapman, Midlife Health Coach
+          </h1>
+          <p
+            className="font-bold mb-4"
+            style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: "clamp(1.35rem, 2.8vw, 2rem)",
+              lineHeight: 1.2,
+            }}
+          >
+            <span className="block mb-1" style={{ color: "oklch(0.22 0.02 160)" }}>
               Reclaim Your Body.
             </span>
             <span className="block" style={{ color: "oklch(0.38 0.10 148)" }}>
               Rewire Your Mind. Reset Your Life.
             </span>
-          </h1>
+          </p>
           <p className="text-lg leading-relaxed" style={{ color: "oklch(0.45 0.02 160)", maxWidth: "560px", margin: "0 auto" }}>
             We're a team of certified Mind & Body Coaches who've been exactly where you are — and found a better way.
           </p>
